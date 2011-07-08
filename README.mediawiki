@@ -1,11 +1,20 @@
+=redsea=
 '''redsea''' decodes FM-RDS data received through a sound card.
 
-===How it's supposed to work===
+==How it's supposed to work==
 On certain FM radios, the 57 kHz RDS subcarrier can also be faintly detected at
 57 / 3 = 19 kHz, which is well below the Nyquist frequency for an ordinary
-sound card's ADC.
+sound card's ADC. This allows us to plug the radio into the computer's Line In
+and, using digital filters and other DSP sorcery, extract the RDS data.
 
-===License===
+==When is it supposed to work?==
+The program runs on Linux and uses sox/alsa to read from the sound card.
+The GUI is written in Perl and uses GTK2, Encode and IO::Select.
+
+==Is it supposed to work?==
+Yes, but I wouldn't count on it.
+
+==Licensing==
 <pre>Copyright (c) 2007-2011, Oona OH2-250
 
 Permission to use, copy, modify, and/or distribute this software for any
