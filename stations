@@ -1,7 +1,15 @@
-#PI  preset PS  deny clearing RT
-#                 deny PS changes
-#                   RT length
-#                      station name
+# Preset station settings
+#
+# PI       Programme Identification number
+# PSpreset Default Programme Service text
+# D        Never clear RadioText display
+# C        Deny changes to Programme Service text
+# L        Length of RadioText, if constant
+#              0 = display partial messages
+#             64 = obey termination characters
+# Name     Name of programme service
+#
+#PI  PSpreset   D C L  Name
 2049 "EURO FM " 0 0 0  Euro FM
 2079 " D   FM " 0 0 0  Dinamit FM
 20EA "  ENERGY" 0 0 0  Energy FM
