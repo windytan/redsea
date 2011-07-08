@@ -1,6 +1,12 @@
-'''redsea''' decodes FM-RDS data received through the sound card.
+'''redsea''' decodes FM-RDS data received through a sound card.
 
-<pre>Copyright &copy; 2007­2011, Oona OH2-250
+===How it's supposed to work===
+On certain FM radios, the 57 kHz RDS subcarrier can also be faintly detected at
+57 / 3 = 19 kHz, which is well below the Nyquist frequency for an ordinary
+sound card's ADC.
+
+===License===
+<pre>Copyright (c) 2007-2011, Oona OH2-250
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
