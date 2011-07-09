@@ -299,7 +299,7 @@ int main() {
 
           // Print it out
           datalen = 4;
-          fwrite(&datalen, 1, 1, stdout);
+          if (!fwrite(&datalen, 1, 1, stdout)) return(EXIT_FAILURE);
           for (k = 0; k < datalen; k++) fwrite(&grp_data[k], 1, 2, stdout);
           fflush(stdout);
         }

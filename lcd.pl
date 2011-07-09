@@ -803,7 +803,6 @@ sub screenReset {
 }
 
 sub on_quit_button_clicked {
-  system("killall -9 downmix gs");
   Gtk2->main_quit;
 }
 
