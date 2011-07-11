@@ -8,7 +8,7 @@ sound card's [http://en.wikipedia.org/wiki/Analog-to-digital_converter ADC]. Thi
 and, using digital filters and other DSP sorcery, extract the RDS data.
 
 ===What is this sorcery?===
-The upper [http://en.wikipedia.org/wiki/Sideband sideband] of the RDS signal is bandpassed and [http://en.wikipedia.org/wiki/Frequency_mixer downmixed] to baseband. A local oscillator signal is generated at 1187.5 Hz and [http://en.wikipedia.org/wiki/Phase-locked_loop phase-locked] to the [http://en.wikipedia.org/wiki/Phase-shift_keying#Binary_phase-shift_keying_.28BPSK.29 BPSK] waveform. A similarly phase-locked local clock signal is then used to demodulate the binary data.
+The upper [http://en.wikipedia.org/wiki/Sideband sideband] of the RDS signal is bandpassed and [http://en.wikipedia.org/wiki/Heterodyning#Up_and_down_converters downconverted] to baseband. A local oscillator signal is generated at 1187.5 Hz and [http://en.wikipedia.org/wiki/Phase-locked_loop phase-locked] to the [http://en.wikipedia.org/wiki/Phase-shift_keying#Binary_phase-shift_keying_.28BPSK.29 BPSK] waveform. A similarly phase-locked local clock signal is then used to demodulate the binary data.
 
 ==Where will it work?==
 The program runs on Linux and uses sox/alsa to read from the sound card.
