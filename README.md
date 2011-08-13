@@ -11,15 +11,6 @@ an ordinary sound card's [ADC](http://en.wikipedia.org/wiki/Analog-to-digital_co
 allows us to plug the radio into the computer's Line In and, using digital filters and other DSP
 sorcery, extract the RDS data.
 
-What is this sorcery?
----------------------
-The upper [Sideband](http://en.wikipedia.org/wiki/Sideband) of the RDS signal is bandpassed and
-[downconverted](http://en.wikipedia.org/wiki/Heterodyning#Up_and_down_converters) to baseband. A
-local oscillator signal is generated at 1187.5 Hz and
-[phase-locked](http://en.wikipedia.org/wiki/Phase-locked_loop) to the
-[BPSK](http://en.wikipedia.org/wiki/Phase-shift_keying#Binary_phase-shift_keying_.28BPSK.29)
-waveform. A similarly phase-locked local clock signal is then used to demodulate the binary data.
-
 Where will it work?
 -------------------
 The program runs on Linux and uses sox/alsa to read from the sound card. The GUI is written in
