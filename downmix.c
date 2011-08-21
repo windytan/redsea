@@ -16,11 +16,11 @@
 
 int main() {
 
-  unsigned int bufptr = 0;
-  double       freq   = 2 * M_PI * (19000.0 / 48000.0); // radians per sample
-  double       phase  = -M_PI;
-  short int    pcm;
-  short int    outbuf[BUFLEN];
+  unsigned short bufptr = 0;
+  double         freq   = 2 * M_PI * (19000.0 / 48000.0); // radians per sample
+  double         phase  = -M_PI;
+  short int      pcm;
+  short int      outbuf[BUFLEN];
 
   /* Read PCM data from stdin */
   while (read(0, &pcm, 2)) {

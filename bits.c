@@ -20,28 +20,31 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <math.h>
 
 #include "bits.h"
 
 // Demodulate next PSK bit from PCM stream
-short int get_bit() {
+bool get_bit() {
 
-  int                   j, f=FALSE, g=FALSE, p;
+  int                   j, p;
+  bool                  f=false, g=false;
   static double         w = 2 * M_PI * (1187.5 / 6000.0);  // PSK carrier frequency, rad/sample
   static unsigned short bit_phase = 0;     /* bit phase */
   static unsigned short bpadvance = 12971; //   2^16 / (6000 Hz / 1187.5 bps)
   static unsigned int   lo_time = 0;
-  static unsigned int   intptr=0, bit=0, prevbit=0, diffbit=0;
+  static unsigned char  intptr=0;
   static short int      sample=0, prevsample=0, x=0, x0=0;
   static int            integral[5] = {0};
   static double         lo = 0;
   static double         lo_phase = 0;
+  static bool           bit=0, prevbit=0, diffbit=0;
 
   j = bit_phase;
   if (j>0x8000) j -= 0x10000;
-  for (f=p=0; j < 0x10000; j += bpadvance) {
+  for (f=false,p=0; j < 0x10000; j += bpadvance) {
 
     if (fread(&sample, 2, 1, stdin)) {
 
@@ -50,7 +53,8 @@ short int get_bit() {
       lo_time++;
 
       /* Product detector & integrator over 5 samples */
-      integral[intptr++ % 5] = sample * lo;
+      integral[intptr] = sample * lo;
+      if (++intptr >= 5) intptr = 0;
       x = (integral[0] + integral[1] + integral[2] + integral[3] + integral[4]) / 5;
 
       /* PSK carrier recovery PLL */
@@ -61,7 +65,7 @@ short int get_bit() {
           else
             lo_phase -= 0.04;
           lo_phase = fmod(lo_phase, 2*M_PI);
-          g = TRUE;
+          g = true;
         }
       }
 
@@ -70,7 +74,7 @@ short int get_bit() {
         if (!f) {
           if (j < 0x8000) p =  2048;  /* Early */
           else            p = -2048;  /* Late */
-          f = TRUE;
+          f = true;
         }
       }
 
@@ -92,10 +96,11 @@ short int get_bit() {
 }
 
 // Calculate the syndrome of a 26-bit vector
-unsigned int syndrome (unsigned int vector) {
+unsigned short syndrome (unsigned int vector) {
 
-  int k;
-  unsigned int SyndReg=0,l,bit;
+  short k;
+  unsigned short SyndReg=0,l;
+  bool bit;
 
   // Figure B.4
 
@@ -120,8 +125,7 @@ unsigned int syndrome (unsigned int vector) {
 
 // When a block has uncorrectable errors, dump the group received so far
 void blockerror () {
-  int k;
-  unsigned char datalen=0,buf=0;
+  unsigned char datalen=0,buf=0,k=0;
 
   if (rcvd[A]) {
     datalen = 1;
@@ -145,36 +149,37 @@ void blockerror () {
     fflush(stdout);
   }
 
-  errblock[BlkPointer % 50] = TRUE;
+  errblock[BlkPointer % 50] = true;
 
   erbloks = 0;
   for (k = 0; k < 50; k ++) erbloks += errblock[k];
 
   // Sync is lost when >45 out of last 50 blocks are erroneous (C.1.2)
   if (insync && erbloks > 45) {
-    insync = FALSE;
-    for (k = 0; k < 50; k ++) errblock[k] = FALSE;
+    insync = false;
+    for (k = 0; k < 50; k ++) errblock[k] = false;
     buf = 0x00;
     fwrite(&buf, 1, 1, stdout);
     fflush(stdout);
   }
-  rcvd[A] = rcvd[B] = rcvd[C] = rcvd[Ci] = rcvd[D] = FALSE;
+  rcvd[A] = rcvd[B] = rcvd[C] = rcvd[Ci] = rcvd[D] = false;
 }
 
 int main() {
 
-  int          k, doCorrect=FALSE, prevsync=0;
-  int          i=0, syncb[5] = {FALSE}, lefttoread=26;
-  unsigned int block = 0, pi=0, wideblock = 0;
-  unsigned int message, bitcount = 0, prevbitcount = 0;
-  unsigned int j, l, err, SyndReg, dist;
-  unsigned char datalen=0, buf=0;
+  short          k;
+  unsigned int   block = 0, wideblock = 0;
+  unsigned int   bitcount = 0, prevbitcount = 0;
+  unsigned int   l, dist;
+  unsigned short message, SyndReg, pi=0, err,i=0;
+  unsigned char  j, datalen=0, buf=0, prevsync=0, lefttoread=26;
+  bool           syncb[5] = {false}, doCorrect=false;
 
   // Offset words A, B, C, C', D
-  unsigned int offset[5] = { 0x0FC, 0x198, 0x168, 0x350, 0x1B4 };
+  unsigned short  offset[5] = { 0x0FC, 0x198, 0x168, 0x350, 0x1B4 };
 
   // Map offset numbers to block numbers
-  unsigned int ofs2block[5] = { 0, 1, 2, 2, 3 };
+  unsigned char ofs2block[5] = { 0, 1, 2, 2, 3 };
 
   while(1) {
 
@@ -210,9 +215,9 @@ int main() {
             if (   dist % 26 == 0
                 && dist <= 156
                 && (ofs2block[prevsync] + dist/26) % 4 == ofs2block[j] ) {
-              insync = TRUE;
+              insync = true;
               expofs = j;
-              buf = 0xFF;
+              buf    = 0xFF;
               fwrite(&buf, 1, 1, stdout);
               fflush(stdout);
               break;
@@ -242,19 +247,19 @@ int main() {
       if (!syncb[expofs]) {
 
         // If it's a correct PI, the error was probably in the check bits and hence is ignored
-        if      (expofs == A && message == pi && pi != 0) syncb[A]  = TRUE;
-        else if (expofs == C && message == pi && pi != 0) syncb[Ci] = TRUE;
+        if      (expofs == A && message == pi && pi != 0) syncb[A]  = true;
+        else if (expofs == C && message == pi && pi != 0) syncb[Ci] = true;
 
         // Detect & correct clock slips (C.1.2)
 
         else if   (expofs == A && pi != 0 && ( (wideblock >> 12) & _16BIT ) == pi) {
           message     = pi;
           wideblock >>= 1;
-          syncb[A]    = TRUE;
+          syncb[A]    = true;
         } else if (expofs == A && pi != 0 && ( (wideblock >> 10) & _16BIT ) == pi) {
           message     = pi;
           wideblock   = (wideblock << 1) + get_bit();
-          syncb[A]    = TRUE;
+          syncb[A]    = true;
           lefttoread  = 25;
         }
 
@@ -271,9 +276,9 @@ int main() {
             }
             if ((SyndReg & _5BIT) == 0) {
 
-              err            = (SyndReg >> k)  & _16BIT;
-              message        = (block   >> 10) ^ err;
-              syncb[expofs] = TRUE;
+              err           = (SyndReg >> k)  & _16BIT;
+              message       = (block   >> 10) ^ err;
+              syncb[expofs] = true;
               break;
             }
 
@@ -289,8 +294,8 @@ int main() {
       if (syncb[expofs]) {
 
         grp_data[ofs2block[expofs]] = message;
-        errblock[BlkPointer % 50]   = FALSE;
-        rcvd[expofs]                = TRUE;
+        errblock[BlkPointer % 50]   = false;
+        rcvd[expofs]                = true;
 
         if (expofs == A) pi         = message;
 
@@ -308,7 +313,7 @@ int main() {
       // The block offset we're expecting next
       expofs = (expofs == C ? D : (expofs + 1) % 5);
 
-      if (expofs == A) rcvd[A] = rcvd[B] = rcvd[C] = rcvd[Ci] = rcvd[D] = FALSE;
+      if (expofs == A) rcvd[A] = rcvd[B] = rcvd[C] = rcvd[Ci] = rcvd[D] = false;
 
     }
     
