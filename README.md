@@ -3,23 +3,11 @@ redsea
 This program decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data received through
 a sound card.
 
-Why does it work?
------------------
-On certain FM radios, the 57 kHz RDS subcarrier can also be faintly detected at 57 / 3 = 19 kHz,
-which is well below the [Nyquist frequency](http://en.wikipedia.org/wiki/Nyquist_frequency) for
-an ordinary sound card's [ADC](http://en.wikipedia.org/wiki/Analog-to-digital_converter). This
-allows us to plug the radio into the computer's Line In and, using digital filters and other DSP
-sorcery, extract the RDS data.
-
-Where will it work?
--------------------
 The program runs on Linux and uses sox/alsa to read from the sound card. The GUI is written in
 Perl and uses GTK2, Encode and IO::Select. Line in must be set on Capture and capture gain should
 be reasonably high with no clipping.
 
-Does it work?
--------------
-YMMV.
+![Screenshot](http://www.cs.helsinki.fi/u/okraisan/rds-ylesuomi.png)
 
 Licensing
 ---------

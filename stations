@@ -2,11 +2,11 @@
 #
 # PI       Programme Identification number
 # PSpreset Default Programme Service text
-# D        Never clear RadioText display
-# C        Deny changes to Programme Service text
-# L        Length of RadioText, if constant
+# D        Never clear RadioText display [01]
+# C        Deny changes to Programme Service text [01]
+# L        Length of RadioText, if constant [0-64]
 #              0 = display partial messages
-#             64 = obey termination characters
+#             64 = station is know to use termination characters
 # Name     Name of programme service
 #
 #PI  PSpreset   D C L  Name

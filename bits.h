@@ -20,6 +20,6 @@ unsigned short grp_data[4] = {0};
 
 /* Function declarations */
 
-unsigned char  get_bit();
+bool           get_bit();
 unsigned short syndrome(unsigned int);
 void           blockerror();

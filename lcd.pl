@@ -28,7 +28,7 @@ use constant FALSE => 0;
 use constant TRUE  => 1;
 
 our $dbg   = TRUE;
-our $theme = "green3";
+our $theme = "black";
 
 # Some terminal control chars
 use constant   RESET => "\x1B[0m";
@@ -63,6 +63,23 @@ sub update_displays {
     $upd   = 0;
     &updateStatusRow if (defined $pi);
   }
+  
+  # RT scroll  
+  if (defined $pi && exists $stn{$pi}{'RTscrollbuf'}) {
+    if (length($stn{$pi}{'RTscrollbuf'}) > 32) {
+      $RTscrollptr ++;
+      $RTscrollptr = 0 if ($RTscrollptr >= length($stn{$pi}{'RTscrollbuf'}));
+      $markup = substr($stn{$pi}{'RTbuf'},$RTscrollptr). "     ";
+      $markup .= substr($stn{$pi}{'RTbuf'},0,$RTscrollptr-5);
+    } else {
+      $markup = $stn{$pi}{'RTscrollbuf'}. " " x (32-length($stn{$pi}{'RTscrollbuf'}));
+    }
+    $markup =~ s/&/&amp;/g;
+    $markup =~ s/</&lt;/g;
+    $markup =~ s/↵/ /g;
+    $RTlabel->set_markup("<span font='Mono 15px' foreground='$themef{fg}'>$markup</span>");
+  }
+
 
   # Read from data-link layer
 
@@ -783,20 +800,17 @@ sub ODAGroup {
 
 sub screenReset {
 
-  $stn{$pi}{'RTbuf'}       = (" " x 64) if (!exists  $stn{$pi}{'RTbuf'});
-  $stn{$pi}{'RTmarkup'}[0] = (" " x 32) if (!defined $stn{$pi}{'RTmarkup'}[0]);
-  $stn{$pi}{'RTmarkup'}[1] = (" " x 32) if (!defined $stn{$pi}{'RTmarkup'}[1]);
-  $stn{$pi}{'hasRT'}       = FALSE      if (!exists  $stn{$pi}{'hasRT'});
-  $stn{$pi}{'hasMS'}       = FALSE      if (!exists  $stn{$pi}{'hasMS'});
-  $stn{$pi}{'TP'}          = FALSE      if (!exists  $stn{$pi}{'TP'});
-  $stn{$pi}{'TA'}          = FALSE      if (!exists  $stn{$pi}{'TA'});
+  $stn{$pi}{'RTbuf'} = (" " x 64) if (!exists  $stn{$pi}{'RTbuf'});
+  $stn{$pi}{'hasRT'} = FALSE      if (!exists  $stn{$pi}{'hasRT'});
+  $stn{$pi}{'hasMS'} = FALSE      if (!exists  $stn{$pi}{'hasMS'});
+  $stn{$pi}{'TP'}    = FALSE      if (!exists  $stn{$pi}{'TP'});
+  $stn{$pi}{'TA'}    = FALSE      if (!exists  $stn{$pi}{'TA'});
 
   $PSlabel   ->set_markup("<span font='Mono Bold 25px'>        </span>");
   $PIlabel   ->set_markup("<span font='mono 12px'>".(defined($pi) ? sprintf("%04X",$pi) : "    ")."</span>");
   $ECClabel  ->set_markup("<span font='Mono 11px' foreground='$themef{dim}'>  </span>");
   $PTYlabel  ->set_markup("<span font='Mono 12px'>".(" " x 16)."</span>");
-  $RTlabel[0]->set_markup("<span font='Mono 15px' foreground='$themef{fg}'>".$stn{$pi}{'RTmarkup'}[0]."</span>");
-  $RTlabel[1]->set_markup("<span font='Mono 15px' foreground='$themef{fg}'>".$stn{$pi}{'RTmarkup'}[1]."</span>");
+  $RTlabel   ->set_markup("<span font='Mono 15px' foreground='$themef{fg}'>".(" " x 32)."</span>");
   $Freqlabel ->set_markup("<span font='mono 12px' foreground='$themef{fg}'>".($stn{$pi}{'freq'} // "    ")."</span>");
   &updateStatusRow;
 
@@ -829,13 +843,11 @@ sub set_rt_khars {
   
   my $totrc = grep (defined $_, @{$stn{$pi}{'RTrcvd'}}[0..$minRTlen]) if ($minRTlen > 0);
 
-  if ($minRTlen == 0 || $totrc >= $minRTlen) {
-    for (0..1) {
-      ($stn{$pi}{'RTmarkup'}[$_] =  substr($stn{$pi}{'RTbuf'},$_*32,32)) =~ s/&/&amp;/g;
-      $stn{$pi}{'RTmarkup'}[$_]  =~ s/</&lt;/g;
-      $stn{$pi}{'RTmarkup'}[$_]  =~ s/↵/ /g;
-      $RTlabel[$_]->set_markup("<span font='Mono 15px' foreground='$themef{fg}'>$stn{$pi}{'RTmarkup'}[$_]</span>");
-    }
+  if ($minRTlen == 0) {
+    $stn{$pi}{'RTscrollbuf'} = substr($stn{$pi}{'RTbuf'},0,64);
+  }
+  elsif ($totrc >= $minRTlen) {
+    $stn{$pi}{'RTscrollbuf'} = substr($stn{$pi}{'RTbuf'},0,$minRTlen);
   }
 
   say "  RT:     ". substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
@@ -1240,13 +1252,11 @@ sub initgui {
   $infotable->attach_defaults  ($PTYlabel, 3,6,1,2);
   
   ## RadioText
-  for (0..1) {
-    $RTlabel[$_] = Gtk2::Label->new ();
-    $RTlabel[$_] ->set_markup       ("<span font='Mono 15px'>".(" " x 32)."</span>");
-    $RTlabel[$_] ->set_alignment    (.5, .5);
-    $RTlabel[$_] ->set_width_chars  (32);
-    $table       ->attach_defaults  ($RTlabel[$_], 0,3,2+$_,3+$_);
-  }
+  $RTlabel = Gtk2::Label->new ();
+  $RTlabel ->set_markup       ("<span font='Mono 15px'>".(" " x 32)."</span>");
+  $RTlabel ->set_alignment    (.5, .5);
+  $RTlabel ->set_width_chars  (32);
+  $table   ->attach_defaults  ($RTlabel, 0,3,2,3);
   
   my $back_pixbuf    =  Gtk2::Gdk::Pixbuf->new_from_file("themes/".$themef{bgpic});
   my ($pixmap,$mask) = $back_pixbuf->render_pixmap_and_mask(255);

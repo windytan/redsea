@@ -170,16 +170,20 @@ int main() {
   short          k;
   unsigned int   block = 0, wideblock = 0;
   unsigned int   bitcount = 0, prevbitcount = 0;
-  unsigned int   l, dist;
-  unsigned short message, SyndReg, pi=0, err,i=0;
+  unsigned int   dist;
+  unsigned short message, pi=0, i=0;
   unsigned char  j, datalen=0, buf=0, prevsync=0, lefttoread=26;
-  bool           syncb[5] = {false}, doCorrect=false;
+  bool           syncb[5] = {false};
+#ifdef DOCORRECT
+  unsigned int   l;
+  unsigned short SyndReg, err;
+#endif
 
   // Offset words A, B, C, C', D
-  unsigned short  offset[5] = { 0x0FC, 0x198, 0x168, 0x350, 0x1B4 };
+  unsigned short offset[5] = { 0x0FC, 0x198, 0x168, 0x350, 0x1B4 };
 
   // Map offset numbers to block numbers
-  unsigned char ofs2block[5] = { 0, 1, 2, 2, 3 };
+  unsigned char  ofs2block[5] = { 0, 1, 2, 2, 3 };
 
   while(1) {
 
@@ -263,27 +267,26 @@ int main() {
           lefttoread  = 25;
         }
 
+#ifdef DOCORRECT
         // Detect & correct burst errors (B.2.2)
      
-        else if (doCorrect) { 
-          SyndReg = syndrome(block ^ offset[expofs]);
+        SyndReg = syndrome(block ^ offset[expofs]);
 
-          for (k = 0; k < 15; k ++) {
-            if (k > 0) {
-              l       =  SyndReg &  0x200;
-              SyndReg = (SyndReg << 1) & _10BIT;
-              if (l)     SyndReg ^= 0x1B9;
-            }
-            if ((SyndReg & _5BIT) == 0) {
-
-              err           = (SyndReg >> k)  & _16BIT;
-              message       = (block   >> 10) ^ err;
-              syncb[expofs] = true;
-              break;
-            }
-
+        for (k = 0; k < 15; k ++) {
+          if (k > 0) {
+            l       =  SyndReg &  0x200;
+            SyndReg = (SyndReg << 1) & _10BIT;
+            if (l)     SyndReg ^= 0x1B9;
           }
+          if ((SyndReg & _5BIT) == 0) {
+            err           = (SyndReg >> k)  & _16BIT;
+            message       = (block   >> 10) ^ err;
+            syncb[expofs] = true;
+            break;
+          }
+
         }
+#endif
 
         // If still no sync pulse
         if ( !syncb[expofs] ) blockerror();
