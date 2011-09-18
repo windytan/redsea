@@ -7,7 +7,7 @@ The program runs on Linux and uses sox/alsa to read from the sound card. The GUI
 Perl and uses GTK2, Encode and IO::Select. Line in must be set on Capture and capture gain should
 be reasonably high with no clipping.
 
-![Screenshot](http://www.cs.helsinki.fi/u/okraisan/rds-ylesuomi2.png)
+![Screenshot](http://www.cs.helsinki.fi/u/okraisan/rds-ylesuomi3.png)
 
 Licensing
 ---------
