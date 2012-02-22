@@ -34,14 +34,6 @@ our $theme = "black";
 use constant   RESET => "\x1B[0m";
 use constant REVERSE => "\x1B[7m";
 
-# Some bit masks
-use constant  _1BIT => 0x0001; use constant  _2BIT => 0x0003;
-use constant  _3BIT => 0x0007; use constant  _4BIT => 0x000F;
-use constant  _5BIT => 0x001F; use constant  _6BIT => 0x003F;
-use constant  _8BIT => 0x00FF; use constant _11BIT => 0x07FF;
-use constant _12BIT => 0x0FFF; use constant _15BIT => 0x7FFF;
-use constant _16BIT => 0xFFFF;
-
 &initdata;
 &initgui;
 
@@ -118,8 +110,8 @@ sub decodegroup {
   $newpi   = $_[0];
   
   if (@_ >= 2) {
-    $gtype      =  ($_[1] >> 11) & _5BIT;
-    $fullgtype  = (($_[1] >> 12) & _4BIT) . ( (($_[1] >> 11) & _1BIT) ? "B" : "A" );
+    $gtype      = bits($_[1], 11, 5);
+    $fullgtype  = bits($_[1], 12, 4) . ( bits($_[1], 11, 1) ? "B" : "A" );
     say (@_ == 4 ? "Group $fullgtype: $groupname[$gtype]" : "(partial group $fullgtype, ".scalar(@_)." blocks)") if ($dbg);
   } else {
     say "(PI only)" if ($dbg);
@@ -154,12 +146,12 @@ sub decodegroup {
   }
 
   # Traffic Program (TP)
-  $stn{$pi}{'TP'} = ($_[1] >> 10) & _1BIT;
+  $stn{$pi}{'TP'} = bits($_[1], 10, 1);
   say "  TP:     $TPtext[$stn{$pi}{'TP'}]" if ($dbg);
   &updateStatusRow();
 	
   # Program Type (PTY)
-  $stn{$pi}{'PTY'} = ($_[1] >> 5) & _5BIT;
+  $stn{$pi}{'PTY'} = bits($_[1], 5, 5);
 
   if (exists $stn{$pi}{'ECC'} && ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] // "") =~ /us|ca|mx/) {
     $stn{$pi}{'PTYmarkup'} = $ptynamesUS[$stn{$pi}{'PTY'}];
@@ -207,13 +199,13 @@ sub decodegroup {
 sub Group0A {
 
   # DI
-  my $DI_adr = 3 - ($_[1]   & _2BIT);
-  my $DI     = ($_[1] >> 2) & _1BIT;
+  my $DI_adr = 3 - bits($_[1], 0, 2);
+  my $DI     = bits($_[1], 2, 1);
   &parseDI($DI_adr, $DI);
 
   # TA, M/S
-  $stn{$pi}{'TA'} = ($_[1] >> 4) & _1BIT;
-  $stn{$pi}{'MS'} = ($_[1] >> 3) & _1BIT;
+  $stn{$pi}{'TA'} = bits($_[1], 4, 1);
+  $stn{$pi}{'MS'} = bits($_[1], 3, 1);
   say "  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]"  if ($dbg);
   say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}] if ($dbg);
 
@@ -224,7 +216,7 @@ sub Group0A {
     # AF
     my @af;
     for (0..1) {
-      $af[$_] = &parseAF(TRUE, $_[2] >> (8-$_*8) & _8BIT);
+      $af[$_] = &parseAF(TRUE, bits($_[2], 8-$_*8, 8));
       say "  AF:     $af[$_]" if ($dbg);
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
@@ -240,7 +232,7 @@ sub Group0A {
     if ($stn{$pi}{'denyPS'}) {
       say "          (Ignoring changes to PS)" if ($dbg);
     } else {
-      &set_ps_khars($pi, ($_[1] & _2BIT) * 2, ($_[3] >> 8) & _8BIT, ($_[3] >> 0) & _8BIT);
+      &set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
     }
   }
 }
@@ -250,13 +242,13 @@ sub Group0A {
 sub Group0B {
   
   # Decoder Identification
-  my $DI_adr = 3 - ($_[1]   & _2BIT);
-  my $DI     = ($_[1] >> 2) & _1BIT;
+  my $DI_adr = 3 - bits($_[1], 0, 2);
+  my $DI     = bits($_[1], 2, 1);
   &parseDI($DI_adr, $DI);
 
   # Traffic Announcements, Music/Speech
-  $stn{$pi}{'TA'} = ($_[1] >> 4) & _1BIT;
-  $stn{$pi}{'MS'} = ($_[1] >> 3) & _1BIT;
+  $stn{$pi}{'TA'} = bits($_[1], 4, 1);
+  $stn{$pi}{'MS'} = bits($_[1], 3, 1);
   say "  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]"  if ($dbg);
   say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}] if ($dbg);
 
@@ -270,7 +262,7 @@ sub Group0B {
     if ($stn{$pi}{'denyPS'}) {
       say "          (Ignoring changes to PS)" if ($dbg);
     } else {
-      &set_ps_khars($pi, ($_[1] & _2BIT) * 2, ($_[3] >> 8) & _8BIT, ($_[3] >> 0) & _8BIT);
+      &set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
     }
   }
 
@@ -288,70 +280,70 @@ sub Group1A {
 
   # Paging (M.2.1.1.2)
 	
-  say "  ══╡ Pager TNG: ".     (($_[1] >> 2) & _3BIT);
-  say "  ══╡ Pager interval: ".(($_[1] >> 0) & _2BIT);
+  say "  ══╡ Pager TNG: ".     bits($_[1], 2, 3);
+  say "  ══╡ Pager interval: ".bits($_[1], 0, 2);
 
   # Slow labeling codes
     
-  $stn{$pi}{'LA'} = ($_[2] >> 15) & _1BIT;
+  $stn{$pi}{'LA'} = bits($_[2], 15, 1);
   say "  LA:     ".($stn{$pi}{'LA'} ? "Program is linked ".(exists($stn{$pi}{'LSN'}) &&
                                       sprintf("to linkage set %Xh ",$stn{$pi}{'LSN'}))."at the moment" :
                                       "Program is not linked at the moment") if ($dbg);
    
-  my $slc_variant = ($_[2] >> 12) & _3BIT;
+  my $slc_variant = bits($_[2], 12, 3);
 
   given ($slc_variant) {
 
     when (0) {
-      say "  ══╡ Pager OPC: ".(($_[2] >> 8)  & _4BIT);
+      say "  ══╡ Pager OPC: ".bits($_[2], 8, 4);
 
       # No PIN, M.3.2.4.3
       if (@_ == 4 && ($_[3] >> 11) == 0) {
-        given (($_[3] >> 10) & _1BIT) {
+        given (bits($_[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            say "  ══╡ Pager PAC: ".(($_[3] >> 4)  & _6BIT);
-            say "  ══╡ Pager OPC: ".(($_[3] >> 0)  & _4BIT);
+            say "  ══╡ Pager PAC: ".bits($_[3], 4, 6);
+            say "  ══╡ Pager OPC: ".bits($_[3], 0, 4);
           }
           # Sub type 1
           when (1) {
-            given (($_[3] >> 8) & _2BIT) {
-              when (0) { say "  ══╡ Pager ECC: ".(($_[3] >> 0)  & _6BIT); }
-              when (3) { say "  ══╡ Pager CCF: ".(($_[3] >> 0)  & _4BIT); }
+            given (bits($_[3], 8, 2)) {
+              when (0) { say "  ══╡ Pager ECC: ".bits($_[3], 0, 6); }
+              when (3) { say "  ══╡ Pager CCF: ".bits($_[3], 0, 4); }
             }
           }
         }
       }
 
-      $stn{$pi}{'ECC'}    = ($_[2] >> 0)  & _8BIT;
-      $stn{$pi}{'CC'}     = ($pi   >> 12) & _4BIT;
+      $stn{$pi}{'ECC'}    = bits($_[2],  0, 8);
+      $stn{$pi}{'CC'}     = bits($pi,   12, 4);
       $ECClabel->set_markup("<span font='Mono 11px' foreground='$themef{fg}'>".($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] // "  ")."</span>");
       say "  ECC:    ".sprintf("%02X", $stn{$pi}{'ECC'}).
         (defined $countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] && " ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}])") if ($dbg);
     }
 
     when (1) {
-      $stn{$pi}{'tmcid'}       = ($_[2] >> 0) & _12BIT;
+      $stn{$pi}{'tmcid'}       = bits($_[2], 0, 12);
       say "  TMC ID: ". sprintf("%xh",$stn{$pi}{'tmcid'}) if ($dbg);
     }
 
     when (2) {
-      say "  ══╡ Pager OPC: ".(($_[2] >> 8)  & _4BIT);
-      say "  ══╡ Pager PAC: ".(($_[2] >> 0)  & _6BIT);
+      say "  ══╡ Pager OPC: ".bits($_[2], 8, 4);
+      say "  ══╡ Pager PAC: ".bits($_[2], 0, 6);
       
       # No PIN, M.3.2.4.3
       if (@_ == 4 && ($_[3] >> 11) == 0) {
-        given (($_[3] >> 10) & _1BIT) {
+        given (bits($_[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            say "  ══╡ Pager PAC: ".(($_[3] >> 4)  & _6BIT);
-            say "  ══╡ Pager OPC: ".(($_[3] >> 0)  & _4BIT);
+            say "  ══╡ Pager PAC: ".bits($_[3], 4, 6);
+            say "  ══╡ Pager OPC: ".bits($_[3], 0, 4);
           }
           # Sub type 1
           when (1) {
-            given (($_[3] >> 8) & _2BIT) {
-              when (0) { say "  ══╡ Pager ECC: ".(($_[3] >> 0)  & _6BIT); }
-              when (3) { say "  ══╡ Pager CCF: ".(($_[3] >> 0)  & _4BIT); }
+            given (bits($_[3], 8, 2)) {
+              when (0) { say "  ══╡ Pager ECC: ".bits($_[3], 0, 6); }
+              when (3) { say "  ══╡ Pager CCF: ".bits($_[3], 0, 4); }
             }
           }
         }
@@ -359,17 +351,17 @@ sub Group1A {
     }
 
     when (3) {
-      $stn{$pi}{'lang'}        = ($_[2] >> 0) & _8BIT;
+      $stn{$pi}{'lang'}        = bits($_[2], 0, 8);
       say "  Lang:   ". sprintf( ($stn{$pi}{'lang'} <= 127 ?
         "%Xh $langname[$stn{$pi}{'lang'}]" : "Unknown language %Xh"), $stn{$pi}{'lang'}) if ($dbg);
     }
 
     when (6) {
-      say "  Brodcaster data: ".sprintf("%03x", $_[2] & _12BIT);
+      say "  Brodcaster data: ".sprintf("%03x", bits($_[2], 0, 12));
     }
 
     when (7) {
-      $stn{$pi}{'EWS_channel'} = ($_[2] >> 0) & _12BIT;
+      $stn{$pi}{'EWS_channel'} = bits($_[2], 0, 12);
       say "  EWS ch: ". sprintf("%Xh",$stn{$pi}{'EWS_channel'}) if ($dbg);
     }
 
@@ -394,17 +386,17 @@ sub Group2A {
 
   return if (@_ < 3);
 
-  my $text_seg_addr        = (($_[1] >> 0) & _4BIT) * 4;
+  my $text_seg_addr        = bits($_[1], 0, 4) * 4;
   $stn{$pi}{'prev_textAB'} = $stn{$pi}{'textAB'};
-  $stn{$pi}{'textAB'}      = ($_[1] >> 4) & _1BIT;
+  $stn{$pi}{'textAB'}      = bits($_[1], 4, 1);
   my @chr                  = ();
 
-  $chr[0] = ($_[2] >> 8) & _8BIT;
-  $chr[1] = ($_[2] >> 0) & _8BIT;
+  $chr[0] = bits($_[2], 8, 8);
+  $chr[1] = bits($_[2], 0, 8);
 
   if (@_ == 4) {
-    $chr[2] = ($_[3] >> 8) & _8BIT;
-    $chr[3] = ($_[3] >> 0) & _8BIT;
+    $chr[2] = bits($_[3], 8, 8);
+    $chr[3] = bits($_[3], 0, 8);
   }
 
   # Page 26
@@ -427,10 +419,10 @@ sub Group2B {
 
   return if (@_ < 4);
 
-  my $text_seg_addr        = (($_[1] >> 0) & _4BIT) * 2;
+  my $text_seg_addr        = bits($_[1], 0, 4) * 2;
   $stn{$pi}{'prev_textAB'} = $stn{$pi}{'textAB'};
-  $stn{$pi}{'textAB'}      =  ($_[1] >> 4) & _1BIT;
-  my @chr                  = (($_[3] >> 8) & _8BIT, ($_[3] >> 0) & _8BIT);
+  $stn{$pi}{'textAB'}      = bits($_[1], 4, 1);
+  my @chr                  = (bits($_[3], 8, 8), bits($_[3], 0, 8));
 
   if (($stn{$pi}{'prev_textAB'} // -1) != $stn{$pi}{'textAB'}) {
     if ($stn{$pi}{'denyRTAB'} // FALSE) {
@@ -452,7 +444,7 @@ sub Group3A {
 
   return if (@_ < 4); 
 
-  my $gtype = ($_[1] & _5BIT);
+  my $gtype = bits($_[1], 0, 5);
  
   given ($gtype) { 
 
@@ -474,7 +466,7 @@ sub Group3A {
 
     default {
       $stn{$pi}{'ODAaid'}{$gtype} = $_[3];
-      say "  ODAgrp: ". (($_[1] >> 1) & _4BIT). ((($_[1] >> 0) & _1BIT) ? "B" : "A") if ($dbg);
+      say "  ODAgrp: ". bits($_[1], 1, 4) . (bits($_[1], 0, 1) ? "B" : "A") if ($dbg);
       say "  ODAapp: ". ($oda_app{$stn{$pi}{'ODAaid'}{$gtype}} // sprintf("%04Xh",$stn{$pi}{'ODAaid'}{$gtype})) if ($dbg);
     }
 
@@ -492,10 +484,10 @@ sub Group3A {
     # RT+
     when (0x4BD7) {
       $stn{$pi}{'hasRTplus'} = TRUE;
-      $stn{$pi}{'rtp_which'} = ($_[2] >> 13) & _1BIT;
-      $stn{$pi}{'CB'}        = ($_[2] >> 12) & _1BIT;
-      $stn{$pi}{'SCB'}       = ($_[2] >> 8)  & _4BIT;
-      $stn{$pi}{'templnum'}  =  $_[2]        & _8BIT;
+      $stn{$pi}{'rtp_which'} = bits($_[2], 13, 1);
+      $stn{$pi}{'CB'}        = bits($_[2], 12, 1);
+      $stn{$pi}{'SCB'}       = bits($_[2],  8, 4);
+      $stn{$pi}{'templnum'}  = bits($_[2],  0, 8);
       &updateStatusRow;
       say "  RT+ applies to ".($stn{$pi}{'rtp_which'} ? "enhanced RadioText" : "RadioText")        if ($dbg);
       say "  ".($stn{$pi}{'CB'} ? "Using template $stn{$pi}{'templnum'}" : "No template in use")   if ($dbg);
@@ -506,9 +498,9 @@ sub Group3A {
     when (0x6552) {
       $stn{$pi}{'haseRT'}     = TRUE;
       $stn{$pi}{'eRTbuf'}     = " " x 64 if (not exists $stn{$pi}{'eRTbuf'});
-      $stn{$pi}{'ert_isutf8'} =  $_[2]       & _1BIT;
-      $stn{$pi}{'ert_txtdir'} = ($_[2] >> 1) & _1BIT;
-      $stn{$pi}{'ert_chrtbl'} = ($_[2] >> 2) & _4BIT;
+      $stn{$pi}{'ert_isutf8'} = bits($_[2], 0, 1);
+      $stn{$pi}{'ert_txtdir'} = bits($_[2], 1, 1);
+      $stn{$pi}{'ert_chrtbl'} = bits($_[2], 2, 4);
       &updateStatusRow;
     }
     
@@ -527,12 +519,12 @@ sub Group4A {
   return if (@_ < 3);
   
   my $lto;
-  my $mjd = (($_[1] & _2BIT) << 15) | (($_[2] >> 1) & _15BIT);
+  my $mjd = (bits($_[1], 0, 2) << 15) | bits($_[2], 1, 15);
 
   if (@_ == 4) {
     # Local time offset
-    $lto =  (($_[3] >> 0) & _5BIT) / 2;
-    $lto = ((($_[3] >> 5) & _1BIT) ? -$lto : $lto);
+    $lto = (bits($_[3], 0, 5) / 2;
+    $lto = (bits($_[3], 5, 1) ? -$lto : $lto);
     $mjd = int($mjd + $lto / 24);
   }
 
@@ -548,8 +540,8 @@ sub Group4A {
     my $ltom = ($lto - int($lto)) * 60;
     $lto = int($lto);
       
-    my $hr = ( ((($_[2] >> 0) & _1BIT) << 4) | (($_[3] >> 12) & _4BIT) + $lto) % 24;
-    my $mn = ($_[3] >> 6) & _6BIT;
+    my $hr = ( ( bits($_[2], 0, 1) << 4) | bits($_[3], 12, 4) + $lto) % 24;
+    my $mn = bits($_[3], 6, 6);
 
     say "  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 && $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
           sprintf("%04d-%02d-%02dT%02d:%02d%+03d:%02d", $yr, $mo, $dy, $hr, $mn, $lto, $ltom) :
@@ -568,10 +560,10 @@ sub Group5A {
 
   return if (@_ < 4);
 
-  my $addr = $_[1] & _5BIT;
+  my $addr = bits($_[1], 0, 5);
   say "  TDChan: $addr" if ($dbg);
   say sprintf("  TDS:    %02x %02x %02x %02x",
-    ($_[2]>>8) & _8BIT, ($_[2]>>0) & _8BIT, ($_[3]>>8) & _8BIT, ($_[3]>>0) & _8BIT) if ($dbg);
+    bits($_[2], 8, 8), bits($_[2], 0, 8), bits($_[3], 8, 8),  bits($_[3], 0, 8)) if ($dbg);
 }
 
 # 5B: Transparent data channels or ODA
@@ -580,9 +572,9 @@ sub Group5B {
 
   return if (@_ < 4);
 
-  my $addr = $_[1] & _5BIT;
+  my $addr = bits($_[1], 0, 5);
   say "  TDChan: $addr" if ($dbg);
-  say sprintf("  TDS:    %02x %02x", ($_[3]>>8) & _8BIT, ($_[3]>>0) & _8BIT) if ($dbg);
+  say sprintf("  TDS:    %02x %02x", bits($_[3], 8, 8), bits($_[3], 0, 8)) if ($dbg);
 }
 
 
@@ -591,7 +583,7 @@ sub Group5B {
 sub Group6A {
 
   return if (@_ < 4);
-  say "  IH:     ". sprintf("%02x %04x %04x", ($_[1] >> 0) & _5BIT, $_[2], $_[3]) if ($dbg);
+  say "  IH:     ". sprintf("%02x %04x %04x", bits($_[1], 0, 5), $_[2], $_[3]) if ($dbg);
 
 }
 
@@ -600,7 +592,7 @@ sub Group6A {
 sub Group6B {
 
   return if (@_ < 4);
-  say "  IH:     ". sprintf("%02x %04x", ($_[1] >> 0) & _5BIT, $_[3]) if ($dbg);
+  say "  IH:     ". sprintf("%02x %04x", bits($_[1], 0, 5), $_[3]) if ($dbg);
 
 }
 
@@ -609,7 +601,7 @@ sub Group6B {
 sub Group7A {
   
   return if (@_ < 3);
-  say sprintf("  ══╡ Pager 7A: %02x %04x %04x",$_[1] & _5BIT, $_[2], $_[3]);
+  say sprintf("  ══╡ Pager 7A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]);
 }
 
 # 9A: Emergency warning systems or ODA
@@ -617,7 +609,7 @@ sub Group7A {
 sub Group9A {
 
   return if (@_ < 4);
-  say "  EWS:    ". sprintf("%02x %04x %04x", ($_[1] >> 0) & _5BIT, $_[2], $_[3]) if ($dbg);
+  say "  EWS:    ". sprintf("%02x %04x %04x", bits($_[1], 0, 5), $_[2], $_[3]) if ($dbg);
 
 }
 
@@ -625,24 +617,24 @@ sub Group9A {
 
 sub Group10A {
 
-  if ((($_[1] >> 4) & _1BIT) != ($stn{$pi}{'PTYNAB'} // -1)) {
+  if (bits($_[1], 4, 1) != ($stn{$pi}{'PTYNAB'} // -1)) {
     say "         (A/B flag change, text reset)" if ($dbg);
     $stn{$pi}{'PTYN'} = " " x 8;
   }
 
-  $stn{$pi}{'PTYNAB'} = ($_[1] >> 4) & _1BIT;
+  $stn{$pi}{'PTYNAB'} = bits($_[1], 4, 1);
 
   if (@_ >= 3) {
     my @chr = ();
-    $chr[0]  = ($_[2] >> 8) & _8BIT;
-    $chr[1]  = ($_[2] >> 0) & _8BIT;
+    $chr[0]  = bits($_[2], 8, 8);
+    $chr[1]  = bits($_[2], 0, 8);
 
     if (@_ == 4) {
-      $chr[2] = ($_[3] >> 8) & _8BIT;
-      $chr[3] = ($_[3] >> 0) & _8BIT;
+      $chr[2] = bits($_[3], 8, 8);
+      $chr[3] = bits($_[3], 0, 8);
     }
 
-    my $segaddr = ($_[1] >> 0) & _1BIT;
+    my $segaddr = bits($_[1], 0, 1);
 
     substr($stn{$pi}{'PTYN'}, $segaddr*4 + $_, 1) = $charbasic[$chr[$_]] for (0..$#chr);
         
@@ -656,7 +648,7 @@ sub Group10A {
 sub Group13A {
  
   return if (@_ < 4);
-  say sprintf("  ══╡ Pager 13A: %02x %04x %04x",$_[1] & _5BIT, $_[2], $_[3]);
+  say sprintf("  ══╡ Pager 13A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]);
 
 }
 
@@ -667,9 +659,9 @@ sub Group14A {
   return if (@_ < 4);
 
   $stn{$pi}{'hasEON'}    = TRUE;
-  my $eon_pi             =  $_[3];
-  $stn{$eon_pi}{'TP'}    = ($_[1] >> 4) & _1BIT;
-  my $eon_variant        = ($_[1] >> 0) & _4BIT;
+  my $eon_pi             = $_[3];
+  $stn{$eon_pi}{'TP'}    = bits($_[1], 4, 1);
+  my $eon_variant        = bits($_[1], 0, 4);
   &updateStatusRow;
   say "  Other Network" if ($dbg);
   say "    PI:     ".sprintf("%04X",$eon_pi).((exists($stn{$eon_pi}{'chname'})) && " $stn{$eon_pi}{'chname'})") if ($dbg);
@@ -680,29 +672,29 @@ sub Group14A {
     when ([0..3]) {
       print "  " if ($dbg);
       $stn{$eon_pi}{'PSbuf'} = " " x 8 unless (exists($stn{$eon_pi}{'PSbuf'}));
-      &set_ps_khars($eon_pi, $eon_variant*2, ($_[2] >> 8) & _8BIT, ($_[2] >> 0) & _8BIT);
+      &set_ps_khars($eon_pi, $eon_variant*2, bits($_[2], 8, 8), bits($_[2], 0, 8));
     }
 
     when (4) {
-      say "    AF:     ".&parseAF(TRUE, ($_[2] >> 8) & _8BIT);
-      say "    AF:     ".&parseAF(TRUE, ($_[2] >> 0) & _8BIT);
+      say "    AF:     ".&parseAF(TRUE, bits($_[2], 8, 8));
+      say "    AF:     ".&parseAF(TRUE, bits($_[2], 0, 8));
     }
 
     when ([5..8]) {
-      say "    AF:     Tuned frequency ".&parseAF(TRUE, ($_[2] >> 8) & _8BIT)." maps to ".
-                                         &parseAF(TRUE, ($_[2] >> 0) & _8BIT) if ($dbg);
+      say "    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
+                                         &parseAF(TRUE, bits($_[2], 0, 8)) if ($dbg);
     }
 
     when (9) {
-      say "    AF:     Tuned frequency ".&parseAF(TRUE, ($_[2] >> 8) & _8BIT)." maps to ".
-                                         &parseAF(FALSE,($_[2] >> 0) & _8BIT) if ($dbg);
+      say "    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
+                                         &parseAF(FALSE,bits($_[2], 0, 8)) if ($dbg);
     }
 
     when (12) {
-      $stn{$eon_pi}{'LA'}  = ($_[2] >> 15) & _1BIT;
-      $stn{$eon_pi}{'EG'}  = ($_[2] >> 14) & _1BIT;
-      $stn{$eon_pi}{'ILS'} = ($_[2] >> 13) & _1BIT;
-      $stn{$eon_pi}{'LSN'} = ($_[2] >> 1)  & _12BIT;
+      $stn{$eon_pi}{'LA'}  = bits($_[2], 15,  1);
+      $stn{$eon_pi}{'EG'}  = bits($_[2], 14,  1);
+      $stn{$eon_pi}{'ILS'} = bits($_[2], 13,  1);
+      $stn{$eon_pi}{'LSN'} = bits($_[2], 1,  12);
       if ($dbg && $stn{$eon_pi}{'LA'})  { say "    Link: Program is linked to linkage set ".sprintf("%03X",$stn{$eon_pi}{'LSN'}); }
       if ($dbg && $stn{$eon_pi}{'EG'})  { say "    Link: Program is member of an extended generic set"; }
       if ($dbg && $stn{$eon_pi}{'ILS'}) { say "    Link: Program is linked internationally"; }
@@ -710,8 +702,8 @@ sub Group14A {
     }
 
     when (13) {
-      $stn{$eon_pi}{'PTY'} = ($_[2] >> 11) & _5BIT;
-      $stn{$eon_pi}{'TA'}  = ($_[2] >> 0)  & _1BIT;
+      $stn{$eon_pi}{'PTY'} = bits($_[2], 11, 5);
+      $stn{$eon_pi}{'TA'}  = bits($_[2],  0, 1);
       say "    PTY:    $stn{$eon_pi}{'PTY'} ".
         (exists $stn{$eon_pi}{'ECC'} && ($countryISO[$stn{$pi}{'ECC'}][$stn{$eon_pi}{'CC'}] // "") =~ /us|ca|mx/ ? 
           $ptynamesUS[$stn{$eon_pi}{'PTY'}] :
@@ -741,8 +733,8 @@ sub Group14B {
   return if (@_ < 4);
 
   my $eon_pi          =  $_[3];
-  $stn{$eon_pi}{'TP'} = ($_[1] >> 4) & _1BIT;
-  $stn{$eon_pi}{'TA'} = ($_[1] >> 3) & _1BIT;
+  $stn{$eon_pi}{'TP'} = bits($_[1], 4, 1);
+  $stn{$eon_pi}{'TA'} = bits($_[1], 3, 1);
   say "  Other Network"                                               if ($dbg);
   say "    PI:     ".sprintf("%04X",$eon_pi).((exists($stn{$eon_pi}{'chname'})) ? " ".$stn{$eon_pi}{'chname'} : "") if ($dbg);
   say "    TP:     $TPtext[$stn{$eon_pi}{'TP'}]"                      if ($dbg);
@@ -755,13 +747,13 @@ sub Group14B {
 sub Group15B {
   
   # DI
-  my $DI_adr = 3 - ($_[1]   & _2BIT);
-  my $DI     = ($_[1] >> 2) & _1BIT;
+  my $DI_adr = 3 - bits($_[1], 0, 2);
+  my $DI     = bits($_[1], 2, 1);
   &parseDI($DI_adr, $DI);
 
   # TA, M/S
-  $stn{$pi}{'TA'} = ($_[1] >> 4) & _1BIT;
-  $stn{$pi}{'MS'} = ($_[1] >> 3) & _1BIT;
+  $stn{$pi}{'TA'} = bits($_[1], 4, 1);
+  $stn{$pi}{'MS'} = bits($_[1], 3, 1);
   say "  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]" if ($dbg);
   say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]    if ($dbg);
 
@@ -782,14 +774,14 @@ sub ODAGroup {
     given ($stn{$pi}{'ODAaid'}{$gtype}) {
 
       when ([0xCD46, 0xCD47]) { say sprintf("  ══╡ TMC msg %02x %04x %04x",
-                                $data[1] & _5BIT, $data[2], $data[3]); }
+                                bits($data[1], 0, 5), $data[2], $data[3]); }
 
       when (0x4BD7)           { &parse_RTp(@data); }
 
       when (0x6552)           { &parse_eRT(@data); }
 
       default                 { say sprintf("          Unimplemented ODA %04x: %02x %04x %04x",
-                                    $stn{$pi}{'ODAaid'}{$gtype}, $data[1] & _5BIT, $data[2], $data[3])
+                                    $stn{$pi}{'ODAaid'}{$gtype}, bits($data[1], 0, 5), $data[2], $data[3])
                                     if ($dbg); }
 
     }
@@ -859,14 +851,14 @@ sub set_rt_khars {
 # Enhanced RadioText
 
 sub parse_eRT {
-  my $addr = $_[1] & _5BIT;
+  my $addr = bits($_[1], 0, 5);
 
   if ($stn{$pi}{'ert_chrtbl'} == 0x00 &&
      !$stn{$pi}{'ert_isutf8'}         &&
       $stn{$pi}{'ert_txtdir'} == 0) {
     
     for (0..1) {
-      substr($stn{$pi}{'eRTbuf'}, 2*$addr+$_, 1) = decode("UCS-2LE", chr( ($_[2+$_]>>8) & _8BIT).chr($_[2+$_] & _8BIT));
+      substr($stn{$pi}{'eRTbuf'}, 2*$addr+$_, 1) = decode("UCS-2LE", chr(bits($_[2+$_], 8, 8)).chr(bits($_[2+$_], 0, 8)));
       $stn{$pi}{'eRTrcvd'}[2*$addr+$_]           = TRUE;
     }
   
@@ -918,14 +910,14 @@ sub parse_RTp {
   my @len;
 
   # P.5.2
-  my $itog  = ($_[1] >> 4) & _1BIT;
-  my $irun  = ($_[1] >> 3) & _1BIT;
-  $ctype[0] = (($_[1] & _3BIT) << 3) + (($_[2] >> 13) & _3BIT);
-  $ctype[1] = (($_[2] & _1BIT) << 5) + (($_[3] >> 11) & _5BIT);
-  $start[0] = ($_[2] >> 7) & _6BIT;
-  $start[1] = ($_[3] >> 5) & _6BIT;
-  $len[0]   = ($_[2] >> 1) & _6BIT;
-  $len[1]   =  $_[3] & _5BIT;
+  my $itog  = bits($_[1], 4, 1);
+  my $irun  = bits($_[1], 3, 1);
+  $ctype[0] = (bits($_[1], 0, 3) << 3) + bits($_[2], 13, 3);
+  $ctype[1] = (bits($_[2], 0, 1) << 5) + bits($_[3], 11, 5);
+  $start[0] = bits($_[2], 7, 6);
+  $start[1] = bits($_[3], 5, 6);
+  $len[0]   = bits($_[2], 1, 6);
+  $len[1]   = bits($_[3], 0, 5);
 
   say "  RadioText+: " if ($dbg);
 
@@ -950,8 +942,8 @@ sub parse_RTp {
 # Program Item Number
 
 sub parsepin {
-  my $d   = ($_[0] >> 11) & _5BIT;
-  return ($d ? sprintf("Day %d at %02d:%02d",$d, ($_[0] >> 6)  & _5BIT, ($_[0] >> 0)  & _6BIT ) : "Not in use");
+  my $d   = bits($_[0], 11, 5);
+  return ($d ? sprintf("Day %d at %02d:%02d",$d, bits($_[0], 6, 5), bits($_[0], 0, 6)) : "Not in use");
 }
 
 # Decoder Identification
@@ -1270,4 +1262,10 @@ sub initgui {
   $window->resize           (324, 118);
   
   $window->show_all();
+}
+
+# Extract len bits from int, starting at nth bit from the right
+# &bits (int, n, len)
+sub bits {
+  return (($_[0] >> $_[1]) & (2**$_[2] - 1));
 }
