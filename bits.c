@@ -1,4 +1,5 @@
-/* bits.c -- part of redsea RDS decoder (c) OH2-250
+/* bits.c -- part of redsea RDS decoder
+ * (c) Oona Räisänen OH2-250
  *
  * decodes physical layer:  get_bit()
  *         data-link layer: main()
@@ -25,6 +26,7 @@
 #include <math.h>
 
 #include "bits.h"
+
 
 // Demodulate next PSK bit from PCM stream
 bool get_bit() {
@@ -174,16 +176,26 @@ int main() {
   unsigned short message, pi=0, i=0;
   unsigned char  j, datalen=0, buf=0, prevsync=0, lefttoread=26;
   bool           syncb[5] = {false};
-#ifdef DOCORRECT
-  unsigned int   l;
-  unsigned short SyndReg, err;
-#endif
 
   // Offset words A, B, C, C', D
   unsigned short offset[5] = { 0x0FC, 0x198, 0x168, 0x350, 0x1B4 };
 
   // Map offset numbers to block numbers
   unsigned char  ofs2block[5] = { 0, 1, 2, 2, 3 };
+
+#ifdef DOCORRECT
+  unsigned short SyndReg;
+
+  // Generate error vector lookup table for all correctable errors
+  unsigned int ErrLookup[1024] = {0};
+  unsigned int patt, err;
+  for (patt = 0x01; patt <= 0x1F; patt += 2) {
+    for (i=0; i <= 16-(int)(log2(patt)+1); i++) {
+      err = patt << i;
+      ErrLookup[syndrome(0x00005b9 ^ (err<<10))] = err;
+    }
+  }
+#endif
 
   while(1) {
 
@@ -272,20 +284,11 @@ int main() {
      
         SyndReg = syndrome(block ^ offset[expofs]);
 
-        for (k = 0; k < 15; k ++) {
-          if (k > 0) {
-            l       =  SyndReg &  0x200;
-            SyndReg = (SyndReg << 1) & _10BIT;
-            if (l)     SyndReg ^= 0x1B9;
-          }
-          if ((SyndReg & _5BIT) == 0) {
-            err           = (SyndReg >> k)  & _16BIT;
-            message       = (block   >> 10) ^ err;
-            syncb[expofs] = true;
-            break;
-          }
-
+        if (ErrLookup[SyndReg] != 0) {
+          message       = (block >> 10) ^ ErrLookup[SyndReg];
+          syncb[expofs] = true;
         }
+
 #endif
 
         // If still no sync pulse

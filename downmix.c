@@ -1,11 +1,12 @@
-/* downmix.c -- part of redsea RDS decoder (c) OH2-250
+/* downmix.c -- part of redsea RDS decoder
+ * (c) Oona Räisänen OH2-250
  *
  * 19 kHz downconverter
  * PCM is 48k 16bit single-channel little-endian signed-integer
  *
  * Creates heterodynes of the RDS signal; result needs to be downpass filtered
  *
- * */
+ */
 
 #include <stdio.h>
 #include <stdlib.h>

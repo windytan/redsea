@@ -1,11 +1,9 @@
 #!/usr/bin/perl
 
-# lcd.pl -- part of redsea RDS decoder (c) OH2-250
+# redsea RDS decoder (c) OH2-250
 #
-# decodes session & presentation layers & displays GUI
 #
 # Page numbers refer to IEC 62106, Edition 2
-#
 #
 
 $| ++;
@@ -14,12 +12,14 @@ use 5.010;
 use warnings;
 use utf8;
 
-use IO::Select;
-my  $input = IO::Select->new(\*STDIN);
+#use IO::Select;
+#my  $input = IO::Select->new(\*STDIN);
 
-use Gtk2    qw( -init );
+use Gtk2    qw( -init -threads-init );
+use threads;
+use threads::shared;
 use Encode 'decode';
-use open   ':utf8';
+#use open   ':utf8';
 
 binmode(STDOUT, ":utf8");
 
@@ -27,21 +27,334 @@ binmode(STDOUT, ":utf8");
 use constant FALSE => 0;
 use constant TRUE  => 1;
 
+use constant {
+  A  => 0,
+  B  => 1,
+  C  => 2,
+  Ci => 3,
+  D  => 4,
+};
+
+use constant {
+  _5BIT  => 0x000001F,
+  _10BIT => 0x00003FF,
+  _16BIT => 0x000FFFF,
+  _26BIT => 0x3FFFFFF,
+  _28BIT => 0xFFFFFFF,
+};
+  
+
 our $dbg   = TRUE;
-our $theme = "black";
+our $theme = "blue";
+
+# 0: none.  1: short format.  2: verbose format.
+our $debug = 1;
 
 # Some terminal control chars
 use constant   RESET => "\x1B[0m";
 use constant REVERSE => "\x1B[7m";
 
+open (SOXIN, "sox -q -r 48000 -b 16 -c 2 -t alsa hw:CARD=Theater,DEV=0 -r 6000 -t raw -e signed-integer -b 16 -c 2 - |") or die ($!);
+#open (SOXIN, "sox -q /home/windy/Audio/paljondataa.wav -r 6000 -t raw -e signed-integer -b 16 -c 2 - |") or die ($!);
+
+my $hasDta    :shared;
+my $hasClk    :shared;
+my $pi        :shared;
+my $insync    :shared;
+my @GrpBuffer :shared;
+$prev_dta_samp = $prev_clk_samp = $acc = $clkSilent = $dtaSilent = $pi = 0;
+$hasDta = $hasClk = $insync = FALSE;
+
 &initdata;
 &initgui;
 
-Glib::Timeout->add(300, \&update_displays);
+threads->new(\&get_grp);
+
+Glib::Timeout->add(300,  \&update_displays);
 
 Gtk2->main;
 
 exit(0);
+
+# Next bit from IC
+sub get_bit {
+  my ($bit, $rising, $falling);
+  my $clockEdge = FALSE;
+
+  while (TRUE) {
+    read (SOXIN, $dta_samp, 2) or die ($!);
+    read (SOXIN, $clk_samp, 2) or die ($!);
+
+    $dta_samp = unpack("s",$dta_samp);
+    $clk_samp = unpack("s",$clk_samp);
+
+    # Monitor cable connection
+   
+    if ($hasClk) {
+      $clkSilent = ($clk_samp < 0x100) ? $clkSilent + 1 : 0;
+      if ($clkSilent > 30) {
+        $hasClk = FALSE;
+        &updateStatusRow;
+      }
+    } else {
+      if ($clk_samp > 0x100) {
+        $hasClk    = TRUE;
+        &updateStatusRow;
+        $clkSilent = 0;
+      }
+    }
+    if ($hasDta) {
+      $dtaSilent = ($dta_samp < 0x100) ? $dtaSilent + 1 : 0;
+      if ($dtaSilent > 50) {
+        $hasDta = FALSE;
+        &updateStatusRow;
+      }
+    } else {
+      if ($dta_samp > 0x100) {
+        $hasDta    = TRUE;
+        &updateStatusRow;
+        $dtaSilent = 0;
+      }
+    }
+
+    # Actual decoding
+
+    $rising = $falling = FALSE;
+
+    $rising  = TRUE if ($prev_clk_samp <  0 && $clk_samp >= 0);
+    $falling = TRUE if ($prev_clk_samp >= 0 && $clk_samp <  0);
+
+    # Relevant clock edge
+    if (($dataOnRising && $rising) || (!$dataOnRising && $falling)) {
+      $clockEdge = TRUE;
+    }
+
+    # Data changed on unexpected clock
+    if ($prev_dta_samp * $dta_samp < 0) {
+      if (($dataOnRising && $falling) || (!$dataOnRising && $rising)) {
+        $dataOnRising = !$dataOnRising;
+        $clockEdge = TRUE;
+      }
+    }
+
+    $prev_clk_samp = $clk_samp;
+    $prev_dta_samp = $dta_samp;
+
+    # Break on data
+    if ($clockEdge) {
+      $bit = ($acc > 0) ? 1 : 0;
+      $acc = $dta_samp;
+      last;
+    }
+
+    $acc += $dta_samp;
+  }
+
+  $bit;
+}
+
+# Calculate the syndrome of a 26-bit vector
+sub syndrome {
+  my $vector = shift;
+
+  my ($k, $l, $bit);
+  my $SyndReg = 0x000;
+
+  for $k (reverse(0..25)) {
+    $bit      = ($vector  & (1 << $k));
+    $l        = ($SyndReg & 0x200);      # Store lefmost bit of register
+    $SyndReg  = ($SyndReg << 1) & 0x3FF; # Rotate register
+    $SyndReg ^= 0x31B if ($bit);         # Premultiply input by x^325 mod g(x)
+    $SyndReg ^= 0x1B9 if ($l);           # Division mod 2 by g(x)
+  }
+
+  $SyndReg;
+}
+
+
+# When a block has uncorrectable errors, dump the group received so far
+sub blockerror {
+  my $datalen = 0;
+
+  if ($rcvd[A]) {
+    $datalen = 1;
+
+    if ($rcvd[B]) {
+      $datalen = 2;
+
+      if ($rcvd[C] || $rcvd[Ci]) {
+        $datalen = 3;
+      }
+    }
+    my @newgrp :shared;
+    @newgrp = @GrpData[0..$datalen-1];
+    lock (@GrpBuffer);
+    push (@GrpBuffer, \@newgrp);
+  } elsif ($rcvd[Ci]) {
+    print "Ci\n";
+    my @newgrp :shared;
+    @newgrp = $GrpData[2];
+    lock (@GrpBuffer);
+    push (@GrpBuffer, \@newgrp);
+  }
+
+  $errblock[$BlkPointer % 50] = TRUE;
+
+  $erbloks  = 0;
+  $erbloks += ($_ // 0) for (@errblock);
+
+  # Sync is lost when >45 out of last 50 blocks are erroneous (C.1.2)
+  if ($insync && $erbloks > 45) {
+    $insync   = FALSE;
+    @errblock = ();
+    &updateStatusRow;
+  }
+
+  @rcvd = ();
+}
+
+sub get_grp {
+
+  my $block = my $wideblock = my $bitcount = my $prevbitcount = 0;
+  my ($dist, $message);
+  my $pi = my $i = 0;
+  my $j = my $datalen = my $buf = my $prevsync = 0;
+  my $lefttoread = 26;
+  my @syncb;
+
+  my @offset    = (0x0FC, 0x198, 0x168, 0x350, 0x1B4);
+  my @ofs2block = (0,1,2,2,3);
+  my ($SyndReg,$err);
+  my @ErrLookup;
+
+  # Generate error vector lookup table for all correctable errors
+  for (0..15) {
+    $err = 1 << $_;
+    $ErrLookup[&syndrome(0x00004b9 ^ ($err<<10))] = $err;
+  }
+
+  while (TRUE) {
+
+    # Compensate for clock slip corrections
+    $bitcount += 26-$lefttoread;
+
+    # Read from radio
+    for ($i=0; $i < ($insync ? $lefttoread : 1); $i++, $bitcount++) {
+      $wideblock = ($wideblock << 1) + &get_bit();
+    }
+
+
+    $lefttoread = 26;
+    $wideblock &= _28BIT;
+
+    $block = ($wideblock >> 1) & _26BIT;
+    
+    # Find the offsets for which the syndrome is zero
+    $syncb[$_] = (syndrome($block ^ $offset[$_]) == 0) for (A .. D);
+
+    # Acquire sync
+
+    if (!$insync) {
+
+      if ($syncb[A] | $syncb[B] | $syncb[C] | $syncb[Ci] | $syncb[D]) {
+
+        for (A .. D) {
+          if ($syncb[$_]) {
+            $dist = $bitcount - $prevbitcount;
+
+            if (   $dist % 26 == 0
+                && $dist <= 156
+                && ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$_]) {
+              $insync = TRUE;
+              $expofs = $_;
+              &updateStatusRow;
+              last;
+            } else {
+              $prevbitcount = $bitcount;
+              $prevsync     = $_;
+            }
+          }
+        }
+      }
+    }
+
+    # Synchronous decoding
+
+    if ($insync) {
+
+      $BlkPointer ++;
+
+      $message = $block >> 10;
+
+      # If expecting C but we only got a Ci sync pulse, we have a Ci block
+      $expofs = Ci if ($expofs == C && !$syncb[C] && $syncb[Ci]);
+
+      # If this block offset won't give a sync pulse
+      if (!$syncb[$expofs]) {
+
+        # If it's a correct PI, the error was probably in the check bits and hence is ignored
+        if      ($expofs == A && $message == $pi && $pi != 0) {
+          $syncb[A]  = TRUE;
+        } elsif ($expofs == C && $message == $pi && $pi != 0) {
+          $syncb[Ci] = TRUE;
+        }
+
+        # Detect & correct clock slips (C.1.2)
+
+        elsif   ($expofs == A && $pi != 0 && ( ($wideblock >> 12) & _16BIT ) == $pi) {
+          $message     = $pi;
+          $wideblock >>= 1;
+          $syncb[A]    = TRUE;
+        } elsif ($expofs == A && $pi != 0 && ( ($wideblock >> 10) & _16BIT ) == $pi) {
+          $message     = $pi;
+          $wideblock   = ($wideblock << 1) + get_bit();
+          $syncb[A]    = TRUE;
+          $lefttoread  = 25;
+        }
+
+        # Detect & correct burst errors (B.2.2)
+
+        $SyndReg = syndrome($block ^ $offset[$expofs]);
+
+        if (defined $ErrLookup[$SyndReg]) {
+          $message        = ($block >> 10) ^ $ErrLookup[$SyndReg];
+          $syncb[$expofs] = TRUE;
+        }
+
+        # If still no sync pulse
+        &blockerror() if (!$syncb[$expofs]);
+      }
+
+      # Error-free block received
+      if ($syncb[$expofs]) {
+
+        $GrpData[$ofs2block[$expofs]] = $message;
+        $errblock[$BlkPointer % 50]   = FALSE;
+        $rcvd[$expofs]                = TRUE;
+
+        $pi = $message if ($expofs == A);
+
+        # If a complete group is received
+        if ($rcvd[A] && $rcvd[B] && ($rcvd[C] || $rcvd[Ci]) && $rcvd[D]) {
+
+          # Push it to buffer
+          my @newgrp :shared;
+          @newgrp = @GrpData;
+          lock (@GrpBuffer);
+          push (@GrpBuffer, \@newgrp);
+        }
+      }
+
+      # The block offset we're expecting next
+      $expofs = ($expofs == C ? D : ($expofs + 1) % 5);
+
+      if ($expofs == A) {
+        @rcvd = ();
+      }
+    }
+  }
+  FALSE;
+}
 
 
 # 3 times a second
@@ -58,43 +371,32 @@ sub update_displays {
   
   # RT scroll  
   if (defined $pi && exists $stn{$pi}{'RTscrollbuf'}) {
-    if (length($stn{$pi}{'RTscrollbuf'}) > 32) {
-      $RTscrollptr ++;
-      $RTscrollptr = 0 if ($RTscrollptr >= length($stn{$pi}{'RTscrollbuf'}));
-      $markup = substr($stn{$pi}{'RTbuf'},$RTscrollptr). "     ";
-      $markup .= substr($stn{$pi}{'RTbuf'},0,$RTscrollptr-5);
+    ($cropped = $stn{$pi}{'RTscrollbuf'}) =~ s/ +$//;
+    if (length($cropped) > 32) {
+
+      $concat = $cropped . "  " . $cropped;
+
+      $RTscrollptr = ($RTscrollptr + 1) % (length($cropped)+2);
+
+      $markup = substr($concat,$RTscrollptr,32);
     } else {
-      $markup = $stn{$pi}{'RTscrollbuf'}. " " x (32-length($stn{$pi}{'RTscrollbuf'}));
+      $markup = $cropped. " " x (32-length($cropped));
     }
     $markup =~ s/&/&amp;/g;
     $markup =~ s/</&lt;/g;
     $markup =~ s/↵/ /g;
-    $RTlabel->set_markup("<span font='Mono 15px' foreground='$themef{fg}'>$markup</span>");
+    $RTlabel->set_markup("<span font='Mono 15px' foreground='".($stn{$pi}{'hasFullRT'} ? $themef{fg}: $themef{dim}).
+                         "'>$markup</span>");
   }
 
 
   # Read from data-link layer
-
-  while ($input->can_read(0) && read(STDIN, $dlen, 1)) {
-
-    given (ord($dlen)) {
-
-      when ([1..4]) {
-        read(STDIN, $dta, 2*ord($dlen));
-        decodegroup(unpack("S*", $dta));
-      }
-
-      when (0) {
-        $insync = FALSE;
-        &updateStatusRow if (defined $pi);
-      }
-
-      when (255) {
-        $insync = TRUE;
-      }
-
+  {
+    lock @GrpBuffer;
+    while (scalar (@GrpBuffer) > 0) {
+      @da = @{shift @GrpBuffer};
+      decodegroup(@da);
     }
-
   }
 
   return TRUE;
@@ -112,12 +414,15 @@ sub decodegroup {
   if (@_ >= 2) {
     $gtype      = bits($_[1], 11, 5);
     $fullgtype  = bits($_[1], 12, 4) . ( bits($_[1], 11, 1) ? "B" : "A" );
-    say (@_ == 4 ? "Group $fullgtype: $groupname[$gtype]" : "(partial group $fullgtype, ".scalar(@_)." blocks)") if ($dbg);
+    dbg (
+      (@_ == 4 ? "Group $fullgtype: $groupname[$gtype]" : "(partial group $fullgtype, ".scalar(@_)." blocks)"),
+      (@_ == 4 ? sprintf(" %3s ",$fullgtype) : sprintf("(%3s)",$fullgtype))) if ($debug);
   } else {
-    say "(PI only)" if ($dbg);
+    dbg ("(PI only)","     ") if ($debug);
   }
   
-  say "  PI:     ".sprintf("%04X",$newpi) .((exists($stn{$newpi}{'chname'})) ? " ".$stn{$newpi}{'chname'} : "") if ($dbg);
+  dbg (("  PI:     ".sprintf("%04X",$newpi) .((exists($stn{$newpi}{'chname'})) ? " ".$stn{$newpi}{'chname'} : ""),
+      sprintf(" %04X",$newpi))) if ($debug);
 
   # PI is repeated -> confirmed
   if ($newpi == $ednewpi) {
@@ -130,24 +435,26 @@ sub decodegroup {
       if (exists $stn{$pi}{'presetPSbuf'}) {
         ($stn{$pi}{'PSmarkup'} = $stn{$pi}{'presetPSbuf'}) =~ s/&/&amp;/g;
         $stn{$pi}{'PSmarkup'}  =~ s/</&lt;/g;
-        $PSlabel->set_markup("<span font='Mono Bold 25px' foreground='$themef{fg}'>$stn{$pi}{'PSmarkup'}</span>");
+        $PSlabel->set_markup("<span font='Mono Bold 25px' foreground='$themef{dim}'>$stn{$pi}{'PSmarkup'}</span>");
+        ($PStitle = $stn{$pi}{'presetPSbuf'}) =~ s/(^ +| +$)//g;
+        $window-> set_title ("$PStitle - redsea" );
       }
     }
 
   } elsif ($newpi != ($pi // 0)) {
-    say "          (repeat will confirm PI change)\n" if ($dbg);
+    dbg ("          (repeat will confirm PI change)","?\n") if ($debug);
     return;
   }
 
   # Nothing more to be done for PI only
   if (@_ == 1) {
-    print "\n" if ($dbg);
+    dbg ("\n","\n") if ($debug);
     return;
   }
 
   # Traffic Program (TP)
   $stn{$pi}{'TP'} = bits($_[1], 10, 1);
-  say "  TP:     $TPtext[$stn{$pi}{'TP'}]" if ($dbg);
+  dbg ("  TP:     $TPtext[$stn{$pi}{'TP'}]"," TP:$stn{$pi}{'TP'}") if ($debug);
   &updateStatusRow();
 	
   # Program Type (PTY)
@@ -155,14 +462,16 @@ sub decodegroup {
 
   if (exists $stn{$pi}{'ECC'} && ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] // "") =~ /us|ca|mx/) {
     $stn{$pi}{'PTYmarkup'} = $ptynamesUS[$stn{$pi}{'PTY'}];
-    say "  PTY:    ", sprintf("%02d",$stn{$pi}{'PTY'})." $ptynamesUS[$stn{$pi}{'PTY'}]" if ($dbg);
+    dbg ("  PTY:    ". sprintf("%02d",$stn{$pi}{'PTY'})." $ptynamesUS[$stn{$pi}{'PTY'}]",
+         " PTY:".sprintf("%02d",$stn{$pi}{'PTY'})) if ($debug);
   } else {
-    $stn{$pi}{'PTYmarkup'} = $ptynames[$stn{$pi}{'PTY'}];
-    say "  PTY:    ", sprintf("%02d",$stn{$pi}{'PTY'})." $ptynames[$stn{$pi}{'PTY'}]"   if ($dbg);
+    $stn{$pi}{'PTYmarkup'} = $ptynamesFI[$stn{$pi}{'PTY'}];
+    dbg ("  PTY:    ". sprintf("%02d",$stn{$pi}{'PTY'})." $ptynamesFI[$stn{$pi}{'PTY'}]",
+         " PTY:".sprintf("%02d",$stn{$pi}{'PTY'})) if ($debug);
   }
   $stn{$pi}{'PTYmarkup'} =~ s/&/&amp;/g;
 
-  $PTYlabel->set_markup("<span font='Mono 12px' foreground='$themef{fg}'>$stn{$pi}{'PTYmarkup'}</span>");
+  $PTYlabel->set_markup("<span font='Mono 9px' foreground='$themef{fg}'>".sprintf("%02d",$stn{$pi}{'PTY'})." $stn{$pi}{'PTYmarkup'}</span>");
 
   # Data specific to the group type
 
@@ -190,7 +499,7 @@ sub decodegroup {
     default   { &ODAGroup($gtype, @_); }
   }
  
-  print("\n") if ($dbg);
+  dbg("\n","\n") if ($debug);
 
 }
 
@@ -206,8 +515,8 @@ sub Group0A {
   # TA, M/S
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
   $stn{$pi}{'MS'} = bits($_[1], 3, 1);
-  say "  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]"  if ($dbg);
-  say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}] if ($dbg);
+  dbg ("  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]"," TA:$stn{$pi}{'TA'}")  if ($debug);
+  dbg ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]," MS:".qw( S M)[$stn{$pi}{'MS'}]) if ($debug);
 
   $stn{$pi}{'hasMS'} = TRUE;
   &updateStatusRow;
@@ -217,7 +526,7 @@ sub Group0A {
     my @af;
     for (0..1) {
       $af[$_] = &parseAF(TRUE, bits($_[2], 8-$_*8, 8));
-      say "  AF:     $af[$_]" if ($dbg);
+      dbg ("  AF:     $af[$_]"," AF:$af[$_]") if ($debug);
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
       ($stn{$pi}{'freq'} = $af[1]) =~ s/ [kM]Hz//;
@@ -230,7 +539,7 @@ sub Group0A {
     # Program Service Name (PS)
 
     if ($stn{$pi}{'denyPS'}) {
-      say "          (Ignoring changes to PS)" if ($dbg);
+      dbg ("          (Ignoring changes to PS)"," denyPS") if ($debug);
     } else {
       &set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
     }
@@ -249,8 +558,8 @@ sub Group0B {
   # Traffic Announcements, Music/Speech
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
   $stn{$pi}{'MS'} = bits($_[1], 3, 1);
-  say "  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]"  if ($dbg);
-  say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}] if ($dbg);
+  dbg ("  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]"," TA:$stn{$pi}{'TA'}")  if ($debug);
+  dbg ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]," MS:".qw( S M)[$stn{$pi}{'MS'}]) if ($debug);
 
   $stn{$pi}{'hasMS'} = TRUE;
   &updateStatusRow;
@@ -260,7 +569,7 @@ sub Group0B {
     # Program Service name
 
     if ($stn{$pi}{'denyPS'}) {
-      say "          (Ignoring changes to PS)" if ($dbg);
+      dbg ("          (Ignoring changes to PS)"," denyPS") if ($debug);
     } else {
       &set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
     }
@@ -276,7 +585,7 @@ sub Group1A {
 
   # Program Item Number
 
-  say "  PIN:    ". &parsepin($_[3]) if ($dbg);
+  dbg ("  PIN:    ". &parsepin($_[3])," PIN:".&parsepin($_[3])) if ($debug);
 
   # Paging (M.2.1.1.2)
 	
@@ -286,9 +595,10 @@ sub Group1A {
   # Slow labeling codes
     
   $stn{$pi}{'LA'} = bits($_[2], 15, 1);
-  say "  LA:     ".($stn{$pi}{'LA'} ? "Program is linked ".(exists($stn{$pi}{'LSN'}) &&
+  dbg ("  LA:     ".($stn{$pi}{'LA'} ? "Program is linked ".(exists($stn{$pi}{'LSN'}) &&
                                       sprintf("to linkage set %Xh ",$stn{$pi}{'LSN'}))."at the moment" :
-                                      "Program is not linked at the moment") if ($dbg);
+                                      "Program is not linked at the moment"),
+       " LA:".$stn{$pi}{'LA'}.(exists($stn{$pi}{'LSN'}) && sprintf("0x%X",$stn{$pi}{'LSN'}))) if ($debug);
    
   my $slc_variant = bits($_[2], 12, 3);
 
@@ -317,14 +627,19 @@ sub Group1A {
 
       $stn{$pi}{'ECC'}    = bits($_[2],  0, 8);
       $stn{$pi}{'CC'}     = bits($pi,   12, 4);
-      $ECClabel->set_markup("<span font='Mono 11px' foreground='$themef{fg}'>".($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] // "  ")."</span>");
-      say "  ECC:    ".sprintf("%02X", $stn{$pi}{'ECC'}).
-        (defined $countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] && " ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}])") if ($dbg);
+      $ECClabel->set_markup("<span font='Mono 11px' foreground='$themef{fg}'>".
+                            ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] // "--")."</span>");
+      dbg (("  ECC:    ".sprintf("%02X", $stn{$pi}{'ECC'}).
+        (defined $countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] &&
+              " ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}])"),
+           (" ECC:".sprintf("%02X", $stn{$pi}{'ECC'}).
+        (defined $countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] &&
+              "[$countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}]]" )))) if ($debug);
     }
 
     when (1) {
       $stn{$pi}{'tmcid'}       = bits($_[2], 0, 12);
-      say "  TMC ID: ". sprintf("%xh",$stn{$pi}{'tmcid'}) if ($dbg);
+      dbg ("  TMC ID: ". sprintf("%xh",$stn{$pi}{'tmcid'}), " TMCID:".sprintf("%xh",$stn{$pi}{'tmcid'})) if ($debug);
     }
 
     when (2) {
@@ -352,8 +667,10 @@ sub Group1A {
 
     when (3) {
       $stn{$pi}{'lang'}        = bits($_[2], 0, 8);
-      say "  Lang:   ". sprintf( ($stn{$pi}{'lang'} <= 127 ?
-        "%Xh $langname[$stn{$pi}{'lang'}]" : "Unknown language %Xh"), $stn{$pi}{'lang'}) if ($dbg);
+      dbg ("  Lang:   ". sprintf( ($stn{$pi}{'lang'} <= 127 ?
+        "0x%X $langname[$stn{$pi}{'lang'}]" : "Unknown language %Xh"), $stn{$pi}{'lang'}),
+           " LANG:".sprintf( ($stn{$pi}{'lang'} <= 127 ?
+                      "0x%X[$langname[$stn{$pi}{'lang'}]]" : "%Hx[?]"), $stn{$pi}{'lang'})) if ($debug);
     }
 
     when (6) {
@@ -362,7 +679,7 @@ sub Group1A {
 
     when (7) {
       $stn{$pi}{'EWS_channel'} = bits($_[2], 0, 12);
-      say "  EWS ch: ". sprintf("%Xh",$stn{$pi}{'EWS_channel'}) if ($dbg);
+      say "  EWS ch: ". sprintf("0x%X",$stn{$pi}{'EWS_channel'}) if ($dbg);
     }
 
     default {
@@ -377,7 +694,7 @@ sub Group1A {
 sub Group1B {
 
   return if (@_ < 4);
-  say "  PIN:    ". &parsepin($_[3]) if ($dbg);
+  dbg ("  PIN:    ". &parsepin($_[3])," PIN:$_[3]") if ($debug);
 }
   
 # 2A: RadioText (64 characters)
@@ -402,9 +719,9 @@ sub Group2A {
   # Page 26
   if (($stn{$pi}{'prev_textAB'} // -1) != $stn{$pi}{'textAB'}) {
     if ($stn{$pi}{'denyRTAB'} // FALSE) {
-      say "          (Ignoring A/B flag change)"    if ($dbg);
+      dbg ("          (Ignoring A/B flag change)"," denyRTAB") if ($debug);
     } else {
-      say "          (A/B flag change; text reset)" if ($dbg);
+      dbg ("          (A/B flag change; text reset)"," RT_RESET") if ($debug);
       $stn{$pi}{'RTbuf'}  = " " x 64;
       $stn{$pi}{'RTrcvd'} = ();
     }
@@ -426,9 +743,9 @@ sub Group2B {
 
   if (($stn{$pi}{'prev_textAB'} // -1) != $stn{$pi}{'textAB'}) {
     if ($stn{$pi}{'denyRTAB'} // FALSE) {
-      say "          (Ignoring A/B flag change)" if ($dbg);
+      dbg ("          (Ignoring A/B flag change)"," denyRTAB") if ($debug);
     } else {
-      say "          (A/B flag change; text reset)" if ($dbg);
+      dbg ("          (A/B flag change; text reset)"," RT_RESET") if ($debug);
       $stn{$pi}{'RTbuf'}  = " " x 64;
       $stn{$pi}{'RTrcvd'} = ();
     }
@@ -449,25 +766,27 @@ sub Group3A {
   given ($gtype) { 
 
     when (0) {
-      say "  ODAapp: ". ($oda_app{$_[3]} // sprintf("%04Xh",$_[3])) if ($dbg);
-      say "          is not carried in associated group"            if ($dbg);
+      dbg ("  ODAapp: ". ($oda_app{$_[3]} // sprintf("0x%04X",$_[3])), " ODAapp:".sprintf("0x%04X",$_[3])) if ($debug);
+      dbg ("          is not carried in associated group","[not_carried]") if ($debug);
       return;
     }
 
     when (32) {
-      say "  ODA:    Temporary data fault (Encoder status)"         if ($dbg);
+      dbg ("  ODA:    Temporary data fault (Encoder status)"," ODA:enc_err") if ($debug);
       return;
     }
 
     when ([0..6, 8, 20, 28, 29, 31]) {
-      say "  ODA:    (Illegal Application Group Type)"              if ($dbg);
+      dbg ("  ODA:    (Illegal Application Group Type)"," ODA:err") if ($debug);
       return;
     }
 
     default {
       $stn{$pi}{'ODAaid'}{$gtype} = $_[3];
-      say "  ODAgrp: ". bits($_[1], 1, 4) . (bits($_[1], 0, 1) ? "B" : "A") if ($dbg);
-      say "  ODAapp: ". ($oda_app{$stn{$pi}{'ODAaid'}{$gtype}} // sprintf("%04Xh",$stn{$pi}{'ODAaid'}{$gtype})) if ($dbg);
+      dbg ("  ODAgrp: ". bits($_[1], 1, 4) . (bits($_[1], 0, 1) ? "B" : "A"),
+           " ODAgrp:". bits($_[1], 1, 4) . (bits($_[1], 0, 1) ? "B" : "A")) if ($debug);
+      dbg ("  ODAapp: ". ($oda_app{$stn{$pi}{'ODAaid'}{$gtype}} // sprintf("%04Xh",$stn{$pi}{'ODAaid'}{$gtype})),
+           " ODAapp:". sprintf("0x%04X",$stn{$pi}{'ODAaid'}{$gtype})) if ($debug);
     }
 
   }
@@ -523,7 +842,7 @@ sub Group4A {
 
   if (@_ == 4) {
     # Local time offset
-    $lto = (bits($_[3], 0, 5) / 2;
+    $lto =  bits($_[3], 0, 5) / 2;
     $lto = (bits($_[3], 5, 1) ? -$lto : $lto);
     $mjd = int($mjd + $lto / 24);
   }
@@ -543,13 +862,19 @@ sub Group4A {
     my $hr = ( ( bits($_[2], 0, 1) << 4) | bits($_[3], 12, 4) + $lto) % 24;
     my $mn = bits($_[3], 6, 6);
 
-    say "  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 && $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
+    dbg ("  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 && $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
           sprintf("%04d-%02d-%02dT%02d:%02d%+03d:%02d", $yr, $mo, $dy, $hr, $mn, $lto, $ltom) :
-          "Invalid datetime data") if ($dbg);
+          "Invalid datetime data"),
+         " CT:". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 && $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
+           sprintf("%04d-%02d-%02dT%02d:%02d%+03d:%02d", $yr, $mo, $dy, $hr, $mn, $lto, $ltom) :
+           "err")) if ($debug);
   } else {
-    say "  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
+    dbg ("  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
           sprintf("%04d-%02d-%02d", $yr, $mo, $dy) :
-          "Invalid datetime data") if ($dbg);
+          "Invalid datetime data"),
+        " CT:". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
+                    sprintf("%04d-%02d-%02d", $yr, $mo, $dy) :
+                              "err")) if ($debug);
   }
 
 }
@@ -663,31 +988,34 @@ sub Group14A {
   $stn{$eon_pi}{'TP'}    = bits($_[1], 4, 1);
   my $eon_variant        = bits($_[1], 0, 4);
   &updateStatusRow;
-  say "  Other Network" if ($dbg);
-  say "    PI:     ".sprintf("%04X",$eon_pi).((exists($stn{$eon_pi}{'chname'})) && " $stn{$eon_pi}{'chname'})") if ($dbg);
-  say "    TP:     $TPtext[$stn{$eon_pi}{'TP'}]" if ($dbg);
+  dbg ("  Other Network"," ON:") if ($debug);
+  dbg ("    PI:     ".sprintf("%04X",$eon_pi).((exists($stn{$eon_pi}{'chname'})) && " ($stn{$eon_pi}{'chname'})"),
+       sprintf("%04X[",$eon_pi)) if ($debug);
+  dbg ("    TP:     $TPtext[$stn{$eon_pi}{'TP'}]","TP:$stn{$eon_pi}{'TP'}") if ($debug);
 
   given ($eon_variant) {
 
     when ([0..3]) {
-      print "  " if ($dbg);
+      dbg("  ","") if ($debug);
       $stn{$eon_pi}{'PSbuf'} = " " x 8 unless (exists($stn{$eon_pi}{'PSbuf'}));
       &set_ps_khars($eon_pi, $eon_variant*2, bits($_[2], 8, 8), bits($_[2], 0, 8));
     }
 
     when (4) {
-      say "    AF:     ".&parseAF(TRUE, bits($_[2], 8, 8));
-      say "    AF:     ".&parseAF(TRUE, bits($_[2], 0, 8));
+      dbg ("    AF:     ".&parseAF(TRUE, bits($_[2], 8, 8)), " AF:".&parseAF(TRUE, bits($_[2], 8, 8))) if ($debug);
+      dbg ("    AF:     ".&parseAF(TRUE, bits($_[2], 0, 8)), " AF:".&parseAF(TRUE, bits($_[2], 0, 8))) if ($debug);
     }
 
     when ([5..8]) {
-      say "    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
-                                         &parseAF(TRUE, bits($_[2], 0, 8)) if ($dbg);
+      dbg("    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
+                                         &parseAF(TRUE, bits($_[2], 0, 8)),
+          " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(TRUE, bits($_[2], 0, 8))) if ($debug);
     }
 
     when (9) {
-      say "    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
-                                         &parseAF(FALSE,bits($_[2], 0, 8)) if ($dbg);
+      dbg ("    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
+                                         &parseAF(FALSE,bits($_[2], 0, 8)),
+           " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(FALSE,bits($_[2], 0, 8))) if ($debug);
     }
 
     when (12) {
@@ -704,15 +1032,16 @@ sub Group14A {
     when (13) {
       $stn{$eon_pi}{'PTY'} = bits($_[2], 11, 5);
       $stn{$eon_pi}{'TA'}  = bits($_[2],  0, 1);
-      say "    PTY:    $stn{$eon_pi}{'PTY'} ".
+      dbg (("    PTY:    $stn{$eon_pi}{'PTY'} ".
         (exists $stn{$eon_pi}{'ECC'} && ($countryISO[$stn{$pi}{'ECC'}][$stn{$eon_pi}{'CC'}] // "") =~ /us|ca|mx/ ? 
           $ptynamesUS[$stn{$eon_pi}{'PTY'}] :
-          $ptynames[$stn{$eon_pi}{'PTY'}]) if ($dbg);
-      say "    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]"    if ($dbg);
+          $ptynames[$stn{$eon_pi}{'PTY'}])),
+        " PTY:$stn{$eon_pi}{'PTY'}") if ($debug);
+      dbg ("    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]"," TA:$stn{$eon_pi}{'TA'}") if ($debug);
     }
 
     when (14) {
-      say "    PIN:    ". &parsepin($_[2]) if ($dbg);
+      dbg ("    PIN:    ". &parsepin($_[2])," PIN:".&parsepin($_[2])) if ($debug);
     }
 
     when (15) {
@@ -724,6 +1053,7 @@ sub Group14A {
     }
 
   }
+  dbg("","]") if ($debug);
 }
 
 # 14B: Enhanced Other Networks (EON) information
@@ -799,8 +1129,9 @@ sub screenReset {
   $stn{$pi}{'TA'}    = FALSE      if (!exists  $stn{$pi}{'TA'});
 
   $PSlabel   ->set_markup("<span font='Mono Bold 25px'>        </span>");
+  $window-> set_title ("redsea" );
   $PIlabel   ->set_markup("<span font='mono 12px'>".(defined($pi) ? sprintf("%04X",$pi) : "    ")."</span>");
-  $ECClabel  ->set_markup("<span font='Mono 11px' foreground='$themef{dim}'>  </span>");
+  $ECClabel  ->set_markup("<span font='Mono 11px' foreground='$themef{dim}'>--</span>");
   $PTYlabel  ->set_markup("<span font='Mono 12px'>".(" " x 16)."</span>");
   $RTlabel   ->set_markup("<span font='Mono 15px' foreground='$themef{fg}'>".(" " x 32)."</span>");
   $Freqlabel ->set_markup("<span font='mono 12px' foreground='$themef{fg}'>".($stn{$pi}{'freq'} // "    ")."</span>");
@@ -840,12 +1171,19 @@ sub set_rt_khars {
   }
   elsif ($totrc >= $minRTlen) {
     $stn{$pi}{'RTscrollbuf'} = substr($stn{$pi}{'RTbuf'},0,$minRTlen);
+    $stn{$pi}{'hasFullRT'} = TRUE;
+  } else {
+    $stn{$pi}{'RTscrollbuf'} = substr($stn{$pi}{'RTbuf'},0,$minRTlen);
+    $stn{$pi}{'hasFullRT'} = FALSE;
   }
 
-  say "  RT:     ". substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
-                    substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)) if ($dbg);
 
-  say "          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'RTrcvd'}}[0..63]))) if ($dbg);
+  dbg ("  RT:     ". substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
+                    substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)),
+       " RT:\"".substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
+                           substr($stn{$pi}{'RTbuf'},$lok+scalar(@a))."\"") if ($debug);
+
+  dbg ("          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'RTrcvd'}}[0..63]))),"") if ($debug);
 }
 
 # Enhanced RadioText
@@ -894,10 +1232,14 @@ sub set_ps_khars {
     ($markup = $stn{$pspi}{'PSbuf'}) =~ s/&/&amp;/g;
     $markup =~ s/</&lt;/g;
     $PSlabel->set_markup("<span font='Mono Bold 25px' foreground='$themef{fg}'>$markup</span>") if ($pspi == $pi);
+    ($PStitle = $stn{$pi}{'PSbuf'}) =~ s/(^ +| +$)//g;
+    $window-> set_title ("$PStitle - redsea" );
   }
 
-  say "  PS:     ". substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
-                    substr($stn{$pspi}{'PSbuf'},$lok+2) if ($dbg);
+  dbg ("  PS:     ". substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
+                    substr($stn{$pspi}{'PSbuf'},$lok+2),
+       " PS:\"".substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
+                          substr($stn{$pspi}{'PSbuf'},$lok+2)."\"") if ($debug);
 
 }
 
@@ -943,18 +1285,18 @@ sub parse_RTp {
 
 sub parsepin {
   my $d   = bits($_[0], 11, 5);
-  return ($d ? sprintf("Day %d at %02d:%02d",$d, bits($_[0], 6, 5), bits($_[0], 0, 6)) : "Not in use");
+  return ($d ? sprintf("%02d@%02d:%02d",$d, bits($_[0], 6, 5), bits($_[0], 0, 6)) : "None");
 }
 
 # Decoder Identification
 
 sub parseDI {
-  if ($dbg) {
+  if ($debug) {
     given ($_[0]) {
-      when (0) { say "  DI:     ". qw( Mono Stereo )[$_[1]];           }
-      when (1) { say "  DI:     Artificial head" if ($_[1]);           }
-      when (2) { say "  DI:     Compressed"      if ($_[1]);           }
-      when (3) { say "  DI:     ". qw( Static Dynamic)[$_[1]] ." PTY"; }
+      when (0) { dbg ("  DI:     ". qw( Mono Stereo )[$_[1]], " DI:".qw( Mono Stereo )[$_[1]]);           }
+      when (1) { dbg ("  DI:     Artificial head"," DI:ArtiHd") if ($_[1]);           }
+      when (2) { dbg ("  DI:     Compressed"," DI:Cmprsd")      if ($_[1]);           }
+      when (3) { dbg ("  DI:     ". qw( Static Dynamic)[$_[1]] ." PTY", " DI:".qw( StaPTY DynPTY )[$_[1]]); }
     }
   }
 }
@@ -984,20 +1326,27 @@ sub parseAF {
 
 sub updateStatusRow {
 
-  $AppLabel->set_markup("<span font='Sans Italic 9px'>".
-    "<span foreground='".$themef{$stn{$pi}{'hasRT'}     ? "fg" : "dim"}."'>RadioText</span>  ".
-    "<span foreground='".$themef{$stn{$pi}{'hasRTplus'} ? "fg" : "dim"}."'>RT+</span>  ".
-    "<span foreground='".$themef{$stn{$pi}{'haseRT'}    ? "fg" : "dim"}."'>eRT</span>  ".
-    "<span foreground='".$themef{$stn{$pi}{'hasEON'}    ? "fg" : "dim"}."'>EON</span>  ".
-    "<span foreground='".$themef{$stn{$pi}{'hasTMC'}    ? "fg" : "dim"}."'>TMC</span>  ".
-    "<span foreground='".$themef{$stn{$pi}{'TP'}        ? "fg" : "dim"}."'>TP</span>  ".
-    "<span foreground='".$themef{$stn{$pi}{'TA'}        ? "fg" : "dim"}."'>TA</span></span>");
+  Gtk2::Gdk::Threads->enter;
 
-    $Siglabel->set_markup("<span font='Mono 11px'><span foreground='$themef{fg}'>".("⟫" x ($qty // 0)) .
-      "</span><span foreground='$themef{dim}'>".("⟫" x (5-($qty // 0)))."</span></span>");
+  $AppLabel->set_markup("<span font='Sans Italic 9px'>".
+    "<span foreground='$themef{bg}' background='".$themef{$hasClk                ? "fg" : "dim"}."'>CL</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$hasDta                ? "fg" : "dim"}."'>DT</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$insync                ? "fg" : "dim"}."'>SY</span>      ".
+    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasRT'}     ? "fg" : "dim"}."'>RT</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasRTplus'} ? "fg" : "dim"}."'>RT+</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'haseRT'}    ? "fg" : "dim"}."'>eRT</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasEON'}    ? "fg" : "dim"}."'>EON</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasTMC'}    ? "fg" : "dim"}."'>TMC</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'TP'}        ? "fg" : "dim"}."'>TP</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'TA'}        ? "fg" : "dim"}."'>TA</span></span>");
+
+  $Siglabel->set_markup("<span font='Mono 11px'><span foreground='$themef{fg}'>".("⟫" x ($qty // 0)) .
+    "</span><span foreground='$themef{dim}'>".("⟫" x (5-($qty // 0)))."</span></span>");
     
-    $RDSlabel->set_markup("<span font='Mono 7px' foreground='".$themef{$insync ? "fg" : "dim"}.
-      "'>RDS</span>");
+  #$RDSlabel->set_markup("<span font='Mono 7px' foreground='".$themef{$insync ? "fg" : "dim"}.
+  #  "'>QUA</span>");
+    
+  Gtk2::Gdk::Threads->leave;
 }
 
 sub initdata {
@@ -1021,6 +1370,15 @@ sub initdata {
                  "Religious Talk",   "Personality",      "Public",           "College",
                  "",                 "",                 "",                 "",
                  "",                 "Weather",          "Emergency Test",   "ALERT! ALERT!");
+
+  @ptynamesFI = ("",                 "Uutiset",          "Ajankohtaista",    "Tiedotuksia",
+                 "Urheilu",          "Opetus",           "Kuunnelma",        "Kulttuuri",
+                 "Tiede",            "Puheviihde",       "Pop",              "Rock",
+                 "Kevyt musiikki",   "Kevyt klassinen",  "Klassinen",        "Muu musiikki",
+                 "Säätiedotus",      "Talousohjelma",    "Lastenohjelma",    "Yhteiskunta",
+                 "Uskonto",          "Yleisökontakti",   "Matkailu",         "Vapaa-aika",
+                 "Jazz",             "Country",          "Kotim. musiikki",  "Oldies",
+                 "Kansanmusiikki",   "Dokumentti",       "HÄLYTYS TESTI",    "HÄLYTYS");
   
   # Basic LCD character set
   @charbasic = split(//,
@@ -1172,17 +1530,17 @@ sub initgui {
 
   # Initialize GUI
   
-  my $window = Gtk2::Window->new ("toplevel");
-  $window-> set_title            ("redsea" );
-  $window-> set_border_width     (10);
-  $window-> signal_connect       (delete_event => sub {Gtk2->main_quit; FALSE});
+  $window = Gtk2::Window->new  ("toplevel");
+  $window-> set_title          ("redsea" );
+  $window-> set_border_width   (10);
+  $window-> signal_connect     (delete_event => sub {Gtk2->main_quit; FALSE});
   
-  my $table = Gtk2::Table->new   (3, 4, FALSE);
-  $window->add                   ($table);
+  my $table = Gtk2::Table->new (3, 4, FALSE);
+  $window->add                 ($table);
   
   ## ODA app row
   $AppLabel= Gtk2::Label->new  ();
-  $AppLabel->set_markup        ("<span font='Sans Italic 9px' foreground='$themef{dim}'>RadioText  RT+  eRT  EON  TMC  TP  TA</span>");
+  $AppLabel->set_markup        ("<span font='Sans Italic 9px' foreground='$themef{dim}'>CL  DT  SY      RT  RT+  eRT  EON  TMC  TP  TA</span>");
   $table   ->attach_defaults   ($AppLabel, 0,4,0,1);
   
   ## PS name
@@ -1197,7 +1555,7 @@ sub initgui {
   
   ## PI
   my $label = Gtk2::Label->new ();
-  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{dim}'>PI</span>");
+  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>PI</span>");
   $infotable->attach_defaults  ($label, 0,1,0,1);
   $PIlabel  = Gtk2::Label->new ();
   $PIlabel  ->set_markup       ("<span font='mono 12px'>    </span>");
@@ -1207,7 +1565,7 @@ sub initgui {
   
   ## MHz
   $label    = Gtk2::Label->new ();
-  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{dim}'>MHz</span>");
+  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>MHz</span>");
   $infotable->attach_defaults  ($label, 0,1,1,2);
   $Freqlabel= Gtk2::Label->new ();
   $Freqlabel->set_markup       ("<span font='mono 12px'>    </span>");
@@ -1217,7 +1575,7 @@ sub initgui {
   
   ## Signal quality meter
   $RDSlabel = Gtk2::Label->new ();
-  $RDSlabel ->set_markup       ("<span font='mono 7px' foreground='$themef{dim}'>RDS</span>");
+  $RDSlabel ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>QUA</span>");
   $infotable->attach_defaults  ($RDSlabel, 2,3,0,1);
   $Siglabel = Gtk2::Label->new ();
   $Siglabel ->set_markup       ("<span font='Mono 11px' foreground='$themef{dim}'>     </span>");
@@ -1226,16 +1584,16 @@ sub initgui {
   
   ## ECC
   $label    = Gtk2::Label->new ();
-  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{dim}'>ECC</span>");
+  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>ECC</span>");
   $infotable->attach_defaults  ($label, 4,5,0,1);
   $ECClabel = Gtk2::Label->new ();
-  $ECClabel ->set_markup       ("<span font='Mono 11px' foreground='$themef{dim}'>  </span>");
+  $ECClabel ->set_markup       ("<span font='Mono 11px' foreground='$themef{dim}'>--</span>");
   $ECClabel ->set_alignment    (0, .5);
   $infotable->attach_defaults  ($ECClabel, 5,6,0,1);
   
   ## PTY
   $label    = Gtk2::Label->new ();
-  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{dim}'>PTY</span>");
+  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>PTY</span>");
   $infotable->attach_defaults  ($label, 2,3,1,2);
   $PTYlabel = Gtk2::Label->new ();
   $PTYlabel ->set_markup       ("<span font='Mono 12px'>".(" " x 16)."</span>");
@@ -1257,7 +1615,6 @@ sub initgui {
   $style    ->bg_pixmap         ("normal",$pixmap);
   $window   ->set_style         ($style);
   
-  #$window->set_resizable   (FALSE);
   $window->set_default_size (324, 118);
   $window->resize           (324, 118);
   
@@ -1268,4 +1625,17 @@ sub initgui {
 # &bits (int, n, len)
 sub bits {
   return (($_[0] >> $_[1]) & (2**$_[2] - 1));
+}
+
+sub dbg {
+  if ($debug == 1) {
+    if ($_[1] =~ /\n/) {
+      print "$dbline$_[1]";
+      $dbline = "";
+    } else {
+      $dbline .= $_[1];
+    }
+  } elsif ($debug == 2) {
+    print $_[0]."\n" if ($_[0] ne "");
+  }
 }
