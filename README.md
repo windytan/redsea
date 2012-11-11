@@ -9,6 +9,7 @@ Display
 
 ![Screenshot](http://www.cs.helsinki.fi/u/okraisan/radio/redsea-blue.png)
 
+*  big text on the left is Program Service name (PS); text below is RadioText (RT)
 *  CL: clock signal detected from IC
 *  DT: data signal detected from IC
 *  SY: block synchronization acquired
@@ -19,6 +20,11 @@ Display
 *  TMC: station broadcasts Traffic Message Channel
 *  TP: Traffic Program bit is set
 *  TA: Traffic Announcement bit is set
+*  PI: Program Identification number (hex)
+*  ECC: Extended Country Code
+*  PTY: Program Type
+*  MHz: station frequency as guessed from AF
+*  QUA: quality of received data
 
 Licensing
 ---------
