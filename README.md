@@ -12,10 +12,22 @@ Display
 
 ![Screenshot](http://www.cs.helsinki.fi/u/okraisan/radio/redsea-blue.png)
 
+*  CL: clock signal detected from IC
+*  DT: data signal detected from IC
+*  SY: block synchronization acquired
+
+*  RT: receiving RadioText
+*  RT+: receiving RadioText+
+*  eRT: receiving Enhanced RadioText
+*  EON: tx contains Enhanced Other Networks information
+*  TMC: tx contains Traffic Message Channel
+*  TP: Traffic Program bit is set
+*  TA: Traffic Announcement bit is set
+
 Licensing
 ---------
 
-    Copyright (c) 2007-2011, windytan (OH2-250)
+    Copyright (c) 2007-2012, windytan (OH2-250)
     
     Permission to use, copy, modify, and/or distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
