@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# redsea RDS decoder (c) OH2-250
+# redsea RDS decoder (c) Oona Räisänen OH2-250
 #
 #
 # Page numbers refer to IEC 62106, Edition 2
@@ -11,9 +11,6 @@ $| ++;
 use 5.010;
 use warnings;
 use utf8;
-
-#use IO::Select;
-#my  $input = IO::Select->new(\*STDIN);
 
 use Gtk2    qw( -init -threads-init );
 use threads;
@@ -27,6 +24,7 @@ binmode(STDOUT, ":utf8");
 use constant FALSE => 0;
 use constant TRUE  => 1;
 
+# Offset word order
 use constant {
   A  => 0,
   B  => 1,
@@ -35,6 +33,7 @@ use constant {
   D  => 4,
 };
 
+# Bit masks
 use constant {
   _5BIT  => 0x000001F,
   _10BIT => 0x00003FF,
@@ -94,25 +93,25 @@ sub get_bit {
       $clkSilent = ($clk_samp < 0x100) ? $clkSilent + 1 : 0;
       if ($clkSilent > 30) {
         $hasClk = FALSE;
-        &updateStatusRow;
+        &updateLinkLabel;
       }
     } else {
       if ($clk_samp > 0x100) {
         $hasClk    = TRUE;
-        &updateStatusRow;
+        &updateLinkLabel;
         $clkSilent = 0;
       }
     }
     if ($hasDta) {
       $dtaSilent = ($dta_samp < 0x100) ? $dtaSilent + 1 : 0;
-      if ($dtaSilent > 50) {
+      if ($dtaSilent > 70) {
         $hasDta = FALSE;
-        &updateStatusRow;
+        &updateLinkLabel;
       }
     } else {
       if ($dta_samp > 0x100) {
         $hasDta    = TRUE;
-        &updateStatusRow;
+        &updateLinkLabel;
         $dtaSilent = 0;
       }
     }
@@ -191,7 +190,6 @@ sub blockerror {
     lock (@GrpBuffer);
     push (@GrpBuffer, \@newgrp);
   } elsif ($rcvd[Ci]) {
-    print "Ci\n";
     my @newgrp :shared;
     @newgrp = $GrpData[2];
     lock (@GrpBuffer);
@@ -207,7 +205,7 @@ sub blockerror {
   if ($insync && $erbloks > 45) {
     $insync   = FALSE;
     @errblock = ();
-    &updateStatusRow;
+    &updateLinkLabel;
   }
 
   @rcvd = ();
@@ -231,6 +229,15 @@ sub get_grp {
   for (0..15) {
     $err = 1 << $_;
     $ErrLookup[&syndrome(0x00004b9 ^ ($err<<10))] = $err;
+  }
+
+  if (defined $correct_all) {
+    for ($patt = 0x01; $patt <= 0x1F; $patt += 2) {
+      for $i (0..16-int(log2($patt)+1)) {
+        $err = $patt << $i;
+        $ErrLookup[&syndrome(0x00005b9 ^ ($err<<10))] = $err;
+      }
+    }
   }
 
   while (TRUE) {
@@ -692,7 +699,6 @@ sub Group1A {
 # 1B: Program Item Number
 
 sub Group1B {
-
   return if (@_ < 4);
   dbg ("  PIN:    ". &parsepin($_[3])," PIN:$_[3]") if ($debug);
 }
@@ -1065,10 +1071,11 @@ sub Group14B {
   my $eon_pi          =  $_[3];
   $stn{$eon_pi}{'TP'} = bits($_[1], 4, 1);
   $stn{$eon_pi}{'TA'} = bits($_[1], 3, 1);
-  say "  Other Network"                                               if ($dbg);
-  say "    PI:     ".sprintf("%04X",$eon_pi).((exists($stn{$eon_pi}{'chname'})) ? " ".$stn{$eon_pi}{'chname'} : "") if ($dbg);
-  say "    TP:     $TPtext[$stn{$eon_pi}{'TP'}]"                      if ($dbg);
-  say "    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]" if ($dbg);
+  say "  Other Network"                                                    if ($dbg);
+  say "    PI:     ".sprintf("%04X",$eon_pi).
+    ((exists($stn{$eon_pi}{'chname'})) ? " ".$stn{$eon_pi}{'chname'} : "") if ($dbg);
+  say "    TP:     $TPtext[$stn{$eon_pi}{'TP'}]"                           if ($dbg);
+  say "    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]"      if ($dbg);
 
 }
 
@@ -1085,7 +1092,7 @@ sub Group15B {
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
   $stn{$pi}{'MS'} = bits($_[1], 3, 1);
   say "  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]" if ($dbg);
-  say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]    if ($dbg);
+  say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]      if ($dbg);
 
   $stn{$pi}{'hasMS'} = TRUE;
   &updateStatusRow;
@@ -1105,11 +1112,8 @@ sub ODAGroup {
 
       when ([0xCD46, 0xCD47]) { say sprintf("  ══╡ TMC msg %02x %04x %04x",
                                 bits($data[1], 0, 5), $data[2], $data[3]); }
-
       when (0x4BD7)           { &parse_RTp(@data); }
-
       when (0x6552)           { &parse_eRT(@data); }
-
       default                 { say sprintf("          Unimplemented ODA %04x: %02x %04x %04x",
                                     $stn{$pi}{'ODAaid'}{$gtype}, bits($data[1], 0, 5), $data[2], $data[3])
                                     if ($dbg); }
@@ -1122,14 +1126,14 @@ sub ODAGroup {
 
 sub screenReset {
 
-  $stn{$pi}{'RTbuf'} = (" " x 64) if (!exists  $stn{$pi}{'RTbuf'});
-  $stn{$pi}{'hasRT'} = FALSE      if (!exists  $stn{$pi}{'hasRT'});
-  $stn{$pi}{'hasMS'} = FALSE      if (!exists  $stn{$pi}{'hasMS'});
-  $stn{$pi}{'TP'}    = FALSE      if (!exists  $stn{$pi}{'TP'});
-  $stn{$pi}{'TA'}    = FALSE      if (!exists  $stn{$pi}{'TA'});
+  $stn{$pi}{'RTbuf'} = (" " x 64) if (!exists $stn{$pi}{'RTbuf'});
+  $stn{$pi}{'hasRT'} = FALSE      if (!exists $stn{$pi}{'hasRT'});
+  $stn{$pi}{'hasMS'} = FALSE      if (!exists $stn{$pi}{'hasMS'});
+  $stn{$pi}{'TP'}    = FALSE      if (!exists $stn{$pi}{'TP'});
+  $stn{$pi}{'TA'}    = FALSE      if (!exists $stn{$pi}{'TA'});
 
   $PSlabel   ->set_markup("<span font='Mono Bold 25px'>        </span>");
-  $window-> set_title ("redsea" );
+  $window    ->set_title ("redsea" );
   $PIlabel   ->set_markup("<span font='mono 12px'>".(defined($pi) ? sprintf("%04X",$pi) : "    ")."</span>");
   $ECClabel  ->set_markup("<span font='Mono 11px' foreground='$themef{dim}'>--</span>");
   $PTYlabel  ->set_markup("<span font='Mono 12px'>".(" " x 16)."</span>");
@@ -1324,14 +1328,25 @@ sub parseAF {
   }
 }
 
+sub updateLinkLabel {
+
+  Gtk2::Gdk::Threads->enter;
+
+  $LinkLabel->set_markup("<span font='Sans Italic 9px'>".
+    "<span foreground='$themef{bg}' background='".$themef{$hasClk                ? "fg" : "dim"}."'>CL</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$hasDta                ? "fg" : "dim"}."'>DT</span>  ".
+    "<span foreground='$themef{bg}' background='".$themef{$insync                ? "fg" : "dim"}."'>SY</span></span>");
+ 
+  Gtk2::Gdk::Threads->leave;
+}
+
 sub updateStatusRow {
+
+  &updateLinkLabel;
 
   Gtk2::Gdk::Threads->enter;
 
   $AppLabel->set_markup("<span font='Sans Italic 9px'>".
-    "<span foreground='$themef{bg}' background='".$themef{$hasClk                ? "fg" : "dim"}."'>CL</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$hasDta                ? "fg" : "dim"}."'>DT</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$insync                ? "fg" : "dim"}."'>SY</span>      ".
     "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasRT'}     ? "fg" : "dim"}."'>RT</span>  ".
     "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasRTplus'} ? "fg" : "dim"}."'>RT+</span>  ".
     "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'haseRT'}    ? "fg" : "dim"}."'>eRT</span>  ".
@@ -1539,9 +1554,12 @@ sub initgui {
   $window->add                 ($table);
   
   ## ODA app row
+  $LinkLabel=Gtk2::Label->new  ();
+  $LinkLabel->set_markup       ("<span font='Sans Italic 9px' foreground='$themef{dim}'>CL  DT  SY</span>");
   $AppLabel= Gtk2::Label->new  ();
-  $AppLabel->set_markup        ("<span font='Sans Italic 9px' foreground='$themef{dim}'>CL  DT  SY      RT  RT+  eRT  EON  TMC  TP  TA</span>");
-  $table   ->attach_defaults   ($AppLabel, 0,4,0,1);
+  $AppLabel->set_markup        ("<span font='Sans Italic 9px' foreground='$themef{dim}'>RT  RT+  eRT  EON  TMC  TP  TA</span>");
+  $table   ->attach_defaults   ($LinkLabel, 0,1,0,1);
+  $table   ->attach_defaults   ($AppLabel,  1,4,0,1);
   
   ## PS name
   $PSlabel = Gtk2::Label->new  ();
@@ -1638,4 +1656,8 @@ sub dbg {
   } elsif ($debug == 2) {
     print $_[0]."\n" if ($_[0] ne "");
   }
+}
+
+sub log2 {
+  return (log($_[0])/log(2));
 }

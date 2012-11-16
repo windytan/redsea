@@ -2,7 +2,7 @@ redsea
 ======
 This program decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It is designed to work with [a special modification](http://windytan.blogspot.fi/2012/10/enchanting-subcarriers-on-fm-part-2.html) to the ATS 909 receiver.
 
-Linux and SoX are required.
+Requires Linux, SoX, and Perl &gt;= 5.10 (with Gtk2 and Encode libraries).
 
 Display
 -------
