@@ -12,9 +12,6 @@ use 5.010;
 use warnings;
 use utf8;
 
-use Gtk2    qw( -init -threads-init );
-use threads;
-use threads::shared;
 use Encode 'decode';
 #use open   ':utf8';
 
@@ -53,103 +50,22 @@ our $debug = 1;
 use constant   RESET => "\x1B[0m";
 use constant REVERSE => "\x1B[7m";
 
-open (SOXIN, "sox -q -r 48000 -b 16 -c 2 -t alsa hw:CARD=Theater,DEV=0 -r 6000 -t raw -e signed-integer -b 16 -c 2 - |") or die ($!);
-#open (SOXIN, "sox -q /home/windy/Audio/paljondataa.wav -r 6000 -t raw -e signed-integer -b 16 -c 2 - |") or die ($!);
-
 my $hasDta    :shared;
 my $hasClk    :shared;
 my $pi        :shared;
 my $insync    :shared;
 my @GrpBuffer :shared;
-$prev_dta_samp = $prev_clk_samp = $acc = $clkSilent = $dtaSilent = $pi = 0;
+$pi = 0;
 $hasDta = $hasClk = $insync = FALSE;
 
 &initdata;
-&initgui;
 
-threads->new(\&get_grp);
-
-Glib::Timeout->add(300,  \&update_displays);
-
-Gtk2->main;
-
-exit(0);
+&get_grp();
 
 # Next bit from IC
 sub get_bit {
-  my ($bit, $rising, $falling);
-  my $clockEdge = FALSE;
-
-  while (TRUE) {
-    read (SOXIN, $dta_samp, 2) or die ($!);
-    read (SOXIN, $clk_samp, 2) or die ($!);
-
-    $dta_samp = unpack("s",$dta_samp);
-    $clk_samp = unpack("s",$clk_samp);
-
-    # Monitor cable connection
-   
-    if ($hasClk) {
-      $clkSilent = ($clk_samp < 0x100) ? $clkSilent + 1 : 0;
-      if ($clkSilent > 30) {
-        $hasClk = FALSE;
-        &updateLinkLabel;
-      }
-    } else {
-      if ($clk_samp > 0x100) {
-        $hasClk    = TRUE;
-        &updateLinkLabel;
-        $clkSilent = 0;
-      }
-    }
-    if ($hasDta) {
-      $dtaSilent = ($dta_samp < 0x100) ? $dtaSilent + 1 : 0;
-      if ($dtaSilent > 70) {
-        $hasDta = FALSE;
-        &updateLinkLabel;
-      }
-    } else {
-      if ($dta_samp > 0x100) {
-        $hasDta    = TRUE;
-        &updateLinkLabel;
-        $dtaSilent = 0;
-      }
-    }
-
-    # Actual decoding
-
-    $rising = $falling = FALSE;
-
-    $rising  = TRUE if ($prev_clk_samp <  0 && $clk_samp >= 0);
-    $falling = TRUE if ($prev_clk_samp >= 0 && $clk_samp <  0);
-
-    # Relevant clock edge
-    if (($dataOnRising && $rising) || (!$dataOnRising && $falling)) {
-      $clockEdge = TRUE;
-    }
-
-    # Data changed on unexpected clock
-    if ($prev_dta_samp * $dta_samp < 0) {
-      if (($dataOnRising && $falling) || (!$dataOnRising && $rising)) {
-        $dataOnRising = !$dataOnRising;
-        $clockEdge = TRUE;
-      }
-    }
-
-    $prev_clk_samp = $clk_samp;
-    $prev_dta_samp = $dta_samp;
-
-    # Break on data
-    if ($clockEdge) {
-      $bit = ($acc > 0) ? 1 : 0;
-      $acc = $dta_samp;
-      last;
-    }
-
-    $acc += $dta_samp;
-  }
-
-  $bit;
+  read(STDIN,$a,1) or die($!);
+  $a;
 }
 
 # Calculate the syndrome of a 26-bit vector
@@ -250,12 +166,11 @@ sub get_grp {
       $wideblock = ($wideblock << 1) + &get_bit();
     }
 
-
     $lefttoread = 26;
     $wideblock &= _28BIT;
 
     $block = ($wideblock >> 1) & _26BIT;
-    
+
     # Find the offsets for which the syndrome is zero
     $syncb[$_] = (syndrome($block ^ $offset[$_]) == 0) for (A .. D);
 
@@ -274,7 +189,6 @@ sub get_grp {
                 && ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$_]) {
               $insync = TRUE;
               $expofs = $_;
-              &updateStatusRow;
               last;
             } else {
               $prevbitcount = $bitcount;
@@ -343,12 +257,7 @@ sub get_grp {
 
         # If a complete group is received
         if ($rcvd[A] && $rcvd[B] && ($rcvd[C] || $rcvd[Ci]) && $rcvd[D]) {
-
-          # Push it to buffer
-          my @newgrp :shared;
-          @newgrp = @GrpData;
-          lock (@GrpBuffer);
-          push (@GrpBuffer, \@newgrp);
+          decodegroup(@GrpData);
         }
       }
 
@@ -364,57 +273,11 @@ sub get_grp {
 }
 
 
-# 3 times a second
-
-sub update_displays {
-
-  if (++$upd == 10) {
-    $qty   = int(($bytes // 0) / 1187.5 / 3 * 5 + .5);
-    $qty   = 5 if ($qty > 5);
-    $bytes = 0;
-    $upd   = 0;
-    &updateStatusRow if (defined $pi);
-  }
-  
-  # RT scroll  
-  if (defined $pi && exists $stn{$pi}{'RTscrollbuf'}) {
-    ($cropped = $stn{$pi}{'RTscrollbuf'}) =~ s/ +$//;
-    if (length($cropped) > 32) {
-
-      $concat = $cropped . "  " . $cropped;
-
-      $RTscrollptr = ($RTscrollptr + 1) % (length($cropped)+2);
-
-      $markup = substr($concat,$RTscrollptr,32);
-    } else {
-      $markup = $cropped. " " x (32-length($cropped));
-    }
-    $markup =~ s/&/&amp;/g;
-    $markup =~ s/</&lt;/g;
-    $markup =~ s/↵/ /g;
-    $RTlabel->set_markup("<span font='Mono 15px' foreground='".($stn{$pi}{'hasFullRT'} ? $themef{fg}: $themef{dim}).
-                         "'>$markup</span>");
-  }
-
-
-  # Read from data-link layer
-  {
-    lock @GrpBuffer;
-    while (scalar (@GrpBuffer) > 0) {
-      @da = @{shift @GrpBuffer};
-      decodegroup(@da);
-    }
-  }
-
-  return TRUE;
-}
-
 sub decodegroup {
 
   return if ($_[0] == 0);
   my ($gtype, $fullgtype);
 
-  $bytes  += @_ * 26;
   $ednewpi = ($newpi // 0);
   $newpi   = $_[0];
   
@@ -438,13 +301,9 @@ sub decodegroup {
     if ($newpi != ($pi // 0)) {
       $pi = $newpi;
       &screenReset();
-      $PIlabel->set_markup("<span font='mono 12px' foreground='$themef{fg}'>".sprintf("%04X",$pi)."</span>");
       if (exists $stn{$pi}{'presetPSbuf'}) {
         ($stn{$pi}{'PSmarkup'} = $stn{$pi}{'presetPSbuf'}) =~ s/&/&amp;/g;
         $stn{$pi}{'PSmarkup'}  =~ s/</&lt;/g;
-        $PSlabel->set_markup("<span font='Mono Bold 25px' foreground='$themef{dim}'>$stn{$pi}{'PSmarkup'}</span>");
-        ($PStitle = $stn{$pi}{'presetPSbuf'}) =~ s/(^ +| +$)//g;
-        $window-> set_title ("$PStitle - redsea" );
       }
     }
 
@@ -462,7 +321,6 @@ sub decodegroup {
   # Traffic Program (TP)
   $stn{$pi}{'TP'} = bits($_[1], 10, 1);
   dbg ("  TP:     $TPtext[$stn{$pi}{'TP'}]"," TP:$stn{$pi}{'TP'}") if ($debug);
-  &updateStatusRow();
 	
   # Program Type (PTY)
   $stn{$pi}{'PTY'} = bits($_[1], 5, 5);
@@ -477,8 +335,6 @@ sub decodegroup {
          " PTY:".sprintf("%02d",$stn{$pi}{'PTY'})) if ($debug);
   }
   $stn{$pi}{'PTYmarkup'} =~ s/&/&amp;/g;
-
-  $PTYlabel->set_markup("<span font='Mono 9px' foreground='$themef{fg}'>".sprintf("%02d",$stn{$pi}{'PTY'})." $stn{$pi}{'PTYmarkup'}</span>");
 
   # Data specific to the group type
 
@@ -526,7 +382,6 @@ sub Group0A {
   dbg ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]," MS:".qw( S M)[$stn{$pi}{'MS'}]) if ($debug);
 
   $stn{$pi}{'hasMS'} = TRUE;
-  &updateStatusRow;
 
   if (@_ >= 3) {
     # AF
@@ -537,7 +392,6 @@ sub Group0A {
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
       ($stn{$pi}{'freq'} = $af[1]) =~ s/ [kM]Hz//;
-      $Freqlabel->set_markup("<span font='mono 12px' foreground='$themef{fg}'>$stn{$pi}{'freq'}</span>");
     }
   }
 
@@ -569,7 +423,6 @@ sub Group0B {
   dbg ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]," MS:".qw( S M)[$stn{$pi}{'MS'}]) if ($debug);
 
   $stn{$pi}{'hasMS'} = TRUE;
-  &updateStatusRow;
 
   if (@_ == 4) {
       
@@ -634,8 +487,6 @@ sub Group1A {
 
       $stn{$pi}{'ECC'}    = bits($_[2],  0, 8);
       $stn{$pi}{'CC'}     = bits($pi,   12, 4);
-      $ECClabel->set_markup("<span font='Mono 11px' foreground='$themef{fg}'>".
-                            ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] // "--")."</span>");
       dbg (("  ECC:    ".sprintf("%02X", $stn{$pi}{'ECC'}).
         (defined $countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] &&
               " ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}])"),
@@ -802,7 +653,6 @@ sub Group3A {
     # Traffic Message Channel
     when ([0xCD46, 0xCD47]) {
       $stn{$pi}{'hasTMC'} = TRUE;
-      &updateStatusRow;
       say sprintf("  ══╡ TMC sysmsg %04x",$_[2]);
     }
 
@@ -813,7 +663,6 @@ sub Group3A {
       $stn{$pi}{'CB'}        = bits($_[2], 12, 1);
       $stn{$pi}{'SCB'}       = bits($_[2],  8, 4);
       $stn{$pi}{'templnum'}  = bits($_[2],  0, 8);
-      &updateStatusRow;
       say "  RT+ applies to ".($stn{$pi}{'rtp_which'} ? "enhanced RadioText" : "RadioText")        if ($dbg);
       say "  ".($stn{$pi}{'CB'} ? "Using template $stn{$pi}{'templnum'}" : "No template in use")   if ($dbg);
       say sprintf("  Server Control Bits: %Xh", $stn{$pi}{'SCB'})              if (!$stn{$pi}{'CB'} && $dbg);
@@ -826,7 +675,6 @@ sub Group3A {
       $stn{$pi}{'ert_isutf8'} = bits($_[2], 0, 1);
       $stn{$pi}{'ert_txtdir'} = bits($_[2], 1, 1);
       $stn{$pi}{'ert_chrtbl'} = bits($_[2], 2, 4);
-      &updateStatusRow;
     }
     
     # Unimplemented ODA
@@ -993,7 +841,6 @@ sub Group14A {
   my $eon_pi             = $_[3];
   $stn{$eon_pi}{'TP'}    = bits($_[1], 4, 1);
   my $eon_variant        = bits($_[1], 0, 4);
-  &updateStatusRow;
   dbg ("  Other Network"," ON:") if ($debug);
   dbg ("    PI:     ".sprintf("%04X",$eon_pi).((exists($stn{$eon_pi}{'chname'})) && " ($stn{$eon_pi}{'chname'})"),
        sprintf("%04X[",$eon_pi)) if ($debug);
@@ -1095,7 +942,6 @@ sub Group15B {
   say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]      if ($dbg);
 
   $stn{$pi}{'hasMS'} = TRUE;
-  &updateStatusRow;
 
 }
 
@@ -1132,15 +978,6 @@ sub screenReset {
   $stn{$pi}{'TP'}    = FALSE      if (!exists $stn{$pi}{'TP'});
   $stn{$pi}{'TA'}    = FALSE      if (!exists $stn{$pi}{'TA'});
 
-  $PSlabel   ->set_markup("<span font='Mono Bold 25px'>        </span>");
-  $window    ->set_title ("redsea" );
-  $PIlabel   ->set_markup("<span font='mono 12px'>".(defined($pi) ? sprintf("%04X",$pi) : "    ")."</span>");
-  $ECClabel  ->set_markup("<span font='Mono 11px' foreground='$themef{dim}'>--</span>");
-  $PTYlabel  ->set_markup("<span font='Mono 12px'>".(" " x 16)."</span>");
-  $RTlabel   ->set_markup("<span font='Mono 15px' foreground='$themef{fg}'>".(" " x 32)."</span>");
-  $Freqlabel ->set_markup("<span font='mono 12px' foreground='$themef{fg}'>".($stn{$pi}{'freq'} // "    ")."</span>");
-  &updateStatusRow;
-
 }
 
 sub on_quit_button_clicked {
@@ -1153,7 +990,6 @@ sub set_rt_khars {
   (my $lok, my @a) = @_;
 
   $stn{$pi}{'hasRT'} = TRUE;
-  &updateStatusRow;
 
   for $i (0..$#a) {
     given ($a[$i]) {
@@ -1235,9 +1071,6 @@ sub set_ps_khars {
   if ($totrc == 4) {
     ($markup = $stn{$pspi}{'PSbuf'}) =~ s/&/&amp;/g;
     $markup =~ s/</&lt;/g;
-    $PSlabel->set_markup("<span font='Mono Bold 25px' foreground='$themef{fg}'>$markup</span>") if ($pspi == $pi);
-    ($PStitle = $stn{$pi}{'PSbuf'}) =~ s/(^ +| +$)//g;
-    $window-> set_title ("$PStitle - redsea" );
   }
 
   dbg ("  PS:     ". substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
@@ -1328,41 +1161,7 @@ sub parseAF {
   }
 }
 
-sub updateLinkLabel {
 
-  Gtk2::Gdk::Threads->enter;
-
-  $LinkLabel->set_markup("<span font='Sans Italic 9px'>".
-    "<span foreground='$themef{bg}' background='".$themef{$hasClk                ? "fg" : "dim"}."'>CL</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$hasDta                ? "fg" : "dim"}."'>DT</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$insync                ? "fg" : "dim"}."'>SY</span></span>");
- 
-  Gtk2::Gdk::Threads->leave;
-}
-
-sub updateStatusRow {
-
-  &updateLinkLabel;
-
-  Gtk2::Gdk::Threads->enter;
-
-  $AppLabel->set_markup("<span font='Sans Italic 9px'>".
-    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasRT'}     ? "fg" : "dim"}."'>RT</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasRTplus'} ? "fg" : "dim"}."'>RT+</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'haseRT'}    ? "fg" : "dim"}."'>eRT</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasEON'}    ? "fg" : "dim"}."'>EON</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'hasTMC'}    ? "fg" : "dim"}."'>TMC</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'TP'}        ? "fg" : "dim"}."'>TP</span>  ".
-    "<span foreground='$themef{bg}' background='".$themef{$stn{$pi}{'TA'}        ? "fg" : "dim"}."'>TA</span></span>");
-
-  $Siglabel->set_markup("<span font='Mono 11px'><span foreground='$themef{fg}'>".("⟫" x ($qty // 0)) .
-    "</span><span foreground='$themef{dim}'>".("⟫" x (5-($qty // 0)))."</span></span>");
-    
-  #$RDSlabel->set_markup("<span font='Mono 7px' foreground='".$themef{$insync ? "fg" : "dim"}.
-  #  "'>QUA</span>");
-    
-  Gtk2::Gdk::Threads->leave;
-}
 
 sub initdata {
 
@@ -1541,103 +1340,6 @@ sub initdata {
 
 }
 
-sub initgui {
-
-  # Initialize GUI
-  
-  $window = Gtk2::Window->new  ("toplevel");
-  $window-> set_title          ("redsea" );
-  $window-> set_border_width   (10);
-  $window-> signal_connect     (delete_event => sub {Gtk2->main_quit; FALSE});
-  
-  my $table = Gtk2::Table->new (3, 4, FALSE);
-  $window->add                 ($table);
-  
-  ## ODA app row
-  $LinkLabel=Gtk2::Label->new  ();
-  $LinkLabel->set_markup       ("<span font='Sans Italic 9px' foreground='$themef{dim}'>CL  DT  SY</span>");
-  $AppLabel= Gtk2::Label->new  ();
-  $AppLabel->set_markup        ("<span font='Sans Italic 9px' foreground='$themef{dim}'>RT  RT+  eRT  EON  TMC  TP  TA</span>");
-  $table   ->attach_defaults   ($LinkLabel, 0,1,0,1);
-  $table   ->attach_defaults   ($AppLabel,  1,4,0,1);
-  
-  ## PS name
-  $PSlabel = Gtk2::Label->new  ();
-  $PSlabel ->set_markup        ("<span font='Mono Bold 25px'>        </span>");
-  $PSlabel ->set_width_chars   (16);
-  $table   ->attach_defaults   ($PSlabel, 0,1,1,2);
-  
-  ## Misc info table
-  my $infotable = Gtk2::Table->new (5, 2, FALSE);
-  $table        ->attach_defaults  ($infotable, 1,2,1,2);
-  
-  ## PI
-  my $label = Gtk2::Label->new ();
-  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>PI</span>");
-  $infotable->attach_defaults  ($label, 0,1,0,1);
-  $PIlabel  = Gtk2::Label->new ();
-  $PIlabel  ->set_markup       ("<span font='mono 12px'>    </span>");
-  $PIlabel  ->set_alignment    (0, .5);
-  $PIlabel  ->set_width_chars  (4);
-  $infotable->attach_defaults  ($PIlabel, 1,2,0,1);
-  
-  ## MHz
-  $label    = Gtk2::Label->new ();
-  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>MHz</span>");
-  $infotable->attach_defaults  ($label, 0,1,1,2);
-  $Freqlabel= Gtk2::Label->new ();
-  $Freqlabel->set_markup       ("<span font='mono 12px'>    </span>");
-  $Freqlabel->set_alignment    (0, .5);
-  $Freqlabel->set_width_chars  (5);
-  $infotable->attach_defaults  ($Freqlabel, 1,2,1,2);
-  
-  ## Signal quality meter
-  $RDSlabel = Gtk2::Label->new ();
-  $RDSlabel ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>QUA</span>");
-  $infotable->attach_defaults  ($RDSlabel, 2,3,0,1);
-  $Siglabel = Gtk2::Label->new ();
-  $Siglabel ->set_markup       ("<span font='Mono 11px' foreground='$themef{dim}'>     </span>");
-  $Siglabel ->set_alignment    (0, .5);
-  $infotable->attach_defaults  ($Siglabel, 3,4,0,1);
-  
-  ## ECC
-  $label    = Gtk2::Label->new ();
-  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>ECC</span>");
-  $infotable->attach_defaults  ($label, 4,5,0,1);
-  $ECClabel = Gtk2::Label->new ();
-  $ECClabel ->set_markup       ("<span font='Mono 11px' foreground='$themef{dim}'>--</span>");
-  $ECClabel ->set_alignment    (0, .5);
-  $infotable->attach_defaults  ($ECClabel, 5,6,0,1);
-  
-  ## PTY
-  $label    = Gtk2::Label->new ();
-  $label    ->set_markup       ("<span font='mono 7px' foreground='$themef{fg}'>PTY</span>");
-  $infotable->attach_defaults  ($label, 2,3,1,2);
-  $PTYlabel = Gtk2::Label->new ();
-  $PTYlabel ->set_markup       ("<span font='Mono 12px'>".(" " x 16)."</span>");
-  $PTYlabel ->set_width_chars  (16);
-  $PTYlabel ->set_alignment    (0, .5);
-  $infotable->attach_defaults  ($PTYlabel, 3,6,1,2);
-  
-  ## RadioText
-  $RTlabel = Gtk2::Label->new ();
-  $RTlabel ->set_markup       ("<span font='Mono 15px'>".(" " x 32)."</span>");
-  $RTlabel ->set_alignment    (.5, .5);
-  $RTlabel ->set_width_chars  (32);
-  $table   ->attach_defaults  ($RTlabel, 0,3,2,3);
-  
-  my $back_pixbuf    =  Gtk2::Gdk::Pixbuf->new_from_file("themes/".$themef{bgpic});
-  my ($pixmap,$mask) = $back_pixbuf->render_pixmap_and_mask(255);
-  my $style = $window->get_style();
-  $style    = $style->copy      ();
-  $style    ->bg_pixmap         ("normal",$pixmap);
-  $window   ->set_style         ($style);
-  
-  $window->set_default_size (324, 118);
-  $window->resize           (324, 118);
-  
-  $window->show_all();
-}
 
 # Extract len bits from int, starting at nth bit from the right
 # &bits (int, n, len)
