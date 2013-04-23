@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# redsea RDS decoder (c) Oona Räisänen OH2-250
+# redsea RDS decoder (c) Oona Räisänen OH2EIQ
 #
 #
 # Page numbers refer to IEC 62106, Edition 2
