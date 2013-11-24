@@ -7,7 +7,7 @@ Requires Linux, SoX, and Perl &gt;= 5.10 (with Gtk2 and Encode libraries).
 Display
 -------
 
-![Screenshot](http://www.cs.helsinki.fi/u/okraisan/radio/redsea-blue.png)
+![Screenshot](http://oona.windytan.com/rds-ylesuomi.png)
 
 *  big text on the left is Program Service name (PS); text below is RadioText (RT)
 *  CL: clock signal detected from IC
