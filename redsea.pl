@@ -41,7 +41,7 @@ use constant {
   
 
 our $dbg   = TRUE;
-our $theme = "blue";
+our $theme = "green3";
 
 # 0: none.  1: short format.  2: verbose format.
 our $debug = 1;
@@ -121,7 +121,7 @@ sub blockerror {
   if ($insync && $erbloks > 45) {
     $insync   = FALSE;
     @errblock = ();
-    &updateLinkLabel;
+    #&updateLinkLabel;
   }
 
   @rcvd = ();
