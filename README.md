@@ -2,29 +2,7 @@ redsea
 ======
 This program decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It is designed to work with [a special modification](http://windytan.blogspot.fi/2012/10/enchanting-subcarriers-on-fm-part-2.html) to the ATS 909 receiver.
 
-Requires Linux, SoX, and Perl &gt;= 5.10 (with Gtk2 and Encode libraries).
-
-Display
--------
-
-![Screenshot](http://oona.windytan.com/rds-ylesuomi.png)
-
-*  big text on the left is Program Service name (PS); text below is RadioText (RT)
-*  CL: clock signal detected from IC
-*  DT: data signal detected from IC
-*  SY: block synchronization acquired
-*  RT: receiving RadioText
-*  RT+: receiving RadioText+
-*  eRT: receiving Enhanced RadioText
-*  EON: station broadcasts Enhanced Other Networks information
-*  TMC: station broadcasts Traffic Message Channel
-*  TP: Traffic Program bit is set
-*  TA: Traffic Announcement bit is set
-*  PI: Program Identification number (hex)
-*  ECC: Extended Country Code
-*  PTY: Program Type
-*  MHz: station frequency as guessed from AF
-*  QUA: quality of received data
+Requires Linux, SoX, and Perl &gt;= 5.10 (with Encode library).
 
 Licensing
 ---------
