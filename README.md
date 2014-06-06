@@ -4,6 +4,13 @@ This program decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data 
 
 Requires Linux, SoX, and Perl &gt;= 5.10 (with Encode library).
 
+Usage
+-----
+
+To use with the GPIO setup, run input-gpio.pl and pipe its ouput to redsea.pl.
+
+To use with hexadecimal input data, run your data through input-hex.pl (stdin) and pipe its output to redsea.pl.
+
 Licensing
 ---------
 
