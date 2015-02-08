@@ -1,6 +1,6 @@
 redsea
 ======
-This program decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It uses rtl_fm.
+redsea decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It works with rtl_fm.
 
 Requires rtl_sdr, SoX, and Perl &gt;= 5.10 (with Encode library).
 
