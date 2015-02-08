@@ -11,6 +11,7 @@ $| ++;
 use 5.010;
 use warnings;
 use utf8;
+no warnings 'experimental::smartmatch';
 
 use Encode 'decode';
 #use open   ':utf8';

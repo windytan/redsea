@@ -1,19 +1,31 @@
+/* Redsea RDS recoder
+ * Oona Räisänen OH2EIQ */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define FS   250000.0
 #define FC_0 57000.0
 
+int nbit;
+double fc;
+
 void bit(char b) {
   printf("%d", b);
+  if (nbit % 104 == 0)  {
+    fflush(0);
+  }
+  nbit++;
 }
 
-int main() {
-  double fc = FC_0;
+int main(int argc, char **argv) {
+  fc = FC_0;
 
   char commd[1024];
   int16_t sample[1];
+  int16_t outbuf[2];
   double val = 0;
 
   double lo_phi = 0;
@@ -37,9 +49,28 @@ int main() {
   char dbit=0, prev_dbit=0;
 
   FILE *S;
+  FILE *U;
 
-  sprintf(commd, "sox rd.wav -t .s16 -r %.0f -", FS);
+  nbit = 0;
+
+  int c;
+  int fmfreq = 0;
+  while ((c = getopt (argc, argv, "f:")) != -1)
+    switch (c) {
+      case 'f':
+        fmfreq = atoi(optarg);
+        break;
+      case '?':
+        fprintf (stderr, "Unknown option `-%c`\n", optopt);
+        return EXIT_FAILURE;
+      default:
+        break;
+    }
+
+  sprintf(commd, "rtl_fm -f %d -M fm -l 0 -p 0 -A std -s 250000 | sox -c 1 -t .s16 -r 250000 - -t .s16 -r 250000 - sinc 53000-61000 gain 15 2>/dev/null", fmfreq);
   S = popen(commd, "r");
+
+  U = popen("sox -t .s16 -c 2 -r 250000 - u.wav","w");
 
   while (1) {
     if (fread(sample, sizeof(int16_t), 1, S) == 0) exit(0);
@@ -71,8 +102,10 @@ int main() {
     /* refine sampling instant */
     if (prevdemod * demod[0] <= 0) {
       d_phi = fmod(clock_phi, 2*M_PI);
-      if (d_phi >= M_PI) d_phi -= 2*M_PI;
-      clock_offset -= 0.05 * d_phi;
+      d_phi -= M_PI;
+      clock_offset -= 0.01 * d_phi;
+
+      //fprintf(stderr, "%.3f\n",d_phi);
     }
 
     /* biphase symbol integrate & dump */
@@ -84,6 +117,11 @@ int main() {
       acc = 0;
     }
 
+    outbuf[0] = demod[0] * 16000;
+    outbuf[1] = lo_clock * 16000;
+
+    fwrite(outbuf, sizeof(int16_t), 2, U);
+
     /* PLL */
     at = atan2(-filtd[1], filtd[0]);
     if (at > M_PI_2) {
@@ -92,6 +130,11 @@ int main() {
       at += M_PI;
     }
     fc += 0.002 * at;
+    if (fc > 57020) {
+      fc -= 30;
+    } else if (fc < 56980) {
+      fc += 30;
+    }
 
     prevdemod = demod[0];
     prevclock = lo_clock;
