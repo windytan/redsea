@@ -7,12 +7,14 @@ Requires rtl_sdr, SoX, and Perl &gt;= 5.10 (with Encode library).
 Compiling
 ---------
 
-    gcc -o rtl_in -lm rtl_in.c
+    gcc -o rtl_redsea -lm rtl_redsea.c
 
 Usage
 -----
 
-    ./rtl_in -f 87900000 | perl redsea.pl
+    ./rtl_redsea -f 87900000 | perl redsea.pl
+
+Carrier frequency is specified by -f.
 
 Licensing
 ---------
