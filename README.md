@@ -1,20 +1,23 @@
 redsea
 ======
-This program decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It is designed to work with [a special modification](http://windytan.blogspot.fi/2012/10/enchanting-subcarriers-on-fm-part-2.html) to the ATS 909 receiver.
+This program decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It uses rtl_fm.
 
-Requires Linux, SoX, and Perl &gt;= 5.10 (with Encode library).
+Requires rtl_sdr, SoX, and Perl &gt;= 5.10 (with Encode library).
+
+Compiling
+---------
+
+    gcc -o rtl_in -lm rtl_in.c
 
 Usage
 -----
 
-To use with the GPIO setup, run input-gpio.pl and pipe its ouput to redsea.pl.
-
-To use with hexadecimal input data, run your data through input-hex.pl (stdin) and pipe its output to redsea.pl.
+    ./rtl_in -f 87900000 | perl redsea.pl
 
 Licensing
 ---------
 
-    Copyright (c) 2007-2012, windytan (OH2EIQ)
+    Copyright (c) 2007-2015, windytan (OH2EIQ)
     
     Permission to use, copy, modify, and/or distribute this software for any
     purpose with or without fee is hereby granted, provided that the above
