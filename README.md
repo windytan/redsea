@@ -7,7 +7,7 @@ Requires rtl_sdr, SoX, and Perl &gt;= 5.10 (with Encode library).
 Compiling
 ---------
 
-    gcc -std=gnu99 -o rtl_redsea -lm rtl_redsea.c
+    gcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm
 
 Usage
 -----
