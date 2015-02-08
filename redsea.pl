@@ -1318,27 +1318,6 @@ sub initdata {
    "Enhanced Other Networks information",         "Enhanced Other Networks information",
    "Undefined",                                   "Fast switching information");
 
-  # Theme
-  open (INFILE, "themes/theme-".$theme) or die ($!);
-  for (<INFILE>) {
-    chomp();
-    ($a,$b) = split(/=/,$_);
-    $themef{$a} = $b;
-  }
-  close(INFILE);
-  
-  # Saved station settings
-  open (INFILE, "stations") or die ($!);
-  for (<INFILE>) {
-    chomp;
-    if (/^([\dA-F]{4}) \"(.{8})\" ([01]) ([01]) (\d+) +(.+)/i) {
-      ($stn{hex($1)}{'presetPSbuf'}, $stn{hex($1)}{'denyRTAB'}, $stn{hex($1)}{'denyPS'}, $stn{hex($1)}{'presetminRTlen'}, $stn{hex($1)}{'chname'}) =
-        ($2, $3, $4, $5, $6);
-      die ("minRTlen must be <=64") if ($stn{hex($1)}{'presetminRTlen'} > 64);
-    }
-  }
-  close(INFILE);
-
 }
 
 
