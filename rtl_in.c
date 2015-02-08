@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
   char dbit=0, prev_dbit=0;
 
   FILE *S;
-  FILE *U;
+  //FILE *U;
 
   nbit = 0;
 
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
   sprintf(commd, "rtl_fm -f %d -M fm -l 0 -p 0 -A std -s 250000 | sox -c 1 -t .s16 -r 250000 - -t .s16 -r 250000 - sinc 53000-61000 gain 15 2>/dev/null", fmfreq);
   S = popen(commd, "r");
 
-  U = popen("sox -t .s16 -c 2 -r 250000 - u.wav","w");
+  //U = popen("sox -t .s16 -c 2 -r 250000 - u.wav","w");
 
   while (1) {
     if (fread(sample, sizeof(int16_t), 1, S) == 0) exit(0);
@@ -117,10 +117,10 @@ int main(int argc, char **argv) {
       acc = 0;
     }
 
-    outbuf[0] = demod[0] * 16000;
-    outbuf[1] = lo_clock * 16000;
+    //outbuf[0] = demod[0] * 16000;
+    //outbuf[1] = lo_clock * 16000;
 
-    fwrite(outbuf, sizeof(int16_t), 2, U);
+    //fwrite(outbuf, sizeof(int16_t), 2, U);
 
     /* PLL */
     at = atan2(-filtd[1], filtd[0]);
