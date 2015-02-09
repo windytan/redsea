@@ -4,6 +4,8 @@ redsea decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from F
 
 Requires rtl_sdr, SoX, and Perl &gt;= 5.10 (with Encode library).
 
+[explanatory blog post](http://www.windytan.com/2015/02/receiving-rds-with-rtl-sdr.html)
+
 Compiling
 ---------
 
