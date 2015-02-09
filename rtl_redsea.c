@@ -97,11 +97,8 @@ int main(int argc, char **argv) {
 
     /* refine sampling instant */
     if (prevdemod * demod[0] <= 0) {
-      d_phi = fmod(clock_phi, 2*M_PI);
-      d_phi -= M_PI;
+      d_phi = fmod(clock_phi, 2*M_PI) - M_PI;
       clock_offset -= 0.01 * d_phi;
-
-      //fprintf(stderr, "%.3f\n",d_phi);
     }
 
     /* biphase symbol integrate & dump */
