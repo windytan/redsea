@@ -22,7 +22,6 @@ int main(int argc, char **argv) {
 
   char commd[1024];
   int16_t sample[1];
-  int16_t outbuf[2];
   double val = 0;
   double fc = FC_0;
 
