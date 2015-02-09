@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
         break;
     }
 
-  sprintf(commd, "rtl_fm -f %d -M fm -l 0 -A std -s 250000 | sox -c 1 -t .s16 -r %.0f - -t .s16 - sinc 53000-61000 gain 15 2>/dev/null", FS, fmfreq);
+  sprintf(commd, "rtl_fm -f %d -M fm -l 0 -A std -s 250000 | sox -c 1 -t .s16 -r %.0f - -t .s16 - sinc 53000-61000 gain 15 2>/dev/null", fmfreq, FS);
   S = popen(commd, "r");
 
   while (1) {
