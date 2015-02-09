@@ -9,13 +9,27 @@
 #define FS   250000.0
 #define FC_0 57000.0
 
-int nbit;
-
 void bit(char b) {
-  printf("%d", b);
+  static int nbit = 0, dbit = 0;
+  printf("%d", b ^ dbit);
   if (nbit % 104 == 0)
     fflush(0);
+  dbit = b;
   nbit++;
+}
+
+void biphase(double acc) {
+  static double prevacc = 0;
+  static int counter = 0;
+  counter ++;
+  if (acc >= 0 && prevacc >= 0 && counter > 1) {
+    bit(1);
+    counter = 0;
+  } else if (acc < 0 && prevacc < 0 && counter > 1) {
+    bit(0);
+    counter = 0;
+  }
+  prevacc = acc;
 }
 
 int main(int argc, char **argv) {
@@ -43,14 +57,10 @@ int main(int argc, char **argv) {
 
   double gain = 6.605354574;
 
-  char dbit=0, prev_dbit=0;
-
   int c;
   int fmfreq = 0;
 
   FILE *S;
-
-  nbit = 0;
 
   while ((c = getopt (argc, argv, "f:")) != -1)
     switch (c) {
@@ -97,16 +107,15 @@ int main(int argc, char **argv) {
 
     /* refine sampling instant */
     if (prevdemod * filtd[0] <= 0) {
-      d_phi = fmod(clock_phi, 2*M_PI) - M_PI;
-      clock_offset -= 0.01 * d_phi;
+      d_phi = fmod(clock_phi, M_PI);
+      if (d_phi >= M_PI_2) d_phi -= M_PI;
+      clock_offset -= 0.05 * d_phi;
     }
 
     /* biphase symbol integrate & dump */
     acc += filtd[0] * lo_clock;
-    if (prevclock < 0 && lo_clock >= 0) {
-      dbit = (acc < 0 ? 0 : 1);
-      bit(dbit ^ prev_dbit);
-      prev_dbit = dbit;
+    if (prevclock * lo_clock <= 0) {
+      biphase(acc);
       acc = 0;
     }
 
