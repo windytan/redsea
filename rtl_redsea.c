@@ -115,18 +115,13 @@ int main(int argc, char **argv) {
 
     /* PLL */
     at = atan2(-filtd[1], filtd[0]);
-    if (at > M_PI_2) {
-      at -= M_PI;
-    } else if (at < -M_PI_2) {
-      at += M_PI;
-    }
+    if (at > M_PI_2)  at -= M_PI;
+    if (at < -M_PI_2) at += M_PI;
     fc += 0.002 * at;
-    if (fc > 57020) {
-      fc -= 30;
-    } else if (fc < 56980) {
-      fc += 30;
-    }
+    if (fc > 57020) fc -= 30;
+    if (fc < 56980) fc += 30;
 
+    /* For zero-crossing detection */
     prevdemod = demod[0];
     prevclock = lo_clock;
 
