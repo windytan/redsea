@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef LOCAL
-  sprintf(commd, "sox rd.wav -c 1 -t .s16 -r %.0f - sinc %.1f-%.1f gain 15 2>/dev/null", FS, FC_0-4000, FC_0+4000);
+  sprintf(commd, "sox rd.wav -c 1 -t .s16 -r %.0f - sinc %.1f-%.1f gain 15 2>/dev/null", FS, FC_0-3500, FC_0+3500);
 #else
   sprintf(commd, "rtl_fm -f %d -M fm -l 0 -A std -s %.1f | sox -c 1 -t .s16 -r %.0f - -t .s16 - sinc %.1f-%.1f gain 15 2>/dev/null", fmfreq, FS, FS, FC_0-4000, FC_0+4000);
 #endif
