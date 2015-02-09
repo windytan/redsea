@@ -81,9 +81,11 @@ int main(int argc, char **argv) {
     clock_phi = lo_phi / 48 + clock_offset;
     lo_clock = sin(clock_phi);
 
-    /* DSB demod & Butterworth lopass */
+    /* DSB demodulate */
     demod[0] = (val * lo_iq[0]);
     demod[1] = (val * lo_iq[1]);
+
+    /* Butterworth lopass */
     for (int iq=0;iq<=1;iq++) {
       xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3];
       xv[iq][3] = demod[iq] / gain;
@@ -93,16 +95,15 @@ int main(int argc, char **argv) {
                    + (  0.1152020629 * yv[iq][2]);
       filtd[iq] = yv[iq][3];
     }
-    demod[0] = filtd[0];
 
     /* refine sampling instant */
-    if (prevdemod * demod[0] <= 0) {
+    if (prevdemod * filtd[0] <= 0) {
       d_phi = fmod(clock_phi, 2*M_PI) - M_PI;
       clock_offset -= 0.01 * d_phi;
     }
 
     /* biphase symbol integrate & dump */
-    acc += demod[0] * lo_clock;
+    acc += filtd[0] * lo_clock;
     if (prevclock < 0 && lo_clock >= 0) {
       dbit = (acc < 0 ? 0 : 1);
       bit(dbit ^ prev_dbit);
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
     if (fc < 56980) fc += 30;
 
     /* For zero-crossing detection */
-    prevdemod = demod[0];
+    prevdemod = filtd[0];
     prevclock = lo_clock;
 
   }
