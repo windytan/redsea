@@ -10,23 +10,21 @@
 #define FC_0 57000.0
 
 int nbit;
-double fc;
 
 void bit(char b) {
   printf("%d", b);
-  if (nbit % 104 == 0)  {
+  if (nbit % 104 == 0)
     fflush(0);
-  }
   nbit++;
 }
 
 int main(int argc, char **argv) {
-  fc = FC_0;
 
   char commd[1024];
   int16_t sample[1];
   int16_t outbuf[2];
   double val = 0;
+  double fc = FC_0;
 
   double lo_phi = 0;
   double lo_iq[2] = {0};
@@ -48,13 +46,13 @@ int main(int argc, char **argv) {
 
   char dbit=0, prev_dbit=0;
 
+  int c;
+  int fmfreq = 0;
+
   FILE *S;
-  //FILE *U;
 
   nbit = 0;
 
-  int c;
-  int fmfreq = 0;
   while ((c = getopt (argc, argv, "f:")) != -1)
     switch (c) {
       case 'f':
@@ -67,10 +65,8 @@ int main(int argc, char **argv) {
         break;
     }
 
-  sprintf(commd, "rtl_fm -f %d -M fm -l 0 -p 0 -A std -s 250000 | sox -c 1 -t .s16 -r 250000 - -t .s16 -r 250000 - sinc 53000-61000 gain 15 2>/dev/null", fmfreq);
+  sprintf(commd, "rtl_fm -f %d -M fm -l 0 -A std -s 250000 | sox -c 1 -t .s16 -r %.0f - -t .s16 - sinc 53000-61000 gain 15 2>/dev/null", FS, fmfreq);
   S = popen(commd, "r");
-
-  //U = popen("sox -t .s16 -c 2 -r 250000 - u.wav","w");
 
   while (1) {
     if (fread(sample, sizeof(int16_t), 1, S) == 0) exit(0);
@@ -83,7 +79,7 @@ int main(int argc, char **argv) {
 
     /* 1187.5 Hz clock */
     clock_phi = lo_phi / 48 + clock_offset;
-    lo_clock = sin(clock_phi);//(fmod(clock_phi, 2*M_PI) >= M_PI ? 1 : -1);
+    lo_clock = sin(clock_phi);
 
     /* DSB demod & Butterworth lopass */
     demod[0] = (val * lo_iq[0]);
@@ -116,11 +112,6 @@ int main(int argc, char **argv) {
       prev_dbit = dbit;
       acc = 0;
     }
-
-    //outbuf[0] = demod[0] * 16000;
-    //outbuf[1] = lo_clock * 16000;
-
-    //fwrite(outbuf, sizeof(int16_t), 2, U);
 
     /* PLL */
     at = atan2(-filtd[1], filtd[0]);
