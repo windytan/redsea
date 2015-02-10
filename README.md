@@ -8,6 +8,7 @@ Requirements
 ------------
 
 * Linux or OSX
+* [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
 * [SoX](http://sox.sourceforge.net/)
 * Perl
 
