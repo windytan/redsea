@@ -106,8 +106,8 @@ sub commands {
   }
 
   my $fmfreq = $ARGV[0];
-  if ($fmfreq =~ /^([\d\.]+)([kMG])$/) {
-    my %si = ( "k" => 1e3, "M" => 1e6, "G" => 1e9 );
+  if ($fmfreq =~ /^([\d\.]+)([kMG])$/i) {
+    my %si = ( "k" => 1e3, "K" => 1e3, "m" => 1e6, "M" => 1e6, "g" => 1e9, "G" => 1e9 );
     $fmfreq = $1 * $si{$2};
   }
 
