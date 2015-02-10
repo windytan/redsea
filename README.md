@@ -1,10 +1,15 @@
 redsea
 ======
-redsea decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It works with rtl_fm on Linux and OSX.
-
-Requires rtl_sdr, SoX, and Perl &gt;= 5.10 (with Encode library).
+redsea decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It works with rtl_fm.
 
 [explanatory blog post](http://www.windytan.com/2015/02/receiving-rds-with-rtl-sdr.html)
+
+Requirements
+------------
+
+* Linux or OSX
+* [SoX](http://sox.sourceforge.net/)
+* Perl
 
 Compiling
 ---------
