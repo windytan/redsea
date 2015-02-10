@@ -1362,9 +1362,9 @@ sub appdata {
   my ($appname, $data) = @_;
   if (exists $options{t}) {
     my $stamp = strftime("%Y-%m-%dT%H:%M:%S%z ", localtime);
-    utter ($stamp, $stamp);
+    print $stamp;
   }
-  say "  [app] $appname $data";
+  say "[app] $appname $data";
 }
 
 sub utter {
