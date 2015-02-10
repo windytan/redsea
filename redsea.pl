@@ -90,7 +90,7 @@ sub commands {
 
   getopts("lst", \%options);
 
-  if (exists $options{h} || ($ARGV[0] // "") !~ /^[\d\.]+[kMG]?$/) {
+  if (exists $options{h} || ($ARGV[0] // "") !~ /^[\d\.]+[kMG]?$/i) {
     print
        "Usage: perl $0 [-hlst] FREQ\n\n".
        "    -h       display this help and exit\n".
