@@ -13,6 +13,7 @@ use utf8;
 no warnings 'experimental::smartmatch';
 
 use IPC::Cmd qw/can_run/;
+use List::Util qw/sum0/;
 
 use Encode 'decode';
 use Getopt::Std;
@@ -55,7 +56,7 @@ my $correct_all = FALSE;
 use constant   RESET => "\x1B[0m";
 use constant REVERSE => "\x1B[7m";
 
-my @GrpBuffer;
+my @group_buffer;
 my @group_data;
 my @has_block;
 my @block_has_errors;
@@ -87,17 +88,17 @@ get_groups();
 sub commands {
 
   if (!-e "rtl_redsea") {
-    print "Looks like rtl_redsea isn't compiled. To fix that, please ".
+    print "error: looks like rtl_redsea isn't compiled. To fix that, please ".
           "run:\n\ngcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
-    exit();
+    exit(1);
   }
   if (!can_run('rtl_fm')) {
-    print "Looks like rtl_fm is not installed\n";
-    exit();
+    print "error: looks like rtl_fm is not installed!\n";
+    exit(1);
   }
   if (!can_run('sox')) {
-    print "Looks like SoX is not installed!\n";
-    exit();
+    print "error: looks like SoX is not installed!\n";
+    exit(1);
   }
 
   getopts("lst", \%options);
@@ -142,17 +143,17 @@ sub syndrome {
   my $vector = shift;
 
   my ($l, $bit);
-  my $SyndReg = 0x000;
+  my $synd_reg = 0x000;
 
   for my $k (reverse(0..25)) {
-    $bit      = ($vector  & (1 << $k));
-    $l        = ($SyndReg & 0x200);      # Store lefmost bit of register
-    $SyndReg  = ($SyndReg << 1) & 0x3FF; # Rotate register
-    $SyndReg ^= 0x31B if ($bit);         # Premultiply input by x^325 mod g(x)
-    $SyndReg ^= 0x1B9 if ($l);           # Division mod 2 by g(x)
+    $bit       = ($vector  & (1 << $k));
+    $l         = ($synd_reg & 0x200);      # Store lefmost bit of register
+    $synd_reg  = ($synd_reg << 1) & 0x3FF; # Rotate register
+    $synd_reg ^= ($bit ? 0x31B : 0x00);    # Premultiply input by x^325 mod g(x)
+    $synd_reg ^= ($l   ? 0x1B9 : 0x00);    # Division mod 2 by g(x)
   }
 
-  return $SyndReg;
+  return $synd_reg;
 }
 
 
@@ -170,21 +171,18 @@ sub blockerror {
         $data_length = 3;
       }
     }
-    my @newgrp;
-    @newgrp = @group_data[0..$data_length-1];
-    push (@GrpBuffer, \@newgrp);
+    my @new_group;
+    @new_group = @group_data[0..$data_length-1];
+    push (@group_buffer, \@new_group);
   } elsif ($has_block[Ci]) {
-    my @newgrp;
-    @newgrp = $group_data[2];
-    push (@GrpBuffer, \@newgrp);
+    my @new_group;
+    @new_group = $group_data[2];
+    push (@group_buffer, \@new_group);
   }
 
   $block_has_errors[$block_counter % 50] = TRUE;
 
-  my $erroneous_blocks = 0;
-  for (@block_has_errors) {
-    $erroneous_blocks += ($_ // 0)
-  }
+  my $erroneous_blocks = sum0 @block_has_errors;
 
   # Sync is lost when >45 out of last 50 blocks are erroneous (C.1.2)
   if ($is_in_sync && $erroneous_blocks > 45) {
@@ -201,12 +199,12 @@ sub get_groups {
   my ($dist, $message);
   my $pi = my $i = 0;
   my $j = my $data_length = my $buf = my $prevsync = 0;
-  my $lefttoread = 26;
+  my $left_to_read = 26;
   my @has_sync_pulse;
 
-  my @offset    = (0x0FC, 0x198, 0x168, 0x350, 0x1B4);
-  my @ofs2block = (0,1,2,2,3);
-  my ($SyndReg,$pattern);
+  my @offset_word = (0x0FC, 0x198, 0x168, 0x350, 0x1B4);
+  my @ofs2block   = (0,1,2,2,3);
+  my ($synd_reg,$pattern);
   my @error_lookup;
 
   # Generate error vector lookup table for all correctable errors
@@ -232,20 +230,22 @@ sub get_groups {
   while (TRUE) {
 
     # Compensate for clock slip corrections
-    $bitcount += 26-$lefttoread;
+    $bitcount += 26-$left_to_read;
 
     # Read from radio
-    for ($i=0; $i < ($is_in_sync ? $lefttoread : 1); $i++, $bitcount++) {
+    for ($i=0; $i < ($is_in_sync ? $left_to_read : 1); $i++, $bitcount++) {
       $wideblock = ($wideblock << 1) + get_bit();
     }
 
-    $lefttoread = 26;
+    $left_to_read = 26;
     $wideblock &= _28BIT;
 
     $block = ($wideblock >> 1) & _26BIT;
 
     # Find the offsets for which the syndrome is zero
-    $has_sync_pulse[$_] = (syndrome($block ^ $offset[$_]) == 0) for (A .. D);
+    for (A .. D) {
+      $has_sync_pulse[$_] = (syndrome($block ^ $offset_word[$_]) == 0);
+    }
 
     # Acquire sync
 
@@ -310,15 +310,15 @@ sub get_groups {
           $message           = $pi;
           $wideblock         = ($wideblock << 1) + get_bit();
           $has_sync_pulse[A] = TRUE;
-          $lefttoread        = 25;
+          $left_to_read        = 25;
         }
 
         # Detect & correct burst errors (B.2.2)
 
-        $SyndReg = syndrome($block ^ $offset[$expected_offset]);
+        $synd_reg = syndrome($block ^ $offset_word[$expected_offset]);
 
-        if (defined $error_lookup[$SyndReg]) {
-          $message = ($block >> 10) ^ $error_lookup[$SyndReg];
+        if (defined $error_lookup[$synd_reg]) {
+          $message = ($block >> 10) ^ $error_lookup[$synd_reg];
           $has_sync_pulse[$expected_offset] = TRUE;
         }
 
