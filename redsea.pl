@@ -491,8 +491,8 @@ sub Group1A {
 
   # Paging (M.2.1.1.2)
 	
-  say "  ══╡ Pager TNG: ".     bits($_[1], 2, 3);
-  say "  ══╡ Pager interval: ".bits($_[1], 0, 2);
+  say "  [app] Pager TNG: ".     bits($_[1], 2, 3);
+  say "  [app] Pager interval: ".bits($_[1], 0, 2);
 
   # Slow labeling codes
     
@@ -507,21 +507,21 @@ sub Group1A {
   given ($slc_variant) {
 
     when (0) {
-      say "  ══╡ Pager OPC: ".bits($_[2], 8, 4);
+      say "  [app] Pager OPC: ".bits($_[2], 8, 4);
 
       # No PIN, M.3.2.4.3
       if (@_ == 4 && ($_[3] >> 11) == 0) {
         given (bits($_[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            say "  ══╡ Pager PAC: ".bits($_[3], 4, 6);
-            say "  ══╡ Pager OPC: ".bits($_[3], 0, 4);
+            say "  [app] Pager PAC: ".bits($_[3], 4, 6);
+            say "  [app] Pager OPC: ".bits($_[3], 0, 4);
           }
           # Sub type 1
           when (1) {
             given (bits($_[3], 8, 2)) {
-              when (0) { say "  ══╡ Pager ECC: ".bits($_[3], 0, 6); }
-              when (3) { say "  ══╡ Pager CCF: ".bits($_[3], 0, 4); }
+              when (0) { say "  [app] Pager ECC: ".bits($_[3], 0, 6); }
+              when (3) { say "  [app] Pager CCF: ".bits($_[3], 0, 4); }
             }
           }
         }
@@ -543,22 +543,22 @@ sub Group1A {
     }
 
     when (2) {
-      say "  ══╡ Pager OPC: ".bits($_[2], 8, 4);
-      say "  ══╡ Pager PAC: ".bits($_[2], 0, 6);
+      say "  [app] Pager OPC: ".bits($_[2], 8, 4);
+      say "  [app] Pager PAC: ".bits($_[2], 0, 6);
       
       # No PIN, M.3.2.4.3
       if (@_ == 4 && ($_[3] >> 11) == 0) {
         given (bits($_[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            say "  ══╡ Pager PAC: ".bits($_[3], 4, 6);
-            say "  ══╡ Pager OPC: ".bits($_[3], 0, 4);
+            say "  [app] Pager PAC: ".bits($_[3], 4, 6);
+            say "  [app] Pager OPC: ".bits($_[3], 0, 4);
           }
           # Sub type 1
           when (1) {
             given (bits($_[3], 8, 2)) {
-              when (0) { say "  ══╡ Pager ECC: ".bits($_[3], 0, 6); }
-              when (3) { say "  ══╡ Pager CCF: ".bits($_[3], 0, 4); }
+              when (0) { say "  [app] Pager ECC: ".bits($_[3], 0, 6); }
+              when (3) { say "  [app] Pager CCF: ".bits($_[3], 0, 4); }
             }
           }
         }
@@ -695,7 +695,7 @@ sub Group3A {
     # Traffic Message Channel
     when ([0xCD46, 0xCD47]) {
       $stn{$pi}{'hasTMC'} = TRUE;
-      say sprintf("  ══╡ TMC sysmsg %04x",$_[2]);
+      say sprintf("  [app] TMC sysmsg %04x",$_[2]);
     }
 
     # RT+
@@ -822,7 +822,7 @@ sub Group6B {
 sub Group7A {
   
   return if (@_ < 3);
-  say sprintf("  ══╡ Pager 7A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]);
+  say sprintf("  [app] Pager 7A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]);
 }
 
 # 9A: Emergency warning systems or ODA
@@ -869,7 +869,7 @@ sub Group10A {
 sub Group13A {
  
   return if (@_ < 4);
-  say sprintf("  ══╡ Pager 13A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]);
+  say sprintf("  [app] Pager 13A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]);
 
 }
 
@@ -997,7 +997,7 @@ sub ODAGroup {
   if (exists $stn{$pi}{'ODAaid'}{$gtype}) {
     given ($stn{$pi}{'ODAaid'}{$gtype}) {
 
-      when ([0xCD46, 0xCD47]) { say sprintf("  ══╡ TMC msg %02x %04x %04x",
+      when ([0xCD46, 0xCD47]) { say sprintf("  [app] TMC msg %02x %04x %04x",
                                 bits($data[1], 0, 5), $data[2], $data[3]); }
       when (0x4BD7)           { &parse_RTp(@data); }
       when (0x6552)           { &parse_eRT(@data); }
