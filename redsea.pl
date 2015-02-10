@@ -83,7 +83,7 @@ sub commands {
        "    -l       print groups in long format\n".
        "    -s       print groups in short format (default)\n".
        "    -t       print an ISO timestamp before each group\n".
-       "    FREQ     station frequency in Hz, can be SI prefixed (e.g. 94.0M)\n";
+       "    FREQ     station frequency in Hz, can be SI suffixed (e.g. 94.0M)\n";
     exit();
   }
 
