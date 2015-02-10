@@ -1075,18 +1075,18 @@ sub set_rt_khars {
     $stn{$pi}{'RTrcvd'}[$lok+$i] = TRUE;
   }
 
-  my $minRTlen = ($stn{$pi}{'RTbuf'} =~ /↵/ ? index($stn{$pi}{'RTbuf'},"↵") + 1 : $stn{$pi}{'presetminRTlen'} // 0);
+  my $minRTlen = ($stn{$pi}{'RTbuf'} =~ /↵/ ? index($stn{$pi}{'RTbuf'},"↵") + 1 : $stn{$pi}{'presetminRTlen'} // 64);
  
-  if ($minRTlen > 0) { 
-    my $totrc = grep (defined $_, @{$stn{$pi}{'RTrcvd'}}[0..$minRTlen]);
-    $stn{$pi}{'hasFullRT'} = ($totrc >= $minRTlen ? TRUE : FALSE);
-  }
+  my $totrc = grep (defined $_, @{$stn{$pi}{'RTrcvd'}}[0..$minRTlen]);
+  $stn{$pi}{'hasFullRT'} = ($totrc >= $minRTlen ? TRUE : FALSE);
 
   my $displayedRT = ($interactive ? substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.
                       substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
                       substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)) : $stn{$pi}{'RTbuf'});
   utter ("  RT:     ".$displayedRT, " RT:\"".$displayedRT."\"");
-  utter ("", " RTcomplete") if ($stn{$pi}{'hasFullRT'});
+  if ($stn{$pi}{'hasFullRT'}) {
+    utter ("", " RTcomplete");
+  }
 
   utter ("          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'RTrcvd'}}[0..63]))),"");
 }
