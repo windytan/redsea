@@ -61,6 +61,8 @@ $insync = FALSE;
 my %options = ();
 $verbosity = 0;
 
+$interactive = (-t STDOUT ? TRUE : FALSE);
+
 commands();
 
 initdata();
@@ -1043,8 +1045,6 @@ sub set_rt_khars {
     $stn{$pi}{'RTrcvd'}[$lok+$i] = TRUE;
   }
 
-  # Message will be displayed when fully received
-  
   my $minRTlen = ($stn{$pi}{'RTbuf'} =~ /↵/ ? index($stn{$pi}{'RTbuf'},"↵") + 1 : $stn{$pi}{'presetminRTlen'} // 0);
  
   if ($minRTlen > 0) { 
@@ -1052,10 +1052,11 @@ sub set_rt_khars {
     $stn{$pi}{'hasFullRT'} = ($totrc >= $minRTlen ? TRUE : FALSE);
   }
 
-  utter ("  RT:     ".substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
-                      substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)),
-         " RT:\"".substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
-                  substr($stn{$pi}{'RTbuf'},$lok+scalar(@a))."\"");
+  $displayedRT = ($interactive ? substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.
+                      substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
+                      substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)) : $stn{$pi}{'RTbuf'});
+  utter ("  RT:     ".$displayedRT, " RT:\"".$displayedRT."\"");
+  utter ("", " RTcomplete") if ($stn{$pi}{'hasFullRT'});
 
   utter ("          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'RTrcvd'}}[0..63]))),"");
 }
@@ -1074,7 +1075,8 @@ sub parse_eRT {
       $stn{$pi}{'eRTrcvd'}[2*$addr+$_]           = TRUE;
     }
   
-    say "  eRT:    ". substr($stn{$pi}{'eRTbuf'},0,2*$addr).REVERSE.substr($stn{$pi}{'eRTbuf'},2*$addr,2).RESET.
+    say "  eRT:    ". substr($stn{$pi}{'eRTbuf'},0,2*$addr).($interactive ? REVERSE : "").
+                      substr($stn{$pi}{'eRTbuf'},2*$addr,2).($interactive ? RESET : "").
                       substr($stn{$pi}{'eRTbuf'},2*$addr+2);
   
     say "          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'eRTrcvd'}}[0..63])));
@@ -1107,10 +1109,10 @@ sub set_ps_khars {
     $markup =~ s/</&lt;/g;
   }
 
-  utter ("  PS:     ".substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
-                      substr($stn{$pspi}{'PSbuf'},$lok+2),
-         " PS:\"".substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
-                  substr($stn{$pspi}{'PSbuf'},$lok+2)."\"");
+  my $displayedPS = ($interactive ? substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.
+                      substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
+                      substr($stn{$pspi}{'PSbuf'},$lok+2) : $stn{$pspi}{'PSbuf'});
+  utter ("  PS:     ".$displayedPS, " PS:\"".$displayedPS."\"");
 
 }
 
