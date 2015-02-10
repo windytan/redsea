@@ -1043,17 +1043,7 @@ sub set_rt_khars {
   
   my $totrc = grep (defined $_, @{$stn{$pi}{'RTrcvd'}}[0..$minRTlen]) if ($minRTlen > 0);
 
-  if ($minRTlen == 0) {
-    $stn{$pi}{'RTscrollbuf'} = substr($stn{$pi}{'RTbuf'},0,64);
-  }
-  elsif ($totrc >= $minRTlen) {
-    $stn{$pi}{'RTscrollbuf'} = substr($stn{$pi}{'RTbuf'},0,$minRTlen);
-    $stn{$pi}{'hasFullRT'} = TRUE;
-  } else {
-    $stn{$pi}{'RTscrollbuf'} = substr($stn{$pi}{'RTbuf'},0,$minRTlen);
-    $stn{$pi}{'hasFullRT'} = FALSE;
-  }
-
+  $stn{$pi}{'hasFullRT'} = ($totrc >= $minRTlen ? TRUE : FALSE);
 
   utter ("  RT:     ".substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
                       substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)),
@@ -1180,17 +1170,17 @@ sub parseAF {
   my $num = shift;
   if ($fm) {
     given ($num) {
-      when ([1..204])   { return sprintf("%0.1f MHz", (87.5 + $num/10) ); }
+      when ([1..204])   { return sprintf("\"%0.1f MHz\"", (87.5 + $num/10) ); }
       when (205)        { return "(filler)"; }
-      when (224)        { return "No AF exists"; }
-      when ([225..249]) { return ($num == 225 ? "One AF follows" : ($num-224)." AFs follow"); }
-      when (250)        { return "AM/LF freq follows"; }
-      default           { return "(error: $num)"; }
+      when (224)        { return "\"No AF exists\""; }
+      when ([225..249]) { return "\"".($num == 225 ? "1 AF follows" : ($num-224)." AFs follow")."\""; }
+      when (250)        { return "\"AM/LF freq follows\""; }
+      default           { return "(error:$num)"; }
     }
   } else {
     given ($num) {
-      when ([1..15])    { return sprintf("%d kHz", 144 + $num * 9); }
-      when ([16..135])  { return sprintf("%d kHz", 522 + ($num-15) * 9); }
+      when ([1..15])    { return sprintf("\"%d kHz\"", 144 + $num * 9); }
+      when ([16..135])  { return sprintf("\"%d kHz\"", 522 + ($num-15) * 9); }
       default           { return "N/A"; }
     }
   }
