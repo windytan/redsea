@@ -1217,14 +1217,14 @@ sub initdata {
                  "",                 "",                 "",                 "",
                  "",                 "Weather",          "Emergency Test",   "ALERT! ALERT!");
 
-  @ptynamesFI = ("",                 "Uutiset",          "Ajankohtaista",    "Tiedotuksia",
-                 "Urheilu",          "Opetus",           "Kuunnelma",        "Kulttuuri",
-                 "Tiede",            "Puheviihde",       "Pop",              "Rock",
-                 "Kevyt musiikki",   "Kevyt klassinen",  "Klassinen",        "Muu musiikki",
-                 "Säätiedotus",      "Talousohjelma",    "Lastenohjelma",    "Yhteiskunta",
-                 "Uskonto",          "Yleisökontakti",   "Matkailu",         "Vapaa-aika",
-                 "Jazz",             "Country",          "Kotim. musiikki",  "Oldies",
-                 "Kansanmusiikki",   "Dokumentti",       "HÄLYTYS TESTI",    "HÄLYTYS");
+  #@ptynamesFI = ("",                 "Uutiset",          "Ajankohtaista",    "Tiedotuksia",
+               #  "Urheilu",          "Opetus",           "Kuunnelma",        "Kulttuuri",
+               #  "Tiede",            "Puheviihde",       "Pop",              "Rock",
+               #  "Kevyt musiikki",   "Kevyt klassinen",  "Klassinen",        "Muu musiikki",
+               #  "Säätiedotus",      "Talousohjelma",    "Lastenohjelma",    "Yhteiskunta",
+               #  "Uskonto",          "Yleisökontakti",   "Matkailu",         "Vapaa-aika",
+               #  "Jazz",             "Country",          "Kotim. musiikki",  "Oldies",
+               #  "Kansanmusiikki",   "Dokumentti",       "HÄLYTYS TESTI",    "HÄLYTYS");
   
   # Basic LCD character set
   @charbasic = split(//,
