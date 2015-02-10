@@ -58,6 +58,7 @@ my @GrpBuffer :shared;
 $pi = 0;
 $insync = FALSE;
 
+my $bitpipe;
 my %options = ();
 $verbosity = 0;
 
@@ -99,26 +100,26 @@ sub commands {
     $fmfreq = $1 * $si{$2};
   }
 
-  open IN, sprintf("rtl_fm -f %.1f -M fm -l 0 -A std -s %.1f | ".
-           "sox -c 1 -t .s16 -r %.1f - -t .s16 - sinc %.1f-%.1f ".
-           "gain 15 2>/dev/null | ./rtl_redsea | ", $fmfreq, $fs, $fs, $fc-3500,
-           $fc+3500);
+  open ($bitpipe, "-|", sprintf("rtl_fm -f %.1f -M fm -l 0 -A std -s %.1f | ".
+                        "sox -c 1 -t .s16 -r %.1f - -t .s16 - sinc %.1f-%.1f ".
+                        "gain 15 2>/dev/null | ./rtl_redsea", $fmfreq, $fs, $fs, $fc-3500,
+                        $fc+3500));
 }
 
 # Next bit from radio
 sub get_bit {
-  read(IN,$a,1) or die("End of stream");
-  $a;
+  read($bitpipe, my $a, 1) or die("End of stream");
+  return $a;
 }
 
 # Calculate the syndrome of a 26-bit vector
 sub syndrome {
   my $vector = shift;
 
-  my ($k, $l, $bit);
+  my ($l, $bit);
   my $SyndReg = 0x000;
 
-  for $k (reverse(0..25)) {
+  for my $k (reverse(0..25)) {
     $bit      = ($vector  & (1 << $k));
     $l        = ($SyndReg & 0x200);      # Store lefmost bit of register
     $SyndReg  = ($SyndReg << 1) & 0x3FF; # Rotate register
@@ -126,7 +127,7 @@ sub syndrome {
     $SyndReg ^= 0x1B9 if ($l);           # Division mod 2 by g(x)
   }
 
-  $SyndReg;
+  return $SyndReg;
 }
 
 
@@ -158,7 +159,9 @@ sub blockerror {
   $errblock[$BlkPointer % 50] = TRUE;
 
   $erbloks  = 0;
-  $erbloks += ($_ // 0) for (@errblock);
+  for (@errblock) {
+    $erbloks += ($_ // 0)
+  }
 
   # Sync is lost when >45 out of last 50 blocks are erroneous (C.1.2)
   if ($insync && $erbloks > 45) {
@@ -185,14 +188,14 @@ sub get_groups {
   my @ErrLookup;
 
   # Generate error vector lookup table for all correctable errors
-  for (0..15) {
-    $err = 1 << $_;
+  for my $shft (0..15) {
+    $err = 1 << $shft;
     $ErrLookup[&syndrome(0x00004b9 ^ ($err<<10))] = $err;
   }
 
   if ($correct_all) {
     for ($patt = 0x01; $patt <= 0x1F; $patt += 2) {
-      for $i (0..16-int(log2($patt)+1)) {
+      for my $i (0..16-int(log2($patt)+1)) {
         $err = $patt << $i;
         $ErrLookup[&syndrome(0x00005b9 ^ ($err<<10))] = $err;
       }
@@ -206,7 +209,7 @@ sub get_groups {
 
     # Read from radio
     for ($i=0; $i < ($insync ? $lefttoread : 1); $i++, $bitcount++) {
-      $wideblock = ($wideblock << 1) + &get_bit();
+      $wideblock = ($wideblock << 1) + get_bit();
     }
 
     $lefttoread = 26;
@@ -223,19 +226,20 @@ sub get_groups {
 
       if ($syncb[A] | $syncb[B] | $syncb[C] | $syncb[Ci] | $syncb[D]) {
 
-        for (A .. D) {
-          if ($syncb[$_]) {
+        BLOCKS:
+        for my $bnum (A .. D) {
+          if ($syncb[$bnum]) {
             $dist = $bitcount - $prevbitcount;
 
             if (   $dist % 26 == 0
                 && $dist <= 156
-                && ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$_]) {
+                && ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$bnum]) {
               $insync = TRUE;
-              $expofs = $_;
-              last;
+              $expofs = $bnum;
+              last BLOCKS;
             } else {
               $prevbitcount = $bitcount;
-              $prevsync     = $_;
+              $prevsync     = $bnum;
             }
           }
         }
@@ -286,7 +290,7 @@ sub get_groups {
         }
 
         # If still no sync pulse
-        &blockerror() if (!$syncb[$expofs]);
+        blockerror() if (!$syncb[$expofs]);
       }
 
       # Error-free block received
@@ -312,7 +316,7 @@ sub get_groups {
       }
     }
   }
-  FALSE;
+  return FALSE;
 }
 
 
@@ -345,7 +349,7 @@ sub decodegroup {
     # PI has changed from last confirmed
     if ($newpi != ($pi // 0)) {
       $pi = $newpi;
-      &screenReset();
+      screenReset();
       if (exists $stn{$pi}{'presetPSbuf'}) {
         ($stn{$pi}{'PSmarkup'} = $stn{$pi}{'presetPSbuf'}) =~ s/&/&amp;/g;
         $stn{$pi}{'PSmarkup'}  =~ s/</&lt;/g;
@@ -388,27 +392,27 @@ sub decodegroup {
   # Data specific to the group type
 
   given ($gtype) {
-    when (0)  { &Group0A (@_); }
-    when (1)  { &Group0B (@_); }
-    when (2)  { &Group1A (@_); }
-    when (3)  { &Group1B (@_); }
-    when (4)  { &Group2A (@_); }
-    when (5)  { &Group2B (@_); }
-    when (6)  { exists ($stn{$pi}{'ODAaid'}{6})  ? &ODAGroup(6, @_)  : &Group3A (@_); }
-    when (8)  { &Group4A (@_); }
-    when (10) { exists ($stn{$pi}{'ODAaid'}{10}) ? &ODAGroup(10, @_) : &Group5A (@_); }
-    when (11) { exists ($stn{$pi}{'ODAaid'}{11}) ? &ODAGroup(11, @_) : &Group5B (@_); }
-    when (12) { exists ($stn{$pi}{'ODAaid'}{12}) ? &ODAGroup(12, @_) : &Group6A (@_); }
-    when (13) { exists ($stn{$pi}{'ODAaid'}{13}) ? &ODAGroup(13, @_) : &Group6B (@_); }
-    when (14) { exists ($stn{$pi}{'ODAaid'}{14}) ? &ODAGroup(14, @_) : &Group7A (@_); }
-    when (18) { exists ($stn{$pi}{'ODAaid'}{18}) ? &ODAGroup(18, @_) : &Group9A (@_); }
-    when (20) { &Group10A(@_); }
-    when (26) { exists ($stn{$pi}{'ODAaid'}{26}) ? &ODAGroup(26, @_) : &Group13A(@_); }
-    when (28) { &Group14A(@_); }
-    when (29) { &Group14B(@_); }
-    when (31) { &Group15B(@_); }
+    when (0)  { Group0A (@_); }
+    when (1)  { Group0B (@_); }
+    when (2)  { Group1A (@_); }
+    when (3)  { Group1B (@_); }
+    when (4)  { Group2A (@_); }
+    when (5)  { Group2B (@_); }
+    when (6)  { exists ($stn{$pi}{'ODAaid'}{6})  ? ODAGroup(6, @_)  : Group3A (@_); }
+    when (8)  { Group4A (@_); }
+    when (10) { exists ($stn{$pi}{'ODAaid'}{10}) ? ODAGroup(10, @_) : Group5A (@_); }
+    when (11) { exists ($stn{$pi}{'ODAaid'}{11}) ? ODAGroup(11, @_) : Group5B (@_); }
+    when (12) { exists ($stn{$pi}{'ODAaid'}{12}) ? ODAGroup(12, @_) : Group6A (@_); }
+    when (13) { exists ($stn{$pi}{'ODAaid'}{13}) ? ODAGroup(13, @_) : Group6B (@_); }
+    when (14) { exists ($stn{$pi}{'ODAaid'}{14}) ? ODAGroup(14, @_) : Group7A (@_); }
+    when (18) { exists ($stn{$pi}{'ODAaid'}{18}) ? ODAGroup(18, @_) : Group9A (@_); }
+    when (20) { Group10A(@_); }
+    when (26) { exists ($stn{$pi}{'ODAaid'}{26}) ? ODAGroup(26, @_) : Group13A(@_); }
+    when (28) { Group14A(@_); }
+    when (29) { Group14B(@_); }
+    when (31) { Group15B(@_); }
 
-    default   { &ODAGroup($gtype, @_); }
+    default   { ODAGroup($gtype, @_); }
   }
  
   utter("\n","\n");
@@ -422,7 +426,7 @@ sub Group0A {
   # DI
   my $DI_adr = 3 - bits($_[1], 0, 2);
   my $DI     = bits($_[1], 2, 1);
-  &parseDI($DI_adr, $DI);
+  parseDI($DI_adr, $DI);
 
   # TA, M/S
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
@@ -436,7 +440,7 @@ sub Group0A {
     # AF
     my @af;
     for (0..1) {
-      $af[$_] = &parseAF(TRUE, bits($_[2], 8-$_*8, 8));
+      $af[$_] = parseAF(TRUE, bits($_[2], 8-$_*8, 8));
       utter ("  AF:     $af[$_]"," AF:$af[$_]");
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
@@ -451,7 +455,7 @@ sub Group0A {
     if ($stn{$pi}{'denyPS'}) {
       utter ("          (Ignoring changes to PS)"," denyPS");
     } else {
-      &set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
+      set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
     }
   }
 }
@@ -463,7 +467,7 @@ sub Group0B {
   # Decoder Identification
   my $DI_adr = 3 - bits($_[1], 0, 2);
   my $DI     = bits($_[1], 2, 1);
-  &parseDI($DI_adr, $DI);
+  parseDI($DI_adr, $DI);
 
   # Traffic Announcements, Music/Speech
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
@@ -480,7 +484,7 @@ sub Group0B {
     if ($stn{$pi}{'denyPS'}) {
       utter ("          (Ignoring changes to PS)"," denyPS");
     } else {
-      &set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
+      set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
     }
   }
 
@@ -494,7 +498,7 @@ sub Group1A {
 
   # Program Item Number
 
-  utter ("  PIN:    ". &parsepin($_[3])," PIN:".&parsepin($_[3]));
+  utter ("  PIN:    ". parsepin($_[3])," PIN:".parsepin($_[3]));
 
   # Paging (M.2.1.1.2)
 
@@ -581,7 +585,7 @@ sub Group1A {
     }
 
     when (6) {
-      utter ("  Brodcaster data: ".sprintf("%03x", bits($_[2], 0, 12)).
+      utter ("  Brodcaster data: ".sprintf("%03x", bits($_[2], 0, 12)),
              " BDATA:".sprintf("%03x", bits($_[2], 0, 12)));
     }
 
@@ -602,7 +606,7 @@ sub Group1A {
 
 sub Group1B {
   return if (@_ < 4);
-  utter ("  PIN:    ". &parsepin($_[3])," PIN:$_[3]");
+  utter ("  PIN:    ". parsepin($_[3])," PIN:$_[3]");
 }
   
 # 2A: RadioText (64 characters)
@@ -635,7 +639,7 @@ sub Group2A {
     }
   }
 
-  &set_rt_khars($text_seg_addr,@chr);
+  set_rt_khars($text_seg_addr,@chr);
 }
 
 # 2B: RadioText (32 characters)
@@ -659,7 +663,7 @@ sub Group2B {
     }
   }
 
-  &set_rt_khars($text_seg_addr,@chr);
+  set_rt_khars($text_seg_addr,@chr);
 
 }
 
@@ -866,7 +870,9 @@ sub Group10A {
 
     my $segaddr = bits($_[1], 0, 1);
 
-    substr($stn{$pi}{'PTYN'}, $segaddr*4 + $_, 1) = $charbasic[$chr[$_]] for (0..$#chr);
+    for my $cnum (0..$#chr) {
+      substr($stn{$pi}{'PTYN'}, $segaddr*4 + $cnum, 1) = $charbasic[$chr[$cnum]];
+    }
         
     say "  PTYN:   ", substr($stn{$pi}{'PTYN'},0,$segaddr*4).REVERSE.substr($stn{$pi}{'PTYN'},$segaddr*4,scalar(@chr)).
                 RESET.substr($stn{$pi}{'PTYN'},$segaddr*4+scalar(@chr));
@@ -902,24 +908,24 @@ sub Group14A {
     when ([0..3]) {
       utter("  ","");
       $stn{$eon_pi}{'PSbuf'} = " " x 8 unless (exists($stn{$eon_pi}{'PSbuf'}));
-      &set_ps_khars($eon_pi, $eon_variant*2, bits($_[2], 8, 8), bits($_[2], 0, 8));
+      set_ps_khars($eon_pi, $eon_variant*2, bits($_[2], 8, 8), bits($_[2], 0, 8));
     }
 
     when (4) {
-      utter ("    AF:     ".&parseAF(TRUE, bits($_[2], 8, 8)), " AF:".&parseAF(TRUE, bits($_[2], 8, 8)));
-      utter ("    AF:     ".&parseAF(TRUE, bits($_[2], 0, 8)), " AF:".&parseAF(TRUE, bits($_[2], 0, 8)));
+      utter ("    AF:     ".parseAF(TRUE, bits($_[2], 8, 8)), " AF:".parseAF(TRUE, bits($_[2], 8, 8)));
+      utter ("    AF:     ".parseAF(TRUE, bits($_[2], 0, 8)), " AF:".parseAF(TRUE, bits($_[2], 0, 8)));
     }
 
     when ([5..8]) {
-      utter("    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
-                                         &parseAF(TRUE, bits($_[2], 0, 8)),
-            " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(TRUE, bits($_[2], 0, 8)));
+      utter("    AF:     Tuned frequency ".parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
+                                           parseAF(TRUE, bits($_[2], 0, 8)),
+            " AF:map:".parseAF(TRUE, bits($_[2], 8, 8))."->".parseAF(TRUE, bits($_[2], 0, 8)));
     }
 
     when (9) {
-      utter ("    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
-                                         &parseAF(FALSE,bits($_[2], 0, 8)),
-             " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(FALSE,bits($_[2], 0, 8)));
+      utter ("    AF:     Tuned frequency ".parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
+                                            parseAF(FALSE,bits($_[2], 0, 8)),
+             " AF:map:".parseAF(TRUE, bits($_[2], 8, 8))."->".parseAF(FALSE,bits($_[2], 0, 8)));
     }
 
     when (12) {
@@ -945,11 +951,11 @@ sub Group14A {
     }
 
     when (14) {
-      utter ("    PIN:    ". &parsepin($_[2])," PIN:".&parsepin($_[2]));
+      utter ("    PIN:    ". parsepin($_[2])," PIN:".parsepin($_[2]));
     }
 
     when (15) {
-      say "    Broadcaster data: ".sprintf("%04x", $_[2]);
+      utter ("    Broadcaster data: ".sprintf("%04x", $_[2]), " BDATA:".sprintf("%04x", $_[2]));
     }
 
     default {
@@ -983,7 +989,7 @@ sub Group15B {
   # DI
   my $DI_adr = 3 - bits($_[1], 0, 2);
   my $DI     = bits($_[1], 2, 1);
-  &parseDI($DI_adr, $DI);
+  parseDI($DI_adr, $DI);
 
   # TA, M/S
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
@@ -1007,11 +1013,12 @@ sub ODAGroup {
 
       when ([0xCD46, 0xCD47]) { appdata ("TMC", sprintf("msg %02x %04x %04x",
                                 bits($data[1], 0, 5), $data[2], $data[3])); }
-      when (0x4BD7)           { &parse_RTp(@data); }
-      when (0x6552)           { &parse_eRT(@data); }
-      default                 { say sprintf("          Unimplemented ODA %04x: %02x %04x %04x",
-                                    $stn{$pi}{'ODAaid'}{$gtype}, bits($data[1], 0, 5), $data[2], $data[3])
-                                   ; }
+      when (0x4BD7)           { parse_RTp(@data); }
+      when (0x6552)           { parse_eRT(@data); }
+      default                 {
+        say sprintf("          Unimplemented ODA %04x: %02x %04x %04x",
+                                    $stn{$pi}{'ODAaid'}{$gtype}, bits($data[1], 0, 5), $data[2], $data[3]);
+      }
 
     }
   } else {
@@ -1036,7 +1043,7 @@ sub set_rt_khars {
 
   $stn{$pi}{'hasRT'} = TRUE;
 
-  for $i (0..$#a) {
+  for my $i (0..$#a) {
     given ($a[$i]) {
       when (0x0D) { substr($stn{$pi}{'RTbuf'}, $lok+$i, 1) = "↵";                }
       when (0x0A) { substr($stn{$pi}{'RTbuf'}, $lok+$i, 1) = "␊";                }
@@ -1092,14 +1099,20 @@ sub set_ps_khars {
   my @khar = ($_[2], $_[3]);
   my $markup;
     
-  $stn{$pspi}{'PSbuf'} = " " x 8 if (not exists $stn{$pspi}{'PSbuf'});
+  if (not exists $stn{$pspi}{'PSbuf'}) {
+    $stn{$pspi}{'PSbuf'} = " " x 8
+  }
 
   substr($stn{$pspi}{'PSbuf'}, $lok, 2) = $charbasic[$khar[0]] . $charbasic[$khar[1]];
 
   # Display PS name when received without gaps
 
-  $stn{$pspi}{'prevPSlok'}      = 0  if (not exists $stn{$pspi}{'prevPSlok'});
-  $stn{$pspi}{'PSrcvd'}         = () if ($lok != $stn{$pspi}{'prevPSlok'} + 2 || $lok == $stn{$pspi}{'prevPSlok'});
+  if (not exists $stn{$pspi}{'prevPSlok'}) {
+    $stn{$pspi}{'prevPSlok'} = 0;
+  }
+  if ($lok != $stn{$pspi}{'prevPSlok'} + 2 || $lok == $stn{$pspi}{'prevPSlok'}) {
+    $stn{$pspi}{'PSrcvd'} = ();
+  }
   $stn{$pspi}{'PSrcvd'}[$lok/2] = TRUE;
   $stn{$pspi}{'prevPSlok'}      = $lok;
   my $totrc                     = grep (defined, @{$stn{$pspi}{'PSrcvd'}}[0..3]);
@@ -1139,7 +1152,7 @@ sub parse_RTp {
   if ($irun) {
     say "    Item running";
     if ($stn{$pi}{'rtp_which'} == 0) {
-      for $tag (0..1) {
+      for my $tag (0..1) {
         my $totrc = grep (defined $_, @{$stn{$pi}{'RTrcvd'}}[$start[$tag]..($start[$tag]+$len[$tag]-1)]);
         if ($totrc == $len[$tag]) {
           say "    Tag $rtpclass[$ctype[$tag]]: ".substr($stn{$pi}{'RTbuf'}, $start[$tag], $len[$tag]);
@@ -1165,10 +1178,22 @@ sub parsepin {
 
 sub parseDI {
   given ($_[0]) {
-    when (0) { utter ("  DI:     ". qw( Mono Stereo )[$_[1]], " DI:".qw( Mono Stereo )[$_[1]]);           }
-    when (1) { utter ("  DI:     Artificial head"," DI:ArtiHd") if ($_[1]);           }
-    when (2) { utter ("  DI:     Compressed"," DI:Cmprsd")      if ($_[1]);           }
-    when (3) { utter ("  DI:     ". qw( Static Dynamic)[$_[1]] ." PTY", " DI:".qw( StaPTY DynPTY )[$_[1]]); }
+    when (0) {
+      utter ("  DI:     ". qw( Mono Stereo )[$_[1]], " DI:".qw( Mono Stereo )[$_[1]]);
+    }
+    when (1) {
+      if ($_[1]) {
+        utter ("  DI:     Artificial head", " DI:ArtiHd");
+      }
+    }
+    when (2) {
+      if ($_[1]) {
+        utter ("  DI:     Compressed", " DI:Cmprsd");
+      }
+    }
+    when (3) {
+      utter ("  DI:     ". qw( Static Dynamic)[$_[1]] ." PTY", " DI:".qw( StaPTY DynPTY )[$_[1]]);
+    }
   }
 }
 
@@ -1177,22 +1202,24 @@ sub parseDI {
 sub parseAF {
   my $fm  = shift;
   my $num = shift;
+  my $af;
   if ($fm) {
     given ($num) {
-      when ([1..204])   { return sprintf("%0.1fMHz", (87.5 + $num/10) ); }
-      when (205)        { return "(filler)"; }
-      when (224)        { return "\"No AF exists\""; }
-      when ([225..249]) { return "\"".($num == 225 ? "1 AF follows" : ($num-224)." AFs follow")."\""; }
-      when (250)        { return "\"AM/LF freq follows\""; }
-      default           { return "(error:$num)"; }
+      when ([1..204])   { $af = sprintf("%0.1fMHz", (87.5 + $num/10) ); }
+      when (205)        { $af = "(filler)"; }
+      when (224)        { $af = "\"No AF exists\""; }
+      when ([225..249]) { $af = "\"".($num == 225 ? "1 AF follows" : ($num-224)." AFs follow")."\""; }
+      when (250)        { $af = "\"AM/LF freq follows\""; }
+      default           { $af = "(error:$num)"; }
     }
   } else {
     given ($num) {
-      when ([1..15])    { return sprintf("%dkHz", 144 + $num * 9); }
-      when ([16..135])  { return sprintf("%dkHz", 522 + ($num-15) * 9); }
-      default           { return "N/A"; }
+      when ([1..15])    { $af = sprintf("%dkHz", 144 + $num * 9); }
+      when ([16..135])  { $af = sprintf("%dkHz", 522 + ($num-15) * 9); }
+      default           { $af = "N/A"; }
     }
   }
+  return $af;
 }
 
 
@@ -1355,7 +1382,7 @@ sub initdata {
 
 
 # Extract len bits from int, starting at nth bit from the right
-# &bits (int, n, len)
+# bits (int, n, len)
 sub bits {
   return (($_[0] >> $_[1]) & (2**$_[2] - 1));
 }
