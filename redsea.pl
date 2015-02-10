@@ -438,7 +438,7 @@ sub Group0A {
       utter ("  AF:     $af[$_]"," AF:$af[$_]");
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
-      ($stn{$pi}{'freq'} = $af[1]) =~ s/ [kM]Hz//;
+      ($stn{$pi}{'freq'} = $af[1]) =~ s/ ?[kM]Hz//;
     }
   }
 
@@ -495,9 +495,9 @@ sub Group1A {
   utter ("  PIN:    ". &parsepin($_[3])," PIN:".&parsepin($_[3]));
 
   # Paging (M.2.1.1.2)
-	
-  say "  [app] Pager TNG: ".     bits($_[1], 2, 3);
-  say "  [app] Pager interval: ".bits($_[1], 0, 2);
+
+  appdata ("Pager", "TNG: ".     bits($_[1], 2, 3));
+  appdata ("Pager", "interval: ".bits($_[1], 0, 2));
 
   # Slow labeling codes
     
@@ -512,21 +512,21 @@ sub Group1A {
   given ($slc_variant) {
 
     when (0) {
-      say "  [app] Pager OPC: ".bits($_[2], 8, 4);
+      appdata ("Pager", "OPC: ".bits($_[2], 8, 4));
 
       # No PIN, M.3.2.4.3
       if (@_ == 4 && ($_[3] >> 11) == 0) {
         given (bits($_[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            say "  [app] Pager PAC: ".bits($_[3], 4, 6);
-            say "  [app] Pager OPC: ".bits($_[3], 0, 4);
+            appdata ("Pager", "PAC: ".bits($_[3], 4, 6));
+            appdata ("Pager", "OPC: ".bits($_[3], 0, 4));
           }
           # Sub type 1
           when (1) {
             given (bits($_[3], 8, 2)) {
-              when (0) { say "  [app] Pager ECC: ".bits($_[3], 0, 6); }
-              when (3) { say "  [app] Pager CCF: ".bits($_[3], 0, 4); }
+              when (0) { appdata ("Pager", "ECC: ".bits($_[3], 0, 6)); }
+              when (3) { appdata ("Pager", "CCF: ".bits($_[3], 0, 4)); }
             }
           }
         }
@@ -548,22 +548,22 @@ sub Group1A {
     }
 
     when (2) {
-      say "  [app] Pager OPC: ".bits($_[2], 8, 4);
-      say "  [app] Pager PAC: ".bits($_[2], 0, 6);
+      appdata ("Pager", "OPC: ".bits($_[2], 8, 4));
+      appdata ("Pager", "PAC: ".bits($_[2], 0, 6));
       
       # No PIN, M.3.2.4.3
       if (@_ == 4 && ($_[3] >> 11) == 0) {
         given (bits($_[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            say "  [app] Pager PAC: ".bits($_[3], 4, 6);
-            say "  [app] Pager OPC: ".bits($_[3], 0, 4);
+            appdata ("Pager", "PAC: ".bits($_[3], 4, 6));
+            appdata ("Pager", "OPC: ".bits($_[3], 0, 4));
           }
           # Sub type 1
           when (1) {
             given (bits($_[3], 8, 2)) {
-              when (0) { say "  [app] Pager ECC: ".bits($_[3], 0, 6); }
-              when (3) { say "  [app] Pager CCF: ".bits($_[3], 0, 4); }
+              when (0) { appdata ("Pager", "ECC: ".bits($_[3], 0, 6)); }
+              when (3) { appdata ("Pager", "CCF: ".bits($_[3], 0, 4)); }
             }
           }
         }
@@ -579,12 +579,14 @@ sub Group1A {
     }
 
     when (6) {
-      say "  Brodcaster data: ".sprintf("%03x", bits($_[2], 0, 12));
+      utter ("  Brodcaster data: ".sprintf("%03x", bits($_[2], 0, 12)).
+             " BDATA:".sprintf("%03x", bits($_[2], 0, 12)));
     }
 
     when (7) {
       $stn{$pi}{'EWS_channel'} = bits($_[2], 0, 12);
-      say "  EWS ch: ". sprintf("0x%X",$stn{$pi}{'EWS_channel'});
+      utter ("  EWS channel: ". sprintf("0x%X",$stn{$pi}{'EWS_channel'}),
+             " EWSch:". sprintf("0x%X",$stn{$pi}{'EWS_channel'}));
     }
 
     default {
@@ -700,7 +702,7 @@ sub Group3A {
     # Traffic Message Channel
     when ([0xCD46, 0xCD47]) {
       $stn{$pi}{'hasTMC'} = TRUE;
-      say sprintf("  [app] TMC sysmsg %04x",$_[2]);
+      appdata ("TMC", sprintf("sysmsg %04x",$_[2]));
     }
 
     # RT+
@@ -710,8 +712,8 @@ sub Group3A {
       $stn{$pi}{'CB'}        = bits($_[2], 12, 1);
       $stn{$pi}{'SCB'}       = bits($_[2],  8, 4);
       $stn{$pi}{'templnum'}  = bits($_[2],  0, 8);
-      say "  RT+ applies to ".($stn{$pi}{'rtp_which'} ? "enhanced RadioText" : "RadioText")       ;
-      say "  ".($stn{$pi}{'CB'} ? "Using template $stn{$pi}{'templnum'}" : "No template in use")  ;
+      utter ("  RT+ applies to ".($stn{$pi}{'rtp_which'} ? "enhanced RadioText" : "RadioText"), "");
+      utter ("  ".($stn{$pi}{'CB'} ? "Using template $stn{$pi}{'templnum'}" : "No template in use"), "");
       say sprintf("  Server Control Bits: %Xh", $stn{$pi}{'SCB'})              if (!$stn{$pi}{'CB'} && $dbg);
     }
 
@@ -827,7 +829,7 @@ sub Group6B {
 sub Group7A {
   
   return if (@_ < 3);
-  say sprintf("  [app] Pager 7A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]);
+  appdata ("Pager", sprintf("7A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]));
 }
 
 # 9A: Emergency warning systems or ODA
@@ -874,7 +876,7 @@ sub Group10A {
 sub Group13A {
  
   return if (@_ < 4);
-  say sprintf("  [app] Pager 13A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]);
+  appdata ("Pager", sprintf("13A: %02x %04x %04x",bits($_[1], 0, 5), $_[2], $_[3]));
 
 }
 
@@ -909,13 +911,13 @@ sub Group14A {
     when ([5..8]) {
       utter("    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
                                          &parseAF(TRUE, bits($_[2], 0, 8)),
-          " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(TRUE, bits($_[2], 0, 8)));
+            " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(TRUE, bits($_[2], 0, 8)));
     }
 
     when (9) {
       utter ("    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
                                          &parseAF(FALSE,bits($_[2], 0, 8)),
-           " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(FALSE,bits($_[2], 0, 8)));
+             " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(FALSE,bits($_[2], 0, 8)));
     }
 
     when (12) {
@@ -1001,8 +1003,8 @@ sub ODAGroup {
   if (exists $stn{$pi}{'ODAaid'}{$gtype}) {
     given ($stn{$pi}{'ODAaid'}{$gtype}) {
 
-      when ([0xCD46, 0xCD47]) { say sprintf("  [app] TMC msg %02x %04x %04x",
-                                bits($data[1], 0, 5), $data[2], $data[3]); }
+      when ([0xCD46, 0xCD47]) { appdata ("TMC", sprintf("msg %02x %04x %04x",
+                                bits($data[1], 0, 5), $data[2], $data[3])); }
       when (0x4BD7)           { &parse_RTp(@data); }
       when (0x6552)           { &parse_eRT(@data); }
       default                 { say sprintf("          Unimplemented ODA %04x: %02x %04x %04x",
@@ -1354,6 +1356,15 @@ sub initdata {
 # &bits (int, n, len)
 sub bits {
   return (($_[0] >> $_[1]) & (2**$_[2] - 1));
+}
+
+sub appdata {
+  my ($appname, $data) = @_;
+  if (exists $options{t}) {
+    my $stamp = strftime("%Y-%m-%dT%H:%M:%S%z ", localtime);
+    utter ($stamp, $stamp);
+  }
+  say "  [app] $appname $data";
 }
 
 sub utter {
