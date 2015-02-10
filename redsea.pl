@@ -12,6 +12,8 @@ use warnings;
 use utf8;
 no warnings 'experimental::smartmatch';
 
+use IPC::Cmd qw/can_run/;
+
 use Encode 'decode';
 use Getopt::Std;
 use POSIX qw/strftime/;
@@ -87,6 +89,14 @@ sub commands {
   if (!-e "rtl_redsea") {
     print "Looks like rtl_redsea isn't compiled. To fix that, please ".
           "run:\n\ngcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
+    exit();
+  }
+  if (!can_run('rtl_fm')) {
+    print "Looks like rtl_fm is not installed\n";
+    exit();
+  }
+  if (!can_run('sox')) {
+    print "Looks like SoX is not installed!\n";
     exit();
   }
 
