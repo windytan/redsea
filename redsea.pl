@@ -960,12 +960,11 @@ sub Group14B {
   my $eon_pi          =  $_[3];
   $stn{$eon_pi}{'TP'} = bits($_[1], 4, 1);
   $stn{$eon_pi}{'TA'} = bits($_[1], 3, 1);
-  say "  Other Network"                                                   ;
-  say "    PI:     ".sprintf("%04X",$eon_pi).
-    ((exists($stn{$eon_pi}{'chname'})) ? " ".$stn{$eon_pi}{'chname'} : "");
-  say "    TP:     $TPtext[$stn{$eon_pi}{'TP'}]"                          ;
-  say "    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]"     ;
-
+  utter ("  Other Network"," ON:");
+  utter ("    PI:     ".sprintf("%04X",$eon_pi).((exists($stn{$eon_pi}{'chname'})) && " ($stn{$eon_pi}{'chname'})"),
+       sprintf("%04X[",$eon_pi));
+  utter ("    TP:     $TPtext[$stn{$eon_pi}{'TP'}]","TP:$stn{$eon_pi}{'TP'}");
+  utter ("    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]","TA:$stn{$eon_pi}{'TA'}");
 }
 
 # 15B: Fast basic tuning and switching information
@@ -1040,10 +1039,11 @@ sub set_rt_khars {
   # Message will be displayed when fully received
   
   my $minRTlen = ($stn{$pi}{'RTbuf'} =~ /↵/ ? index($stn{$pi}{'RTbuf'},"↵") + 1 : $stn{$pi}{'presetminRTlen'} // 0);
-  
-  my $totrc = grep (defined $_, @{$stn{$pi}{'RTrcvd'}}[0..$minRTlen]) if ($minRTlen > 0);
-
-  $stn{$pi}{'hasFullRT'} = ($totrc >= $minRTlen ? TRUE : FALSE);
+ 
+  if ($minRTlen > 0) { 
+    my $totrc = grep (defined $_, @{$stn{$pi}{'RTrcvd'}}[0..$minRTlen]);
+    $stn{$pi}{'hasFullRT'} = ($totrc >= $minRTlen ? TRUE : FALSE);
+  }
 
   utter ("  RT:     ".substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
                       substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)),
@@ -1170,7 +1170,7 @@ sub parseAF {
   my $num = shift;
   if ($fm) {
     given ($num) {
-      when ([1..204])   { return sprintf("\"%0.1f MHz\"", (87.5 + $num/10) ); }
+      when ([1..204])   { return sprintf("%0.1fMHz", (87.5 + $num/10) ); }
       when (205)        { return "(filler)"; }
       when (224)        { return "\"No AF exists\""; }
       when ([225..249]) { return "\"".($num == 225 ? "1 AF follows" : ($num-224)." AFs follow")."\""; }
@@ -1179,8 +1179,8 @@ sub parseAF {
     }
   } else {
     given ($num) {
-      when ([1..15])    { return sprintf("\"%d kHz\"", 144 + $num * 9); }
-      when ([16..135])  { return sprintf("\"%d kHz\"", 522 + ($num-15) * 9); }
+      when ([1..15])    { return sprintf("%dkHz", 144 + $num * 9); }
+      when ([16..135])  { return sprintf("%dkHz", 522 + ($num-15) * 9); }
       default           { return "N/A"; }
     }
   }
