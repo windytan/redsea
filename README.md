@@ -20,10 +20,12 @@ Compiling
 Usage
 -----
 
-    perl redsea.pl -f 94.0M
+    perl redsea.pl [-hls] FREQ
 
-        -f FREQ  station frequency in Hz, can be SI prefixed
-                 (e.g. 94.0M)
+        -h       display this help and exit
+        -l       print groups in long format
+        -s       print groups in short format (default)
+        FREQ     station frequency in Hz, can be SI prefixed (e.g. 94.0M)
 
 Licensing
 ---------
