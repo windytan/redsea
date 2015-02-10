@@ -6,9 +6,8 @@
 # Page numbers refer to IEC 62106, Edition 2
 #
 
-$| ++;
-
 use 5.010;
+use strict;
 use warnings;
 use utf8;
 no warnings 'experimental::smartmatch';
@@ -16,12 +15,13 @@ no warnings 'experimental::smartmatch';
 use Encode 'decode';
 use Getopt::Std;
 use POSIX qw/strftime/;
-#use open   ':utf8';
 
-binmode(STDOUT, ":utf8");
+binmode(STDOUT, ":encoding(UTF-8)");
 
-$fs = 250e3;
-$fc = 57e3;
+$| ++;
+
+my $fs = 250e3;
+my $fc = 57e3;
 
 # Booleans
 use constant FALSE => 0;
@@ -46,23 +46,34 @@ use constant {
 };
 
 
-$correct_all = FALSE;
+my $correct_all = FALSE;
 
 # Some terminal control chars
 use constant   RESET => "\x1B[0m";
 use constant REVERSE => "\x1B[7m";
 
-my $pi        :shared;
-my $insync    :shared;
-my @GrpBuffer :shared;
-$pi = 0;
-$insync = FALSE;
+my @GrpBuffer;
+my @GrpData;
+my @rcvd;
+my @errblock;
+my %options;
+my %stn;
+
+my @countryISO, my @groupname, my @ptynamesUS, my @ptynames;
+my @TAtext, my @TPtext, my @langname, my %oda_app, my @charbasic;
+my @rtpclass;
+my $BlkPointer;
+my $newpi, my $ednewpi;
+
+my $pi = 0;
+my $insync = FALSE;
+my $verbosity = 0;
+my $expofs;
+
+my $interactive = (-t STDOUT ? TRUE : FALSE);
 
 my $bitpipe;
-my %options = ();
-$verbosity = 0;
-
-$interactive = (-t STDOUT ? TRUE : FALSE);
+my $linebuf;
 
 commands();
 
@@ -94,9 +105,9 @@ sub commands {
     $verbosity = 1;
   }
 
-  $fmfreq = $ARGV[0];
+  my $fmfreq = $ARGV[0];
   if ($fmfreq =~ /^([\d\.]+)([kMG])$/) {
-    %si = ( "k" => 1e3, "M" => 1e6, "G" => 1e9 );
+    my %si = ( "k" => 1e3, "M" => 1e6, "G" => 1e9 );
     $fmfreq = $1 * $si{$2};
   }
 
@@ -145,20 +156,18 @@ sub blockerror {
         $datalen = 3;
       }
     }
-    my @newgrp :shared;
+    my @newgrp;
     @newgrp = @GrpData[0..$datalen-1];
-    lock (@GrpBuffer);
     push (@GrpBuffer, \@newgrp);
   } elsif ($rcvd[Ci]) {
-    my @newgrp :shared;
+    my @newgrp;
     @newgrp = $GrpData[2];
-    lock (@GrpBuffer);
     push (@GrpBuffer, \@newgrp);
   }
 
   $errblock[$BlkPointer % 50] = TRUE;
 
-  $erbloks  = 0;
+  my $erbloks  = 0;
   for (@errblock) {
     $erbloks += ($_ // 0)
   }
@@ -167,7 +176,6 @@ sub blockerror {
   if ($insync && $erbloks > 45) {
     $insync   = FALSE;
     @errblock = ();
-    #&updateLinkLabel;
   }
 
   @rcvd = ();
@@ -194,7 +202,7 @@ sub get_groups {
   }
 
   if ($correct_all) {
-    for ($patt = 0x01; $patt <= 0x1F; $patt += 2) {
+    for (my $patt = 0x01; $patt <= 0x1F; $patt += 2) {
       for my $i (0..16-int(log2($patt)+1)) {
         $err = $patt << $i;
         $ErrLookup[&syndrome(0x00005b9 ^ ($err<<10))] = $err;
@@ -720,7 +728,10 @@ sub Group3A {
       $stn{$pi}{'templnum'}  = bits($_[2],  0, 8);
       utter ("  RT+ applies to ".($stn{$pi}{'rtp_which'} ? "enhanced RadioText" : "RadioText"), "");
       utter ("  ".($stn{$pi}{'CB'} ? "Using template $stn{$pi}{'templnum'}" : "No template in use"), "");
-      say sprintf("  Server Control Bits: %Xh", $stn{$pi}{'SCB'})              if (!$stn{$pi}{'CB'} && $dbg);
+      if (!$stn{$pi}{'CB'}) {
+        utter (sprintf("  Server Control Bits: %Xh", $stn{$pi}{'SCB'}),
+               sprintf(" SCB:%Xh", $stn{$pi}{'SCB'}));
+      }
     }
 
     # eRT
@@ -933,9 +944,17 @@ sub Group14A {
       $stn{$eon_pi}{'EG'}  = bits($_[2], 14,  1);
       $stn{$eon_pi}{'ILS'} = bits($_[2], 13,  1);
       $stn{$eon_pi}{'LSN'} = bits($_[2], 1,  12);
-      if ($dbg && $stn{$eon_pi}{'LA'})  { say "    Link: Program is linked to linkage set ".sprintf("%03X",$stn{$eon_pi}{'LSN'}); }
-      if ($dbg && $stn{$eon_pi}{'EG'})  { say "    Link: Program is member of an extended generic set"; }
-      if ($dbg && $stn{$eon_pi}{'ILS'}) { say "    Link: Program is linked internationally"; }
+      if ($stn{$eon_pi}{'LA'})  {
+        utter ("    Link: Program is linked to linkage set ".
+               sprintf("%03X",$stn{$eon_pi}{'LSN'}),
+               " LSN:".sprintf("%03X", $stn{$eon_pi}{'LSN'}));
+      }
+      if ($stn{$eon_pi}{'EG'})  {
+        utter ("    Link: Program is member of an extended generic set"," Link:EG");
+      }
+      if ($stn{$eon_pi}{'ILS'}) {
+        utter ("    Link: Program is linked internationally", "Link:ILS");
+      }
       # TODO: Country codes, pg. 51
     }
 
@@ -1059,7 +1078,7 @@ sub set_rt_khars {
     $stn{$pi}{'hasFullRT'} = ($totrc >= $minRTlen ? TRUE : FALSE);
   }
 
-  $displayedRT = ($interactive ? substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.
+  my $displayedRT = ($interactive ? substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.
                       substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
                       substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)) : $stn{$pi}{'RTbuf'});
   utter ("  RT:     ".$displayedRT, " RT:\"".$displayedRT."\"");
@@ -1400,10 +1419,10 @@ sub utter {
   my ($long, $short) = @_;
   if ($verbosity == 0) {
     if ($short =~ /\n/) {
-      print "$dbline$short";
-      $dbline = "";
+      print "$linebuf$short";
+      $linebuf = "";
     } else {
-      $dbline .= $short;
+      $linebuf .= $short;
     }
   } elsif ($verbosity == 1) {
     print $long."\n" if ($long ne "");
