@@ -1018,10 +1018,6 @@ sub screenReset {
 
 }
 
-sub on_quit_button_clicked {
-  Gtk2->main_quit;
-}
-
 # Change characters in RadioText
 
 sub set_rt_khars {
