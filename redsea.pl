@@ -45,10 +45,6 @@ use constant {
 };
 
 
-
-# 0: none.  1: short format.  2: verbose format.
-$debug = 1;
-
 $correct_all = FALSE;
 
 # Some terminal control chars
@@ -62,6 +58,8 @@ my $insync    :shared;
 my @GrpBuffer :shared;
 $pi = 0;
 $hasDta = $hasClk = $insync = FALSE;
+
+$verbosity = 0;
 
 commands();
 
@@ -77,18 +75,23 @@ sub commands {
   }
 
   my %options=();
-  getopts("f:", \%options);
+  getopts("ls", \%options);
 
-  if (!exists $options{f} || $options{f} !~ /^[\d\.]+[kMG]?$/) {
+  if (exists $options{h} || ($ARGV[0] // "") !~ /^[\d\.]+[kMG]?$/) {
     print
-       "Usage: $0 -f FREQ\n\n".
+       "Usage: perl $0 [-hls] FREQ\n\n".
        "    -h       display this help and exit\n".
-       "    -f FREQ  station frequency in Hz, can be SI prefixed\n".
-       "             (e.g. 94.0M)\n";
+       "    -l       print groups in long format\n".
+       "    -s       print groups in short format (default)\n".
+       "    FREQ     station frequency in Hz, can be SI prefixed (e.g. 94.0M)\n";
     exit();
   }
 
-  $fmfreq = $options{f};
+  if (exists $options{l}) {
+    $verbosity = 1;
+  }
+
+  $fmfreq = $ARGV[0];
   if ($fmfreq =~ /^([\d\.]+)([kMG])$/) {
     %si = ( "k" => 1e3, "M" => 1e6, "G" => 1e9 );
     $fmfreq = $1 * $si{$2};
@@ -322,15 +325,12 @@ sub decodegroup {
   if (@_ >= 2) {
     $gtype      = bits($_[1], 11, 5);
     $fullgtype  = bits($_[1], 12, 4) . ( bits($_[1], 11, 1) ? "B" : "A" );
-    utter (
-      (@_ == 4 ? "Group $fullgtype: $groupname[$gtype]" : "(partial group $fullgtype, ".scalar(@_)." blocks)"),
-      (@_ == 4 ? sprintf(" %3s ",$fullgtype) : sprintf("(%3s)",$fullgtype))) if ($debug);
   } else {
-    utter ("(PI only)","     ") if ($debug);
+    utter ("(PI only)","");
   }
   
   utter (("  PI:     ".sprintf("%04X",$newpi) .((exists($stn{$newpi}{'chname'})) ? " ".$stn{$newpi}{'chname'} : ""),
-      sprintf(" %04X",$newpi))) if ($debug);
+      sprintf("%04X",$newpi)));
 
   # PI is repeated -> confirmed
   if ($newpi == $ednewpi) {
@@ -346,19 +346,23 @@ sub decodegroup {
     }
 
   } elsif ($newpi != ($pi // 0)) {
-    utter ("          (repeat will confirm PI change)","?\n") if ($debug);
+    utter ("          (repeat will confirm PI change)","?\n");
     return;
   }
 
   # Nothing more to be done for PI only
   if (@_ == 1) {
-    utter ("\n","\n") if ($debug);
+    utter ("\n","\n");
     return;
   }
-
+  
+  utter (
+   (@_ == 4 ? "Group $fullgtype: $groupname[$gtype]" : "(partial group $fullgtype, ".scalar(@_)." blocks)"),
+   (@_ == 4 ? sprintf(" %3s",$fullgtype) : sprintf(" (%3s)",$fullgtype)));
+ 
   # Traffic Program (TP)
   $stn{$pi}{'TP'} = bits($_[1], 10, 1);
-  utter ("  TP:     $TPtext[$stn{$pi}{'TP'}]"," TP:$stn{$pi}{'TP'}") if ($debug);
+  utter ("  TP:     $TPtext[$stn{$pi}{'TP'}]"," TP:$stn{$pi}{'TP'}");
 	
   # Program Type (PTY)
   $stn{$pi}{'PTY'} = bits($_[1], 5, 5);
@@ -366,11 +370,11 @@ sub decodegroup {
   if (exists $stn{$pi}{'ECC'} && ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] // "") =~ /us|ca|mx/) {
     $stn{$pi}{'PTYmarkup'} = $ptynamesUS[$stn{$pi}{'PTY'}];
     utter ("  PTY:    ". sprintf("%02d",$stn{$pi}{'PTY'})." $ptynamesUS[$stn{$pi}{'PTY'}]",
-         " PTY:".sprintf("%02d",$stn{$pi}{'PTY'})) if ($debug);
+           " PTY:".sprintf("%02d",$stn{$pi}{'PTY'}));
   } else {
     $stn{$pi}{'PTYmarkup'} = $ptynamesFI[$stn{$pi}{'PTY'}];
     utter ("  PTY:    ". sprintf("%02d",$stn{$pi}{'PTY'})." $ptynamesFI[$stn{$pi}{'PTY'}]",
-         " PTY:".sprintf("%02d",$stn{$pi}{'PTY'})) if ($debug);
+           " PTY:".sprintf("%02d",$stn{$pi}{'PTY'}));
   }
   $stn{$pi}{'PTYmarkup'} =~ s/&/&amp;/g;
 
@@ -400,7 +404,7 @@ sub decodegroup {
     default   { &ODAGroup($gtype, @_); }
   }
  
-  utter("\n","\n") if ($debug);
+  utter("\n","\n");
 
 }
 
@@ -416,8 +420,8 @@ sub Group0A {
   # TA, M/S
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
   $stn{$pi}{'MS'} = bits($_[1], 3, 1);
-  utter ("  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]"," TA:$stn{$pi}{'TA'}")  if ($debug);
-  utter ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]," MS:".qw( S M)[$stn{$pi}{'MS'}]) if ($debug);
+  utter ("  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]", " TA:$stn{$pi}{'TA'}");
+  utter ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}],      " MS:".qw(S M)[$stn{$pi}{'MS'}]);
 
   $stn{$pi}{'hasMS'} = TRUE;
 
@@ -426,7 +430,7 @@ sub Group0A {
     my @af;
     for (0..1) {
       $af[$_] = &parseAF(TRUE, bits($_[2], 8-$_*8, 8));
-      utter ("  AF:     $af[$_]"," AF:$af[$_]") if ($debug);
+      utter ("  AF:     $af[$_]"," AF:$af[$_]");
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
       ($stn{$pi}{'freq'} = $af[1]) =~ s/ [kM]Hz//;
@@ -438,7 +442,7 @@ sub Group0A {
     # Program Service Name (PS)
 
     if ($stn{$pi}{'denyPS'}) {
-      utter ("          (Ignoring changes to PS)"," denyPS") if ($debug);
+      utter ("          (Ignoring changes to PS)"," denyPS");
     } else {
       &set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
     }
@@ -457,8 +461,8 @@ sub Group0B {
   # Traffic Announcements, Music/Speech
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
   $stn{$pi}{'MS'} = bits($_[1], 3, 1);
-  utter ("  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]"," TA:$stn{$pi}{'TA'}")  if ($debug);
-  utter ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]," MS:".qw( S M)[$stn{$pi}{'MS'}]) if ($debug);
+  utter ("  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]", " TA:$stn{$pi}{'TA'}");
+  utter ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}],      " MS:".qw( S M)[$stn{$pi}{'MS'}]);
 
   $stn{$pi}{'hasMS'} = TRUE;
 
@@ -467,7 +471,7 @@ sub Group0B {
     # Program Service name
 
     if ($stn{$pi}{'denyPS'}) {
-      utter ("          (Ignoring changes to PS)"," denyPS") if ($debug);
+      utter ("          (Ignoring changes to PS)"," denyPS");
     } else {
       &set_ps_khars($pi, bits($_[1], 0, 2) * 2, bits($_[3], 8, 8), bits($_[3], 0, 8));
     }
@@ -483,7 +487,7 @@ sub Group1A {
 
   # Program Item Number
 
-  utter ("  PIN:    ". &parsepin($_[3])," PIN:".&parsepin($_[3])) if ($debug);
+  utter ("  PIN:    ". &parsepin($_[3])," PIN:".&parsepin($_[3]));
 
   # Paging (M.2.1.1.2)
 	
@@ -496,7 +500,7 @@ sub Group1A {
   utter ("  LA:     ".($stn{$pi}{'LA'} ? "Program is linked ".(exists($stn{$pi}{'LSN'}) &&
                                       sprintf("to linkage set %Xh ",$stn{$pi}{'LSN'}))."at the moment" :
                                       "Program is not linked at the moment"),
-       " LA:".$stn{$pi}{'LA'}.(exists($stn{$pi}{'LSN'}) && sprintf("0x%X",$stn{$pi}{'LSN'}))) if ($debug);
+       " LA:".$stn{$pi}{'LA'}.(exists($stn{$pi}{'LSN'}) && sprintf("0x%X",$stn{$pi}{'LSN'})));
    
   my $slc_variant = bits($_[2], 12, 3);
 
@@ -530,12 +534,12 @@ sub Group1A {
               " ($countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}])"),
            (" ECC:".sprintf("%02X", $stn{$pi}{'ECC'}).
         (defined $countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}] &&
-              "[$countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}]]" )))) if ($debug);
+              "[$countryISO[$stn{$pi}{'ECC'}][$stn{$pi}{'CC'}]]" ))));
     }
 
     when (1) {
       $stn{$pi}{'tmcid'}       = bits($_[2], 0, 12);
-      utter ("  TMC ID: ". sprintf("%xh",$stn{$pi}{'tmcid'}), " TMCID:".sprintf("%xh",$stn{$pi}{'tmcid'})) if ($debug);
+      utter ("  TMC ID: ". sprintf("%xh",$stn{$pi}{'tmcid'}), " TMCID:".sprintf("%xh",$stn{$pi}{'tmcid'}));
     }
 
     when (2) {
@@ -566,7 +570,7 @@ sub Group1A {
       utter ("  Lang:   ". sprintf( ($stn{$pi}{'lang'} <= 127 ?
         "0x%X $langname[$stn{$pi}{'lang'}]" : "Unknown language %Xh"), $stn{$pi}{'lang'}),
            " LANG:".sprintf( ($stn{$pi}{'lang'} <= 127 ?
-                      "0x%X[$langname[$stn{$pi}{'lang'}]]" : "%Hx[?]"), $stn{$pi}{'lang'})) if ($debug);
+                      "0x%X[$langname[$stn{$pi}{'lang'}]]" : "%Hx[?]"), $stn{$pi}{'lang'}));
     }
 
     when (6) {
@@ -575,11 +579,11 @@ sub Group1A {
 
     when (7) {
       $stn{$pi}{'EWS_channel'} = bits($_[2], 0, 12);
-      say "  EWS ch: ". sprintf("0x%X",$stn{$pi}{'EWS_channel'}) if ($dbg);
+      say "  EWS ch: ". sprintf("0x%X",$stn{$pi}{'EWS_channel'});
     }
 
     default {
-      say "          SLC variant $slc_variant is not assigned in standard" if ($dbg);
+      say "          SLC variant $slc_variant is not assigned in standard";
     }
 
   }
@@ -589,7 +593,7 @@ sub Group1A {
 
 sub Group1B {
   return if (@_ < 4);
-  utter ("  PIN:    ". &parsepin($_[3])," PIN:$_[3]") if ($debug);
+  utter ("  PIN:    ". &parsepin($_[3])," PIN:$_[3]");
 }
   
 # 2A: RadioText (64 characters)
@@ -614,9 +618,9 @@ sub Group2A {
   # Page 26
   if (($stn{$pi}{'prev_textAB'} // -1) != $stn{$pi}{'textAB'}) {
     if ($stn{$pi}{'denyRTAB'} // FALSE) {
-      utter ("          (Ignoring A/B flag change)"," denyRTAB") if ($debug);
+      utter ("          (Ignoring A/B flag change)"," denyRTAB");
     } else {
-      utter ("          (A/B flag change; text reset)"," RT_RESET") if ($debug);
+      utter ("          (A/B flag change; text reset)"," RT_RESET");
       $stn{$pi}{'RTbuf'}  = " " x 64;
       $stn{$pi}{'RTrcvd'} = ();
     }
@@ -638,9 +642,9 @@ sub Group2B {
 
   if (($stn{$pi}{'prev_textAB'} // -1) != $stn{$pi}{'textAB'}) {
     if ($stn{$pi}{'denyRTAB'} // FALSE) {
-      utter ("          (Ignoring A/B flag change)"," denyRTAB") if ($debug);
+      utter ("          (Ignoring A/B flag change)"," denyRTAB");
     } else {
-      utter ("          (A/B flag change; text reset)"," RT_RESET") if ($debug);
+      utter ("          (A/B flag change; text reset)"," RT_RESET");
       $stn{$pi}{'RTbuf'}  = " " x 64;
       $stn{$pi}{'RTrcvd'} = ();
     }
@@ -661,27 +665,27 @@ sub Group3A {
   given ($gtype) { 
 
     when (0) {
-      utter ("  ODAapp: ". ($oda_app{$_[3]} // sprintf("0x%04X",$_[3])), " ODAapp:".sprintf("0x%04X",$_[3])) if ($debug);
-      utter ("          is not carried in associated group","[not_carried]") if ($debug);
+      utter ("  ODAapp: ". ($oda_app{$_[3]} // sprintf("0x%04X",$_[3])), " ODAapp:".sprintf("0x%04X",$_[3]));
+      utter ("          is not carried in associated group","[not_carried]");
       return;
     }
 
     when (32) {
-      utter ("  ODA:    Temporary data fault (Encoder status)"," ODA:enc_err") if ($debug);
+      utter ("  ODA:    Temporary data fault (Encoder status)"," ODA:enc_err");
       return;
     }
 
     when ([0..6, 8, 20, 28, 29, 31]) {
-      utter ("  ODA:    (Illegal Application Group Type)"," ODA:err") if ($debug);
+      utter ("  ODA:    (Illegal Application Group Type)"," ODA:err");
       return;
     }
 
     default {
       $stn{$pi}{'ODAaid'}{$gtype} = $_[3];
       utter ("  ODAgrp: ". bits($_[1], 1, 4) . (bits($_[1], 0, 1) ? "B" : "A"),
-           " ODAgrp:". bits($_[1], 1, 4) . (bits($_[1], 0, 1) ? "B" : "A")) if ($debug);
+           " ODAgrp:". bits($_[1], 1, 4) . (bits($_[1], 0, 1) ? "B" : "A"));
       utter ("  ODAapp: ". ($oda_app{$stn{$pi}{'ODAaid'}{$gtype}} // sprintf("%04Xh",$stn{$pi}{'ODAaid'}{$gtype})),
-           " ODAapp:". sprintf("0x%04X",$stn{$pi}{'ODAaid'}{$gtype})) if ($debug);
+           " ODAapp:". sprintf("0x%04X",$stn{$pi}{'ODAaid'}{$gtype}));
     }
 
   }
@@ -701,8 +705,8 @@ sub Group3A {
       $stn{$pi}{'CB'}        = bits($_[2], 12, 1);
       $stn{$pi}{'SCB'}       = bits($_[2],  8, 4);
       $stn{$pi}{'templnum'}  = bits($_[2],  0, 8);
-      say "  RT+ applies to ".($stn{$pi}{'rtp_which'} ? "enhanced RadioText" : "RadioText")        if ($dbg);
-      say "  ".($stn{$pi}{'CB'} ? "Using template $stn{$pi}{'templnum'}" : "No template in use")   if ($dbg);
+      say "  RT+ applies to ".($stn{$pi}{'rtp_which'} ? "enhanced RadioText" : "RadioText")       ;
+      say "  ".($stn{$pi}{'CB'} ? "Using template $stn{$pi}{'templnum'}" : "No template in use")  ;
       say sprintf("  Server Control Bits: %Xh", $stn{$pi}{'SCB'})              if (!$stn{$pi}{'CB'} && $dbg);
     }
 
@@ -717,8 +721,8 @@ sub Group3A {
     
     # Unimplemented ODA
     default {
-      say "  ODAmsg: ". sprintf("%04x",$_[2])             if ($dbg);
-      say "          Unimplemented Open Data Application" if ($dbg);
+      say "  ODAmsg: ". sprintf("%04x",$_[2])            ;
+      say "          Unimplemented Open Data Application";
     }
   }
 }
@@ -757,16 +761,16 @@ sub Group4A {
     utter ("  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 && $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
           sprintf("%04d-%02d-%02dT%02d:%02d%+03d:%02d", $yr, $mo, $dy, $hr, $mn, $lto, $ltom) :
           "Invalid datetime data"),
-         " CT:". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 && $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
+           " CT:". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 && $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
            sprintf("%04d-%02d-%02dT%02d:%02d%+03d:%02d", $yr, $mo, $dy, $hr, $mn, $lto, $ltom) :
-           "err")) if ($debug);
+           "err"));
   } else {
     utter ("  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
           sprintf("%04d-%02d-%02d", $yr, $mo, $dy) :
           "Invalid datetime data"),
-        " CT:". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
+          " CT:". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
                     sprintf("%04d-%02d-%02d", $yr, $mo, $dy) :
-                              "err")) if ($debug);
+                              "err"));
   }
 
 }
@@ -778,9 +782,9 @@ sub Group5A {
   return if (@_ < 4);
 
   my $addr = bits($_[1], 0, 5);
-  say "  TDChan: $addr" if ($dbg);
+  say "  TDChan: $addr";
   say sprintf("  TDS:    %02x %02x %02x %02x",
-    bits($_[2], 8, 8), bits($_[2], 0, 8), bits($_[3], 8, 8),  bits($_[3], 0, 8)) if ($dbg);
+    bits($_[2], 8, 8), bits($_[2], 0, 8), bits($_[3], 8, 8),  bits($_[3], 0, 8));
 }
 
 # 5B: Transparent data channels or ODA
@@ -790,8 +794,8 @@ sub Group5B {
   return if (@_ < 4);
 
   my $addr = bits($_[1], 0, 5);
-  say "  TDChan: $addr" if ($dbg);
-  say sprintf("  TDS:    %02x %02x", bits($_[3], 8, 8), bits($_[3], 0, 8)) if ($dbg);
+  say "  TDChan: $addr";
+  say sprintf("  TDS:    %02x %02x", bits($_[3], 8, 8), bits($_[3], 0, 8));
 }
 
 
@@ -800,7 +804,7 @@ sub Group5B {
 sub Group6A {
 
   return if (@_ < 4);
-  say "  IH:     ". sprintf("%02x %04x %04x", bits($_[1], 0, 5), $_[2], $_[3]) if ($dbg);
+  say "  IH:     ". sprintf("%02x %04x %04x", bits($_[1], 0, 5), $_[2], $_[3]);
 
 }
 
@@ -809,7 +813,7 @@ sub Group6A {
 sub Group6B {
 
   return if (@_ < 4);
-  say "  IH:     ". sprintf("%02x %04x", bits($_[1], 0, 5), $_[3]) if ($dbg);
+  say "  IH:     ". sprintf("%02x %04x", bits($_[1], 0, 5), $_[3]);
 
 }
 
@@ -826,7 +830,7 @@ sub Group7A {
 sub Group9A {
 
   return if (@_ < 4);
-  say "  EWS:    ". sprintf("%02x %04x %04x", bits($_[1], 0, 5), $_[2], $_[3]) if ($dbg);
+  say "  EWS:    ". sprintf("%02x %04x %04x", bits($_[1], 0, 5), $_[2], $_[3]);
 
 }
 
@@ -835,7 +839,7 @@ sub Group9A {
 sub Group10A {
 
   if (bits($_[1], 4, 1) != ($stn{$pi}{'PTYNAB'} // -1)) {
-    say "         (A/B flag change, text reset)" if ($dbg);
+    say "         (A/B flag change, text reset)";
     $stn{$pi}{'PTYN'} = " " x 8;
   }
 
@@ -856,7 +860,7 @@ sub Group10A {
     substr($stn{$pi}{'PTYN'}, $segaddr*4 + $_, 1) = $charbasic[$chr[$_]] for (0..$#chr);
         
     say "  PTYN:   ", substr($stn{$pi}{'PTYN'},0,$segaddr*4).REVERSE.substr($stn{$pi}{'PTYN'},$segaddr*4,scalar(@chr)).
-                RESET.substr($stn{$pi}{'PTYN'},$segaddr*4+scalar(@chr)) if ($dbg);
+                RESET.substr($stn{$pi}{'PTYN'},$segaddr*4+scalar(@chr));
   }
 }
 
@@ -879,34 +883,34 @@ sub Group14A {
   my $eon_pi             = $_[3];
   $stn{$eon_pi}{'TP'}    = bits($_[1], 4, 1);
   my $eon_variant        = bits($_[1], 0, 4);
-  utter ("  Other Network"," ON:") if ($debug);
+  utter ("  Other Network"," ON:");
   utter ("    PI:     ".sprintf("%04X",$eon_pi).((exists($stn{$eon_pi}{'chname'})) && " ($stn{$eon_pi}{'chname'})"),
-       sprintf("%04X[",$eon_pi)) if ($debug);
-  utter ("    TP:     $TPtext[$stn{$eon_pi}{'TP'}]","TP:$stn{$eon_pi}{'TP'}") if ($debug);
+       sprintf("%04X[",$eon_pi));
+  utter ("    TP:     $TPtext[$stn{$eon_pi}{'TP'}]","TP:$stn{$eon_pi}{'TP'}");
 
   given ($eon_variant) {
 
     when ([0..3]) {
-      utter("  ","") if ($debug);
+      utter("  ","");
       $stn{$eon_pi}{'PSbuf'} = " " x 8 unless (exists($stn{$eon_pi}{'PSbuf'}));
       &set_ps_khars($eon_pi, $eon_variant*2, bits($_[2], 8, 8), bits($_[2], 0, 8));
     }
 
     when (4) {
-      utter ("    AF:     ".&parseAF(TRUE, bits($_[2], 8, 8)), " AF:".&parseAF(TRUE, bits($_[2], 8, 8))) if ($debug);
-      utter ("    AF:     ".&parseAF(TRUE, bits($_[2], 0, 8)), " AF:".&parseAF(TRUE, bits($_[2], 0, 8))) if ($debug);
+      utter ("    AF:     ".&parseAF(TRUE, bits($_[2], 8, 8)), " AF:".&parseAF(TRUE, bits($_[2], 8, 8)));
+      utter ("    AF:     ".&parseAF(TRUE, bits($_[2], 0, 8)), " AF:".&parseAF(TRUE, bits($_[2], 0, 8)));
     }
 
     when ([5..8]) {
       utter("    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
                                          &parseAF(TRUE, bits($_[2], 0, 8)),
-          " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(TRUE, bits($_[2], 0, 8))) if ($debug);
+          " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(TRUE, bits($_[2], 0, 8)));
     }
 
     when (9) {
       utter ("    AF:     Tuned frequency ".&parseAF(TRUE, bits($_[2], 8, 8))." maps to ".
                                          &parseAF(FALSE,bits($_[2], 0, 8)),
-           " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(FALSE,bits($_[2], 0, 8))) if ($debug);
+           " AF:map:".&parseAF(TRUE, bits($_[2], 8, 8))."->".&parseAF(FALSE,bits($_[2], 0, 8)));
     }
 
     when (12) {
@@ -927,24 +931,24 @@ sub Group14A {
         (exists $stn{$eon_pi}{'ECC'} && ($countryISO[$stn{$pi}{'ECC'}][$stn{$eon_pi}{'CC'}] // "") =~ /us|ca|mx/ ? 
           $ptynamesUS[$stn{$eon_pi}{'PTY'}] :
           $ptynames[$stn{$eon_pi}{'PTY'}])),
-        " PTY:$stn{$eon_pi}{'PTY'}") if ($debug);
-      utter ("    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]"," TA:$stn{$eon_pi}{'TA'}") if ($debug);
+        " PTY:$stn{$eon_pi}{'PTY'}");
+      utter ("    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]"," TA:$stn{$eon_pi}{'TA'}");
     }
 
     when (14) {
-      utter ("    PIN:    ". &parsepin($_[2])," PIN:".&parsepin($_[2])) if ($debug);
+      utter ("    PIN:    ". &parsepin($_[2])," PIN:".&parsepin($_[2]));
     }
 
     when (15) {
-      say "    Broadcaster data: ".sprintf("%04x", $_[2]) if ($dbg);
+      say "    Broadcaster data: ".sprintf("%04x", $_[2]);
     }
 
     default {
-      say "    EON variant $eon_variant is unallocated" if ($dbg);
+      say "    EON variant $eon_variant is unallocated";
     }
 
   }
-  utter("","]") if ($debug);
+  utter("","]");
 }
 
 # 14B: Enhanced Other Networks (EON) information
@@ -956,11 +960,11 @@ sub Group14B {
   my $eon_pi          =  $_[3];
   $stn{$eon_pi}{'TP'} = bits($_[1], 4, 1);
   $stn{$eon_pi}{'TA'} = bits($_[1], 3, 1);
-  say "  Other Network"                                                    if ($dbg);
+  say "  Other Network"                                                   ;
   say "    PI:     ".sprintf("%04X",$eon_pi).
-    ((exists($stn{$eon_pi}{'chname'})) ? " ".$stn{$eon_pi}{'chname'} : "") if ($dbg);
-  say "    TP:     $TPtext[$stn{$eon_pi}{'TP'}]"                           if ($dbg);
-  say "    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]"      if ($dbg);
+    ((exists($stn{$eon_pi}{'chname'})) ? " ".$stn{$eon_pi}{'chname'} : "");
+  say "    TP:     $TPtext[$stn{$eon_pi}{'TP'}]"                          ;
+  say "    TA:     $TAtext[$stn{$eon_pi}{'TP'}][$stn{$eon_pi}{'TA'}]"     ;
 
 }
 
@@ -976,9 +980,8 @@ sub Group15B {
   # TA, M/S
   $stn{$pi}{'TA'} = bits($_[1], 4, 1);
   $stn{$pi}{'MS'} = bits($_[1], 3, 1);
-  say "  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]" if ($dbg);
-  say "  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}]      if ($dbg);
-
+  utter ("  TA:     $TAtext[$stn{$pi}{'TP'}][$stn{$pi}{'TA'}]", " TA:$stn{$pi}{'TA'}");
+  utter ("  M/S:    ".qw( Speech Music )[$stn{$pi}{'MS'}],      " MS:".qw( S M)[$stn{$pi}{'MS'}]);
   $stn{$pi}{'hasMS'} = TRUE;
 
 }
@@ -1000,11 +1003,11 @@ sub ODAGroup {
       when (0x6552)           { &parse_eRT(@data); }
       default                 { say sprintf("          Unimplemented ODA %04x: %02x %04x %04x",
                                     $stn{$pi}{'ODAaid'}{$gtype}, bits($data[1], 0, 5), $data[2], $data[3])
-                                    if ($dbg); }
+                                   ; }
 
     }
   } else {
-    say "          Will need group 3A first to identify ODA" if ($dbg);
+    utter ("          Will need group 3A first to identify ODA", "");
   }
 }
 
@@ -1052,12 +1055,12 @@ sub set_rt_khars {
   }
 
 
-  utter ("  RT:     ". substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
-                    substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)),
-       " RT:\"".substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
-                           substr($stn{$pi}{'RTbuf'},$lok+scalar(@a))."\"") if ($debug);
+  utter ("  RT:     ".substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
+                      substr($stn{$pi}{'RTbuf'},$lok+scalar(@a)),
+         " RT:\"".substr($stn{$pi}{'RTbuf'},0,$lok).REVERSE.substr($stn{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
+                  substr($stn{$pi}{'RTbuf'},$lok+scalar(@a))."\"");
 
-  utter ("          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'RTrcvd'}}[0..63]))),"") if ($debug);
+  utter ("          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'RTrcvd'}}[0..63]))),"");
 }
 
 # Enhanced RadioText
@@ -1075,9 +1078,9 @@ sub parse_eRT {
     }
   
     say "  eRT:    ". substr($stn{$pi}{'eRTbuf'},0,2*$addr).REVERSE.substr($stn{$pi}{'eRTbuf'},2*$addr,2).RESET.
-                      substr($stn{$pi}{'eRTbuf'},2*$addr+2) if ($dbg);
+                      substr($stn{$pi}{'eRTbuf'},2*$addr+2);
   
-    say "          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'eRTrcvd'}}[0..63]))) if ($dbg);
+    say "          ". join("", (map ((defined) ? "^" : " ", @{$stn{$pi}{'eRTrcvd'}}[0..63])));
 
   }
 }
@@ -1107,10 +1110,10 @@ sub set_ps_khars {
     $markup =~ s/</&lt;/g;
   }
 
-  utter ("  PS:     ". substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
-                    substr($stn{$pspi}{'PSbuf'},$lok+2),
-       " PS:\"".substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
-                          substr($stn{$pspi}{'PSbuf'},$lok+2)."\"") if ($debug);
+  utter ("  PS:     ".substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
+                      substr($stn{$pspi}{'PSbuf'},$lok+2),
+         " PS:\"".substr($stn{$pspi}{'PSbuf'},0,$lok).REVERSE.substr($stn{$pspi}{'PSbuf'},$lok,2).RESET.
+                  substr($stn{$pspi}{'PSbuf'},$lok+2)."\"");
 
 }
 
@@ -1132,22 +1135,22 @@ sub parse_RTp {
   $len[0]   = bits($_[2], 1, 6);
   $len[1]   = bits($_[3], 0, 5);
 
-  say "  RadioText+: " if ($dbg);
+  say "  RadioText+: ";
 
   if ($irun) {
-    say "    Item running" if ($dbg);
+    say "    Item running";
     if ($stn{$pi}{'rtp_which'} == 0) {
       for $tag (0..1) {
         my $totrc = grep (defined $_, @{$stn{$pi}{'RTrcvd'}}[$start[$tag]..($start[$tag]+$len[$tag]-1)]);
         if ($totrc == $len[$tag]) {
-          say "    Tag $rtpclass[$ctype[$tag]]: ".substr($stn{$pi}{'RTbuf'}, $start[$tag], $len[$tag]) if ($dbg);
+          say "    Tag $rtpclass[$ctype[$tag]]: ".substr($stn{$pi}{'RTbuf'}, $start[$tag], $len[$tag]);
         }
       }
     } else {
       # (eRT)
     }
   } else {
-    say "    No item running" if ($dbg);
+    say "    No item running";
   }
 
 }
@@ -1162,13 +1165,11 @@ sub parsepin {
 # Decoder Identification
 
 sub parseDI {
-  if ($debug) {
-    given ($_[0]) {
-      when (0) { utter ("  DI:     ". qw( Mono Stereo )[$_[1]], " DI:".qw( Mono Stereo )[$_[1]]);           }
-      when (1) { utter ("  DI:     Artificial head"," DI:ArtiHd") if ($_[1]);           }
-      when (2) { utter ("  DI:     Compressed"," DI:Cmprsd")      if ($_[1]);           }
-      when (3) { utter ("  DI:     ". qw( Static Dynamic)[$_[1]] ." PTY", " DI:".qw( StaPTY DynPTY )[$_[1]]); }
-    }
+  given ($_[0]) {
+    when (0) { utter ("  DI:     ". qw( Mono Stereo )[$_[1]], " DI:".qw( Mono Stereo )[$_[1]]);           }
+    when (1) { utter ("  DI:     Artificial head"," DI:ArtiHd") if ($_[1]);           }
+    when (2) { utter ("  DI:     Compressed"," DI:Cmprsd")      if ($_[1]);           }
+    when (3) { utter ("  DI:     ". qw( Static Dynamic)[$_[1]] ." PTY", " DI:".qw( StaPTY DynPTY )[$_[1]]); }
   }
 }
 
@@ -1361,15 +1362,16 @@ sub bits {
 }
 
 sub utter {
-  if ($debug == 1) {
-    if ($_[1] =~ /\n/) {
-      print "$dbline$_[1]";
+  my ($long, $short) = @_;
+  if ($verbosity == 0) {
+    if ($short =~ /\n/) {
+      print "$dbline$short";
       $dbline = "";
     } else {
-      $dbline .= $_[1];
+      $dbline .= $short;
     }
-  } elsif ($debug == 2) {
-    print $_[0]."\n" if ($_[0] ne "");
+  } elsif ($verbosity == 1) {
+    print $long."\n" if ($long ne "");
   }
 }
 
