@@ -15,6 +15,7 @@ no warnings 'experimental::smartmatch';
 
 use Encode 'decode';
 use Getopt::Std;
+use POSIX qw/strftime/;
 #use open   ':utf8';
 
 binmode(STDOUT, ":utf8");
@@ -51,14 +52,13 @@ $correct_all = FALSE;
 use constant   RESET => "\x1B[0m";
 use constant REVERSE => "\x1B[7m";
 
-my $hasDta    :shared;
-my $hasClk    :shared;
 my $pi        :shared;
 my $insync    :shared;
 my @GrpBuffer :shared;
 $pi = 0;
-$hasDta = $hasClk = $insync = FALSE;
+$insync = FALSE;
 
+my %options = ();
 $verbosity = 0;
 
 commands();
@@ -74,15 +74,15 @@ sub commands {
     exit();
   }
 
-  my %options=();
-  getopts("ls", \%options);
+  getopts("lst", \%options);
 
   if (exists $options{h} || ($ARGV[0] // "") !~ /^[\d\.]+[kMG]?$/) {
     print
-       "Usage: perl $0 [-hls] FREQ\n\n".
+       "Usage: perl $0 [-hlst] FREQ\n\n".
        "    -h       display this help and exit\n".
        "    -l       print groups in long format\n".
        "    -s       print groups in short format (default)\n".
+       "    -t       print an ISO timestamp before each group\n".
        "    FREQ     station frequency in Hz, can be SI prefixed (e.g. 94.0M)\n";
     exit();
   }
@@ -321,6 +321,11 @@ sub decodegroup {
 
   $ednewpi = ($newpi // 0);
   $newpi   = $_[0];
+
+  if (exists $options{t}) {
+    my $stamp = strftime("%Y-%m-%dT%H:%M:%S%z ", localtime);
+    utter ($stamp, $stamp);
+  }
   
   if (@_ >= 2) {
     $gtype      = bits($_[1], 11, 5);

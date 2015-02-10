@@ -25,6 +25,7 @@ Usage
         -h       display this help and exit
         -l       print groups in long format
         -s       print groups in short format (default)
+        -t       print an ISO timestamp before each group
         FREQ     station frequency in Hz, can be SI prefixed (e.g. 94.0M)
 
 Licensing
