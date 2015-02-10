@@ -200,6 +200,10 @@ sub get_groups {
     $err = 1 << $shft;
     $ErrLookup[&syndrome(0x00004b9 ^ ($err<<10))] = $err;
   }
+  for my $shft (0..14) {
+    $err = 2 << $shft;
+    $ErrLookup[&syndrome(0x00004b9 ^ ($err<<10))] = $err;
+  }
 
   if ($correct_all) {
     for (my $patt = 0x01; $patt <= 0x1F; $patt += 2) {
