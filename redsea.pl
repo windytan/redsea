@@ -377,8 +377,8 @@ sub decodegroup {
     utter ("  PTY:    ". sprintf("%02d",$stn{$pi}{'PTY'})." $ptynamesUS[$stn{$pi}{'PTY'}]",
            " PTY:".sprintf("%02d",$stn{$pi}{'PTY'}));
   } else {
-    $stn{$pi}{'PTYmarkup'} = $ptynamesFI[$stn{$pi}{'PTY'}];
-    utter ("  PTY:    ". sprintf("%02d",$stn{$pi}{'PTY'})." $ptynamesFI[$stn{$pi}{'PTY'}]",
+    $stn{$pi}{'PTYmarkup'} = $ptynames[$stn{$pi}{'PTY'}];
+    utter ("  PTY:    ". sprintf("%02d",$stn{$pi}{'PTY'})." $ptynames[$stn{$pi}{'PTY'}]",
            " PTY:".sprintf("%02d",$stn{$pi}{'PTY'}));
   }
   $stn{$pi}{'PTYmarkup'} =~ s/&/&amp;/g;
