@@ -14,9 +14,10 @@ Compiling
 Usage
 -----
 
-    ./rtl_redsea -f 87900000 | perl redsea.pl
+    perl redsea.pl -f 94.0M
 
-Carrier frequency is specified by -f.
+        -f FREQ  station frequency in Hz, can be SI prefixed
+                 (e.g. 94.0M)
 
 Licensing
 ---------

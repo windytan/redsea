@@ -14,9 +14,13 @@ use utf8;
 no warnings 'experimental::smartmatch';
 
 use Encode 'decode';
+use Getopt::Std;
 #use open   ':utf8';
 
 binmode(STDOUT, ":utf8");
+
+$fs = 250e3;
+$fc = 57e3;
 
 # Booleans
 use constant FALSE => 0;
@@ -39,13 +43,13 @@ use constant {
   _26BIT => 0x3FFFFFF,
   _28BIT => 0xFFFFFFF,
 };
-  
 
-our $dbg   = TRUE;
-our $theme = "green3";
+
 
 # 0: none.  1: short format.  2: verbose format.
-our $debug = 1;
+$debug = 1;
+
+$correct_all = FALSE;
 
 # Some terminal control chars
 use constant   RESET => "\x1B[0m";
@@ -59,13 +63,46 @@ my @GrpBuffer :shared;
 $pi = 0;
 $hasDta = $hasClk = $insync = FALSE;
 
-&initdata;
+commands();
 
-&get_grp();
+initdata();
 
-# Next bit from IC
+get_groups();
+
+sub commands {
+
+  if (!-e "rtl_redsea") {
+    print "Looks like rtl_redsea isn't compiled. To fix that, please run:\n\ngcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
+    exit();
+  }
+
+  my %options=();
+  getopts("f:", \%options);
+
+  if (!exists $options{f} || $options{f} !~ /^[\d\.]+[kMG]?$/) {
+    print
+       "Usage: $0 -f FREQ\n\n".
+       "    -h       display this help and exit\n".
+       "    -f FREQ  station frequency in Hz, can be SI prefixed\n".
+       "             (e.g. 94.0M)\n";
+    exit();
+  }
+
+  $fmfreq = $options{f};
+  if ($fmfreq =~ /^([\d\.]+)([kMG])$/) {
+    %si = ( "k" => 1e3, "M" => 1e6, "G" => 1e9 );
+    $fmfreq = $1 * $si{$2};
+  }
+
+  open IN, sprintf("rtl_fm -f %.1f -M fm -l 0 -A std -s %.1f | ".
+           "sox -c 1 -t .s16 -r %.1f - -t .s16 - sinc %.1f-%.1f ".
+           "gain 15 2>/dev/null | ./rtl_redsea | ", $fmfreq, $fs, $fs, $fc-3500,
+           $fc+3500);
+}
+
+# Next bit from radio
 sub get_bit {
-  read(STDIN,$a,1) or die($!);
+  read(IN,$a,1) or die("End of stream");
   $a;
 }
 
@@ -128,7 +165,7 @@ sub blockerror {
   @rcvd = ();
 }
 
-sub get_grp {
+sub get_groups {
 
   my $block = my $wideblock = my $bitcount = my $prevbitcount = 0;
   my ($dist, $message);
@@ -148,7 +185,7 @@ sub get_grp {
     $ErrLookup[&syndrome(0x00004b9 ^ ($err<<10))] = $err;
   }
 
-  if (defined $correct_all) {
+  if ($correct_all) {
     for ($patt = 0x01; $patt <= 0x1F; $patt += 2) {
       for $i (0..16-int(log2($patt)+1)) {
         $err = $patt << $i;

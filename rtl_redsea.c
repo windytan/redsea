@@ -53,7 +53,6 @@ void biphase(double acc) {
 
 int main(int argc, char **argv) {
 
-  char commd[1024];
   int16_t sample[1];
   double val = 0;
   double fc = FC_0;
@@ -84,8 +83,6 @@ int main(int argc, char **argv) {
   int c;
   int fmfreq = 0;
 
-  FILE *S;
-
   while ((c = getopt (argc, argv, "f:")) != -1)
     switch (c) {
       case 'f':
@@ -104,16 +101,8 @@ int main(int argc, char **argv) {
   U = popen("sox -c 6 -r 250000 -t .s16 - dbg-out.wav", "w");
 #endif
 
-#ifdef LOCAL
-  sprintf(commd, "sox rd.wav -c 1 -t .s16 -r %.0f - sinc %.1f-%.1f gain 15 2>/dev/null", FS, FC_0-3500, FC_0+3500);
-#else
-  sprintf(commd, "rtl_fm -f %d -M fm -l 0 -A std -s %.1f | sox -c 1 -t .s16 -r %.0f - -t .s16 - sinc %.1f-%.1f gain 15 2>/dev/null", fmfreq, FS, FS, FC_0-4000, FC_0+4000);
-#endif
-
-  S = popen(commd, "r");
-
   while (1) {
-    if (fread(sample, sizeof(int16_t), 1, S) == 0) exit(0);
+    if (fread(sample, sizeof(int16_t), 1, stdin) == 0) exit(0);
     val = sample[0] / 32768.0;
 
 #ifdef DEBUG
