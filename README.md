@@ -20,7 +20,7 @@ Compiling
 Usage
 -----
 
-    perl redsea.pl [-hls] FREQ
+    perl redsea.pl [-hlst] FREQ
 
         -h       display this help and exit
         -l       print groups in long format
