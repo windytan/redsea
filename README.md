@@ -20,13 +20,15 @@ Compiling
 Usage
 -----
 
-    perl redsea.pl [-hlst] FREQ
+    Usage: perl redsea.pl [-hlst] [-p <error>] [-g <gain>] FREQ
 
-        -h       display this help and exit
-        -l       print groups in long format
-        -s       print groups in short format (default)
-        -t       print an ISO timestamp before each group
-        FREQ     station frequency in Hz, can be SI suffixed (e.g. 94.0M)
+        -h          display this help and exit
+        -l          print groups in long format
+        -s          print groups in short format (default)
+        -t          print an ISO timestamp before each group
+        -g <gain>   gain (float), passed to rtl_fm
+        -p <error>  parts-per-million error, passed to rtl_fm
+        FREQ        station frequency in Hz, can be SI suffixed (94.0M)
 
 Licensing
 ---------
