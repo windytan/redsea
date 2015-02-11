@@ -6,11 +6,11 @@
 # Page numbers refer to IEC 62106, Edition 2
 #
 
-use 5.010;
+use 5.012;
 use strict;
 use warnings;
 use utf8;
-no warnings 'experimental::smartmatch';
+use experimental qw(smartmatch);
 
 use IPC::Cmd qw/can_run/;
 use List::Util qw/sum0/;
