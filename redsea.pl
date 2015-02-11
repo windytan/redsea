@@ -11,14 +11,13 @@ use strict;
 use warnings;
 use utf8;
 
-use experimental qw(smartmatch);
-use IPC::Cmd qw/can_run/;
-use List::Util qw/sum0/;
-use Encode 'decode';
+use experimental qw/smartmatch/;
+use IPC::Cmd     qw/can_run/;
+use Encode       qw/decode/;
+use POSIX        qw/strftime/;
 use Getopt::Std;
-use POSIX qw/strftime/;
 
-binmode(STDOUT, ":encoding(UTF-8)");
+binmode(STDOUT, ':encoding(UTF-8)');
 
 $| ++;
 
@@ -100,16 +99,18 @@ sub commands {
     exit(1);
   }
 
-  getopts("lst", \%options);
+  getopts('hlstp:g:', \%options);
 
-  if (exists $options{h} || ($ARGV[0] // "") !~ /^[\d\.]+[kMG]?$/i) {
+  if (exists $options{h} || ($ARGV[0] // q{}) !~ /^[\d\.]+[kMG]?$/i) {
     print
-       "Usage: perl $0 [-hlst] FREQ\n\n".
-       "    -h       display this help and exit\n".
-       "    -l       print groups in long format\n".
-       "    -s       print groups in short format (default)\n".
-       "    -t       print an ISO timestamp before each group\n".
-       "    FREQ     station frequency in Hz, can be SI suffixed (94.0M)\n";
+       "Usage: perl $0 [-hlst] [-p <error>] [-g <gain>] FREQ\n\n".
+       "    -h          display this help and exit\n".
+       "    -l          print groups in long format\n".
+       "    -s          print groups in short format (default)\n".
+       "    -t          print an ISO timestamp before each group\n".
+       "    -g <gain>   gain (float), passed to rtl_fm\n",
+       "    -p <error>  parts-per-million error, passed to rtl_fm\n",
+       "    FREQ        station frequency in Hz, can be SI suffixed (94.0M)\n\n";
     exit();
   }
 
@@ -124,7 +125,11 @@ sub commands {
     $fmfreq = $1 * $si{$2};
   }
 
-  open $bitpipe, '-|', sprintf('rtl_fm -f %.1f -M fm -l 0 -A std -s %.1f | '.
+  my $gain = (exists $options{g} ? sprintf(' -g %.2f ', $options{g}) : q{});
+  my $ppm  = (exists $options{p} ? sprintf(' -p %.0f ', $options{p}) : q{});
+
+  open $bitpipe, '-|', sprintf('rtl_fm -f %.1f -M fm -l 0 -A std '.
+                       $gain.$ppm.' -s %.1f |'.
                        'sox -c 1 -t .s16 -r 250000 - -t .s16 - '.
                        'sinc %.1f-%.1f gain 15 2>/dev/null | ./rtl_redsea',
                        $fmfreq, FS, FC-3500, FC+3500) or die($!);
@@ -205,25 +210,25 @@ sub get_groups {
   my @has_sync_pulse;
 
   my @offset_word = (0x0FC, 0x198, 0x168, 0x350, 0x1B4);
-  my @ofs2block   = (0,1,2,2,3);
-  my ($synd_reg,$pattern);
+  my @ofs2block   = (0, 1, 2, 2, 3);
+  my ($synd_reg, $pattern);
   my @error_lookup;
 
   # Generate error vector lookup table for all correctable errors
   for my $shft (0..15) {
     $pattern = 0x01 << $shft;
-    $error_lookup[&syndrome(0x00004b9 ^ ($pattern << 10))] = $pattern;
+    $error_lookup[syndrome(0x00004b9 ^ ($pattern << 10))] = $pattern;
   }
   for my $shft (0..14) {
     $pattern = 0x11 << $shft;
-    $error_lookup[&syndrome(0x00004b9 ^ ($pattern << 10))] = $pattern;
+    $error_lookup[syndrome(0x00004b9 ^ ($pattern << 10))] = $pattern;
   }
 
   if ($correct_all) {
     for ($pattern = 0x01; $pattern <= 0x1F; $pattern += 2) {
       for my $i (0..16-int(log2($pattern) + 1)) {
         my $shifted_pattern = $pattern << $i;
-        $error_lookup[&syndrome(0x00005b9 ^ ($shifted_pattern<<10))]
+        $error_lookup[syndrome(0x00005b9 ^ ($shifted_pattern<<10))]
           = $shifted_pattern;
       }
     }
@@ -263,7 +268,7 @@ sub get_groups {
 
             if ($dist % 26 == 0 && $dist <= 156 &&
                ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$bnum]) {
-              $is_in_sync = TRUE;
+              $is_in_sync      = TRUE;
               $expected_offset = $bnum;
               last BLOCKS;
             } else {
@@ -304,15 +309,15 @@ sub get_groups {
 
         elsif   ($expected_offset == A && $pi != 0 &&
                 (($wideblock >> 12) & _16BIT ) == $pi) {
-          $message     = $pi;
-          $wideblock >>= 1;
+          $message           = $pi;
+          $wideblock       >>= 1;
           $has_sync_pulse[A] = TRUE;
         } elsif ($expected_offset == A && $pi != 0 &&
                 (($wideblock >> 10) & _16BIT ) == $pi) {
           $message           = $pi;
           $wideblock         = ($wideblock << 1) + get_bit();
           $has_sync_pulse[A] = TRUE;
-          $left_to_read        = 25;
+          $left_to_read      = 25;
         }
 
         # Detect & correct burst errors (B.2.2)
@@ -377,12 +382,12 @@ sub decodegroup {
     $full_group_type  = extract_bits($_[1], 12, 4).
                        (extract_bits($_[1], 11, 1) ? 'B' : 'A' );
   } else {
-    utter ('(PI only)', '');
+    utter ('(PI only)', q{});
   }
 
   utter (('  PI:     '.sprintf('%04X',$newpi).
     ((exists($station{$newpi}{'chname'})) ?
-      ' '.$station{$newpi}{'chname'} : ''),
+      q{ }.$station{$newpi}{'chname'} : q{}),
       sprintf('%04X',$newpi)));
 
   # PI is repeated -> confirmed
@@ -400,7 +405,7 @@ sub decodegroup {
     }
 
   } elsif ($newpi != ($pi // 0)) {
-    utter ("          (repeat will confirm PI change)","?\n");
+    utter ('          (repeat will confirm PI change)',"?\n");
     return;
   }
 
@@ -412,30 +417,30 @@ sub decodegroup {
 
   utter (
    (@_ == 4 ? "Group $full_group_type: $group_names[$group_type]" :
-              "(partial group $full_group_type, ".scalar(@_)." blocks)"),
-   (@_ == 4 ? sprintf(" %3s",$full_group_type) :
-              sprintf(" (%3s)",$full_group_type)));
+              "(partial group $full_group_type, ".scalar(@_).' blocks)'),
+   (@_ == 4 ? sprintf(' %3s', $full_group_type) :
+              sprintf(' (%3s)', $full_group_type)));
 
   # Traffic Program (TP)
   $station{$pi}{'TP'} = extract_bits($_[1], 10, 1);
-  utter ("  TP:     $TP_descr[$station{$pi}{'TP'}]",
-         " TP:$station{$pi}{'TP'}");
+  utter ('  TP:     '.$TP_descr[$station{$pi}{'TP'}],
+         ' TP:'.$station{$pi}{'TP'});
 
   # Program Type (PTY)
   $station{$pi}{'PTY'} = extract_bits($_[1], 5, 5);
 
   if (exists $station{$pi}{'ECC'} &&
-     ($countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] // "")
+     ($countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] // q{})
        =~ /us|ca|mx/) {
     $station{$pi}{'PTYmarkup'} = $ptynamesUS[$station{$pi}{'PTY'}];
     utter ("  PTY:    ". sprintf("%02d",$station{$pi}{'PTY'}).
-           " $ptynamesUS[$station{$pi}{'PTY'}]",
-           " PTY:".sprintf("%02d",$station{$pi}{'PTY'}));
+           q{ }.$ptynamesUS[$station{$pi}{'PTY'}],
+           ' PTY:'.sprintf('%02d',$station{$pi}{'PTY'}));
   } else {
     $station{$pi}{'PTYmarkup'} = $ptynames[$station{$pi}{'PTY'}];
-    utter ("  PTY:    ". sprintf("%02d",$station{$pi}{'PTY'}).
-           " $ptynames[$station{$pi}{'PTY'}]",
-           " PTY:".sprintf("%02d",$station{$pi}{'PTY'}));
+    utter ('  PTY:    '. sprintf('%02d',$station{$pi}{'PTY'}).
+           q{ }.$ptynames[$station{$pi}{'PTY'}],
+           ' PTY:'.sprintf('%02d',$station{$pi}{'PTY'}));
   }
   $station{$pi}{'PTYmarkup'} =~ s/&/&amp;/g;
 
@@ -529,11 +534,11 @@ sub Group0A {
   # TA, M/S
   $station{$pi}{'TA'} = extract_bits($_[1], 4, 1);
   $station{$pi}{'MS'} = extract_bits($_[1], 3, 1);
-  utter ("  TA:     ".
+  utter ('  TA:     '.
     $TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}],
-    " TA:$station{$pi}{'TA'}");
-  utter ("  M/S:    ".qw( Speech Music )[$station{$pi}{'MS'}],
-    " MS:".qw(S M)[$station{$pi}{'MS'}]);
+    ' TA:'.$station{$pi}{'TA'});
+  utter ('  M/S:    '.qw( Speech Music )[$station{$pi}{'MS'}],
+    ' MS:'.qw(S M)[$station{$pi}{'MS'}]);
 
   $station{$pi}{'hasMS'} = TRUE;
 
@@ -542,7 +547,7 @@ sub Group0A {
     my @af;
     for (0..1) {
       $af[$_] = parse_AF(TRUE, extract_bits($_[2], 8-$_*8, 8));
-      utter ("  AF:     $af[$_]"," AF:$af[$_]");
+      utter ('  AF:     '.$af[$_],' AF:'.$af[$_]);
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
       ($station{$pi}{'freq'} = $af[1]) =~ s/ ?[kM]Hz//;
@@ -1119,7 +1124,7 @@ sub Group14A {
       $station{$eon_pi}{'TA'}  = extract_bits($_[2],  0, 1);
       utter (("    PTY:    $station{$eon_pi}{'PTY'} ".
         (exists $station{$eon_pi}{'ECC'} &&
-        ($countryISO[$station{$pi}{'ECC'}][$station{$eon_pi}{'CC'}] // "")
+        ($countryISO[$station{$pi}{'ECC'}][$station{$eon_pi}{'CC'}] // q{})
         =~ /us|ca|mx/ ? $ptynamesUS[$station{$eon_pi}{'PTY'}] :
         $ptynames[$station{$eon_pi}{'PTY'}])),
         ' PTY:'.$station{$eon_pi}{'PTY'});
@@ -1142,7 +1147,7 @@ sub Group14A {
     }
 
   }
-  utter(q{},"]");
+  utter(q{},']');
 }
 
 # 14B: Enhanced Other Networks (EON) information
@@ -1155,14 +1160,14 @@ sub Group14B {
   $station{$eon_pi}{'TP'} = extract_bits($_[1], 4, 1);
   $station{$eon_pi}{'TA'} = extract_bits($_[1], 3, 1);
   utter ('  Other Network', ' ON:');
-  utter ('    PI:     '.sprintf('%04X',$eon_pi).
+  utter ('    PI:     '.sprintf('%04X', $eon_pi).
     ((exists($station{$eon_pi}{'chname'})) &&
     " ($station{$eon_pi}{'chname'})"),
     sprintf('%04X[',$eon_pi));
   utter ('    TP:     '.
     $TP_descr[$station{$eon_pi}{'TP'}],
     'TP:'.$station{$eon_pi}{'TP'});
-  utter ("    TA:     ".
+  utter ('    TA:     '.
     $TA_descr[$station{$eon_pi}{'TP'}][$station{$eon_pi}{'TA'}],
     'TA:'.$station{$eon_pi}{'TA'});
 }
@@ -1270,7 +1275,7 @@ sub set_rt_chars {
     utter (q{}, ' RTcomplete');
   }
 
-  utter ('          '. join('', (map ((defined) ? q{^} : q{ },
+  utter ('          '. join(q{}, (map ((defined) ? q{^} : q{ },
     @{$station{$pi}{'RTrcvd'}}[0..63]))), q{});
 }
 
@@ -1290,9 +1295,9 @@ sub parse_eRT {
     }
 
     say '  eRT:    '. substr($station{$pi}{'eRTbuf'},0,2*$addr).
-                      ($is_interactive ? REVERSE : "").
+                      ($is_interactive ? REVERSE : q{}).
                       substr($station{$pi}{'eRTbuf'},2*$addr,2).
-                      ($is_interactive ? RESET : "").
+                      ($is_interactive ? RESET : q{}).
                       substr($station{$pi}{'eRTbuf'},2*$addr+2);
 
     say '          '. join(q{}, (map ((defined) ? q{^} : q{ },
@@ -1373,7 +1378,7 @@ sub parse_RTp {
           @{$station{$pi}{'RTrcvd'}}[$start[$tag]..($start[$tag] +
             $len[$tag] - 1)]);
         if ($total_received == $len[$tag]) {
-          say "    Tag $rtpclass[$ctype[$tag]]: ".
+          say '    Tag '.$rtpclass[$ctype[$tag]].': '.
             substr($station{$pi}{'RTbuf'}, $start[$tag], $len[$tag]);
         }
       }
@@ -1489,10 +1494,10 @@ sub init_data {
 
   # Basic LCD character set
   @char_table = split(//,
-               '                ' . '                ' . ' !"#¤%&\'()*+,-./'. '0123456789:;<=>?' .
-               '@ABCDEFGHIJKLMNO' . 'PQRSTUVWXYZ[\\]―_'. '‖abcdefghijklmno' . 'pqrstuvwxyz{|}¯ ' .
-               'áàéèíìóòúùÑÇŞβ¡Ĳ' . 'âäêëîïôöûüñçşǧıĳ' . 'ªα©‰Ǧěňőπ€£$←↑→↓' . 'º¹²³±İńűµ¿÷°¼½¾§' .
-               'ÁÀÉÈÍÌÓÒÚÙŘČŠŽÐĿ' . 'ÂÄÊËÎÏÔÖÛÜřčšžđŀ' . 'ÃÅÆŒŷÝÕØÞŊŔĆŚŹŦð' . 'ãåæœŵýõøþŋŕćśźŧ ');
+               q{                }.q{                }.q{ !"#¤%&'()*+,-./}.q{0123456789:;<=>?}.
+               q{@ABCDEFGHIJKLMNO}.q{PQRSTUVWXYZ[\]―_}.q{‖abcdefghijklmno}.q[pqrstuvwxyz{|}¯ ].
+               q{áàéèíìóòúùÑÇŞβ¡Ĳ}.q{âäêëîïôöûüñçşǧıĳ}.q{ªα©‰Ǧěňőπ€£$←↑→↓}.q{º¹²³±İńűµ¿÷°¼½¾§}.
+               q{ÁÀÉÈÍÌÓÒÚÙŘČŠŽÐĿ}.q{ÂÄÊËÎÏÔÖÛÜřčšžđŀ}.q{ÃÅÆŒŷÝÕØÞŊŔĆŚŹŦð}.q{ãåæœŵýõøþŋŕćśźŧ });
 
   # Meanings of combinations of TP+TA
   @TP_descr = (  'Does not carry traffic announcements', 'Program carries traffic announcements' );
