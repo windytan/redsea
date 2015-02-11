@@ -207,7 +207,7 @@ sub get_groups {
   my $pi = my $i = 0;
   my $j = my $data_length = my $buf = my $prevsync = 0;
   my $left_to_read = 26;
-  my @has_sync_pulse;
+  my @has_sync_for;
 
   my @offset_word = (0x0FC, 0x198, 0x168, 0x350, 0x1B4);
   my @ofs2block   = (0, 1, 2, 2, 3);
@@ -251,19 +251,19 @@ sub get_groups {
 
     # Find the offsets for which the syndrome is zero
     for (A .. D) {
-      $has_sync_pulse[$_] = (syndrome($block ^ $offset_word[$_]) == 0);
+      $has_sync_for[$_] = (syndrome($block ^ $offset_word[$_]) == 0);
     }
 
     # Acquire sync
 
     if (!$is_in_sync) {
 
-      if ($has_sync_pulse[A] | $has_sync_pulse[B] | $has_sync_pulse[C] |
-          $has_sync_pulse[Ci] | $has_sync_pulse[D]) {
+      if ($has_sync_for[A] | $has_sync_for[B] | $has_sync_for[C] |
+          $has_sync_for[Ci] | $has_sync_for[D]) {
 
         BLOCKS:
         for my $bnum (A .. D) {
-          if ($has_sync_pulse[$bnum]) {
+          if ($has_sync_for[$bnum]) {
             $dist = $bitcount - $prevbitcount;
 
             if ($dist % 26 == 0 && $dist <= 156 &&
@@ -289,20 +289,20 @@ sub get_groups {
       $message = $block >> 10;
 
       # If expecting C but we only got a Ci sync pulse, we have a Ci block
-      if ($expected_offset == C && !$has_sync_pulse[C] &&
-          $has_sync_pulse[Ci]) {
+      if ($expected_offset == C && !$has_sync_for[C] &&
+          $has_sync_for[Ci]) {
         $expected_offset = Ci;
       }
 
       # If this block offset won't give a sync pulse
-      if (!$has_sync_pulse[$expected_offset]) {
+      if (!$has_sync_for[$expected_offset]) {
 
         # If it's a correct PI, the error was probably in the check bits and
         # hence is ignored
         if      ($expected_offset == A && $message == $pi && $pi != 0) {
-          $has_sync_pulse[A]  = TRUE;
+          $has_sync_for[A]  = TRUE;
         } elsif ($expected_offset == C && $message == $pi && $pi != 0) {
-          $has_sync_pulse[Ci] = TRUE;
+          $has_sync_for[Ci] = TRUE;
         }
 
         # Detect & correct clock slips (C.1.2)
@@ -311,12 +311,12 @@ sub get_groups {
                 (($wideblock >> 12) & _16BIT ) == $pi) {
           $message           = $pi;
           $wideblock       >>= 1;
-          $has_sync_pulse[A] = TRUE;
+          $has_sync_for[A] = TRUE;
         } elsif ($expected_offset == A && $pi != 0 &&
                 (($wideblock >> 10) & _16BIT ) == $pi) {
           $message           = $pi;
           $wideblock         = ($wideblock << 1) + get_bit();
-          $has_sync_pulse[A] = TRUE;
+          $has_sync_for[A] = TRUE;
           $left_to_read      = 25;
         }
 
@@ -326,15 +326,15 @@ sub get_groups {
 
         if (defined $error_lookup[$synd_reg]) {
           $message = ($block >> 10) ^ $error_lookup[$synd_reg];
-          $has_sync_pulse[$expected_offset] = TRUE;
+          $has_sync_for[$expected_offset] = TRUE;
         }
 
         # If still no sync pulse
-        blockerror() if (!$has_sync_pulse[$expected_offset]);
+        blockerror() if (!$has_sync_for[$expected_offset]);
       }
 
       # Error-free block received
-      if ($has_sync_pulse[$expected_offset]) {
+      if ($has_sync_for[$expected_offset]) {
 
         $group_data[$ofs2block[$expected_offset]] = $message;
         $block_has_errors[$block_counter % 50]    = FALSE;
@@ -347,7 +347,7 @@ sub get_groups {
         # A complete group is received
         if ($has_block[A] && $has_block[B] &&
            ($has_block[C] || $has_block[Ci]) && $has_block[D]) {
-          decodegroup(@group_data);
+          decode_group(@group_data);
         }
       }
 
@@ -364,23 +364,25 @@ sub get_groups {
 }
 
 
-sub decodegroup {
+sub decode_group {
 
-  return if ($_[0] == 0);
+  my @blocks = @_;
+
+  return if ($blocks[0] == 0x0000);
   my ($group_type, $full_group_type);
 
   $ednewpi = ($newpi // 0);
-  $newpi   = $_[0];
+  $newpi   = $blocks[0];
 
   if (exists $options{t}) {
     my $timestamp = strftime('%Y-%m-%dT%H:%M:%S%z ', localtime);
     utter ($timestamp, $timestamp);
   }
 
-  if (@_ >= 2) {
-    $group_type       = extract_bits($_[1], 11, 5);
-    $full_group_type  = extract_bits($_[1], 12, 4).
-                       (extract_bits($_[1], 11, 1) ? 'B' : 'A' );
+  if (@blocks >= 2) {
+    $group_type       = extract_bits($blocks[1], 11, 5);
+    $full_group_type  = extract_bits($blocks[1], 12, 4).
+                       (extract_bits($blocks[1], 11, 1) ? 'B' : 'A' );
   } else {
     utter ('(PI only)', q{});
   }
@@ -410,24 +412,25 @@ sub decodegroup {
   }
 
   # Nothing more to be done for PI only
-  if (@_ == 1) {
+  if (@blocks == 1) {
     utter ("\n","\n");
     return;
   }
 
   utter (
-   (@_ == 4 ? "Group $full_group_type: $group_names[$group_type]" :
-              "(partial group $full_group_type, ".scalar(@_).' blocks)'),
-   (@_ == 4 ? sprintf(' %3s', $full_group_type) :
-              sprintf(' (%3s)', $full_group_type)));
+   (@blocks == 4 ? "Group $full_group_type: $group_names[$group_type]" :
+                   "(partial group $full_group_type, ".scalar(@blocks).
+                   ' blocks)'),
+   (@blocks == 4 ? sprintf(' %3s', $full_group_type) :
+                   sprintf(' (%3s)', $full_group_type)));
 
   # Traffic Program (TP)
-  $station{$pi}{'TP'} = extract_bits($_[1], 10, 1);
+  $station{$pi}{'TP'} = extract_bits($blocks[1], 10, 1);
   utter ('  TP:     '.$TP_descr[$station{$pi}{'TP'}],
          ' TP:'.$station{$pi}{'TP'});
 
   # Program Type (PTY)
-  $station{$pi}{'PTY'} = extract_bits($_[1], 5, 5);
+  $station{$pi}{'PTY'} = extract_bits($blocks[1], 5, 5);
 
   if (exists $station{$pi}{'ECC'} &&
      ($countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] // q{})
@@ -448,73 +451,73 @@ sub decodegroup {
 
   given ($group_type) {
     when (0)  {
-      Group0A (@_);
+      Group0A (@blocks);
     }
     when (1)  {
-      Group0B (@_);
+      Group0B (@blocks);
     }
     when (2)  {
-      Group1A (@_);
+      Group1A (@blocks);
     }
     when (3)  {
-      Group1B (@_);
+      Group1B (@blocks);
     }
     when (4)  {
-      Group2A (@_);
+      Group2A (@blocks);
     }
     when (5)  {
-      Group2B (@_);
+      Group2B (@blocks);
     }
     when (6)  {
       exists ($station{$pi}{'ODAaid'}{6})  ?
-        ODAGroup(6, @_)  : Group3A (@_);
+        ODAGroup(6, @blocks)  : Group3A (@blocks);
       }
     when (8)  {
       Group4A (@_);
     }
     when (10) {
       exists ($station{$pi}{'ODAaid'}{10}) ?
-        ODAGroup(10, @_) : Group5A (@_);
+        ODAGroup(10, @blocks) : Group5A (@blocks);
     }
     when (11) {
       exists ($station{$pi}{'ODAaid'}{11}) ?
-        ODAGroup(11, @_) : Group5B (@_);
+        ODAGroup(11, @blocks) : Group5B (@blocks);
     }
     when (12) {
       exists ($station{$pi}{'ODAaid'}{12}) ?
-        ODAGroup(12, @_) : Group6A (@_);
+        ODAGroup(12, @blocks) : Group6A (@blocks);
     }
     when (13) {
       exists ($station{$pi}{'ODAaid'}{13}) ?
-        ODAGroup(13, @_) : Group6B (@_);
+        ODAGroup(13, @blocks) : Group6B (@blocks);
     }
     when (14) {
       exists ($station{$pi}{'ODAaid'}{14}) ?
-        ODAGroup(14, @_) : Group7A (@_);
+        ODAGroup(14, @blocks) : Group7A (@blocks);
     }
     when (18) {
       exists ($station{$pi}{'ODAaid'}{18}) ?
-        ODAGroup(18, @_) : Group9A (@_);
+        ODAGroup(18, @blocks) : Group9A (@blocks);
     }
     when (20) {
-      Group10A(@_);
+      Group10A(@blocks);
     }
     when (26) {
       exists ($station{$pi}{'ODAaid'}{26}) ?
-        ODAGroup(26, @_) : Group13A(@_);
+        ODAGroup(26, @blocks) : Group13A(@blocks);
     }
     when (28) {
-      Group14A(@_);
+      Group14A(@blocks);
     }
     when (29) {
-      Group14B(@_);
+      Group14B(@blocks);
     }
     when (31) {
-      Group15B(@_);
+      Group15B(@blocks);
     }
 
     default   {
-      ODAGroup($group_type, @_);
+      ODAGroup($group_type, @blocks);
     }
   }
 
@@ -526,14 +529,16 @@ sub decodegroup {
 
 sub Group0A {
 
+  my @blocks = @_;
+
   # DI
-  my $DI_adr = 3 - extract_bits($_[1], 0, 2);
-  my $DI     = extract_bits($_[1], 2, 1);
+  my $DI_adr = 3 - extract_bits($blocks[1], 0, 2);
+  my $DI     = extract_bits($blocks[1], 2, 1);
   parse_DI($DI_adr, $DI);
 
   # TA, M/S
-  $station{$pi}{'TA'} = extract_bits($_[1], 4, 1);
-  $station{$pi}{'MS'} = extract_bits($_[1], 3, 1);
+  $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{'MS'} = extract_bits($blocks[1], 3, 1);
   utter ('  TA:     '.
     $TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}],
     ' TA:'.$station{$pi}{'TA'});
@@ -542,11 +547,11 @@ sub Group0A {
 
   $station{$pi}{'hasMS'} = TRUE;
 
-  if (@_ >= 3) {
+  if (@blocks >= 3) {
     # AF
     my @af;
     for (0..1) {
-      $af[$_] = parse_AF(TRUE, extract_bits($_[2], 8-$_*8, 8));
+      $af[$_] = parse_AF(TRUE, extract_bits($blocks[2], 8-$_*8, 8));
       utter ('  AF:     '.$af[$_],' AF:'.$af[$_]);
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
@@ -554,15 +559,15 @@ sub Group0A {
     }
   }
 
-  if (@_ == 4) {
+  if (@blocks == 4) {
 
     # Program Service Name (PS)
 
     if ($station{$pi}{'denyPS'}) {
       utter ("          (Ignoring changes to PS)"," denyPS");
     } else {
-      set_PS_chars($pi, extract_bits($_[1], 0, 2) * 2,
-        extract_bits($_[3], 8, 8), extract_bits($_[3], 0, 8));
+      set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
+        extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
     }
   }
 }
@@ -571,14 +576,16 @@ sub Group0A {
 
 sub Group0B {
 
+  my @blocks = @_;
+
   # Decoder Identification
-  my $DI_adr = 3 - extract_bits($_[1], 0, 2);
-  my $DI     = extract_bits($_[1], 2, 1);
+  my $DI_adr = 3 - extract_bits($blocks[1], 0, 2);
+  my $DI     = extract_bits($blocks[1], 2, 1);
   parse_DI($DI_adr, $DI);
 
   # Traffic Announcements, Music/Speech
-  $station{$pi}{'TA'} = extract_bits($_[1], 4, 1);
-  $station{$pi}{'MS'} = extract_bits($_[1], 3, 1);
+  $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{'MS'} = extract_bits($blocks[1], 3, 1);
   utter ("  TA:     ".
     $TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}],
     " TA:$station{$pi}{'TA'}");
@@ -587,15 +594,15 @@ sub Group0B {
 
   $station{$pi}{'hasMS'} = TRUE;
 
-  if (@_ == 4) {
+  if (@blocks == 4) {
 
     # Program Service name
 
     if ($station{$pi}{'denyPS'}) {
       utter ('          (Ignoring changes to PS)', ' denyPS');
     } else {
-      set_PS_chars($pi, extract_bits($_[1], 0, 2) * 2,
-        extract_bits($_[3], 8, 8), extract_bits($_[3], 0, 8));
+      set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
+        extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
     }
   }
 
@@ -605,20 +612,22 @@ sub Group0B {
 
 sub Group1A {
 
-  return if (@_ < 4);
+  my @blocks = @_;
+
+  return if (@blocks < 4);
 
   # Program Item Number
 
-  utter ('  PIN:    '. parse_PIN($_[3]),' PIN:'.parse_PIN($_[3]));
+  utter ('  PIN:    '. parse_PIN($blocks[3]),' PIN:'.parse_PIN($blocks[3]));
 
   # Paging (M.2.1.1.2)
 
-  print_appdata ('Pager', 'TNG: '.     extract_bits($_[1], 2, 3));
-  print_appdata ('Pager', 'interval: '.extract_bits($_[1], 0, 2));
+  print_appdata ('Pager', 'TNG: '.     extract_bits($blocks[1], 2, 3));
+  print_appdata ('Pager', 'interval: '.extract_bits($blocks[1], 0, 2));
 
   # Slow labeling codes
 
-  $station{$pi}{'LA'} = extract_bits($_[2], 15, 1);
+  $station{$pi}{'LA'} = extract_bits($blocks[2], 15, 1);
   utter ('  LA:     '.($station{$pi}{'LA'} ? 'Program is linked '.
     (exists($station{$pi}{'LSN'}) &&
     sprintf('to linkage set %Xh ', $station{$pi}{'LSN'})).
@@ -626,36 +635,36 @@ sub Group1A {
     ' LA:'.$station{$pi}{'LA'}.(exists($station{$pi}{'LSN'})
     && sprintf('0x%X',$station{$pi}{'LSN'})));
 
-  my $slc_variant = extract_bits($_[2], 12, 3);
+  my $slc_variant = extract_bits($blocks[2], 12, 3);
 
   given ($slc_variant) {
 
     when (0) {
-      print_appdata ('Pager', 'OPC: '.extract_bits($_[2], 8, 4));
+      print_appdata ('Pager', 'OPC: '.extract_bits($blocks[2], 8, 4));
 
       # No PIN, M.3.2.4.3
-      if (@_ == 4 && ($_[3] >> 11) == 0) {
-        given (extract_bits($_[3], 10, 1)) {
+      if (@blocks == 4 && ($blocks[3] >> 11) == 0) {
+        given (extract_bits($blocks[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            print_appdata ('Pager', 'PAC: '.extract_bits($_[3], 4, 6));
-            print_appdata ('Pager', 'OPC: '.extract_bits($_[3], 0, 4));
+            print_appdata ('Pager', 'PAC: '.extract_bits($blocks[3], 4, 6));
+            print_appdata ('Pager', 'OPC: '.extract_bits($blocks[3], 0, 4));
           }
           # Sub type 1
           when (1) {
-            given (extract_bits($_[3], 8, 2)) {
+            given (extract_bits($blocks[3], 8, 2)) {
               when (0) {
-                print_appdata ('Pager', 'ECC: '. extract_bits($_[3], 0, 6));
+                print_appdata ('Pager', 'ECC: '. extract_bits($blocks[3], 0, 6));
               }
               when (3) {
-                print_appdata ('Pager', 'CCF: '.extract_bits($_[3], 0, 4));
+                print_appdata ('Pager', 'CCF: '.extract_bits($blocks[3], 0, 4));
               }
             }
           }
         }
       }
 
-      $station{$pi}{'ECC'}    = extract_bits($_[2],  0, 8);
+      $station{$pi}{'ECC'}    = extract_bits($blocks[2],  0, 8);
       $station{$pi}{'CC'}     = extract_bits($pi,   12, 4);
       utter (('  ECC:    '.sprintf('%02X', $station{$pi}{'ECC'}).
         (defined $countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] &&
@@ -666,31 +675,31 @@ sub Group1A {
     }
 
     when (1) {
-      $station{$pi}{'tmcid'}       = extract_bits($_[2], 0, 12);
+      $station{$pi}{'tmcid'}       = extract_bits($blocks[2], 0, 12);
       utter ('  TMC ID: '. sprintf('%xh',$station{$pi}{'tmcid'}),
         ' TMCID:'.sprintf('%xh',$station{$pi}{'tmcid'}));
     }
 
     when (2) {
-      print_appdata ('Pager', 'OPC: '.extract_bits($_[2], 8, 4));
-      print_appdata ('Pager', 'PAC: '.extract_bits($_[2], 0, 6));
+      print_appdata ('Pager', 'OPC: '.extract_bits($blocks[2], 8, 4));
+      print_appdata ('Pager', 'PAC: '.extract_bits($blocks[2], 0, 6));
 
       # No PIN, M.3.2.4.3
-      if (@_ == 4 && ($_[3] >> 11) == 0) {
-        given (extract_bits($_[3], 10, 1)) {
+      if (@blocks == 4 && ($blocks[3] >> 11) == 0) {
+        given (extract_bits($blocks[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            print_appdata ('Pager', 'PAC: '.extract_bits($_[3], 4, 6));
-            print_appdata ('Pager', 'OPC: '.extract_bits($_[3], 0, 4));
+            print_appdata ('Pager', 'PAC: '.extract_bits($blocks[3], 4, 6));
+            print_appdata ('Pager', 'OPC: '.extract_bits($blocks[3], 0, 4));
           }
           # Sub type 1
           when (1) {
-            given (extract_bits($_[3], 8, 2)) {
+            given (extract_bits($blocks[3], 8, 2)) {
               when (0) {
-                print_appdata ('Pager', 'ECC: '.extract_bits($_[3], 0, 6));
+                print_appdata ('Pager', 'ECC: '.extract_bits($blocks[3], 0, 6));
               }
               when (3) {
-                print_appdata ('Pager', 'CCF: '.extract_bits($_[3], 0, 4));
+                print_appdata ('Pager', 'CCF: '.extract_bits($blocks[3], 0, 4));
               }
             }
           }
@@ -699,7 +708,7 @@ sub Group1A {
     }
 
     when (3) {
-      $station{$pi}{'lang'}        = extract_bits($_[2], 0, 8);
+      $station{$pi}{'lang'}        = extract_bits($blocks[2], 0, 8);
       utter ('  Lang:   '. sprintf( ($station{$pi}{'lang'} <= 127 ?
         "0x%X $langname[$station{$pi}{'lang'}]" : "Unknown language %Xh"),
         $station{$pi}{'lang'}),
@@ -710,12 +719,12 @@ sub Group1A {
 
     when (6) {
       utter ('  Brodcaster data: '.sprintf('%03x',
-        extract_bits($_[2], 0, 12)),
-        ' BDATA:'.sprintf('%03x', extract_bits($_[2], 0, 12)));
+        extract_bits($blocks[2], 0, 12)),
+        ' BDATA:'.sprintf('%03x', extract_bits($blocks[2], 0, 12)));
     }
 
     when (7) {
-      $station{$pi}{'EWS_channel'} = extract_bits($_[2], 0, 12);
+      $station{$pi}{'EWS_channel'} = extract_bits($blocks[2], 0, 12);
       utter ('  EWS channel: '. sprintf('0x%X',$station{$pi}{'EWS_channel'}),
              ' EWSch:'. sprintf('0x%X',$station{$pi}{'EWS_channel'}));
     }
@@ -730,27 +739,32 @@ sub Group1A {
 # 1B: Program Item Number
 
 sub Group1B {
-  return if (@_ < 4);
-  utter ("  PIN:    ". parse_PIN($_[3])," PIN:$_[3]");
+  my @blocks = @_;
+  
+  return if (@blocks < 4);
+
+  utter ("  PIN:    ". parse_PIN($blocks[3])," PIN:$blocks[3]");
 }
 
 # 2A: RadioText (64 characters)
 
 sub Group2A {
 
-  return if (@_ < 3);
+  my @blocks = @_;
+  
+  return if (@blocks < 3);
 
-  my $text_seg_addr        = extract_bits($_[1], 0, 4) * 4;
+  my $text_seg_addr        = extract_bits($blocks[1], 0, 4) * 4;
   $station{$pi}{'prev_textAB'} = $station{$pi}{'textAB'};
-  $station{$pi}{'textAB'}      = extract_bits($_[1], 4, 1);
+  $station{$pi}{'textAB'}      = extract_bits($blocks[1], 4, 1);
   my @chr                  = ();
 
-  $chr[0] = extract_bits($_[2], 8, 8);
-  $chr[1] = extract_bits($_[2], 0, 8);
+  $chr[0] = extract_bits($blocks[2], 8, 8);
+  $chr[1] = extract_bits($blocks[2], 0, 8);
 
-  if (@_ == 4) {
-    $chr[2] = extract_bits($_[3], 8, 8);
-    $chr[3] = extract_bits($_[3], 0, 8);
+  if (@blocks == 4) {
+    $chr[2] = extract_bits($blocks[3], 8, 8);
+    $chr[3] = extract_bits($blocks[3], 0, 8);
   }
 
   # Page 26
@@ -759,37 +773,39 @@ sub Group2A {
       utter ('          (Ignoring A/B flag change)', ' denyRTAB');
     } else {
       utter ('          (A/B flag change; text reset)', ' RT_RESET');
-      $station{$pi}{'RTbuf'}  = ' ' x 64;
+      $station{$pi}{'RTbuf'}  = q{ } x 64;
       $station{$pi}{'RTrcvd'} = ();
     }
   }
 
-  set_rt_chars($text_seg_addr,@chr);
+  set_rt_chars($text_seg_addr, @chr);
 }
 
 # 2B: RadioText (32 characters)
 
 sub Group2B {
 
-  return if (@_ < 4);
+  my @blocks = @_;
 
-  my $text_seg_addr            = extract_bits($_[1], 0, 4) * 2;
+  return if (@blocks < 4);
+
+  my $text_seg_addr            = extract_bits($blocks[1], 0, 4) * 2;
   $station{$pi}{'prev_textAB'} = $station{$pi}{'textAB'};
-  $station{$pi}{'textAB'}      = extract_bits($_[1], 4, 1);
-  my @chr                      = (extract_bits($_[3], 8, 8),
-                                  extract_bits($_[3], 0, 8));
+  $station{$pi}{'textAB'}      = extract_bits($blocks[1], 4, 1);
+  my @chr                      = (extract_bits($blocks[3], 8, 8),
+                                  extract_bits($blocks[3], 0, 8));
 
   if (($station{$pi}{'prev_textAB'} // -1) != $station{$pi}{'textAB'}) {
     if ($station{$pi}{'denyRTAB'} // FALSE) {
-      utter ('          (Ignoring A/B flag change)',' denyRTAB');
+      utter ('          (Ignoring A/B flag change)', ' denyRTAB');
     } else {
-      utter ('          (A/B flag change; text reset)',' RT_RESET');
-      $station{$pi}{'RTbuf'}  = " " x 64;
+      utter ('          (A/B flag change; text reset)', ' RT_RESET');
+      $station{$pi}{'RTbuf'}  = q{ } x 64;
       $station{$pi}{'RTrcvd'} = ();
     }
   }
 
-  set_rt_chars($text_seg_addr,@chr);
+  set_rt_chars($text_seg_addr, @chr);
 
 }
 
@@ -797,15 +813,17 @@ sub Group2B {
 
 sub Group3A {
 
-  return if (@_ < 4);
+  my @blocks = @_;
 
-  my $group_type = extract_bits($_[1], 0, 5);
+  return if (@blocks < 4);
+
+  my $group_type = extract_bits($blocks[1], 0, 5);
 
   given ($group_type) {
 
     when (0) {
-      utter ('  ODAapp: '. ($oda_app{$_[3]} // sprintf('0x%04X',$_[3])),
-             ' ODAapp:'.sprintf('0x%04X',$_[3]));
+      utter ('  ODAapp: '. ($oda_app{$blocks[3]} // sprintf('0x%04X',$blocks[3])),
+             ' ODAapp:'.sprintf('0x%04X',$blocks[3]));
       utter ('          is not carried in associated group','[not_carried]');
       return;
     }
@@ -822,11 +840,11 @@ sub Group3A {
     }
 
     default {
-      $station{$pi}{'ODAaid'}{$group_type} = $_[3];
-      utter ('  ODAgrp: '. extract_bits($_[1], 1, 4).
-            (extract_bits($_[1], 0, 1) ? 'B' : 'A'),
-            ' ODAgrp:'. extract_bits($_[1], 1, 4).
-            (extract_bits($_[1], 0, 1) ? 'B' : 'A'));
+      $station{$pi}{'ODAaid'}{$group_type} = $blocks[3];
+      utter ('  ODAgrp: '. extract_bits($blocks[1], 1, 4).
+            (extract_bits($blocks[1], 0, 1) ? 'B' : 'A'),
+            ' ODAgrp:'. extract_bits($blocks[1], 1, 4).
+            (extract_bits($blocks[1], 0, 1) ? 'B' : 'A'));
       utter ('  ODAapp: '. ($oda_app{$station{$pi}{'ODAaid'}{$group_type}} //
         sprintf('%04Xh',$station{$pi}{'ODAaid'}{$group_type})),
         ' ODAapp:'. sprintf('0x%04X',$station{$pi}{'ODAaid'}{$group_type}));
@@ -839,16 +857,16 @@ sub Group3A {
     # Traffic Message Channel
     when ([0xCD46, 0xCD47]) {
       $station{$pi}{'hasTMC'} = TRUE;
-      print_appdata ('TMC', sprintf('sysmsg %04x',$_[2]));
+      print_appdata ('TMC', sprintf('sysmsg %04x',$blocks[2]));
     }
 
     # RT+
     when (0x4BD7) {
       $station{$pi}{'hasRTplus'} = TRUE;
-      $station{$pi}{'rtp_which'} = extract_bits($_[2], 13, 1);
-      $station{$pi}{'CB'}        = extract_bits($_[2], 12, 1);
-      $station{$pi}{'SCB'}       = extract_bits($_[2],  8, 4);
-      $station{$pi}{'templnum'}  = extract_bits($_[2],  0, 8);
+      $station{$pi}{'rtp_which'} = extract_bits($blocks[2], 13, 1);
+      $station{$pi}{'CB'}        = extract_bits($blocks[2], 12, 1);
+      $station{$pi}{'SCB'}       = extract_bits($blocks[2],  8, 4);
+      $station{$pi}{'templnum'}  = extract_bits($blocks[2],  0, 8);
       utter ('  RT+ applies to '.($station{$pi}{'rtp_which'} ?
         'enhanced RadioText' : 'RadioText'), q{});
       utter ('  '.($station{$pi}{'CB'} ?
@@ -866,14 +884,14 @@ sub Group3A {
       if (not exists $station{$pi}{'eRTbuf'}) {
         $station{$pi}{'eRTbuf'}     = q{ } x 64;
       }
-      $station{$pi}{'ert_isutf8'} = extract_bits($_[2], 0, 1);
-      $station{$pi}{'ert_txtdir'} = extract_bits($_[2], 1, 1);
-      $station{$pi}{'ert_chrtbl'} = extract_bits($_[2], 2, 4);
+      $station{$pi}{'ert_isutf8'} = extract_bits($blocks[2], 0, 1);
+      $station{$pi}{'ert_txtdir'} = extract_bits($blocks[2], 1, 1);
+      $station{$pi}{'ert_chrtbl'} = extract_bits($blocks[2], 2, 4);
     }
 
     # Unimplemented ODA
     default {
-      say '  ODAmsg: '. sprintf('%04x',$_[2]);
+      say '  ODAmsg: '. sprintf('%04x',$blocks[2]);
       say '          Unimplemented Open Data Application';
     }
   }
@@ -883,15 +901,17 @@ sub Group3A {
 
 sub Group4A {
 
-  return if (@_ < 3);
+  my @blocks = @_;
+
+  return if (@blocks < 3);
 
   my $lto;
-  my $mjd = (extract_bits($_[1], 0, 2) << 15) | extract_bits($_[2], 1, 15);
+  my $mjd = (extract_bits($blocks[1], 0, 2) << 15) | extract_bits($blocks[2], 1, 15);
 
-  if (@_ == 4) {
+  if (@blocks == 4) {
     # Local time offset
-    $lto =  extract_bits($_[3], 0, 5) / 2;
-    $lto = (extract_bits($_[3], 5, 1) ? -$lto : $lto);
+    $lto =  extract_bits($blocks[3], 0, 5) / 2;
+    $lto = (extract_bits($blocks[3], 5, 1) ? -$lto : $lto);
     $mjd = int($mjd + $lto / 24);
   }
 
@@ -903,13 +923,13 @@ sub Group4A {
   $mo -= 1 + $k * 12;
   #$wd = ($mjd + 2) % 7;
 
-  if (@_ == 4) {
+  if (@blocks == 4) {
     my $ltom = ($lto - int($lto)) * 60;
     $lto = int($lto);
 
-    my $hr = ( ( extract_bits($_[2], 0, 1) << 4) |
-      extract_bits($_[3], 12, 4) + $lto) % 24;
-    my $mn = extract_bits($_[3], 6, 6);
+    my $hr = ( ( extract_bits($blocks[2], 0, 1) << 4) |
+      extract_bits($blocks[3], 12, 4) + $lto) % 24;
+    my $mn = extract_bits($blocks[3], 6, 6);
 
     utter ('  CT:     '. (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 &&
           $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
@@ -934,12 +954,14 @@ sub Group4A {
 
 sub Group5A {
 
-  return if (@_ < 4);
+  my @blocks = @_;
 
-  my $addr = extract_bits($_[1], 0, 5);
+  return if (@blocks < 4);
+
+  my $addr = extract_bits($blocks[1], 0, 5);
   my $tds  = sprintf('%02x %02x %02x %02x',
-    extract_bits($_[2], 8, 8), extract_bits($_[2], 0, 8),
-    extract_bits($_[3], 8, 8),  extract_bits($_[3], 0, 8));
+    extract_bits($blocks[2], 8, 8), extract_bits($blocks[2], 0, 8),
+    extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
   utter ('  TDChan: '.$addr, ' TDChan:'.$addr);
   utter ('  TDS:    '.$tds, ' TDS:'.$tds);
 }
@@ -947,12 +969,13 @@ sub Group5A {
 # 5B: Transparent data channels or ODA
 
 sub Group5B {
+  my @blocks = @_;
 
-  return if (@_ < 4);
+  return if (@blocks < 4);
 
-  my $addr = extract_bits($_[1], 0, 5);
-  my $tds  = sprintf('%02x %02x', extract_bits($_[3], 8, 8),
-    extract_bits($_[3], 0, 8));
+  my $addr = extract_bits($blocks[1], 0, 5);
+  my $tds  = sprintf('%02x %02x', extract_bits($blocks[3], 8, 8),
+    extract_bits($blocks[3], 0, 8));
   utter ('  TDChan: '.$addr, ' TDChan:'.$addr);
   utter ('  TDS:    '.$tds, ' TDS:'.$tds);
 }
@@ -961,9 +984,11 @@ sub Group5B {
 # 6A: In-House Applications or ODA
 
 sub Group6A {
+  my @blocks = @_;
 
-  return if (@_ < 4);
-  my $ih = sprintf('%02x %04x %04x', extract_bits($_[1], 0, 5), $_[2], $_[3]);
+  return if (@blocks < 4);
+
+  my $ih = sprintf('%02x %04x %04x', extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]);
   utter ('  InHouse:'.$ih, ' IH:'.$ih);
 
 }
@@ -971,9 +996,10 @@ sub Group6A {
 # 6B: In-House Applications or ODA
 
 sub Group6B {
+  my @blocks = @_;
 
-  return if (@_ < 4);
-  my $ih = sprintf('%02x %04x', extract_bits($_[1], 0, 5), $_[3]);
+  return if (@blocks < 4);
+  my $ih = sprintf('%02x %04x', extract_bits($blocks[1], 0, 5), $blocks[3]);
   utter ('  InHouse:'.$ih, ' IH:'.$ih);
 
 }
@@ -981,20 +1007,24 @@ sub Group6B {
 # 7A: Radio Paging or ODA
 
 sub Group7A {
+  my @blocks = @_;
 
-  return if (@_ < 3);
+  return if (@blocks < 3);
+
   print_appdata ('Pager', sprintf('7A: %02x %04x %04x',
-    extract_bits($_[1], 0, 5), $_[2], $_[3]));
+    extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]));
 
 }
 
 # 9A: Emergency warning systems or ODA
 
 sub Group9A {
+  my @blocks = @_;
 
-  return if (@_ < 4);
+  return if (@blocks < 4);
+
   my $ews = sprintf('%02x %04x %04x',
-    extract_bits($_[1], 0, 5), $_[2], $_[3]);
+    extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]);
   utter ('  EWS:    '.$ews, ' EWS:'.$ews);
 
 }
@@ -1002,25 +1032,26 @@ sub Group9A {
 # 10A: Program Type Name (PTYN)
 
 sub Group10A {
+  my @blocks = @_;
 
-  if (extract_bits($_[1], 4, 1) != ($station{$pi}{'PTYNAB'} // -1)) {
+  if (extract_bits($blocks[1], 4, 1) != ($station{$pi}{'PTYNAB'} // -1)) {
     utter ('         (A/B flag change, text reset)', q{});
     $station{$pi}{'PTYN'} = q{ } x 8;
   }
 
-  $station{$pi}{'PTYNAB'} = extract_bits($_[1], 4, 1);
+  $station{$pi}{'PTYNAB'} = extract_bits($blocks[1], 4, 1);
 
-  if (@_ >= 3) {
+  if (@blocks >= 3) {
     my @char = ();
-    $char[0] = extract_bits($_[2], 8, 8);
-    $char[1] = extract_bits($_[2], 0, 8);
+    $char[0] = extract_bits($blocks[2], 8, 8);
+    $char[1] = extract_bits($blocks[2], 0, 8);
 
-    if (@_ == 4) {
-      $char[2] = extract_bits($_[3], 8, 8);
-      $char[3] = extract_bits($_[3], 0, 8);
+    if (@blocks == 4) {
+      $char[2] = extract_bits($blocks[3], 8, 8);
+      $char[3] = extract_bits($blocks[3], 0, 8);
     }
 
-    my $segaddr = extract_bits($_[1], 0, 1);
+    my $segaddr = extract_bits($blocks[1], 0, 1);
 
     for my $cnum (0..$#char) {
       substr($station{$pi}{'PTYN'}, $segaddr*4 + $cnum, 1)
@@ -1040,23 +1071,26 @@ sub Group10A {
 # 13A: Enhanced Radio Paging or ODA
 
 sub Group13A {
+  my @blocks = @_;
 
-  return if (@_ < 4);
+  return if (@blocks < 4);
+
   print_appdata ('Pager', sprintf('13A: %02x %04x %04x',
-    extract_bits($_[1], 0, 5), $_[2], $_[3]));
+    extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]));
 
 }
 
 # 14A: Enhanced Other Networks (EON) information
 
 sub Group14A {
+  my @blocks = @_;
 
-  return if (@_ < 4);
+  return if (@blocks < 4);
 
   $station{$pi}{'hasEON'}    = TRUE;
-  my $eon_pi                 = $_[3];
-  $station{$eon_pi}{'TP'}    = extract_bits($_[1], 4, 1);
-  my $eon_variant            = extract_bits($_[1], 0, 4);
+  my $eon_pi                 = $blocks[3];
+  $station{$eon_pi}{'TP'}    = extract_bits($blocks[1], 4, 1);
+  my $eon_variant            = extract_bits($blocks[1], 0, 4);
   utter ('  Other Network', ' ON:');
   utter ('    PI:     '.sprintf('%04X',$eon_pi).
     ((exists($station{$eon_pi}{'chname'})) &&
@@ -1072,38 +1106,38 @@ sub Group14A {
       if (not exists($station{$eon_pi}{'PSbuf'})) {
         $station{$eon_pi}{'PSbuf'} = q{ } x 8;
       }
-      set_PS_chars($eon_pi, $eon_variant*2, extract_bits($_[2], 8, 8),
-        extract_bits($_[2], 0, 8));
+      set_PS_chars($eon_pi, $eon_variant*2, extract_bits($blocks[2], 8, 8),
+        extract_bits($blocks[2], 0, 8));
     }
 
     when (4) {
-      utter ('    AF:     '.parse_AF(TRUE, extract_bits($_[2], 8, 8)),
-             ' AF:'.parse_AF(TRUE, extract_bits($_[2], 8, 8)));
-      utter ('    AF:     '.parse_AF(TRUE, extract_bits($_[2], 0, 8)),
-             ' AF:'.parse_AF(TRUE, extract_bits($_[2], 0, 8)));
+      utter ('    AF:     '.parse_AF(TRUE, extract_bits($blocks[2], 8, 8)),
+             ' AF:'.parse_AF(TRUE, extract_bits($blocks[2], 8, 8)));
+      utter ('    AF:     '.parse_AF(TRUE, extract_bits($blocks[2], 0, 8)),
+             ' AF:'.parse_AF(TRUE, extract_bits($blocks[2], 0, 8)));
     }
 
     when ([5..8]) {
       utter('    AF:     Tuned frequency '.
-        parse_AF(TRUE, extract_bits($_[2], 8, 8)).' maps to '.
-        parse_AF(TRUE, extract_bits($_[2], 0, 8)),' AF:map:'.
-        parse_AF(TRUE, extract_bits($_[2], 8, 8)).'->'.
-        parse_AF(TRUE, extract_bits($_[2], 0, 8)));
+        parse_AF(TRUE, extract_bits($blocks[2], 8, 8)).' maps to '.
+        parse_AF(TRUE, extract_bits($blocks[2], 0, 8)),' AF:map:'.
+        parse_AF(TRUE, extract_bits($blocks[2], 8, 8)).'->'.
+        parse_AF(TRUE, extract_bits($blocks[2], 0, 8)));
     }
 
     when (9) {
       utter ("    AF:     Tuned frequency ".
-        parse_AF(TRUE, extract_bits($_[2], 8, 8))." maps to ".
-        parse_AF(FALSE,extract_bits($_[2], 0, 8)),
-        " AF:map:".parse_AF(TRUE, extract_bits($_[2], 8, 8))."->".
-        parse_AF(FALSE,extract_bits($_[2], 0, 8)));
+        parse_AF(TRUE, extract_bits($blocks[2], 8, 8))." maps to ".
+        parse_AF(FALSE,extract_bits($blocks[2], 0, 8)),
+        " AF:map:".parse_AF(TRUE, extract_bits($blocks[2], 8, 8))."->".
+        parse_AF(FALSE,extract_bits($blocks[2], 0, 8)));
     }
 
     when (12) {
-      $station{$eon_pi}{'LA'}  = extract_bits($_[2], 15,  1);
-      $station{$eon_pi}{'EG'}  = extract_bits($_[2], 14,  1);
-      $station{$eon_pi}{'ILS'} = extract_bits($_[2], 13,  1);
-      $station{$eon_pi}{'LSN'} = extract_bits($_[2], 1,  12);
+      $station{$eon_pi}{'LA'}  = extract_bits($blocks[2], 15,  1);
+      $station{$eon_pi}{'EG'}  = extract_bits($blocks[2], 14,  1);
+      $station{$eon_pi}{'ILS'} = extract_bits($blocks[2], 13,  1);
+      $station{$eon_pi}{'LSN'} = extract_bits($blocks[2], 1,  12);
       if ($station{$eon_pi}{'LA'})  {
         utter ('    Link: Program is linked to linkage set '.
                sprintf('%03X', $station{$eon_pi}{'LSN'}),
@@ -1120,8 +1154,8 @@ sub Group14A {
     }
 
     when (13) {
-      $station{$eon_pi}{'PTY'} = extract_bits($_[2], 11, 5);
-      $station{$eon_pi}{'TA'}  = extract_bits($_[2],  0, 1);
+      $station{$eon_pi}{'PTY'} = extract_bits($blocks[2], 11, 5);
+      $station{$eon_pi}{'TA'}  = extract_bits($blocks[2],  0, 1);
       utter (("    PTY:    $station{$eon_pi}{'PTY'} ".
         (exists $station{$eon_pi}{'ECC'} &&
         ($countryISO[$station{$pi}{'ECC'}][$station{$eon_pi}{'CC'}] // q{})
@@ -1134,12 +1168,12 @@ sub Group14A {
     }
 
     when (14) {
-      utter ('    PIN:    '. parse_PIN($_[2]),' PIN:'.parse_PIN($_[2]));
+      utter ('    PIN:    '. parse_PIN($blocks[2]),' PIN:'.parse_PIN($blocks[2]));
     }
 
     when (15) {
-      utter ('    Broadcaster data: '.sprintf('%04x', $_[2]),
-             ' BDATA:'.sprintf('%04x', $_[2]));
+      utter ('    Broadcaster data: '.sprintf('%04x', $blocks[2]),
+             ' BDATA:'.sprintf('%04x', $blocks[2]));
     }
 
     default {
@@ -1153,12 +1187,13 @@ sub Group14A {
 # 14B: Enhanced Other Networks (EON) information
 
 sub Group14B {
+  my @blocks = @_;
 
-  return if (@_ < 4);
+  return if (@blocks < 4);
 
-  my $eon_pi              =  $_[3];
-  $station{$eon_pi}{'TP'} = extract_bits($_[1], 4, 1);
-  $station{$eon_pi}{'TA'} = extract_bits($_[1], 3, 1);
+  my $eon_pi              =  $blocks[3];
+  $station{$eon_pi}{'TP'} = extract_bits($blocks[1], 4, 1);
+  $station{$eon_pi}{'TA'} = extract_bits($blocks[1], 3, 1);
   utter ('  Other Network', ' ON:');
   utter ('    PI:     '.sprintf('%04X', $eon_pi).
     ((exists($station{$eon_pi}{'chname'})) &&
@@ -1175,15 +1210,16 @@ sub Group14B {
 # 15B: Fast basic tuning and switching information
 
 sub Group15B {
+  my @blocks = @_;
 
   # DI
-  my $DI_adr = 3 - extract_bits($_[1], 0, 2);
-  my $DI     = extract_bits($_[1], 2, 1);
+  my $DI_adr = 3 - extract_bits($blocks[1], 0, 2);
+  my $DI     = extract_bits($blocks[1], 2, 1);
   parse_DI($DI_adr, $DI);
 
   # TA, M/S
-  $station{$pi}{'TA'} = extract_bits($_[1], 4, 1);
-  $station{$pi}{'MS'} = extract_bits($_[1], 3, 1);
+  $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{'MS'} = extract_bits($blocks[1], 3, 1);
   utter ('  TA:     '.$TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}],
          ' TA:'.$station{$pi}{'TA'});
   utter ('  M/S:    '.qw( Speech Music )[$station{$pi}{'MS'}],
@@ -1196,27 +1232,27 @@ sub Group15B {
 
 sub ODAGroup {
 
-  my ($group_type, @data) = @_;
+  my ($group_type, @blocks) = @_;
 
-  return if (@data < 4);
+  return if (@blocks < 4);
 
   if (exists $station{$pi}{'ODAaid'}{$group_type}) {
     given ($station{$pi}{'ODAaid'}{$group_type}) {
 
       when ([0xCD46, 0xCD47]) {
         print_appdata ('TMC', sprintf('msg %02x %04x %04x',
-          extract_bits($data[1], 0, 5), $data[2], $data[3]));
+          extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]));
       }
       when (0x4BD7) {
-        parse_RTp(@data);
+        parse_RTp(@blocks);
       }
       when (0x6552) {
-        parse_eRT(@data);
+        parse_eRT(@blocks);
       }
       default {
         say sprintf('          Unimplemented ODA %04x: %02x %04x %04x',
           $station{$pi}{'ODAaid'}{$group_type},
-          extract_bits($data[1], 0, 5), $data[2], $data[3]);
+          extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]);
       }
 
     }
