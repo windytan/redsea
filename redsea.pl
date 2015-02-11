@@ -10,11 +10,10 @@ use 5.012;
 use strict;
 use warnings;
 use utf8;
-use experimental qw(smartmatch);
 
+use experimental qw(smartmatch);
 use IPC::Cmd qw/can_run/;
 use List::Util qw/sum0/;
-
 use Encode 'decode';
 use Getopt::Std;
 use POSIX qw/strftime/;
@@ -87,7 +86,7 @@ get_groups();
 
 sub commands {
 
-  if (!-e "rtl_redsea") {
+  if (!-e 'rtl_redsea') {
     print "error: looks like rtl_redsea isn't compiled. To fix that, please ".
           "run:\n\ngcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
     exit(1);
@@ -120,21 +119,21 @@ sub commands {
 
   my $fmfreq = $ARGV[0];
   if ($fmfreq =~ /^([\d\.]+)([kMG])$/i) {
-    my %si = ( "k" => 1e3, "K" => 1e3, "m" => 1e6,
-               "M" => 1e6, "g" => 1e9, "G" => 1e9 );
+    my %si = ( 'k' => 1e3, 'K' => 1e3, 'm' => 1e6,
+               'M' => 1e6, 'g' => 1e9, 'G' => 1e9 );
     $fmfreq = $1 * $si{$2};
   }
 
-  open $bitpipe, '-|', sprintf("rtl_fm -f %.1f -M fm -l 0 -A std -s %.1f | ".
-                       "sox -c 1 -t .s16 -r 250000 - -t .s16 - ".
-                       "sinc %.1f-%.1f gain 15 2>/dev/null | ./rtl_redsea",
+  open $bitpipe, '-|', sprintf('rtl_fm -f %.1f -M fm -l 0 -A std -s %.1f | '.
+                       'sox -c 1 -t .s16 -r 250000 - -t .s16 - '.
+                       'sinc %.1f-%.1f gain 15 2>/dev/null | ./rtl_redsea',
                        $fmfreq, FS, FC-3500, FC+3500) or die($!);
 }
 
 # Next bit from radio
 sub get_bit {
   my $bit;
-  read $bitpipe, $bit, 1 or die "End of stream";
+  read $bitpipe, $bit, 1 or die 'End of stream';
   return $bit;
 }
 
@@ -366,22 +365,22 @@ sub decodegroup {
   $newpi   = $_[0];
 
   if (exists $options{t}) {
-    my $timestamp = strftime("%Y-%m-%dT%H:%M:%S%z ", localtime);
+    my $timestamp = strftime('%Y-%m-%dT%H:%M:%S%z ', localtime);
     utter ($timestamp, $timestamp);
   }
 
   if (@_ >= 2) {
     $group_type       = extract_bits($_[1], 11, 5);
     $full_group_type  = extract_bits($_[1], 12, 4).
-                       (extract_bits($_[1], 11, 1) ? "B" : "A" );
+                       (extract_bits($_[1], 11, 1) ? 'B' : 'A' );
   } else {
-    utter ("(PI only)","");
+    utter ('(PI only)', '');
   }
 
-  utter (("  PI:     ".sprintf("%04X",$newpi).
+  utter (('  PI:     '.sprintf('%04X',$newpi).
     ((exists($station{$newpi}{'chname'})) ?
-      " ".$station{$newpi}{'chname'} : ""),
-      sprintf("%04X",$newpi)));
+      ' '.$station{$newpi}{'chname'} : ''),
+      sprintf('%04X',$newpi)));
 
   # PI is repeated -> confirmed
   if ($newpi == $ednewpi) {
@@ -585,7 +584,7 @@ sub Group0B {
     # Program Service name
 
     if ($station{$pi}{'denyPS'}) {
-      utter ("          (Ignoring changes to PS)"," denyPS");
+      utter ('          (Ignoring changes to PS)', ' denyPS');
     } else {
       set_PS_chars($pi, extract_bits($_[1], 0, 2) * 2,
         extract_bits($_[3], 8, 8), extract_bits($_[3], 0, 8));
@@ -602,46 +601,46 @@ sub Group1A {
 
   # Program Item Number
 
-  utter ("  PIN:    ". parse_PIN($_[3])," PIN:".parse_PIN($_[3]));
+  utter ('  PIN:    '. parse_PIN($_[3]),' PIN:'.parse_PIN($_[3]));
 
   # Paging (M.2.1.1.2)
 
-  print_appdata ("Pager", "TNG: ".     extract_bits($_[1], 2, 3));
-  print_appdata ("Pager", "interval: ".extract_bits($_[1], 0, 2));
+  print_appdata ('Pager', 'TNG: '.     extract_bits($_[1], 2, 3));
+  print_appdata ('Pager', 'interval: '.extract_bits($_[1], 0, 2));
 
   # Slow labeling codes
 
   $station{$pi}{'LA'} = extract_bits($_[2], 15, 1);
-  utter ("  LA:     ".($station{$pi}{'LA'} ? "Program is linked ".
+  utter ('  LA:     '.($station{$pi}{'LA'} ? 'Program is linked '.
     (exists($station{$pi}{'LSN'}) &&
-    sprintf("to linkage set %Xh ", $station{$pi}{'LSN'})).
-    "at the moment" : "Program is not linked at the moment"),
-    " LA:".$station{$pi}{'LA'}.(exists($station{$pi}{'LSN'})
-    && sprintf("0x%X",$station{$pi}{'LSN'})));
+    sprintf('to linkage set %Xh ', $station{$pi}{'LSN'})).
+    'at the moment' : 'Program is not linked at the moment'),
+    ' LA:'.$station{$pi}{'LA'}.(exists($station{$pi}{'LSN'})
+    && sprintf('0x%X',$station{$pi}{'LSN'})));
 
   my $slc_variant = extract_bits($_[2], 12, 3);
 
   given ($slc_variant) {
 
     when (0) {
-      print_appdata ("Pager", "OPC: ".extract_bits($_[2], 8, 4));
+      print_appdata ('Pager', 'OPC: '.extract_bits($_[2], 8, 4));
 
       # No PIN, M.3.2.4.3
       if (@_ == 4 && ($_[3] >> 11) == 0) {
         given (extract_bits($_[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            print_appdata ("Pager", "PAC: ".extract_bits($_[3], 4, 6));
-            print_appdata ("Pager", "OPC: ".extract_bits($_[3], 0, 4));
+            print_appdata ('Pager', 'PAC: '.extract_bits($_[3], 4, 6));
+            print_appdata ('Pager', 'OPC: '.extract_bits($_[3], 0, 4));
           }
           # Sub type 1
           when (1) {
             given (extract_bits($_[3], 8, 2)) {
               when (0) {
-                print_appdata ("Pager", "ECC: ". extract_bits($_[3], 0, 6));
+                print_appdata ('Pager', 'ECC: '. extract_bits($_[3], 0, 6));
               }
               when (3) {
-                print_appdata ("Pager", "CCF: ".extract_bits($_[3], 0, 4));
+                print_appdata ('Pager', 'CCF: '.extract_bits($_[3], 0, 4));
               }
             }
           }
@@ -650,40 +649,40 @@ sub Group1A {
 
       $station{$pi}{'ECC'}    = extract_bits($_[2],  0, 8);
       $station{$pi}{'CC'}     = extract_bits($pi,   12, 4);
-      utter (("  ECC:    ".sprintf("%02X", $station{$pi}{'ECC'}).
+      utter (('  ECC:    '.sprintf('%02X', $station{$pi}{'ECC'}).
         (defined $countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] &&
               " ($countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}])"),
-           (" ECC:".sprintf("%02X", $station{$pi}{'ECC'}).
+           (' ECC:'.sprintf('%02X', $station{$pi}{'ECC'}).
         (defined $countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] &&
               "[$countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}]]" ))));
     }
 
     when (1) {
       $station{$pi}{'tmcid'}       = extract_bits($_[2], 0, 12);
-      utter ("  TMC ID: ". sprintf("%xh",$station{$pi}{'tmcid'}),
-        " TMCID:".sprintf("%xh",$station{$pi}{'tmcid'}));
+      utter ('  TMC ID: '. sprintf('%xh',$station{$pi}{'tmcid'}),
+        ' TMCID:'.sprintf('%xh',$station{$pi}{'tmcid'}));
     }
 
     when (2) {
-      print_appdata ("Pager", "OPC: ".extract_bits($_[2], 8, 4));
-      print_appdata ("Pager", "PAC: ".extract_bits($_[2], 0, 6));
+      print_appdata ('Pager', 'OPC: '.extract_bits($_[2], 8, 4));
+      print_appdata ('Pager', 'PAC: '.extract_bits($_[2], 0, 6));
 
       # No PIN, M.3.2.4.3
       if (@_ == 4 && ($_[3] >> 11) == 0) {
         given (extract_bits($_[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            print_appdata ("Pager", "PAC: ".extract_bits($_[3], 4, 6));
-            print_appdata ("Pager", "OPC: ".extract_bits($_[3], 0, 4));
+            print_appdata ('Pager', 'PAC: '.extract_bits($_[3], 4, 6));
+            print_appdata ('Pager', 'OPC: '.extract_bits($_[3], 0, 4));
           }
           # Sub type 1
           when (1) {
             given (extract_bits($_[3], 8, 2)) {
               when (0) {
-                print_appdata ("Pager", "ECC: ".extract_bits($_[3], 0, 6));
+                print_appdata ('Pager', 'ECC: '.extract_bits($_[3], 0, 6));
               }
               when (3) {
-                print_appdata ("Pager", "CCF: ".extract_bits($_[3], 0, 4));
+                print_appdata ('Pager', 'CCF: '.extract_bits($_[3], 0, 4));
               }
             }
           }
@@ -693,24 +692,24 @@ sub Group1A {
 
     when (3) {
       $station{$pi}{'lang'}        = extract_bits($_[2], 0, 8);
-      utter ("  Lang:   ". sprintf( ($station{$pi}{'lang'} <= 127 ?
+      utter ('  Lang:   '. sprintf( ($station{$pi}{'lang'} <= 127 ?
         "0x%X $langname[$station{$pi}{'lang'}]" : "Unknown language %Xh"),
         $station{$pi}{'lang'}),
-        " LANG:".sprintf( ($station{$pi}{'lang'} <= 127 ?
+        ' LANG:'.sprintf( ($station{$pi}{'lang'} <= 127 ?
         "0x%X[$langname[$station{$pi}{'lang'}]]" : "%Hx[?]"),
         $station{$pi}{'lang'}));
     }
 
     when (6) {
-      utter ("  Brodcaster data: ".sprintf("%03x",
+      utter ('  Brodcaster data: '.sprintf('%03x',
         extract_bits($_[2], 0, 12)),
-        " BDATA:".sprintf("%03x", extract_bits($_[2], 0, 12)));
+        ' BDATA:'.sprintf('%03x', extract_bits($_[2], 0, 12)));
     }
 
     when (7) {
       $station{$pi}{'EWS_channel'} = extract_bits($_[2], 0, 12);
-      utter ("  EWS channel: ". sprintf("0x%X",$station{$pi}{'EWS_channel'}),
-             " EWSch:". sprintf("0x%X",$station{$pi}{'EWS_channel'}));
+      utter ('  EWS channel: '. sprintf('0x%X',$station{$pi}{'EWS_channel'}),
+             ' EWSch:'. sprintf('0x%X',$station{$pi}{'EWS_channel'}));
     }
 
     default {
@@ -749,10 +748,10 @@ sub Group2A {
   # Page 26
   if (($station{$pi}{'prev_textAB'} // -1) != $station{$pi}{'textAB'}) {
     if ($station{$pi}{'denyRTAB'} // FALSE) {
-      utter ("          (Ignoring A/B flag change)"," denyRTAB");
+      utter ('          (Ignoring A/B flag change)', ' denyRTAB');
     } else {
-      utter ("          (A/B flag change; text reset)"," RT_RESET");
-      $station{$pi}{'RTbuf'}  = " " x 64;
+      utter ('          (A/B flag change; text reset)', ' RT_RESET');
+      $station{$pi}{'RTbuf'}  = ' ' x 64;
       $station{$pi}{'RTrcvd'} = ();
     }
   }
@@ -774,9 +773,9 @@ sub Group2B {
 
   if (($station{$pi}{'prev_textAB'} // -1) != $station{$pi}{'textAB'}) {
     if ($station{$pi}{'denyRTAB'} // FALSE) {
-      utter ("          (Ignoring A/B flag change)"," denyRTAB");
+      utter ('          (Ignoring A/B flag change)',' denyRTAB');
     } else {
-      utter ("          (A/B flag change; text reset)"," RT_RESET");
+      utter ('          (A/B flag change; text reset)',' RT_RESET');
       $station{$pi}{'RTbuf'}  = " " x 64;
       $station{$pi}{'RTrcvd'} = ();
     }
@@ -797,32 +796,32 @@ sub Group3A {
   given ($group_type) {
 
     when (0) {
-      utter ("  ODAapp: ". ($oda_app{$_[3]} // sprintf("0x%04X",$_[3])),
-             " ODAapp:".sprintf("0x%04X",$_[3]));
-      utter ("          is not carried in associated group","[not_carried]");
+      utter ('  ODAapp: '. ($oda_app{$_[3]} // sprintf('0x%04X',$_[3])),
+             ' ODAapp:'.sprintf('0x%04X',$_[3]));
+      utter ('          is not carried in associated group','[not_carried]');
       return;
     }
 
     when (32) {
-      utter ("  ODA:    Temporary data fault (Encoder status)",
-             " ODA:enc_err");
+      utter ('  ODA:    Temporary data fault (Encoder status)',
+             ' ODA:enc_err');
       return;
     }
 
     when ([0..6, 8, 20, 28, 29, 31]) {
-      utter ("  ODA:    (Illegal Application Group Type)"," ODA:err");
+      utter ('  ODA:    (Illegal Application Group Type)',' ODA:err');
       return;
     }
 
     default {
       $station{$pi}{'ODAaid'}{$group_type} = $_[3];
-      utter ("  ODAgrp: ". extract_bits($_[1], 1, 4).
-            (extract_bits($_[1], 0, 1) ? "B" : "A"),
-            " ODAgrp:". extract_bits($_[1], 1, 4).
-            (extract_bits($_[1], 0, 1) ? "B" : "A"));
-      utter ("  ODAapp: ". ($oda_app{$station{$pi}{'ODAaid'}{$group_type}} //
-        sprintf("%04Xh",$station{$pi}{'ODAaid'}{$group_type})),
-        " ODAapp:". sprintf("0x%04X",$station{$pi}{'ODAaid'}{$group_type}));
+      utter ('  ODAgrp: '. extract_bits($_[1], 1, 4).
+            (extract_bits($_[1], 0, 1) ? 'B' : 'A'),
+            ' ODAgrp:'. extract_bits($_[1], 1, 4).
+            (extract_bits($_[1], 0, 1) ? 'B' : 'A'));
+      utter ('  ODAapp: '. ($oda_app{$station{$pi}{'ODAaid'}{$group_type}} //
+        sprintf('%04Xh',$station{$pi}{'ODAaid'}{$group_type})),
+        ' ODAapp:'. sprintf('0x%04X',$station{$pi}{'ODAaid'}{$group_type}));
     }
 
   }
@@ -832,7 +831,7 @@ sub Group3A {
     # Traffic Message Channel
     when ([0xCD46, 0xCD47]) {
       $station{$pi}{'hasTMC'} = TRUE;
-      print_appdata ("TMC", sprintf("sysmsg %04x",$_[2]));
+      print_appdata ('TMC', sprintf('sysmsg %04x',$_[2]));
     }
 
     # RT+
@@ -842,14 +841,14 @@ sub Group3A {
       $station{$pi}{'CB'}        = extract_bits($_[2], 12, 1);
       $station{$pi}{'SCB'}       = extract_bits($_[2],  8, 4);
       $station{$pi}{'templnum'}  = extract_bits($_[2],  0, 8);
-      utter ("  RT+ applies to ".($station{$pi}{'rtp_which'} ?
-        "enhanced RadioText" : "RadioText"), "");
-      utter ("  ".($station{$pi}{'CB'} ?
-        "Using template $station{$pi}{'templnum'}" : "No template in use"),
-        "");
+      utter ('  RT+ applies to '.($station{$pi}{'rtp_which'} ?
+        'enhanced RadioText' : 'RadioText'), q{});
+      utter ('  '.($station{$pi}{'CB'} ?
+        "Using template $station{$pi}{'templnum'}" : 'No template in use'),
+        q{});
       if (!$station{$pi}{'CB'}) {
-        utter (sprintf("  Server Control Bits: %Xh", $station{$pi}{'SCB'}),
-               sprintf(" SCB:%Xh", $station{$pi}{'SCB'}));
+        utter (sprintf('  Server Control Bits: %Xh', $station{$pi}{'SCB'}),
+               sprintf(' SCB:%Xh', $station{$pi}{'SCB'}));
       }
     }
 
@@ -857,7 +856,7 @@ sub Group3A {
     when (0x6552) {
       $station{$pi}{'haseRT'}     = TRUE;
       if (not exists $station{$pi}{'eRTbuf'}) {
-        $station{$pi}{'eRTbuf'}     = " " x 64;
+        $station{$pi}{'eRTbuf'}     = q{ } x 64;
       }
       $station{$pi}{'ert_isutf8'} = extract_bits($_[2], 0, 1);
       $station{$pi}{'ert_txtdir'} = extract_bits($_[2], 1, 1);
@@ -866,8 +865,8 @@ sub Group3A {
 
     # Unimplemented ODA
     default {
-      say "  ODAmsg: ". sprintf("%04x",$_[2]);
-      say "          Unimplemented Open Data Application";
+      say '  ODAmsg: '. sprintf('%04x',$_[2]);
+      say '          Unimplemented Open Data Application';
     }
   }
 }
@@ -904,21 +903,21 @@ sub Group4A {
       extract_bits($_[3], 12, 4) + $lto) % 24;
     my $mn = extract_bits($_[3], 6, 6);
 
-    utter ("  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 &&
+    utter ('  CT:     '. (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 &&
           $hr > 0 && $hr < 24 && $mn > 0 && $mn < 60) ?
-          sprintf("%04d-%02d-%02dT%02d:%02d%+03d:%02d", $yr, $mo, $dy, $hr,
-          $mn, $lto, $ltom) : "Invalid datetime data"),
+          sprintf('%04d-%02d-%02dT%02d:%02d%+03d:%02d', $yr, $mo, $dy, $hr,
+          $mn, $lto, $ltom) : 'Invalid datetime data'),
           " CT:". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13 && $hr > 0 &&
           $hr < 24 && $mn > 0 && $mn < 60) ?
-          sprintf("%04d-%02d-%02dT%02d:%02d%+03d:%02d", $yr, $mo, $dy, $hr,
+          sprintf('%04d-%02d-%02dT%02d:%02d%+03d:%02d', $yr, $mo, $dy, $hr,
           $mn, $lto, $ltom) : "err"));
   } else {
-    utter ("  CT:     ". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
-          sprintf("%04d-%02d-%02d", $yr, $mo, $dy) :
-          "Invalid datetime data"),
-          " CT:". (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
-                    sprintf("%04d-%02d-%02d", $yr, $mo, $dy) :
-                              "err"));
+    utter ('  CT:     '. (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
+          sprintf('%04d-%02d-%02d', $yr, $mo, $dy) :
+          'Invalid datetime data'),
+          ' CT:'. (($dy > 0 && $dy < 32 && $mo > 0 && $mo < 13) ?
+          sprintf('%04d-%02d-%02d', $yr, $mo, $dy) :
+          'err'));
   }
 
 }
@@ -930,11 +929,11 @@ sub Group5A {
   return if (@_ < 4);
 
   my $addr = extract_bits($_[1], 0, 5);
-  my $tds  = sprintf("%02x %02x %02x %02x",
+  my $tds  = sprintf('%02x %02x %02x %02x',
     extract_bits($_[2], 8, 8), extract_bits($_[2], 0, 8),
     extract_bits($_[3], 8, 8),  extract_bits($_[3], 0, 8));
-  utter ("  TDChan: ".$addr, " TDChan:".$addr);
-  utter ("  TDS:    ".$tds, " TDS:".$tds);
+  utter ('  TDChan: '.$addr, ' TDChan:'.$addr);
+  utter ('  TDS:    '.$tds, ' TDS:'.$tds);
 }
 
 # 5B: Transparent data channels or ODA
@@ -944,10 +943,10 @@ sub Group5B {
   return if (@_ < 4);
 
   my $addr = extract_bits($_[1], 0, 5);
-  my $tds  = sprintf("%02x %02x", extract_bits($_[3], 8, 8),
+  my $tds  = sprintf('%02x %02x', extract_bits($_[3], 8, 8),
     extract_bits($_[3], 0, 8));
-  utter ("  TDChan: ".$addr, " TDChan:".$addr);
-  utter ("  TDS:    ".$tds, " TDS:".$tds);
+  utter ('  TDChan: '.$addr, ' TDChan:'.$addr);
+  utter ('  TDS:    '.$tds, ' TDS:'.$tds);
 }
 
 
@@ -956,8 +955,8 @@ sub Group5B {
 sub Group6A {
 
   return if (@_ < 4);
-  my $ih = sprintf("%02x %04x %04x", extract_bits($_[1], 0, 5), $_[2], $_[3]);
-  utter ("  InHouse:".$ih, " IH:".$ih);
+  my $ih = sprintf('%02x %04x %04x', extract_bits($_[1], 0, 5), $_[2], $_[3]);
+  utter ('  InHouse:'.$ih, ' IH:'.$ih);
 
 }
 
@@ -966,8 +965,8 @@ sub Group6A {
 sub Group6B {
 
   return if (@_ < 4);
-  my $ih = sprintf("%02x %04x", extract_bits($_[1], 0, 5), $_[3]);
-  utter ("  InHouse:".$ih, " IH:".$ih);
+  my $ih = sprintf('%02x %04x', extract_bits($_[1], 0, 5), $_[3]);
+  utter ('  InHouse:'.$ih, ' IH:'.$ih);
 
 }
 
@@ -976,7 +975,7 @@ sub Group6B {
 sub Group7A {
 
   return if (@_ < 3);
-  print_appdata ("Pager", sprintf("7A: %02x %04x %04x",
+  print_appdata ('Pager', sprintf('7A: %02x %04x %04x',
     extract_bits($_[1], 0, 5), $_[2], $_[3]));
 
 }
@@ -986,9 +985,9 @@ sub Group7A {
 sub Group9A {
 
   return if (@_ < 4);
-  my $ews = sprintf("%02x %04x %04x",
+  my $ews = sprintf('%02x %04x %04x',
     extract_bits($_[1], 0, 5), $_[2], $_[3]);
-  utter ("  EWS:    ".$ews, " EWS:".$ews);
+  utter ('  EWS:    '.$ews, ' EWS:'.$ews);
 
 }
 
@@ -997,8 +996,8 @@ sub Group9A {
 sub Group10A {
 
   if (extract_bits($_[1], 4, 1) != ($station{$pi}{'PTYNAB'} // -1)) {
-    utter ("         (A/B flag change, text reset)", "");
-    $station{$pi}{'PTYN'} = " " x 8;
+    utter ('         (A/B flag change, text reset)', q{});
+    $station{$pi}{'PTYN'} = q{ } x 8;
   }
 
   $station{$pi}{'PTYNAB'} = extract_bits($_[1], 4, 1);
@@ -1021,12 +1020,12 @@ sub Group10A {
     }
 
     my $displayed_PTYN
-      = ($is_interactive ? "  PTYN:   ".
+      = ($is_interactive ? '  PTYN:   '.
       substr($station{$pi}{'PTYN'},0,$segaddr*4).REVERSE.
       substr($station{$pi}{'PTYN'},$segaddr*4,scalar(@char)).RESET.
       substr($station{$pi}{'PTYN'},$segaddr*4+scalar(@char)) :
       $station{$pi}{'PTYN'});
-    utter ("  PTYN:   ".$displayed_PTYN, " PTYN:\"".$displayed_PTYN."\"");
+    utter ('  PTYN:   '.$displayed_PTYN, q{ PTYN:"}.$displayed_PTYN.q{"});
   }
 }
 
@@ -1035,7 +1034,7 @@ sub Group10A {
 sub Group13A {
 
   return if (@_ < 4);
-  print_appdata ("Pager", sprintf("13A: %02x %04x %04x",
+  print_appdata ('Pager', sprintf('13A: %02x %04x %04x',
     extract_bits($_[1], 0, 5), $_[2], $_[3]));
 
 }
@@ -1047,40 +1046,40 @@ sub Group14A {
   return if (@_ < 4);
 
   $station{$pi}{'hasEON'}    = TRUE;
-  my $eon_pi                      = $_[3];
+  my $eon_pi                 = $_[3];
   $station{$eon_pi}{'TP'}    = extract_bits($_[1], 4, 1);
-  my $eon_variant                 = extract_bits($_[1], 0, 4);
-  utter ("  Other Network"," ON:");
-  utter ("    PI:     ".sprintf("%04X",$eon_pi).
+  my $eon_variant            = extract_bits($_[1], 0, 4);
+  utter ('  Other Network', ' ON:');
+  utter ('    PI:     '.sprintf('%04X',$eon_pi).
     ((exists($station{$eon_pi}{'chname'})) &&
     " ($station{$eon_pi}{'chname'})"),
     sprintf("%04X[",$eon_pi));
-  utter ("    TP:     $TP_descr[$station{$eon_pi}{'TP'}]",
-         "TP:$station{$eon_pi}{'TP'}");
+  utter ('    TP:     '.$TP_descr[$station{$eon_pi}{'TP'}],
+         'TP:'.$station{$eon_pi}{'TP'});
 
   given ($eon_variant) {
 
     when ([0..3]) {
-      utter("  ","");
+      utter(q{  },q{});
       if (not exists($station{$eon_pi}{'PSbuf'})) {
-        $station{$eon_pi}{'PSbuf'} = " " x 8;
+        $station{$eon_pi}{'PSbuf'} = q{ } x 8;
       }
       set_PS_chars($eon_pi, $eon_variant*2, extract_bits($_[2], 8, 8),
         extract_bits($_[2], 0, 8));
     }
 
     when (4) {
-      utter ("    AF:     ".parse_AF(TRUE, extract_bits($_[2], 8, 8)),
-             " AF:".parse_AF(TRUE, extract_bits($_[2], 8, 8)));
-      utter ("    AF:     ".parse_AF(TRUE, extract_bits($_[2], 0, 8)),
-             " AF:".parse_AF(TRUE, extract_bits($_[2], 0, 8)));
+      utter ('    AF:     '.parse_AF(TRUE, extract_bits($_[2], 8, 8)),
+             ' AF:'.parse_AF(TRUE, extract_bits($_[2], 8, 8)));
+      utter ('    AF:     '.parse_AF(TRUE, extract_bits($_[2], 0, 8)),
+             ' AF:'.parse_AF(TRUE, extract_bits($_[2], 0, 8)));
     }
 
     when ([5..8]) {
-      utter("    AF:     Tuned frequency ".
-        parse_AF(TRUE, extract_bits($_[2], 8, 8))." maps to ".
-        parse_AF(TRUE, extract_bits($_[2], 0, 8))," AF:map:".
-        parse_AF(TRUE, extract_bits($_[2], 8, 8))."->".
+      utter('    AF:     Tuned frequency '.
+        parse_AF(TRUE, extract_bits($_[2], 8, 8)).' maps to '.
+        parse_AF(TRUE, extract_bits($_[2], 0, 8)),' AF:map:'.
+        parse_AF(TRUE, extract_bits($_[2], 8, 8)).'->'.
         parse_AF(TRUE, extract_bits($_[2], 0, 8)));
     }
 
@@ -1098,16 +1097,16 @@ sub Group14A {
       $station{$eon_pi}{'ILS'} = extract_bits($_[2], 13,  1);
       $station{$eon_pi}{'LSN'} = extract_bits($_[2], 1,  12);
       if ($station{$eon_pi}{'LA'})  {
-        utter ("    Link: Program is linked to linkage set ".
-               sprintf("%03X",$station{$eon_pi}{'LSN'}),
-               " LSN:".sprintf("%03X", $station{$eon_pi}{'LSN'}));
+        utter ('    Link: Program is linked to linkage set '.
+               sprintf('%03X', $station{$eon_pi}{'LSN'}),
+               ' LSN:'.sprintf('%03X', $station{$eon_pi}{'LSN'}));
       }
       if ($station{$eon_pi}{'EG'})  {
-        utter ("    Link: Program is member of an extended generic set",
-          " Link:EG");
+        utter ('    Link: Program is member of an extended generic set',
+          ' Link:EG');
       }
       if ($station{$eon_pi}{'ILS'}) {
-        utter ("    Link: Program is linked internationally", "Link:ILS");
+        utter ('    Link: Program is linked internationally', 'Link:ILS');
       }
       # TODO: Country codes, pg. 51
     }
@@ -1120,19 +1119,19 @@ sub Group14A {
         ($countryISO[$station{$pi}{'ECC'}][$station{$eon_pi}{'CC'}] // "")
         =~ /us|ca|mx/ ? $ptynamesUS[$station{$eon_pi}{'PTY'}] :
         $ptynames[$station{$eon_pi}{'PTY'}])),
-        " PTY:$station{$eon_pi}{'PTY'}");
-      utter ("    TA:     ".
+        ' PTY:'.$station{$eon_pi}{'PTY'});
+      utter ('    TA:     '.
         $TA_descr[$station{$eon_pi}{'TP'}][$station{$eon_pi}{'TA'}],
-        " TA:".$station{$eon_pi}{'TA'});
+        ' TA:'.$station{$eon_pi}{'TA'});
     }
 
     when (14) {
-      utter ("    PIN:    ". parse_PIN($_[2])," PIN:".parse_PIN($_[2]));
+      utter ('    PIN:    '. parse_PIN($_[2]),' PIN:'.parse_PIN($_[2]));
     }
 
     when (15) {
-      utter ("    Broadcaster data: ".sprintf("%04x", $_[2]),
-             " BDATA:".sprintf("%04x", $_[2]));
+      utter ('    Broadcaster data: '.sprintf('%04x', $_[2]),
+             ' BDATA:'.sprintf('%04x', $_[2]));
     }
 
     default {
@@ -1140,7 +1139,7 @@ sub Group14A {
     }
 
   }
-  utter("","]");
+  utter(q{},"]");
 }
 
 # 14B: Enhanced Other Networks (EON) information
@@ -1149,20 +1148,20 @@ sub Group14B {
 
   return if (@_ < 4);
 
-  my $eon_pi                   =  $_[3];
+  my $eon_pi              =  $_[3];
   $station{$eon_pi}{'TP'} = extract_bits($_[1], 4, 1);
   $station{$eon_pi}{'TA'} = extract_bits($_[1], 3, 1);
-  utter ("  Other Network"," ON:");
-  utter ("    PI:     ".sprintf("%04X",$eon_pi).
+  utter ('  Other Network', ' ON:');
+  utter ('    PI:     '.sprintf('%04X',$eon_pi).
     ((exists($station{$eon_pi}{'chname'})) &&
     " ($station{$eon_pi}{'chname'})"),
-    sprintf("%04X[",$eon_pi));
-  utter ("    TP:     ".
+    sprintf('%04X[',$eon_pi));
+  utter ('    TP:     '.
     $TP_descr[$station{$eon_pi}{'TP'}],
-    "TP:".$station{$eon_pi}{'TP'});
+    'TP:'.$station{$eon_pi}{'TP'});
   utter ("    TA:     ".
     $TA_descr[$station{$eon_pi}{'TP'}][$station{$eon_pi}{'TA'}],
-    "TA:".$station{$eon_pi}{'TA'});
+    'TA:'.$station{$eon_pi}{'TA'});
 }
 
 # 15B: Fast basic tuning and switching information
@@ -1177,10 +1176,10 @@ sub Group15B {
   # TA, M/S
   $station{$pi}{'TA'} = extract_bits($_[1], 4, 1);
   $station{$pi}{'MS'} = extract_bits($_[1], 3, 1);
-  utter ("  TA:     $TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}]",
-         " TA:$station{$pi}{'TA'}");
-  utter ("  M/S:    ".qw( Speech Music )[$station{$pi}{'MS'}],
-         " MS:".qw( S M)[$station{$pi}{'MS'}]);
+  utter ('  TA:     '.$TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}],
+         ' TA:'.$station{$pi}{'TA'});
+  utter ('  M/S:    '.qw( Speech Music )[$station{$pi}{'MS'}],
+         ' MS:'.qw(S M)[$station{$pi}{'MS'}]);
   $station{$pi}{'hasMS'} = TRUE;
 
 }
@@ -1197,7 +1196,7 @@ sub ODAGroup {
     given ($station{$pi}{'ODAaid'}{$group_type}) {
 
       when ([0xCD46, 0xCD47]) {
-        print_appdata ("TMC", sprintf("msg %02x %04x %04x",
+        print_appdata ('TMC', sprintf('msg %02x %04x %04x',
           extract_bits($data[1], 0, 5), $data[2], $data[3]));
       }
       when (0x4BD7) {
@@ -1207,24 +1206,24 @@ sub ODAGroup {
         parse_eRT(@data);
       }
       default {
-        say sprintf("          Unimplemented ODA %04x: %02x %04x %04x",
+        say sprintf('          Unimplemented ODA %04x: %02x %04x %04x',
           $station{$pi}{'ODAaid'}{$group_type},
           extract_bits($data[1], 0, 5), $data[2], $data[3]);
       }
 
     }
   } else {
-    utter ("          Will need group 3A first to identify ODA", "");
+    utter ('          Will need group 3A first to identify ODA', q{});
   }
 }
 
 sub screenReset {
 
-  $station{$pi}{'RTbuf'} = (" " x 64) if (!exists $station{$pi}{'RTbuf'});
-  $station{$pi}{'hasRT'} = FALSE      if (!exists $station{$pi}{'hasRT'});
-  $station{$pi}{'hasMS'} = FALSE      if (!exists $station{$pi}{'hasMS'});
-  $station{$pi}{'TP'}    = FALSE      if (!exists $station{$pi}{'TP'});
-  $station{$pi}{'TA'}    = FALSE      if (!exists $station{$pi}{'TA'});
+  $station{$pi}{'RTbuf'} = (q{ } x 64) if (!exists $station{$pi}{'RTbuf'});
+  $station{$pi}{'hasRT'} = FALSE       if (!exists $station{$pi}{'hasRT'});
+  $station{$pi}{'hasMS'} = FALSE       if (!exists $station{$pi}{'hasMS'});
+  $station{$pi}{'TP'}    = FALSE       if (!exists $station{$pi}{'TP'});
+  $station{$pi}{'TA'}    = FALSE       if (!exists $station{$pi}{'TA'});
 
 }
 
@@ -1238,10 +1237,10 @@ sub set_rt_chars {
   for my $i (0..$#a) {
     given ($a[$i]) {
       when (0x0D) {
-        substr($station{$pi}{'RTbuf'}, $lok+$i, 1) = "↵";
+        substr($station{$pi}{'RTbuf'}, $lok+$i, 1) = q{↵};
       }
       when (0x0A) {
-        substr($station{$pi}{'RTbuf'}, $lok+$i, 1) = "␊";
+        substr($station{$pi}{'RTbuf'}, $lok+$i, 1) = q{␊};
       }
       default {
         substr($station{$pi}{'RTbuf'}, $lok+$i, 1) = $char_table[$a[$i]];
@@ -1251,7 +1250,7 @@ sub set_rt_chars {
   }
 
   my $minRTlen = ($station{$pi}{'RTbuf'} =~ /↵/ ?
-    index($station{$pi}{'RTbuf'},"↵") + 1 :
+    index($station{$pi}{'RTbuf'}, q{↵}) + 1 :
     $station{$pi}{'presetminRTlen'} // 64);
 
   my $total_received
@@ -1263,13 +1262,13 @@ sub set_rt_chars {
                          substr($station{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
                          substr($station{$pi}{'RTbuf'},$lok+scalar(@a)) :
                          $station{$pi}{'RTbuf'});
-  utter ("  RT:     ".$displayed_RT, " RT:\"".$displayed_RT."\"");
+  utter ('  RT:     '.$displayed_RT, q{ RT:'}.$displayed_RT.q{'});
   if ($station{$pi}{'hasFullRT'}) {
-    utter ("", " RTcomplete");
+    utter (q{}, ' RTcomplete');
   }
 
-  utter ("          ". join("", (map ((defined) ? "^" : " ",
-    @{$station{$pi}{'RTrcvd'}}[0..63]))),"");
+  utter ('          '. join('', (map ((defined) ? q{^} : q{ },
+    @{$station{$pi}{'RTrcvd'}}[0..63]))), q{});
 }
 
 # Enhanced RadioText
@@ -1282,18 +1281,18 @@ sub parse_eRT {
       $station{$pi}{'ert_txtdir'} == 0) {
 
     for (0..1) {
-      substr($station{$pi}{'eRTbuf'}, 2*$addr+$_, 1) = decode("UCS-2LE",
+      substr($station{$pi}{'eRTbuf'}, 2*$addr+$_, 1) = decode('UCS-2LE',
         chr(extract_bits($_[2+$_], 8, 8)).chr(extract_bits($_[2+$_], 0, 8)));
       $station{$pi}{'eRTrcvd'}[2*$addr+$_]           = TRUE;
     }
 
-    say "  eRT:    ". substr($station{$pi}{'eRTbuf'},0,2*$addr).
+    say '  eRT:    '. substr($station{$pi}{'eRTbuf'},0,2*$addr).
                       ($is_interactive ? REVERSE : "").
                       substr($station{$pi}{'eRTbuf'},2*$addr,2).
                       ($is_interactive ? RESET : "").
                       substr($station{$pi}{'eRTbuf'},2*$addr+2);
 
-    say "          ". join("", (map ((defined) ? "^" : " ",
+    say '          '. join(q{}, (map ((defined) ? q{^} : q{ },
       @{$station{$pi}{'eRTrcvd'}}[0..63])));
 
   }
@@ -1308,7 +1307,7 @@ sub set_PS_chars {
   my $markup;
 
   if (not exists $station{$pspi}{'PSbuf'}) {
-    $station{$pspi}{'PSbuf'} = " " x 8
+    $station{$pspi}{'PSbuf'} = q{ } x 8
   }
 
   substr($station{$pspi}{'PSbuf'}, $lok, 2)
@@ -1338,7 +1337,7 @@ sub set_PS_chars {
                          substr($station{$pspi}{'PSbuf'},$lok,2).RESET.
                          substr($station{$pspi}{'PSbuf'},$lok+2) :
                          $station{$pspi}{'PSbuf'});
-  utter ("  PS:     ".$displayed_PS, " PS:\"".$displayed_PS."\"");
+  utter ('  PS:     '.$displayed_PS, q{ PS:'}.$displayed_PS.q{'});
 
 }
 
@@ -1360,10 +1359,10 @@ sub parse_RTp {
   $len[0]   = extract_bits($_[2], 1, 6);
   $len[1]   = extract_bits($_[3], 0, 5);
 
-  say "  RadioText+: ";
+  say '  RadioText+: ';
 
   if ($irun) {
-    say "    Item running";
+    say '    Item running';
     if ($station{$pi}{'rtp_which'} == 0) {
       for my $tag (0..1) {
         my $total_received
@@ -1379,7 +1378,7 @@ sub parse_RTp {
       # (eRT)
     }
   } else {
-    say "    No item running";
+    say '    No item running';
   }
 
 }
@@ -1388,8 +1387,8 @@ sub parse_RTp {
 
 sub parse_PIN {
   my $d = extract_bits($_[0], 11, 5);
-  return ($d ? sprintf("%02d@%02d:%02d", $d, extract_bits($_[0], 6, 5),
-    extract_bits($_[0], 0, 6)) : "None");
+  return ($d ? sprintf('%02d@%02d:%02d', $d, extract_bits($_[0], 6, 5),
+    extract_bits($_[0], 0, 6)) : 'None');
 }
 
 # Decoder Identification
@@ -1397,22 +1396,22 @@ sub parse_PIN {
 sub parse_DI {
   given ($_[0]) {
     when (0) {
-      utter ("  DI:     ". qw( Mono Stereo )[$_[1]],
-             " DI:".qw( Mono Stereo )[$_[1]]);
+      utter ('  DI:     '. qw( Mono Stereo )[$_[1]],
+             ' DI:'.qw( Mono Stereo )[$_[1]]);
     }
     when (1) {
       if ($_[1]) {
-        utter ("  DI:     Artificial head", " DI:ArtiHd");
+        utter ('  DI:     Artificial head', ' DI:ArtiHd');
       }
     }
     when (2) {
       if ($_[1]) {
-        utter ("  DI:     Compressed", " DI:Cmprsd");
+        utter ('  DI:     Compressed', ' DI:Cmprsd');
       }
     }
     when (3) {
-      utter ("  DI:     ". qw( Static Dynamic)[$_[1]] ." PTY",
-             " DI:".qw( StaPTY DynPTY )[$_[1]]);
+      utter ('  DI:     '. qw( Static Dynamic)[$_[1]] .' PTY',
+             ' DI:'.qw( StaPTY DynPTY )[$_[1]]);
     }
   }
 }
@@ -1426,35 +1425,35 @@ sub parse_AF {
   if ($is_fm) {
     given ($num) {
       when ([1..204]) {
-        $af = sprintf("%0.1fMHz", (87.5 + $num / 10) );
+        $af = sprintf('%0.1fMHz', (87.5 + $num / 10) );
       }
       when (205) {
-        $af = "(filler)";
+        $af = '(filler)';
       }
       when (224) {
-        $af = "\"No AF exists\"";
+        $af = q{"No AF exists"};
       }
       when ([225..249]) {
-        $af = "\"".($num == 225 ? "1 AF follows" :
-          ($num - 224)." AFs follow")."\"";
+        $af = q{"}.($num == 225 ? '1 AF follows' :
+          ($num - 224).' AFs follow').q{"};
       }
       when (250) {
-        $af = "\"AM/LF freq follows\"";
+        $af = q{"AM/LF freq follows"};
       }
       default {
-        $af = "(error:$num)";
+        $af = '(error:$num)';
       }
     }
   } else {
     given ($num) {
       when ([1..15]) {
-        $af = sprintf("%dkHz", 144 + $num * 9);
+        $af = sprintf('%dkHz', 144 + $num * 9);
       }
       when ([16..135]) {
-        $af = sprintf("%dkHz", 522 + ($num-15) * 9);
+        $af = sprintf('%dkHz', 522 + ($num-15) * 9);
       }
       default {
-        $af = "N/A";
+        $af = 'N/A';
       }
     }
   }
@@ -1466,33 +1465,24 @@ sub parse_AF {
 sub init_data {
 
   # Program Type names
-  @ptynames   = ("No PTY",           "News",             "Current Affairs",  "Information",
-                 "Sport",            "Education",        "Drama",            "Cultures",
-                 "Science",          "Varied Speech",    "Pop Music",        "Rock Music",
-                 "Easy Listening",   "Light Classics M", "Serious Classics", "Other Music",
-                 "Weather & Metr",   "Finance",          "Children's Progs", "Social Affairs",
-                 "Religion",         "Phone In",         "Travel & Touring", "Leisure & Hobby",
-                 "Jazz Music",       "Country Music",    "National Music",   "Oldies Music",
-                 "Folk Music",       "Documentary",      "Alarm Test",       "Alarm - Alarm !");
+  @ptynames   = ('No PTY',           'News',             'Current Affairs',  'Information',
+                 'Sport',            'Education',        'Drama',            'Cultures',
+                 'Science',          'Varied Speech',    'Pop Music',        'Rock Music',
+                 'Easy Listening',   'Light Classics M', 'Serious Classics', 'Other Music',
+                 'Weather & Metr',   'Finance',          q{Children's Progs},'Social Affairs',
+                 'Religion',         'Phone In',         'Travel & Touring', 'Leisure & Hobby',
+                 'Jazz Music',       'Country Music',    'National Music',   'Oldies Music',
+                 'Folk Music',       'Documentary',      'Alarm Test',       'Alarm - Alarm !');
 
   # PTY names for the US (RBDS)
-  @ptynamesUS = ("No PTY",           "News",             "Information",      "Sports",
-                 "Talk",             "Rock",             "Classic Rock",     "Adult Hits",
-                 "Soft Rock",        "Top 40",           "Country",          "Oldies",
-                 "Soft",             "Nostalgia",        "Jazz",             "Classical",
-                 "Rhythm and Blues", "Soft R & B",       "Foreign Language", "Religious Music",
-                 "Religious Talk",   "Personality",      "Public",           "College",
-                 "",                 "",                 "",                 "",
-                 "",                 "Weather",          "Emergency Test",   "ALERT! ALERT!");
-
-  #@ptynamesFI = ("",                 "Uutiset",          "Ajankohtaista",    "Tiedotuksia",
-               #  "Urheilu",          "Opetus",           "Kuunnelma",        "Kulttuuri",
-               #  "Tiede",            "Puheviihde",       "Pop",              "Rock",
-               #  "Kevyt musiikki",   "Kevyt klassinen",  "Klassinen",        "Muu musiikki",
-               #  "Säätiedotus",      "Talousohjelma",    "Lastenohjelma",    "Yhteiskunta",
-               #  "Uskonto",          "Yleisökontakti",   "Matkailu",         "Vapaa-aika",
-               #  "Jazz",             "Country",          "Kotim. musiikki",  "Oldies",
-               #  "Kansanmusiikki",   "Dokumentti",       "HÄLYTYS TESTI",    "HÄLYTYS");
+  @ptynamesUS = ('No PTY',           'News',             'Information',      'Sports',
+                 'Talk',             'Rock',             'Classic Rock',     'Adult Hits',
+                 'Soft Rock',        'Top 40',           'Country',          'Oldies',
+                 'Soft',             'Nostalgia',        'Jazz',             'Classical',
+                 'Rhythm and Blues', 'Soft R & B',       'Foreign Language', 'Religious Music',
+                 'Religious Talk',   'Personality',      'Public',           'College',
+                 q{},                q{},                q{},                q{},
+                 q{},                'Weather',          'Emergency Test',   'ALERT! ALERT!');
 
   # Basic LCD character set
   @char_table = split(//,
@@ -1502,58 +1492,58 @@ sub init_data {
                'ÁÀÉÈÍÌÓÒÚÙŘČŠŽÐĿ' . 'ÂÄÊËÎÏÔÖÛÜřčšžđŀ' . 'ÃÅÆŒŷÝÕØÞŊŔĆŚŹŦð' . 'ãåæœŵýõøþŋŕćśźŧ ');
 
   # Meanings of combinations of TP+TA
-  @TP_descr = (  "Does not carry traffic announcements", "Program carries traffic announcements" );
-  @TA_descr = ( ["No EON with traffic announcements",    "EON specifies another program with traffic announcements"],
-              ["No traffic announcement at present",   "A traffic announcement is currently being broadcast"]);
+  @TP_descr = (  'Does not carry traffic announcements', 'Program carries traffic announcements' );
+  @TA_descr = ( ['No EON with traffic announcements',    'EON specifies another program with traffic announcements'],
+              ['No traffic announcement at present',   'A traffic announcement is currently being broadcast']);
 
   # Language names
   @langname = (
-     "Unknown",      "Albanian",      "Breton",     "Catalan",    "Croatian",    "Welsh",     "Czech",      "Danish",
-     "German",       "English",       "Spanish",    "Esperanto",  "Estonian",    "Basque",    "Faroese",    "French",
-     "Frisian",      "Irish",         "Gaelic",     "Galician",   "Icelandic",   "Italian",   "Lappish",    "Latin",
-     "Latvian",      "Luxembourgian", "Lithuanian", "Hungarian",  "Maltese",     "Dutch",     "Norwegian",  "Occitan",
-     "Polish",       "Portuguese",    "Romanian",   "Romansh",    "Serbian",     "Slovak",    "Slovene",    "Finnish",
-     "Swedish",      "Turkish",       "Flemish",    "Walloon",    "",            "",          "",           "",
-     "",             "",              "",           "",           "",            "",          "",           "",
-     "",             "",              "",           "",           "",            "",          "",           "",
-     "Background",   "",              "",           "",           "",            "Zulu",      "Vietnamese", "Uzbek",
-     "Urdu",         "Ukrainian",     "Thai",       "Telugu",     "Tatar",       "Tamil",     "Tadzhik",    "Swahili",
-     "Sranan Tongo", "Somali",        "Sinhalese",  "Shona",      "Serbo-Croat", "Ruthenian", "Russian",    "Quechua",
-     "Pushtu",       "Punjabi",       "Persian",    "Papamiento", "Oriya",       "Nepali",    "Ndebele",    "Marathi",
-     "Moldovian",    "Malaysian",     "Malagasay",  "Macedonian", "Laotian",     "Korean",    "Khmer",      "Kazakh",
-     "Kannada",      "Japanese",      "Indonesian", "Hindi",      "Hebrew",      "Hausa",     "Gurani",     "Gujurati",
-     "Greek",        "Georgian",      "Fulani",     "Dari",       "Churash",     "Chinese",   "Burmese",    "Bulgarian",
-     "Bengali",      "Belorussian",   "Bambora",    "Azerbaijan", "Assamese",    "Armenian",  "Arabic",     "Amharic" );
+     'Unknown',      'Albanian',      'Breton',     'Catalan',    'Croatian',    'Welsh',     'Czech',      'Danish',
+     'German',       'English',       'Spanish',    'Esperanto',  'Estonian',    'Basque',    'Faroese',    'French',
+     'Frisian',      'Irish',         'Gaelic',     'Galician',   'Icelandic',   'Italian',   'Lappish',    'Latin',
+     'Latvian',      'Luxembourgian', 'Lithuanian', 'Hungarian',  'Maltese',     'Dutch',     'Norwegian',  'Occitan',
+     'Polish',       'Portuguese',    'Romanian',   'Romansh',    'Serbian',     'Slovak',    'Slovene',    'Finnish',
+     'Swedish',      'Turkish',       'Flemish',    'Walloon',    q{},           q{},         q{},          q{},
+     q{},            q{},             q{},          q{},          q{},           q{},         q{},          q{},
+     q{},            q{},             q{},          q{},          q{},           q{},         q{},          q{},
+     'Background',   q{},             q{},          q{},          q{},           'Zulu',      'Vietnamese', 'Uzbek',
+     'Urdu',         'Ukrainian',     'Thai',       'Telugu',     'Tatar',       'Tamil',     'Tadzhik',    'Swahili',
+     'Sranan Tongo', 'Somali',        'Sinhalese',  'Shona',      'Serbo-Croat', 'Ruthenian', 'Russian',    'Quechua',
+     'Pushtu',       'Punjabi',       'Persian',    'Papamiento', 'Oriya',       'Nepali',    'Ndebele',    'Marathi',
+     'Moldovian',    'Malaysian',     'Malagasay',  'Macedonian', 'Laotian',     'Korean',    'Khmer',      'Kazakh',
+     'Kannada',      'Japanese',      'Indonesian', 'Hindi',      'Hebrew',      'Hausa',     'Gurani',     'Gujurati',
+     'Greek',        'Georgian',      'Fulani',     'Dari',       'Churash',     'Chinese',   'Burmese',    'Bulgarian',
+     'Bengali',      'Belorussian',   'Bambora',    'Azerbaijan', 'Assamese',    'Armenian',  'Arabic',     'Amharic' );
 
   # Open Data Applications
   %oda_app = (
-     0x0000 => "Normal features specified in Standard",            0x0093 => "Cross referencing DAB within RDS",
-     0x0BCB => "Leisure & Practical Info for Drivers",             0x0C24 => "ELECTRABEL-DSM 7",
-     0x0CC1 => "Wireless Playground broadcast control signal",     0x0D45 => "RDS-TMC: ALERT-C / EN ISO 14819-1",
-     0x0D8B => "ELECTRABEL-DSM 18",                                0x0E2C => "ELECTRABEL-DSM 3",
-     0x0E31 => "ELECTRABEL-DSM 13",                                0x0F87 => "ELECTRABEL-DSM 2",
-     0x125F => "I-FM-RDS for fixed and mobile devices",            0x1BDA => "ELECTRABEL-DSM 1",
-     0x1C5E => "ELECTRABEL-DSM 20",                                0x1C68 => "ITIS In-vehicle data base",
-     0x1CB1 => "ELECTRABEL-DSM 10",                                0x1D47 => "ELECTRABEL-DSM 4",
-     0x1DC2 => "CITIBUS 4",                                        0x1DC5 => "Encrypted TTI using ALERT-Plus",
-     0x1E8F => "ELECTRABEL-DSM 17",                                0x4AA1 => "RASANT",
-     0x4AB7 => "ELECTRABEL-DSM 9",                                 0x4BA2 => "ELECTRABEL-DSM 5",
-     0x4BD7 => "RadioText+ (RT+)",                                 0x4C59 => "CITIBUS 2",
-     0x4D87 => "Radio Commerce System (RCS)",                      0x4D95 => "ELECTRABEL-DSM 16",
-     0x4D9A => "ELECTRABEL-DSM 11",                                0x5757 => "Personal weather station",
-     0x6552 => "Enhanced RadioText (eRT)",                         0x7373 => "Enhanced early warning system",
-     0xC350 => "NRSC Song Title and Artist",                       0xC3A1 => "Personal Radio Service",
-     0xC3B0 => "iTunes Tagging",                                   0xC3C3 => "NAVTEQ Traffic Plus",
-     0xC4D4 => "eEAS",                                             0xC549 => "Smart Grid Broadcast Channel",
-     0xC563 => "ID Logic",                                         0xC737 => "Utility Message Channel (UMC)",
-     0xCB73 => "CITIBUS 1",                                        0xCB97 => "ELECTRABEL-DSM 14",
-     0xCC21 => "CITIBUS 3",                                        0xCD46 => "RDS-TMC: ALERT-C / EN ISO 14819 parts 1, 2, 3, 6",
-     0xCD47 => "RDS-TMC: ALERT-C / EN ISO 14819 parts 1, 2, 3, 6", 0xCD9E => "ELECTRABEL-DSM 8",
-     0xCE6B => "Encrypted TTI using ALERT-Plus",                   0xE123 => "APS Gateway",
-     0xE1C1 => "Action code",                                      0xE319 => "ELECTRABEL-DSM 12",
-     0xE411 => "Beacon downlink",                                  0xE440 => "ELECTRABEL-DSM 15",
-     0xE4A6 => "ELECTRABEL-DSM 19",                                0xE5D7 => "ELECTRABEL-DSM 6",
-     0xE911 => "EAS open protocol");
+     0x0000 => 'Normal features specified in Standard',            0x0093 => 'Cross referencing DAB within RDS',
+     0x0BCB => 'Leisure & Practical Info for Drivers',             0x0C24 => 'ELECTRABEL-DSM 7',
+     0x0CC1 => 'Wireless Playground broadcast control signal',     0x0D45 => 'RDS-TMC: ALERT-C / EN ISO 14819-1',
+     0x0D8B => 'ELECTRABEL-DSM 18',                                0x0E2C => 'ELECTRABEL-DSM 3',
+     0x0E31 => 'ELECTRABEL-DSM 13',                                0x0F87 => 'ELECTRABEL-DSM 2',
+     0x125F => 'I-FM-RDS for fixed and mobile devices',            0x1BDA => 'ELECTRABEL-DSM 1',
+     0x1C5E => 'ELECTRABEL-DSM 20',                                0x1C68 => 'ITIS In-vehicle data base',
+     0x1CB1 => 'ELECTRABEL-DSM 10',                                0x1D47 => 'ELECTRABEL-DSM 4',
+     0x1DC2 => 'CITIBUS 4',                                        0x1DC5 => 'Encrypted TTI using ALERT-Plus',
+     0x1E8F => 'ELECTRABEL-DSM 17',                                0x4AA1 => 'RASANT',
+     0x4AB7 => 'ELECTRABEL-DSM 9',                                 0x4BA2 => 'ELECTRABEL-DSM 5',
+     0x4BD7 => 'RadioText+ (RT+)',                                 0x4C59 => 'CITIBUS 2',
+     0x4D87 => 'Radio Commerce System (RCS)',                      0x4D95 => 'ELECTRABEL-DSM 16',
+     0x4D9A => 'ELECTRABEL-DSM 11',                                0x5757 => 'Personal weather station',
+     0x6552 => 'Enhanced RadioText (eRT)',                         0x7373 => 'Enhanced early warning system',
+     0xC350 => 'NRSC Song Title and Artist',                       0xC3A1 => 'Personal Radio Service',
+     0xC3B0 => 'iTunes Tagging',                                   0xC3C3 => 'NAVTEQ Traffic Plus',
+     0xC4D4 => 'eEAS',                                             0xC549 => 'Smart Grid Broadcast Channel',
+     0xC563 => 'ID Logic',                                         0xC737 => 'Utility Message Channel (UMC)',
+     0xCB73 => 'CITIBUS 1',                                        0xCB97 => 'ELECTRABEL-DSM 14',
+     0xCC21 => 'CITIBUS 3',                                        0xCD46 => 'RDS-TMC: ALERT-C / EN ISO 14819 parts 1, 2, 3, 6',
+     0xCD47 => 'RDS-TMC: ALERT-C / EN ISO 14819 parts 1, 2, 3, 6', 0xCD9E => 'ELECTRABEL-DSM 8',
+     0xCE6B => 'Encrypted TTI using ALERT-Plus',                   0xE123 => 'APS Gateway',
+     0xE1C1 => 'Action code',                                      0xE319 => 'ELECTRABEL-DSM 12',
+     0xE411 => 'Beacon downlink',                                  0xE440 => 'ELECTRABEL-DSM 15',
+     0xE4A6 => 'ELECTRABEL-DSM 19',                                0xE5D7 => 'ELECTRABEL-DSM 6',
+     0xE911 => 'EAS open protocol');
 
   # Country codes: @countryISO[ ECC ][ CC ] = ISO 3166-1 alpha 2
   @{$countryISO[0xA0]} = map { /__/ ? undef : $_ } qw( __ us us us us us us us us us us us __ us us __ );
@@ -1581,41 +1571,41 @@ sub init_data {
   @{$countryISO[0xF3]} = map { /__/ ? undef : $_ } qw( __ la th to __ __ __ __ __ pg __ ye __ __ fm mn );
 
   # RadioText+ classes
-  @rtpclass = ("dummy_class",          "item.title",                "item.album",           "item.tracknumber",
-               "item.artist",          "item.composition",          "item.movement",        "item.conductor",
-               "item.composer",        "item.band",                 "item.comment",         "item.genre",
-               "info.news",            "info.news.local",           "info.stockmarket",     "info.sport",
-               "info.lottery",         "info.horoscope",            "info.daily_diversion", "info.health",
-               "info.event",           "info.scene",                "info.cinema",          "info.tv",
-               "info.date_time",       "info.weather",              "info.traffic",         "info.alarm",
-               "info.advertisement",   "info.url",                  "info.other",           "stationname.short",
-               "stationname.long",     "programme.now",             "programme.next",       "programme.part",
-               "programme.host",       "programme.editorial_staff", "programme.frequency",  "programme.homepage",
-               "programme.subchannel", "phone.hotline",             "phone.studio",         "phone.other",
-               "sms.studio",           "sms.other",                 "email.hotline",        "email.studio",
-               "email.other",          "mms.other",                 "chat",                 "chat.centre",
-               "vote.question",        "vote.centre",               "",                     "",
-               "",                     "",                          "",                     "place",
-               "appointment",          "identifier",                "purchase",             "get_data");
+  @rtpclass = ('dummy_class',          'item.title',                'item.album',           'item.tracknumber',
+               'item.artist',          'item.composition',          'item.movement',        'item.conductor',
+               'item.composer',        'item.band',                 'item.comment',         'item.genre',
+               'info.news',            'info.news.local',           'info.stockmarket',     'info.sport',
+               'info.lottery',         'info.horoscope',            'info.daily_diversion', 'info.health',
+               'info.event',           'info.scene',                'info.cinema',          'info.tv',
+               'info.date_time',       'info.weather',              'info.traffic',         'info.alarm',
+               'info.advertisement',   'info.url',                  'info.other',           'stationname.short',
+               'stationname.long',     'programme.now',             'programme.next',       'programme.part',
+               'programme.host',       'programme.editorial_staff', 'programme.frequency',  'programme.homepage',
+               'programme.subchannel', 'phone.hotline',             'phone.studio',         'phone.other',
+               'sms.studio',           'sms.other',                 'email.hotline',        'email.studio',
+               'email.other',          'mms.other',                 'chat',                 'chat.centre',
+               'vote.question',        'vote.centre',               q{},                    q{},
+               q{},                    q{},                         q{},                    'place',
+               'appointment',          'identifier',                'purchase',             'get_data');
 
   # Group type descriptions
   @group_names = (
-   "Basic tuning and switching information",      "Basic tuning and switching information",
-   "Program Item Number and slow labeling codes", "Program Item Number",
-   "RadioText",                                   "RadioText",
-   "Applications Identification for Open Data",   "Open Data Applications",
-   "Clock-time and date",                         "Open Data Applications",
-   "Transparent Data Channels or ODA",            "Transparent Data Channels or ODA",
-   "In House applications or ODA",                "In House applications or ODA",
-   "Radio Paging or ODA",                         "Open Data Applications",
-   "Traffic Message Channel or ODA",              "Open Data Applications",
-   "Emergency Warning System or ODA",             "Open Data Applications",
-   "Program Type Name",                           "Open Data Applications",
-   "Open Data Applications",                      "Open Data Applications",
-   "Open Data Applications",                      "Open Data Applications",
-   "Enhanced Radio Paging or ODA",                "Open Data Applications",
-   "Enhanced Other Networks information",         "Enhanced Other Networks information",
-   "Undefined",                                   "Fast switching information");
+   'Basic tuning and switching information',      'Basic tuning and switching information',
+   'Program Item Number and slow labeling codes', 'Program Item Number',
+   'RadioText',                                   'RadioText',
+   'Applications Identification for Open Data',   'Open Data Applications',
+   'Clock-time and date',                         'Open Data Applications',
+   'Transparent Data Channels or ODA',            'Transparent Data Channels or ODA',
+   'In House applications or ODA',                'In House applications or ODA',
+   'Radio Paging or ODA',                         'Open Data Applications',
+   'Traffic Message Channel or ODA',              'Open Data Applications',
+   'Emergency Warning System or ODA',             'Open Data Applications',
+   'Program Type Name',                           'Open Data Applications',
+   'Open Data Applications',                      'Open Data Applications',
+   'Open Data Applications',                      'Open Data Applications',
+   'Enhanced Radio Paging or ODA',                'Open Data Applications',
+   'Enhanced Other Networks information',         'Enhanced Other Networks information',
+   'Undefined',                                   'Fast switching information');
 
 }
 
@@ -1629,7 +1619,7 @@ sub extract_bits {
 sub print_appdata {
   my ($appname, $data) = @_;
   if (exists $options{t}) {
-    my $timestamp = strftime("%Y-%m-%dT%H:%M:%S%z ", localtime);
+    my $timestamp = strftime('%Y-%m-%dT%H:%M:%S%z ', localtime);
     print $timestamp;
   }
   say "[app] $appname $data";
@@ -1639,13 +1629,15 @@ sub utter {
   my ($long, $short) = @_;
   if ($verbosity == 0) {
     if ($short =~ /\n/) {
-      print "$linebuf$short";
-      $linebuf = "";
+      print $linebuf.$short;
+      $linebuf = q{};
     } else {
       $linebuf .= $short;
     }
   } elsif ($verbosity == 1) {
-    print $long."\n" if ($long ne "");
+    if ($long ne q{}) {
+      print $long."\n";
+    }
   }
 }
 
