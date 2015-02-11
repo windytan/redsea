@@ -181,7 +181,10 @@ sub blockerror {
 
   $block_has_errors[$block_counter % 50] = TRUE;
 
-  my $erroneous_blocks = sum0 @block_has_errors;
+  my $erroneous_blocks = 0;
+  for (@block_has_errors) {
+    $erroneous_blocks += ($_ // 0);
+  }
 
   # Sync is lost when >45 out of last 50 blocks are erroneous (C.1.2)
   if ($is_in_sync && $erroneous_blocks > 45) {
