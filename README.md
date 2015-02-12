@@ -26,8 +26,8 @@ Usage
         -l          print groups in long format
         -s          print groups in short format (default)
         -t          print an ISO timestamp before each group
-        -g <gain>   gain (float), passed to rtl_fm
-        -p <error>  parts-per-million error, passed to rtl_fm
+        -g <gain>   gain (float), passed to rtl_fm (optional)
+        -p <error>  parts-per-million error, passed to rtl_fm (optional)
         FREQ        station frequency in Hz, can be SI suffixed (94.0M)
 
 Licensing
