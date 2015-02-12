@@ -234,6 +234,8 @@ sub get_groups {
     }
   }
 
+  print STDERR "Waiting for sync\n";
+
   while (TRUE) {
 
     # Compensate for clock slip corrections
