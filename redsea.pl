@@ -10,8 +10,8 @@ use 5.012;
 use strict;
 use warnings;
 use utf8;
+no if $] >= 5.017011, warnings => 'experimental::smartmatch';
 
-use experimental qw/smartmatch/;
 use IPC::Cmd     qw/can_run/;
 use Encode       qw/decode/;
 use POSIX        qw/strftime/;
