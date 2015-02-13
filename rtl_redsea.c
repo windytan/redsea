@@ -11,9 +11,10 @@
 
 #ifdef DEBUG
 char dbit,sbit;
+int errs;
 #endif
 
-void bit(char b) {
+void print_delta(char b) {
   static int nbit = 0;
 #ifdef DEBUG
   sbit = (b ^ dbit ? 1 : -1);
@@ -27,24 +28,27 @@ void bit(char b) {
   nbit++;
 }
 
+int sign(double a) {
+  return (a >= 0 ? 1 : 0);
+}
+
 void biphase(double acc) {
   static double prevacc = 0;
-  static int counter = 0;
-  static int errs = 0;
+  static int    counter = 0;
+#ifndef DEBUG
+  static int    errs    = 0;
+#endif
+
   counter ++;
   if (counter > 1) {
-    if (acc >= 0 && prevacc >= 0) {
-      bit(1);
+    if (sign(acc) == sign(prevacc)) {
+      print_delta(sign(acc));
       counter = 0;
-      errs = 0;
-    } else if (acc < 0 && prevacc < 0) {
-      bit(0);
-      counter = 0;
-      errs = 0;
-    } else {
-      // tolerate 1 erroneous symbol
-      bit(acc + prevacc >= 0 ? 1 : 0);
-      if (errs == 0) counter = 0;
+      errs    = 0;
+   } else {
+      // tolerate 5 noisy symbols
+      print_delta(sign(acc + prevacc));
+      if (errs < 5) counter = 0;
       errs++;
     }
   }
@@ -78,6 +82,7 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
   sbit = 0;
   dbit=0;
+  errs = 0;
 #endif
 
   int c;
@@ -160,7 +165,7 @@ int main(int argc, char **argv) {
     sbit = 0;
 #endif
 
-    if (prevclock * lo_clock <= 0) {
+    if (sign(lo_clock) != sign(prevclock)) {
       biphase(acc);
       acc = 0;
     }
