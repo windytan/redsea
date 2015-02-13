@@ -71,13 +71,14 @@ int main(int argc, char **argv) {
   double prevdemod = 0;
   double acc = 0;
   double at = 0;
+  double prevval = 0;
 
   double xv[2][4] = {{0}};
   double yv[2][4] = {{0}};
   double demod[2] = {0};
   double filtd[2] = {0};
 
-  double gain = 6.605354574;
+  double lpf_gain = 6.605354574;
 
 #ifdef DEBUG
   sbit = 0;
@@ -103,22 +104,19 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
   int16_t outbuf[1];
   FILE *U;
-  U = popen("sox -c 6 -r 250000 -t .s16 - dbg-out.wav", "w");
+  U = popen("sox -c 5 -r 250000 -t .s16 - dbg-out.wav", "w");
+  FILE *IQ;
+  IQ = popen("sox -c 2 -r 250000 -t .s16 - dbg-out-iq.wav", "w");
 #endif
 
   while (1) {
     if (fread(sample, sizeof(int16_t), 1, stdin) == 0) exit(0);
     val = sample[0] / 32768.0;
 
-#ifdef DEBUG
-    outbuf[0] = sample[0];
-    fwrite(outbuf, sizeof(int16_t), 1, U);
-#endif
-
     /* 57 kHz local oscillator */
     lo_phi += 2 * M_PI * fc * (1.0/FS);
-    lo_iq[0] = cos(lo_phi);
-    lo_iq[1] = sin(lo_phi);
+    lo_iq[0] = sin(lo_phi);
+    lo_iq[1] = cos(lo_phi);
 
     /* 1187.5 Hz clock */
     clock_phi = lo_phi / 48 + clock_offset;
@@ -136,7 +134,7 @@ int main(int argc, char **argv) {
     /* Butterworth lopass */
     for (int iq=0;iq<=1;iq++) {
       xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3];
-      xv[iq][3] = demod[iq] / gain;
+      xv[iq][3] = demod[iq] / lpf_gain;
       yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3];
       yv[iq][3] =   (xv[iq][0] + xv[iq][3]) + 3 * (xv[iq][1] + xv[iq][2])
                    + (  0.0105030013 * yv[iq][0]) + ( -0.3368436806 * yv[iq][1])
@@ -146,7 +144,9 @@ int main(int argc, char **argv) {
 
 #ifdef DEBUG
     outbuf[0] = filtd[0] * 16000;
-    fwrite(outbuf, sizeof(int16_t), 1, U);
+    fwrite(outbuf, sizeof(int16_t), 1, IQ);
+    outbuf[0] = filtd[1] * 16000;
+    fwrite(outbuf, sizeof(int16_t), 1, IQ);
 #endif
 
     /* refine sampling instant */
@@ -178,16 +178,28 @@ int main(int argc, char **argv) {
 #endif
 
     /* PLL */
-    at = atan2(-filtd[1], filtd[0]);
-    if (at > M_PI_2)  at -= M_PI;
-    if (at < -M_PI_2) at += M_PI;
-    fc += 0.002 * at;
-    if (fc > FC_0 + 20) fc -= 30;
-    if (fc < FC_0 - 20) fc += 30;
+    double pll_alpha = 0.0002;
+    double pll_beta = sqrt(pll_alpha);
+    double zc;
+
+    if (sign(val) != sign(prevval)) {
+      zc = val / (prevval - val) / FS;
+      d_phi = fmod(lo_phi, 2 * M_PI) - (zc * fc * 2 * M_PI);
+      if (d_phi >= M_PI)  d_phi = -2 * M_PI + d_phi;
+      if (d_phi <= -M_PI) d_phi =  2 * M_PI - d_phi;
+      fc     -= pll_alpha * d_phi;
+      lo_phi -= pll_beta  * d_phi;
+    }
+
+#ifdef DEBUG
+    outbuf[0] = (errs > 5 ? 1 : 0) * 16000;
+    fwrite(outbuf, sizeof(int16_t), 1, U);
+#endif
 
     /* For zero-crossing detection */
     prevdemod = filtd[0];
     prevclock = lo_clock;
+    prevval   = val;
 
   }
 }
