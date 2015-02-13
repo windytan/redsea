@@ -130,9 +130,10 @@ sub commands {
 
   open $bitpipe, '-|', sprintf('rtl_fm -f %.1f -M fm -l 0 -A std '.
                        $gain.$ppm.' -s %.1f |'.
-                       'sox -c 1 -t .s16 -r 250000 - -t .s16 - '.
-                       'sinc %.1f-%.1f gain 15 2>/dev/null | ./rtl_redsea',
-                       $fmfreq, FS, FC-3500, FC+3500) or die($!);
+                       'sox -c 1 -t .s16 -r 250000 - -t .f32 - '.
+                       'sinc -t 2000 %.1f-%.1f gain 15 2>/dev/null | '.
+                       './rtl_redsea',
+                       $fmfreq, FS, FC-2000, FC+2000) or die($!);
 }
 
 # Next bit from radio
