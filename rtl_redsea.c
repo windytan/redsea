@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #define FS   250000.0
 #define FC_0 57000.0
@@ -37,20 +38,26 @@ void biphase(double acc) {
   static double prevacc = 0;
   static int    counter = 0;
 #ifndef DEBUG
-  static int    errs    = 0;
+  static int    errs[200] = {0};
+  static int    toterrs     = 0;
 #endif
 
   counter ++;
-  if (counter > 1) {
+  if (counter % 2 == 0) {
     if (sign(acc) == sign(prevacc)) {
       print_delta(sign(acc));
-      counter = 0;
-      errs    = 0;
+      toterrs -= errs[counter % 200];
+      errs[counter % 200] = 0;
    } else {
-      // tolerate 5 noisy symbols
       print_delta(sign(acc + prevacc));
-      if (errs < 5) counter = 0;
-      errs++;
+      toterrs -= errs[counter % 200];
+      errs[counter % 200] = 1;
+      toterrs += 1;
+
+      if (toterrs >= 60) {
+        counter ++;
+        memset(errs, 0, sizeof(int) * 200);
+      }
     }
   }
   prevacc = acc;
