@@ -13,7 +13,7 @@
 
 #ifdef DEBUG
 char dbit,sbit;
-int errs[200];
+int tot_errs[2];
 #endif
 
 void print_delta(char b) {
@@ -35,33 +35,37 @@ int sign(double a) {
 }
 
 void biphase(double acc) {
-  static double prevacc = 0;
+  static double prev_acc = 0;
   static int    counter = 0;
+  static int    reading_frame  = 0;
 #ifndef DEBUG
-  static int    errs[200] = {0};
-  static int    toterrs     = 0;
+  static int    tot_errs[2]     = {0};
 #endif
 
-  counter ++;
-  if (counter % 2 == 0) {
-    print_delta(sign(acc + prevacc));
-
-    toterrs -= errs[counter % 200];
-
-    if (sign(acc) == sign(prevacc)) {
-      errs[counter % 200] = 0;
-    } else {
-      errs[counter % 200] = 1;
-      toterrs += 1;
-
-      if (toterrs >= 60) {
-        counter ++;
-        memset(errs, 0, sizeof(int) * 200);
-        toterrs = 0;
-      }
-    }
+  if (sign(acc) != sign(prev_acc)) {
+    tot_errs[counter % 2] ++;
   }
-  prevacc = acc;
+
+  if (counter % 2 == reading_frame) {
+    print_delta(sign(acc + prev_acc));
+  }
+  if (counter == 0) {
+    if (tot_errs[1 - reading_frame] < tot_errs[reading_frame]) {
+      reading_frame = 1 - reading_frame;
+    }
+#ifdef DEBUG
+    if (reading_frame == 1) {
+      fprintf(stderr," %d  [%d]\n", tot_errs[0], tot_errs[1]);
+    } else {
+      fprintf(stderr,"[%d]  %d\n", tot_errs[0], tot_errs[1]);
+    }
+#endif
+    tot_errs[0] = 0;
+    tot_errs[1] = 0;
+  }
+
+  prev_acc = acc;
+  counter = (counter + 1) % 800;
 }
 
 int main(int argc, char **argv) {
