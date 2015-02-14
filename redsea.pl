@@ -125,21 +125,40 @@ sub commands {
     $fmfreq = $1 * $si{$2};
   }
 
+
+}
+
+sub open_radio {
+  my $freq = shift;
   my $gain = (exists $options{g} ? sprintf(' -g %.2f ', $options{g}) : q{});
   my $ppm  = (exists $options{p} ? sprintf(' -p %.0f ', $options{p}) : q{});
 
-  open $bitpipe, '-|', sprintf('rtl_fm -f %.1f -M fm -l 0 -A std '.
-                       $gain.$ppm.' -s %.1f |'.
-                       'sox -c 1 -t .s16 -r 250000 - -t .f32 - '.
-                       'sinc -t 2000 %.1f-%.1f gain 15 2>/dev/null | '.
-                       './rtl_redsea',
-                       $fmfreq, FS, FC-2000, FC+2000) or die($!);
+  if (!can_run './rtl_redsea') {
+    print "error: looks like rtl_redsea isn't compiled. To fix that, please ".
+          "run:\n\ngcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
+    exit(1);
+  }
+  if (!can_run('rtl_fm')) {
+    print "error: looks like rtl_fm is not installed!\n";
+    exit(1);
+  }
+  if (!can_run('sox')) {
+    print "error: looks like SoX is not installed!\n";
+    exit(1);
+  }
+
+  $rtl_pid
+    = open $bitpipe, '-|', sprintf('rtl_fm -f %.1f -M fm -l 0 -A std '.
+                     $gain.$ppm.' -s %.1f 2>/dev/null |'.
+                     'sox -c 1 -t .s16 -r 250000 - -t .f32 - '.
+                     'sinc -t 2000 %.1f-%.1f gain 15 2>/dev/null | '.
+                     './rtl_redsea 2>/dev/null',
+                     $freq, FS, FC-2000, FC+2000) or die($!);
 }
 
 # Next bit from radio
 sub get_bit {
-  my $bit;
-  read $bitpipe, $bit, 1 or die 'End of stream';
+  read $bitpipe, my $bit, 1 or die 'End of stream';
   return $bit;
 }
 
@@ -154,7 +173,7 @@ sub syndrome {
     $bit       = ($vector  & (1 << $k));
     $l         = ($synd_reg & 0x200);      # Store lefmost bit of register
     $synd_reg  = ($synd_reg << 1) & 0x3FF; # Rotate register
-    $synd_reg ^= ($bit ? 0x31B : 0x00);    # Premultiply input by x^325 mod g(x)
+    $synd_reg ^= ($bit ? 0x31B : 0x00);    # Premult. input by x^325 mod g(x)
     $synd_reg ^= ($l   ? 0x1B9 : 0x00);    # Division mod 2 by g(x)
   }
 
@@ -298,7 +317,7 @@ sub get_groups {
       }
 
       # If this block offset won't give a sync pulse
-      if (!$has_sync_for[$expected_offset]) {
+      if (not $has_sync_for[$expected_offset]) {
 
         # If it's a correct PI, the error was probably in the check bits and
         # hence is ignored
@@ -402,11 +421,6 @@ sub decode_group {
     if ($newpi != ($pi // 0)) {
       $pi = $newpi;
       screenReset();
-      if (exists $station{$pi}{'presetPSbuf'}) {
-        ($station{$pi}{'PSmarkup'}
-          = $station{$pi}{'presetPSbuf'}) =~ s/&/&amp;/g;
-        $station{$pi}{'PSmarkup'}  =~ s/</&lt;/g;
-      }
     }
 
   } elsif ($newpi != ($pi // 0)) {
@@ -438,17 +452,14 @@ sub decode_group {
   if (exists $station{$pi}{'ECC'} &&
      ($countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] // q{})
        =~ /us|ca|mx/) {
-    $station{$pi}{'PTYmarkup'} = $ptynamesUS[$station{$pi}{'PTY'}];
     utter ("  PTY:    ". sprintf("%02d",$station{$pi}{'PTY'}).
            q{ }.$ptynamesUS[$station{$pi}{'PTY'}],
            ' PTY:'.sprintf('%02d',$station{$pi}{'PTY'}));
   } else {
-    $station{$pi}{'PTYmarkup'} = $ptynames[$station{$pi}{'PTY'}];
     utter ('  PTY:    '. sprintf('%02d',$station{$pi}{'PTY'}).
            q{ }.$ptynames[$station{$pi}{'PTY'}],
            ' PTY:'.sprintf('%02d',$station{$pi}{'PTY'}));
   }
-  $station{$pi}{'PTYmarkup'} =~ s/&/&amp;/g;
 
   # Data specific to the group type
 
@@ -537,7 +548,7 @@ sub Group0A {
   # DI
   my $DI_adr = 3 - extract_bits($blocks[1], 0, 2);
   my $DI     = extract_bits($blocks[1], 2, 1);
-  parse_DI($DI_adr, $DI);
+  print_DI($DI_adr, $DI);
 
   # TA, M/S
   $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
@@ -584,7 +595,7 @@ sub Group0B {
   # Decoder Identification
   my $DI_adr = 3 - extract_bits($blocks[1], 0, 2);
   my $DI     = extract_bits($blocks[1], 2, 1);
-  parse_DI($DI_adr, $DI);
+  print_DI($DI_adr, $DI);
 
   # Traffic Announcements, Music/Speech
   $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
@@ -657,10 +668,12 @@ sub Group1A {
           when (1) {
             given (extract_bits($blocks[3], 8, 2)) {
               when (0) {
-                print_appdata ('Pager', 'ECC: '. extract_bits($blocks[3], 0, 6));
+                print_appdata ('Pager', 'ECC: '.
+                  extract_bits($blocks[3], 0, 6));
               }
               when (3) {
-                print_appdata ('Pager', 'CCF: '.extract_bits($blocks[3], 0, 4));
+                print_appdata ('Pager', 'CCF: '.
+                  extract_bits($blocks[3], 0, 4));
               }
             }
           }
@@ -699,10 +712,12 @@ sub Group1A {
           when (1) {
             given (extract_bits($blocks[3], 8, 2)) {
               when (0) {
-                print_appdata ('Pager', 'ECC: '.extract_bits($blocks[3], 0, 6));
+                print_appdata ('Pager', 'ECC: '.
+                  extract_bits($blocks[3], 0, 6));
               }
               when (3) {
-                print_appdata ('Pager', 'CCF: '.extract_bits($blocks[3], 0, 4));
+                print_appdata ('Pager', 'CCF: '.
+                  extract_bits($blocks[3], 0, 4));
               }
             }
           }
@@ -743,7 +758,7 @@ sub Group1A {
 
 sub Group1B {
   my @blocks = @_;
-  
+
   return if (@blocks < 4);
 
   utter ("  PIN:    ". parse_PIN($blocks[3])," PIN:$blocks[3]");
@@ -754,7 +769,7 @@ sub Group1B {
 sub Group2A {
 
   my @blocks = @_;
-  
+
   return if (@blocks < 3);
 
   my $text_seg_addr        = extract_bits($blocks[1], 0, 4) * 4;
@@ -825,7 +840,8 @@ sub Group3A {
   given ($group_type) {
 
     when (0) {
-      utter ('  ODAapp: '. ($oda_app{$blocks[3]} // sprintf('0x%04X',$blocks[3])),
+      utter ('  ODAapp: '.
+            ($oda_app{$blocks[3]} // sprintf('0x%04X', $blocks[3])),
              ' ODAapp:'.sprintf('0x%04X',$blocks[3]));
       utter ('          is not carried in associated group','[not_carried]');
       return;
@@ -909,7 +925,8 @@ sub Group4A {
   return if (@blocks < 3);
 
   my $lto;
-  my $mjd = (extract_bits($blocks[1], 0, 2) << 15) | extract_bits($blocks[2], 1, 15);
+  my $mjd = (extract_bits($blocks[1], 0, 2) << 15) |
+             extract_bits($blocks[2], 1, 15);
 
   if (@blocks == 4) {
     # Local time offset
@@ -991,7 +1008,8 @@ sub Group6A {
 
   return if (@blocks < 4);
 
-  my $ih = sprintf('%02x %04x %04x', extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]);
+  my $ih = sprintf('%02x %04x %04x',
+    extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]);
   utter ('  InHouse:'.$ih, ' IH:'.$ih);
 
 }
@@ -1171,7 +1189,8 @@ sub Group14A {
     }
 
     when (14) {
-      utter ('    PIN:    '. parse_PIN($blocks[2]),' PIN:'.parse_PIN($blocks[2]));
+      utter ('    PIN:    '.
+        parse_PIN($blocks[2]),' PIN:'.parse_PIN($blocks[2]));
     }
 
     when (15) {
@@ -1218,7 +1237,7 @@ sub Group15B {
   # DI
   my $DI_adr = 3 - extract_bits($blocks[1], 0, 2);
   my $DI     = extract_bits($blocks[1], 2, 1);
-  parse_DI($DI_adr, $DI);
+  print_DI($DI_adr, $DI);
 
   # TA, M/S
   $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
@@ -1351,7 +1370,6 @@ sub set_PS_chars {
   my $pspi = $_[0];
   my $lok  = $_[1];
   my @khar = ($_[2], $_[3]);
-  my $markup;
 
   if (not exists $station{$pspi}{'PSbuf'}) {
     $station{$pspi}{'PSbuf'} = q{ } x 8
@@ -1371,13 +1389,8 @@ sub set_PS_chars {
   }
   $station{$pspi}{'PSrcvd'}[$lok/2] = TRUE;
   $station{$pspi}{'prevPSlok'}      = $lok;
-  my $total_received
+  $station{$pspi}{'numPSrcvd'}
     = grep (defined, @{$station{$pspi}{'PSrcvd'}}[0..3]);
-
-  if ($total_received == 4) {
-    ($markup = $station{$pspi}{'PSbuf'}) =~ s/&/&amp;/g;
-    $markup =~ s/</&lt;/g;
-  }
 
   my $displayed_PS
     = ($is_interactive ? substr($station{$pspi}{'PSbuf'},0,$lok).REVERSE.
@@ -1440,7 +1453,7 @@ sub parse_PIN {
 
 # Decoder Identification
 
-sub parse_DI {
+sub print_DI {
   given ($_[0]) {
     when (0) {
       utter ('  DI:     '. qw( Mono Stereo )[$_[1]],
