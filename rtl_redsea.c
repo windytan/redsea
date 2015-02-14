@@ -14,6 +14,7 @@
 #ifdef DEBUG
 char dbit,sbit;
 int tot_errs[2];
+int reading_frame;
 #endif
 
 void print_delta(char b) {
@@ -37,8 +38,8 @@ int sign(double a) {
 void biphase(double acc) {
   static double prev_acc = 0;
   static int    counter = 0;
-  static int    reading_frame  = 0;
 #ifndef DEBUG
+  static int    reading_frame  = 0;
   static int    tot_errs[2]     = {0};
 #endif
 
@@ -54,11 +55,8 @@ void biphase(double acc) {
       reading_frame = 1 - reading_frame;
     }
 #ifdef DEBUG
-    if (reading_frame == 1) {
-      fprintf(stderr," %d  [%d]\n", tot_errs[0], tot_errs[1]);
-    } else {
-      fprintf(stderr,"[%d]  %d\n", tot_errs[0], tot_errs[1]);
-    }
+    double qua = (1.0 * abs(tot_errs[0] - tot_errs[1]) / (tot_errs[0] + tot_errs[1])) * 100;
+    fprintf(stderr, "qual: %3.0f%%\n", qua);
 #endif
     tot_errs[0] = 0;
     tot_errs[1] = 0;
@@ -94,7 +92,7 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
   sbit = 0;
   dbit = 0;
-  errs = 0;
+  reading_frame = 0;
 #endif
 
   int c;
@@ -158,9 +156,9 @@ int main(int argc, char **argv) {
       }
 
 #ifdef DEBUG
-      outbuf[0] = filtd[0] * 16000;
+      outbuf[0] = filtd[0] * 32000;
       fwrite(outbuf, sizeof(int16_t), 1, IQ);
-      outbuf[0] = filtd[1] * 16000;
+      outbuf[0] = filtd[1] * 32000;
       fwrite(outbuf, sizeof(int16_t), 1, IQ);
 #endif
 
@@ -207,7 +205,7 @@ int main(int argc, char **argv) {
       }
 
 #ifdef DEBUG
-      outbuf[0] = (errs > 5 ? 1 : 0) * 16000;
+      outbuf[0] = reading_frame * 16000;
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
 
