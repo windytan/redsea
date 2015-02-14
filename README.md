@@ -1,6 +1,8 @@
 redsea
 ======
-redsea decodes [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts. It works with rtl_fm.
+redsea is a command-line utility that decodes
+[RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts
+and prints it to the terminal. It works with rtl_fm.
 
 [explanatory blog post](http://www.windytan.com/2015/02/receiving-rds-with-rtl-sdr.html)
 
@@ -20,7 +22,7 @@ Compiling
 Usage
 -----
 
-    Usage: perl redsea.pl [-hlst] [-p <error>] [-g <gain>] FREQ
+    perl redsea.pl [-hlst] [-p <error>] [-g <gain>] FREQ
 
         -h          display this help and exit
         -l          print groups in long format
