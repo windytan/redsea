@@ -108,9 +108,11 @@ sub commands {
        "    -l          print groups in long format\n".
        "    -s          print groups in short format (default)\n".
        "    -t          print an ISO timestamp before each group\n".
-       "    -g <gain>   gain (float), passed to rtl_fm\n",
-       "    -p <error>  parts-per-million error, passed to rtl_fm\n",
-       "    FREQ        station frequency in Hz, can be SI suffixed (94.0M)\n\n";
+       "    -g <gain>   gain (float), passed to rtl_fm (optional)\n",
+       "    -p <error>  parts-per-million error, passed to rtl_fm ".
+                        "(optional)\n",
+       "    FREQ        station frequency in Hz, can be SI suffixed ".
+                        "(94.0M)\n\n";
     exit();
   }
 
@@ -582,6 +584,9 @@ sub Group0A {
     } else {
       set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
         extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
+      if ($station{$pi}{'numPSrcvd'} == 4) {
+        utter ('', ' PS_OK');
+      }
     }
   }
 }
@@ -617,6 +622,9 @@ sub Group0B {
     } else {
       set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
         extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
+      if ($station{$pi}{'numPSrcvd'} == 4) {
+        utter ('', ' PS_OK');
+      }
     }
   }
 
@@ -1330,7 +1338,7 @@ sub set_rt_chars {
                          $station{$pi}{'RTbuf'});
   utter ('  RT:     '.$displayed_RT, q{ RT:'}.$displayed_RT.q{'});
   if ($station{$pi}{'hasFullRT'}) {
-    utter (q{}, ' RTcomplete');
+    utter (q{}, ' RT_OK');
   }
 
   utter ('          '. join(q{}, (map ((defined) ? q{^} : q{ },
