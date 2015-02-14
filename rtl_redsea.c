@@ -57,6 +57,7 @@ void biphase(double acc) {
       if (toterrs >= 60) {
         counter ++;
         memset(errs, 0, sizeof(int) * 200);
+        toterrs = 0;
       }
     }
   }
