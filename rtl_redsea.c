@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
 #endif
 
       /* PLL */
-      double pll_alpha = 0.0002;
+      double pll_alpha = 0.00005;
       double pll_beta = sqrt(pll_alpha);
       double zc;
 
