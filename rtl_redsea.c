@@ -13,7 +13,7 @@
 
 #ifdef DEBUG
 char dbit,sbit;
-int errs;
+int errs[200];
 #endif
 
 void print_delta(char b) {
@@ -44,13 +44,13 @@ void biphase(double acc) {
 
   counter ++;
   if (counter % 2 == 0) {
+    print_delta(sign(acc + prevacc));
+
+    toterrs -= errs[counter % 200];
+
     if (sign(acc) == sign(prevacc)) {
-      print_delta(sign(acc));
-      toterrs -= errs[counter % 200];
       errs[counter % 200] = 0;
-   } else {
-      print_delta(sign(acc + prevacc));
-      toterrs -= errs[counter % 200];
+    } else {
       errs[counter % 200] = 1;
       toterrs += 1;
 
