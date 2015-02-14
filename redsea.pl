@@ -71,33 +71,43 @@ my $pi = 0;
 my $is_in_sync = FALSE;
 my $verbosity = 0;
 my $expected_offset;
+my $rtl_pid;
+
+my $debug = FALSE;
+
+my $is_scanning = FALSE;
+my $scan_seconds = 5;
 
 my $is_interactive = (-t STDOUT ? TRUE : FALSE);
 
 my $bitpipe;
 my $linebuf;
+my $fmfreq;
 
-commands();
 
 init_data();
+get_options();
 
-get_groups();
+if ($is_scanning) {
+  my $f;
+  for ($f = 87.9; $f < 106.5; $f += .1) {
+    printf("%.1f: ", $f);
+    open_radio($f * 1e6);
+    get_groups();
+    printf("%04x\n",$pi);
+  }
+} else {
+  open_radio($fmfreq);
+  get_groups();
+}
 
-sub commands {
+sub dbg {
+  if ($debug) {
+    say $_[0];
+  }
+}
 
-  if (!-e 'rtl_redsea') {
-    print "error: looks like rtl_redsea isn't compiled. To fix that, please ".
-          "run:\n\ngcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
-    exit(1);
-  }
-  if (!can_run('rtl_fm')) {
-    print "error: looks like rtl_fm is not installed!\n";
-    exit(1);
-  }
-  if (!can_run('sox')) {
-    print "error: looks like SoX is not installed!\n";
-    exit(1);
-  }
+sub get_options {
 
   getopts('hlstp:g:', \%options);
 
@@ -120,7 +130,7 @@ sub commands {
     $verbosity = 1;
   }
 
-  my $fmfreq = $ARGV[0];
+  $fmfreq = $ARGV[0];
   if ($fmfreq =~ /^([\d\.]+)([kMG])$/i) {
     my %si = ( 'k' => 1e3, 'K' => 1e3, 'm' => 1e6,
                'M' => 1e6, 'g' => 1e9, 'G' => 1e9 );
@@ -154,7 +164,7 @@ sub open_radio {
                      $gain.$ppm.' -s %.1f 2>/dev/null |'.
                      'sox -c 1 -t .s16 -r 250000 - -t .f32 - '.
                      'sinc -t 2000 %.1f-%.1f gain 15 2>/dev/null | '.
-                     './rtl_redsea 2>/dev/null',
+                     './rtl_redsea',
                      $freq, FS, FC-2000, FC+2000) or die($!);
 }
 
@@ -185,6 +195,7 @@ sub syndrome {
 
 # When a block has uncorrectable errors, dump the group received so far
 sub blockerror {
+  dbg("erroneous block");
   my $data_length = 0;
 
   if ($has_block[A]) {
@@ -217,6 +228,8 @@ sub blockerror {
   if ($is_in_sync && $erroneous_blocks > 45) {
     $is_in_sync       = FALSE;
     @block_has_errors = ();
+    $pi               = 0;
+    dbg ("Sync lost (45 errors out of 50)");
   }
 
   @has_block = ();
@@ -236,29 +249,41 @@ sub get_groups {
   my ($synd_reg, $pattern);
   my @error_lookup;
 
-  # Generate error vector lookup table for all correctable errors
-  for my $shft (0..15) {
-    $pattern = 0x01 << $shft;
-    $error_lookup[syndrome(0x00004b9 ^ ($pattern << 10))] = $pattern;
-  }
-  for my $shft (0..14) {
-    $pattern = 0x11 << $shft;
-    $error_lookup[syndrome(0x00004b9 ^ ($pattern << 10))] = $pattern;
-  }
+  # Generate error vector lookup table for simple delta error burst
+  $error_lookup[0x200] = 0b1000000000000000;
+  $error_lookup[0x300] = 0b1100000000000000;
+  $error_lookup[0x180] = 0b0110000000000000;
+  $error_lookup[0x0c0] = 0b0011000000000000;
+  $error_lookup[0x060] = 0b0001100000000000;
+  $error_lookup[0x030] = 0b0000110000000000;
+  $error_lookup[0x018] = 0b0000011000000000;
+  $error_lookup[0x00c] = 0b0000001100000000;
+  $error_lookup[0x006] = 0b0000000110000000;
+  $error_lookup[0x003] = 0b0000000011000000;
+  $error_lookup[0x2dd] = 0b0000000001100000;
+  $error_lookup[0x3b2] = 0b0000000000110000;
+  $error_lookup[0x1d9] = 0b0000000000011000;
+  $error_lookup[0x230] = 0b0000000000001100;
+  $error_lookup[0x118] = 0b0000000000000110;
+  $error_lookup[0x08c] = 0b0000000000000011;
+  $error_lookup[0x046] = 0b0000000000000001;
 
-  if ($correct_all) {
-    for ($pattern = 0x01; $pattern <= 0x1F; $pattern += 2) {
-      for my $i (0..16-int(log2($pattern) + 1)) {
-        my $shifted_pattern = $pattern << $i;
-        $error_lookup[syndrome(0x00005b9 ^ ($shifted_pattern<<10))]
-          = $shifted_pattern;
-      }
-    }
-  }
+  print STDERR 'Waiting for sync at '.sprintf('%.2f', $fmfreq / 1e6)." MHz\n";
 
-  print STDERR "Waiting for sync\n";
+  my $start_time = time();
 
   while (TRUE) {
+
+    if ($is_scanning) {
+      my $elapsed_time = time() - $start_time;
+      if ($elapsed_time >= $scan_seconds) {
+        close $bitpipe;
+        sleep 1;
+        kill $rtl_pid;
+        sleep 1;
+        last;
+      }
+    }
 
     # Compensate for clock slip corrections
     $bitcount += 26-$left_to_read;
@@ -294,6 +319,7 @@ sub get_groups {
                ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$bnum]) {
               $is_in_sync      = TRUE;
               $expected_offset = $bnum;
+              dbg ( "sync acquired: correct offset ".$ofs2block[$bnum]." repeated at interval ".$dist);
               last BLOCKS;
             } else {
               $prevbitcount = $bitcount;
@@ -348,17 +374,33 @@ sub get_groups {
 
         $synd_reg = syndrome($block ^ $offset_word[$expected_offset]);
 
+        dbg(sprintf("syndrome: %03x",$synd_reg));
+
+        if ($pi != 0 && $expected_offset == 0) {
+          dbg(sprintf("%03x expecting PI=%04x(%016b), got %04x(%016b),".
+              "xor=%016b", $synd_reg,
+              $pi,$pi,($block>>10),($block>>10), $pi ^ ($block>>10)));
+        }
+
         if (defined $error_lookup[$synd_reg]) {
           $message = ($block >> 10) ^ $error_lookup[$synd_reg];
           $has_sync_for[$expected_offset] = TRUE;
+
+          dbg(REVERSE."error-corrected using vector ".
+            sprintf("%016b",$error_lookup[$synd_reg]).RESET);
         }
 
         # If still no sync pulse
-        blockerror() if (!$has_sync_for[$expected_offset]);
+        if (not $has_sync_for[$expected_offset]) {
+          blockerror ();
+        }
       }
 
       # Error-free block received
       if ($has_sync_for[$expected_offset]) {
+
+        dbg ("offset $expected_offset, correct message ".
+          sprintf("%04x", $message));
 
         $group_data[$ofs2block[$expected_offset]] = $message;
         $block_has_errors[$block_counter % 50]    = FALSE;
@@ -585,7 +627,7 @@ sub Group0A {
       set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
         extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
       if ($station{$pi}{'numPSrcvd'} == 4) {
-        utter ('', ' PS_OK');
+        utter (q{}, ' PS_OK');
       }
     }
   }
@@ -623,7 +665,7 @@ sub Group0B {
       set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
         extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
       if ($station{$pi}{'numPSrcvd'} == 4) {
-        utter ('', ' PS_OK');
+        utter (q{}, ' PS_OK');
       }
     }
   }
@@ -1686,6 +1728,8 @@ sub extract_bits {
 
 sub print_appdata {
   my ($appname, $data) = @_;
+  return if ($is_scanning);
+
   if (exists $options{t}) {
     my $timestamp = strftime('%Y-%m-%dT%H:%M:%S%z ', localtime);
     print $timestamp;
@@ -1695,6 +1739,8 @@ sub print_appdata {
 
 sub utter {
   my ($long, $short) = @_;
+  return if ($is_scanning);
+
   if ($verbosity == 0) {
     if ($short =~ /\n/) {
       print $linebuf.$short;
