@@ -1481,7 +1481,7 @@ sub parse_RTp {
             $len[$tag] - 1)]);
         if ($total_received == $len[$tag]) {
           say '    Tag '.$rtpclass[$ctype[$tag]].': '.
-            substr($station{$pi}{'RTbuf'}, $start[$tag], $len[$tag]);
+            substr($station{$pi}{'RTbuf'}, $start[$tag], $len[$tag]+1);
         }
       }
     } else {
