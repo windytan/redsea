@@ -16,7 +16,7 @@ and prints it to the terminal. It works with rtl_fm.
 ## Compiling
 
 ```
-gcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm
+make
 ```
 
 ## Usage
