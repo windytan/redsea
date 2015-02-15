@@ -1570,155 +1570,60 @@ sub parse_AF {
   return $af;
 }
 
+sub read_table {
+  my $filename = 'tables/'$_[0];
+  open my $fh, '<', $filename
+    or die "Can't open '$filename'";
 
+  my @arr;
+
+  while (<$fh>) {
+    chomp();
+    if (/^ *(\S+) (.*)/) {
+      my ($index, $val) = ($1, $2);
+      $index = oct($index) if $index =~ /^0/;
+      $arr[$index] = $val;
+    }
+  }
+  close $fh;
+
+  return @arr;
+}
 
 sub init_data {
 
-  # Program Type names
-  @ptynames   = ('No PTY',           'News',             'Current Affairs',  'Information',
-                 'Sport',            'Education',        'Drama',            'Cultures',
-                 'Science',          'Varied Speech',    'Pop Music',        'Rock Music',
-                 'Easy Listening',   'Light Classics M', 'Serious Classics', 'Other Music',
-                 'Weather & Metr',   'Finance',          q{Children's Progs},'Social Affairs',
-                 'Religion',         'Phone In',         'Travel & Touring', 'Leisure & Hobby',
-                 'Jazz Music',       'Country Music',    'National Music',   'Oldies Music',
-                 'Folk Music',       'Documentary',      'Alarm Test',       'Alarm - Alarm !');
+  @ptynames    = read_table('pty_names');
+  @langname    = read_table('lang_names');
+  @oda_app     = read_table('oda_apps');
+  @rtpclass    = read_table('rtplus_classes');
+  @ptynamesUS  = read_table('pty_names_us');
+  @group_names = read_table('group_names');
 
-  # PTY names for the US (RBDS)
-  @ptynamesUS = ('No PTY',           'News',             'Information',      'Sports',
-                 'Talk',             'Rock',             'Classic Rock',     'Adult Hits',
-                 'Soft Rock',        'Top 40',           'Country',          'Oldies',
-                 'Soft',             'Nostalgia',        'Jazz',             'Classical',
-                 'Rhythm and Blues', 'Soft R & B',       'Foreign Language', 'Religious Music',
-                 'Religious Talk',   'Personality',      'Public',           'College',
-                 q{},                q{},                q{},                q{},
-                 q{},                'Weather',          'Emergency Test',   'ALERT! ALERT!');
+  my @countryECC = read_table('country_iso');
+  for my $ECC (0..$#countryECC) {
+    @{$countryISO[$ECC]} = split(/ /, $countryECC[$ECC]);
+  }
 
   # Basic LCD character set
   @char_table = split(//,
-               q{                }.q{                }.q{ !"#¤%&'()*+,-./}.q{0123456789:;<=>?}.
-               q{@ABCDEFGHIJKLMNO}.q{PQRSTUVWXYZ[\]―_}.q{‖abcdefghijklmno}.q[pqrstuvwxyz{|}¯ ].
-               q{áàéèíìóòúùÑÇŞβ¡Ĳ}.q{âäêëîïôöûüñçşǧıĳ}.q{ªα©‰Ǧěňőπ€£$←↑→↓}.q{º¹²³±İńűµ¿÷°¼½¾§}.
-               q{ÁÀÉÈÍÌÓÒÚÙŘČŠŽÐĿ}.q{ÂÄÊËÎÏÔÖÛÜřčšžđŀ}.q{ÃÅÆŒŷÝÕØÞŊŔĆŚŹŦð}.q{ãåæœŵýõøþŋŕćśźŧ });
+               q{                }.q{                }.
+               q{ !"#¤%&'()*+,-./}.q{0123456789:;<=>?}.
+               q{@ABCDEFGHIJKLMNO}.q{PQRSTUVWXYZ[\]―_}.
+               q{‖abcdefghijklmno}.q[pqrstuvwxyz{|}¯ ].
+               q{áàéèíìóòúùÑÇŞβ¡Ĳ}.q{âäêëîïôöûüñçşǧıĳ}.
+               q{ªα©‰Ǧěňőπ€£$←↑→↓}.q{º¹²³±İńűµ¿÷°¼½¾§}.
+               q{ÁÀÉÈÍÌÓÒÚÙŘČŠŽÐĿ}.q{ÂÄÊËÎÏÔÖÛÜřčšžđŀ}.
+               q{ÃÅÆŒŷÝÕØÞŊŔĆŚŹŦð}.q{ãåæœŵýõøþŋŕćśźŧ });
 
   # Meanings of combinations of TP+TA
-  @TP_descr = (  'Does not carry traffic announcements', 'Program carries traffic announcements' );
-  @TA_descr = ( ['No EON with traffic announcements',    'EON specifies another program with traffic announcements'],
-              ['No traffic announcement at present',   'A traffic announcement is currently being broadcast']);
-
-  # Language names
-  @langname = (
-     'Unknown',      'Albanian',      'Breton',     'Catalan',    'Croatian',    'Welsh',     'Czech',      'Danish',
-     'German',       'English',       'Spanish',    'Esperanto',  'Estonian',    'Basque',    'Faroese',    'French',
-     'Frisian',      'Irish',         'Gaelic',     'Galician',   'Icelandic',   'Italian',   'Lappish',    'Latin',
-     'Latvian',      'Luxembourgian', 'Lithuanian', 'Hungarian',  'Maltese',     'Dutch',     'Norwegian',  'Occitan',
-     'Polish',       'Portuguese',    'Romanian',   'Romansh',    'Serbian',     'Slovak',    'Slovene',    'Finnish',
-     'Swedish',      'Turkish',       'Flemish',    'Walloon',    q{},           q{},         q{},          q{},
-     q{},            q{},             q{},          q{},          q{},           q{},         q{},          q{},
-     q{},            q{},             q{},          q{},          q{},           q{},         q{},          q{},
-     'Background',   q{},             q{},          q{},          q{},           'Zulu',      'Vietnamese', 'Uzbek',
-     'Urdu',         'Ukrainian',     'Thai',       'Telugu',     'Tatar',       'Tamil',     'Tadzhik',    'Swahili',
-     'Sranan Tongo', 'Somali',        'Sinhalese',  'Shona',      'Serbo-Croat', 'Ruthenian', 'Russian',    'Quechua',
-     'Pushtu',       'Punjabi',       'Persian',    'Papamiento', 'Oriya',       'Nepali',    'Ndebele',    'Marathi',
-     'Moldovian',    'Malaysian',     'Malagasay',  'Macedonian', 'Laotian',     'Korean',    'Khmer',      'Kazakh',
-     'Kannada',      'Japanese',      'Indonesian', 'Hindi',      'Hebrew',      'Hausa',     'Gurani',     'Gujurati',
-     'Greek',        'Georgian',      'Fulani',     'Dari',       'Churash',     'Chinese',   'Burmese',    'Bulgarian',
-     'Bengali',      'Belorussian',   'Bambora',    'Azerbaijan', 'Assamese',    'Armenian',  'Arabic',     'Amharic' );
-
-  # Open Data Applications
-  %oda_app = (
-     0x0000 => 'Normal features specified in Standard',            0x0093 => 'Cross referencing DAB within RDS',
-     0x0BCB => 'Leisure & Practical Info for Drivers',             0x0C24 => 'ELECTRABEL-DSM 7',
-     0x0CC1 => 'Wireless Playground broadcast control signal',     0x0D45 => 'RDS-TMC: ALERT-C / EN ISO 14819-1',
-     0x0D8B => 'ELECTRABEL-DSM 18',                                0x0E2C => 'ELECTRABEL-DSM 3',
-     0x0E31 => 'ELECTRABEL-DSM 13',                                0x0F87 => 'ELECTRABEL-DSM 2',
-     0x125F => 'I-FM-RDS for fixed and mobile devices',            0x1BDA => 'ELECTRABEL-DSM 1',
-     0x1C5E => 'ELECTRABEL-DSM 20',                                0x1C68 => 'ITIS In-vehicle data base',
-     0x1CB1 => 'ELECTRABEL-DSM 10',                                0x1D47 => 'ELECTRABEL-DSM 4',
-     0x1DC2 => 'CITIBUS 4',                                        0x1DC5 => 'Encrypted TTI using ALERT-Plus',
-     0x1E8F => 'ELECTRABEL-DSM 17',                                0x4AA1 => 'RASANT',
-     0x4AB7 => 'ELECTRABEL-DSM 9',                                 0x4BA2 => 'ELECTRABEL-DSM 5',
-     0x4BD7 => 'RadioText+ (RT+)',                                 0x4C59 => 'CITIBUS 2',
-     0x4D87 => 'Radio Commerce System (RCS)',                      0x4D95 => 'ELECTRABEL-DSM 16',
-     0x4D9A => 'ELECTRABEL-DSM 11',                                0x5757 => 'Personal weather station',
-     0x6552 => 'Enhanced RadioText (eRT)',                         0x7373 => 'Enhanced early warning system',
-     0xC350 => 'NRSC Song Title and Artist',                       0xC3A1 => 'Personal Radio Service',
-     0xC3B0 => 'iTunes Tagging',                                   0xC3C3 => 'NAVTEQ Traffic Plus',
-     0xC4D4 => 'eEAS',                                             0xC549 => 'Smart Grid Broadcast Channel',
-     0xC563 => 'ID Logic',                                         0xC737 => 'Utility Message Channel (UMC)',
-     0xCB73 => 'CITIBUS 1',                                        0xCB97 => 'ELECTRABEL-DSM 14',
-     0xCC21 => 'CITIBUS 3',                                        0xCD46 => 'RDS-TMC: ALERT-C / EN ISO 14819 parts 1, 2, 3, 6',
-     0xCD47 => 'RDS-TMC: ALERT-C / EN ISO 14819 parts 1, 2, 3, 6', 0xCD9E => 'ELECTRABEL-DSM 8',
-     0xCE6B => 'Encrypted TTI using ALERT-Plus',                   0xE123 => 'APS Gateway',
-     0xE1C1 => 'Action code',                                      0xE319 => 'ELECTRABEL-DSM 12',
-     0xE411 => 'Beacon downlink',                                  0xE440 => 'ELECTRABEL-DSM 15',
-     0xE4A6 => 'ELECTRABEL-DSM 19',                                0xE5D7 => 'ELECTRABEL-DSM 6',
-     0xE911 => 'EAS open protocol');
-
-  # Country codes: @countryISO[ ECC ][ CC ] = ISO 3166-1 alpha 2
-  @{$countryISO[0xA0]} = map { /__/ ? undef : $_ } qw( __ us us us us us us us us us us us __ us us __ );
-  @{$countryISO[0xA1]} = map { /__/ ? undef : $_ } qw( __ __ __ __ __ __ __ __ __ __ __ ca ca ca ca gl );
-  @{$countryISO[0xA2]} = map { /__/ ? undef : $_ } qw( __ ai ag ec fk bb bz ky cr cu ar br bm an gp bs );
-  @{$countryISO[0xA3]} = map { /__/ ? undef : $_ } qw( __ bo co jm mq gf py ni __ pa dm do cl gd tc gy );
-  @{$countryISO[0xA4]} = map { /__/ ? undef : $_ } qw( __ gt hn aw __ ms tt pe sr uy kn lc sv ht ve __ );
-  @{$countryISO[0xA5]} = map { /__/ ? undef : $_ } qw( __ __ __ __ __ __ __ __ __ __ __ mx vc mx mx mx );
-  @{$countryISO[0xA6]} = map { /__/ ? undef : $_ } qw( __ __ __ __ __ __ __ __ __ __ __ __ __ __ __ pm );
-
-  @{$countryISO[0xD0]} = map { /__/ ? undef : $_ } qw( __ cm cf dj mg ml ao gq ga gn za bf cg tg bj mw );
-  @{$countryISO[0xD1]} = map { /__/ ? undef : $_ } qw( __ na lr gh mr st cv sn gm bi __ bw km tz et bg );
-  @{$countryISO[0xD2]} = map { /__/ ? undef : $_ } qw( __ sl zw mz ug sz ke so ne td gw zr ci tz zm __ );
-  @{$countryISO[0xD3]} = map { /__/ ? undef : $_ } qw( __ __ __ eh __ rw ls __ sc __ mu __ sd __ __ __ );
-
-  @{$countryISO[0xE0]} = map { /__/ ? undef : $_ } qw( __ de dz ad il it be ru ps al at hu mt de __ eg );
-  @{$countryISO[0xE1]} = map { /__/ ? undef : $_ } qw( __ gr cy sm ch jo fi lu bg dk gi iq gb ly ro fr );
-  @{$countryISO[0xE2]} = map { /__/ ? undef : $_ } qw( __ ma cz pl va sk sy tn __ li is mc lt yu es no );
-  @{$countryISO[0xE3]} = map { /__/ ? undef : $_ } qw( __ ie ie tr mk tj __ __ nl lv lb az hr kz se by );
-  @{$countryISO[0xE4]} = map { /__/ ? undef : $_ } qw( __ md ee kg __ __ ua __ pt si am uz ge __ tm ba );
-
-  @{$countryISO[0xF0]} = map { /__/ ? undef : $_ } qw( __ au au au au au au au au sa af mm cn kp bh my );
-  @{$countryISO[0xF1]} = map { /__/ ? undef : $_ } qw( __ ki bt bd pk fj om nr ir nz sb bn lk tw kr hk );
-  @{$countryISO[0xF2]} = map { /__/ ? undef : $_ } qw( __ kw qa kh ws in mo vn ph jp sg mv id ae np vu );
-  @{$countryISO[0xF3]} = map { /__/ ? undef : $_ } qw( __ la th to __ __ __ __ __ pg __ ye __ __ fm mn );
-
-  # RadioText+ classes
-  @rtpclass = ('dummy_class',          'item.title',                'item.album',           'item.tracknumber',
-               'item.artist',          'item.composition',          'item.movement',        'item.conductor',
-               'item.composer',        'item.band',                 'item.comment',         'item.genre',
-               'info.news',            'info.news.local',           'info.stockmarket',     'info.sport',
-               'info.lottery',         'info.horoscope',            'info.daily_diversion', 'info.health',
-               'info.event',           'info.scene',                'info.cinema',          'info.tv',
-               'info.date_time',       'info.weather',              'info.traffic',         'info.alarm',
-               'info.advertisement',   'info.url',                  'info.other',           'stationname.short',
-               'stationname.long',     'programme.now',             'programme.next',       'programme.part',
-               'programme.host',       'programme.editorial_staff', 'programme.frequency',  'programme.homepage',
-               'programme.subchannel', 'phone.hotline',             'phone.studio',         'phone.other',
-               'sms.studio',           'sms.other',                 'email.hotline',        'email.studio',
-               'email.other',          'mms.other',                 'chat',                 'chat.centre',
-               'vote.question',        'vote.centre',               q{},                    q{},
-               q{},                    q{},                         q{},                    'place',
-               'appointment',          'identifier',                'purchase',             'get_data');
-
-  # Group type descriptions
-  @group_names = (
-   'Basic tuning and switching information',      'Basic tuning and switching information',
-   'Program Item Number and slow labeling codes', 'Program Item Number',
-   'RadioText',                                   'RadioText',
-   'Applications Identification for Open Data',   'Open Data Applications',
-   'Clock-time and date',                         'Open Data Applications',
-   'Transparent Data Channels or ODA',            'Transparent Data Channels or ODA',
-   'In House applications or ODA',                'In House applications or ODA',
-   'Radio Paging or ODA',                         'Open Data Applications',
-   'Traffic Message Channel or ODA',              'Open Data Applications',
-   'Emergency Warning System or ODA',             'Open Data Applications',
-   'Program Type Name',                           'Open Data Applications',
-   'Open Data Applications',                      'Open Data Applications',
-   'Open Data Applications',                      'Open Data Applications',
-   'Enhanced Radio Paging or ODA',                'Open Data Applications',
-   'Enhanced Other Networks information',         'Enhanced Other Networks information',
-   'Undefined',                                   'Fast switching information');
+  @TP_descr = (  'Does not carry traffic announcements',
+                 'Program carries traffic announcements' );
+  @TA_descr = ( ['No EON with traffic announcements',
+                 'EON specifies another program with traffic announcements'],
+                ['No traffic announcement at present',
+                 'A traffic announcement is currently being broadcast']);
 
 }
-
 
 # Extract len bits from int, starting at nth bit from the right
 # bits (int, n, len)

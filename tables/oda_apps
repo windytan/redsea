@@ -1,0 +1,53 @@
+0x0000 Normal features specified in Standard
+0x0093 Cross referencing DAB within RDS
+0x0BCB Leisure & Practical Info for Drivers
+0x0C24 ELECTRABEL-DSM 7
+0x0CC1 Wireless Playground broadcast control signal
+0x0D45 RDS-TMC: ALERT-C / EN ISO 14819-1
+0x0D8B ELECTRABEL-DSM 18
+0x0E2C ELECTRABEL-DSM 3
+0x0E31 ELECTRABEL-DSM 13
+0x0F87 ELECTRABEL-DSM 2
+0x125F I-FM-RDS for fixed and mobile devices
+0x1BDA ELECTRABEL-DSM 1
+0x1C5E ELECTRABEL-DSM 20
+0x1C68 ITIS In-vehicle data base
+0x1CB1 ELECTRABEL-DSM 10
+0x1D47 ELECTRABEL-DSM 4
+0x1DC2 CITIBUS 4
+0x1DC5 Encrypted TTI using ALERT-Plus
+0x1E8F ELECTRABEL-DSM 17
+0x4AA1 RASANT
+0x4AB7 ELECTRABEL-DSM 9
+0x4BA2 ELECTRABEL-DSM 5
+0x4BD7 RadioText+ (RT+)
+0x4C59 CITIBUS 2
+0x4D87 Radio Commerce System (RCS)
+0x4D95 ELECTRABEL-DSM 16
+0x4D9A ELECTRABEL-DSM 11
+0x5757 Personal weather station
+0x6552 Enhanced RadioText (eRT)
+0x7373 Enhanced early warning system
+0xC350 NRSC Song Title and Artist
+0xC3A1 Personal Radio Service
+0xC3B0 iTunes Tagging
+0xC3C3 NAVTEQ Traffic Plus
+0xC4D4 eEAS
+0xC549 Smart Grid Broadcast Channel
+0xC563 ID Logic
+0xC737 Utility Message Channel (UMC)
+0xCB73 CITIBUS 1
+0xCB97 ELECTRABEL-DSM 14
+0xCC21 CITIBUS 3
+0xCD46 RDS-TMC: ALERT-C / EN ISO 14819 parts 1, 2, 3, 6
+0xCD47 RDS-TMC: ALERT-C / EN ISO 14819 parts 1, 2, 3, 6
+0xCD9E ELECTRABEL-DSM 8
+0xCE6B Encrypted TTI using ALERT-Plus
+0xE123 APS Gateway
+0xE1C1 Action code
+0xE319 ELECTRABEL-DSM 12
+0xE411 Beacon downlink
+0xE440 ELECTRABEL-DSM 15
+0xE4A6 ELECTRABEL-DSM 19
+0xE5D7 ELECTRABEL-DSM 6
+0xE911 EAS open protocol
