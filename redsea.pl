@@ -62,7 +62,7 @@ my %options;
 my %station;
 
 my @countryISO, my @group_names, my @ptynamesUS, my @ptynames;
-my @TA_descr, my @TP_descr, my @langname, my %oda_app, my @char_table;
+my @TA_descr, my @TP_descr, my @langname, my @oda_app, my @char_table;
 my @rtpclass;
 my $block_counter;
 my $newpi, my $ednewpi;
@@ -891,7 +891,7 @@ sub Group3A {
 
     when (0) {
       utter ('  ODAapp: '.
-            ($oda_app{$blocks[3]} // sprintf('0x%04X', $blocks[3])),
+            ($oda_app[$blocks[3]] // sprintf('0x%04X', $blocks[3])),
              ' ODAapp:'.sprintf('0x%04X',$blocks[3]));
       utter ('          is not carried in associated group','[not_carried]');
       return;
@@ -914,7 +914,7 @@ sub Group3A {
             (extract_bits($blocks[1], 0, 1) ? 'B' : 'A'),
             ' ODAgrp:'. extract_bits($blocks[1], 1, 4).
             (extract_bits($blocks[1], 0, 1) ? 'B' : 'A'));
-      utter ('  ODAapp: '. ($oda_app{$station{$pi}{'ODAaid'}{$group_type}} //
+      utter ('  ODAapp: '. ($oda_app[$station{$pi}{'ODAaid'}{$group_type}] //
         sprintf('%04Xh',$station{$pi}{'ODAaid'}{$group_type})),
         ' ODAapp:'. sprintf('0x%04X',$station{$pi}{'ODAaid'}{$group_type}));
     }
@@ -1571,7 +1571,7 @@ sub parse_AF {
 }
 
 sub read_table {
-  my $filename = 'tables/'$_[0];
+  my $filename = 'tables/'.$_[0];
   open my $fh, '<', $filename
     or die "Can't open '$filename'";
 
@@ -1600,7 +1600,9 @@ sub init_data {
   @group_names = read_table('group_names');
 
   my @countryECC = read_table('country_iso');
+  ECC:
   for my $ECC (0..$#countryECC) {
+    next ECC if (not defined $countryECC[$ECC]);
     @{$countryISO[$ECC]} = split(/ /, $countryECC[$ECC]);
   }
 
