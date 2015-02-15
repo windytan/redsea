@@ -36,6 +36,30 @@ int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
 
+double filter_bp_57k(double input) {
+
+  /* Digital filter designed by mkfilter/mkshape/gencode   A.J. Fisher
+   *    Command line: mkfilter -Bu -Bp -o 5 -a 2.1200000000e-01
+   *                  2.4400000000e-01 -l
+   */
+
+  static double gain = 1.326631022e+05;
+  static double xv[10+1], yv[10+1];
+
+  xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
+  xv[5] = xv[6]; xv[6] = xv[7]; xv[7] = xv[8]; xv[8] = xv[9]; xv[9] = xv[10];
+  xv[10] = input / gain;
+  yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4]; yv[4] = yv[5];
+  yv[5] = yv[6]; yv[6] = yv[7]; yv[7] = yv[8]; yv[8] = yv[9]; yv[9] = yv[10];
+  yv[10] =   (xv[10] - xv[0]) + 5 * (xv[2] - xv[8]) + 10 * (xv[6] - xv[4])
+               + ( -0.5209978985 * yv[0]) + (  0.7684509019 * yv[1])
+               + ( -3.3976584040 * yv[2]) + (  3.6145943934 * yv[3])
+               + ( -8.2427299426 * yv[4]) + (  6.2405088675 * yv[5])
+               + ( -9.3877192266 * yv[6]) + (  4.6902163298 * yv[7])
+               + ( -5.0210158398 * yv[8]) + (  1.2948307430 * yv[9]);
+  return yv[10];
+}
+
 void biphase(double acc) {
   static double prev_acc = 0;
   static int    counter = 0;
@@ -69,7 +93,7 @@ void biphase(double acc) {
 
 int main(int argc, char **argv) {
 
-  float  sample[BUFS];
+  int16_t  sample[BUFS];
 #ifdef DEBUG
   fc = FC_0;
 #else
@@ -86,11 +110,11 @@ int main(int argc, char **argv) {
   double prevdemod    = 0;
   double acc          = 0;
   double prevsample   = 0;
+  double sample_f     = 0;
 
   double xv[2][6] = {{0}};
   double yv[2][6] = {{0}};
   double demod[2] = {0};
-  double filtd[2] = {0};
 
   double lpf_gain = 1.080611891e+08;
 
@@ -121,11 +145,13 @@ int main(int argc, char **argv) {
   FILE *U;
   U = popen("sox -c 5 -r 250000 -t .s16 - dbg-out.wav", "w");
   FILE *IQ;
-  IQ = popen("sox -c 2 -r 250000 -t .s16 - dbg-out-iq.wav", "w");
+  IQ = popen("sox -c 4 -r 250000 -t .s16 - dbg-out-iq.wav", "w");
+  FILE *RAW;
+  RAW = popen("sox -c 1 -r 250000 -t .s16 - dbg-out-raw.wav", "w");
 #endif
 
   while (1) {
-    bytesread = fread(sample, sizeof(float), BUFS, stdin);
+    bytesread = fread(sample, sizeof(int16_t), BUFS, stdin);
     if (bytesread < 1) exit(0);
 
     int i;
@@ -145,9 +171,21 @@ int main(int argc, char **argv) {
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
 
+      /* Band-pass filter */
+      sample_f = filter_bp_57k(sample[i] / 32768.0);
+
       /* DSB demodulate */
-      demod[0] = (sample[i] * lo_iq[0]);
-      demod[1] = (sample[i] * lo_iq[1]);
+      demod[0] = (sample_f * lo_iq[0]);
+      demod[1] = (sample_f * lo_iq[1]);
+
+#ifdef DEBUG
+      outbuf[0] = sample[i];
+      fwrite(outbuf, sizeof(int16_t), 1, RAW);
+      outbuf[0] = demod[0] * 32000;
+      fwrite(outbuf, sizeof(int16_t), 1, IQ);
+      outbuf[0] = demod[1] * 32000;
+      fwrite(outbuf, sizeof(int16_t), 1, IQ);
+#endif
 
       /* Butterworth lopass */
       /* Digital filter designed by mkfilter/mkshape/gencode   A.J. Fisher
@@ -162,26 +200,27 @@ int main(int argc, char **argv) {
                      + (  0.8498599655 * yv[iq][0]) + ( -4.3875359464 * yv[iq][1])
                      + (  9.0628533836 * yv[iq][2]) + ( -9.3625201736 * yv[iq][3])
                      + (  4.8373424748 * yv[iq][4]);
-        filtd[iq] = yv[iq][5];
+        demod[iq] = yv[iq][5];
 
-     }
+      }
 
 #ifdef DEBUG
-      outbuf[0] = filtd[0] * 32000;
+      outbuf[0] = demod[0] * 32000;
       fwrite(outbuf, sizeof(int16_t), 1, IQ);
-      outbuf[0] = filtd[1] * 32000;
+      outbuf[0] = demod[1] * 32000;
       fwrite(outbuf, sizeof(int16_t), 1, IQ);
 #endif
 
+
       /* refine sampling instant */
-      if (prevdemod * filtd[0] <= 0) {
+      if (prevdemod * demod[0] <= 0) {
         d_phi = fmod(clock_phi, M_PI);
         if (d_phi >= M_PI_2) d_phi -= M_PI;
         clock_offset -= 0.01 * d_phi;
       }
 
       /* biphase symbol integrate & dump */
-      acc += filtd[0] * lo_clock;
+      acc += demod[0] * lo_clock;
 
 #ifdef DEBUG
       outbuf[0] = acc * 800;
@@ -206,8 +245,8 @@ int main(int argc, char **argv) {
       double pll_beta = sqrt(pll_alpha);
       double zc;
 
-      if (sign(sample[i]) != sign(prevsample)) {
-        zc = sample[i] / (prevsample - sample[i]) / FS;
+      if (sign(sample_f) != sign(prevsample)) {
+        zc = sample_f / (prevsample - sample_f) / FS;
         d_phi = fmod(lo_phi, 2 * M_PI) - (zc * fc * 2 * M_PI);
         if (d_phi >= M_PI)  d_phi = -2 * M_PI + d_phi;
         if (d_phi <= -M_PI) d_phi =  2 * M_PI - d_phi;
@@ -221,9 +260,9 @@ int main(int argc, char **argv) {
 #endif
 
       /* For zero-crossing detection */
-      prevdemod  = filtd[0];
+      prevdemod  = demod[0];
       prevclock  = lo_clock;
-      prevsample = sample[i];
+      prevsample = sample_f;
     }
 
   }

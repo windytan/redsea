@@ -10,7 +10,6 @@ and prints it to the terminal. It works with rtl_fm.
 
 * Linux or OSX
 * [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
-* [SoX](http://sox.sourceforge.net/)
 * Perl &gt;= 5.12
 
 ## Compiling
