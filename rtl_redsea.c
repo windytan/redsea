@@ -150,6 +150,9 @@ int main(int argc, char **argv) {
       demod[1] = (sample[i] * lo_iq[1]);
 
       /* Butterworth lopass */
+      /* Digital filter designed by mkfilter/mkshape/gencode   A.J. Fisher
+        Command line: /www/usr/fisher/helpers/mkfilter -Bu -Lp -o 5 -a
+                      8.0000000000e-03 0.0000000000e+00 -l */
       for (int iq=0;iq<=1;iq++) {
 
         xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3]; xv[iq][3] = xv[iq][4]; xv[iq][4] = xv[iq][5];
