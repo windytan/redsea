@@ -15,6 +15,7 @@
 char dbit,sbit;
 int tot_errs[2];
 int reading_frame;
+double fc;
 #endif
 
 void print_delta(char b) {
@@ -56,7 +57,7 @@ void biphase(double acc) {
     }
 #ifdef DEBUG
     double qua = (1.0 * abs(tot_errs[0] - tot_errs[1]) / (tot_errs[0] + tot_errs[1])) * 100;
-    fprintf(stderr, "qual: %3.0f%%\n", qua);
+    fprintf(stderr, "qual: %3.0f%%  pll: %.1f Hz\n", qua, fc);
 #endif
     tot_errs[0] = 0;
     tot_errs[1] = 0;
@@ -69,7 +70,11 @@ void biphase(double acc) {
 int main(int argc, char **argv) {
 
   float  sample[BUFS];
+#ifdef DEBUG
+  fc = FC_0;
+#else
   double fc = FC_0;
+#endif
 
   double lo_phi       = 0;
   double lo_iq[2]     = {0};
