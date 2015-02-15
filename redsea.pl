@@ -63,7 +63,7 @@ my %station;
 
 my @countryISO, my @group_names, my @ptynamesUS, my @ptynames;
 my @TA_descr, my @TP_descr, my @langname, my @oda_app, my @char_table;
-my @rtpclass;
+my @rtpclass, my @error_lookup;
 my $block_counter;
 my $newpi, my $ednewpi;
 
@@ -247,26 +247,6 @@ sub get_groups {
   my @offset_word = (0x0FC, 0x198, 0x168, 0x350, 0x1B4);
   my @ofs2block   = (0, 1, 2, 2, 3);
   my ($synd_reg, $pattern);
-  my @error_lookup;
-
-  # Generate error vector lookup table for simple delta error burst
-  $error_lookup[0x200] = 0b1000000000000000;
-  $error_lookup[0x300] = 0b1100000000000000;
-  $error_lookup[0x180] = 0b0110000000000000;
-  $error_lookup[0x0c0] = 0b0011000000000000;
-  $error_lookup[0x060] = 0b0001100000000000;
-  $error_lookup[0x030] = 0b0000110000000000;
-  $error_lookup[0x018] = 0b0000011000000000;
-  $error_lookup[0x00c] = 0b0000001100000000;
-  $error_lookup[0x006] = 0b0000000110000000;
-  $error_lookup[0x003] = 0b0000000011000000;
-  $error_lookup[0x2dd] = 0b0000000001100000;
-  $error_lookup[0x3b2] = 0b0000000000110000;
-  $error_lookup[0x1d9] = 0b0000000000011000;
-  $error_lookup[0x230] = 0b0000000000001100;
-  $error_lookup[0x118] = 0b0000000000000110;
-  $error_lookup[0x08c] = 0b0000000000000011;
-  $error_lookup[0x046] = 0b0000000000000001;
 
   print STDERR 'Waiting for sync at '.sprintf('%.2f', $fmfreq / 1e6)." MHz\n";
 
@@ -1592,18 +1572,25 @@ sub read_table {
 
 sub init_data {
 
-  @ptynames    = read_table('pty_names');
-  @langname    = read_table('lang_names');
-  @oda_app     = read_table('oda_apps');
-  @rtpclass    = read_table('rtplus_classes');
-  @ptynamesUS  = read_table('pty_names_us');
-  @group_names = read_table('group_names');
+  @ptynames      = read_table('pty_names');
+  @langname      = read_table('lang_names');
+  @oda_app       = read_table('oda_apps');
+  @rtpclass      = read_table('rtplus_classes');
+  @ptynamesUS    = read_table('pty_names_us');
+  @group_names   = read_table('group_names');
 
   my @countryECC = read_table('country_iso');
   ECC:
   for my $ECC (0..$#countryECC) {
     next ECC if (not defined $countryECC[$ECC]);
     @{$countryISO[$ECC]} = split(/ /, $countryECC[$ECC]);
+  }
+
+  @error_lookup  = read_table('error_vectors');
+  VEC:
+  for my $vector (@error_lookup) {
+    next VEC if (not defined $vector);
+    $vector = oct($vector);
   }
 
   # Basic LCD character set
