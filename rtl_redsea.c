@@ -87,12 +87,12 @@ int main(int argc, char **argv) {
   double acc          = 0;
   double prevsample   = 0;
 
-  double xv[2][4] = {{0}};
-  double yv[2][4] = {{0}};
+  double xv[2][6] = {{0}};
+  double yv[2][6] = {{0}};
   double demod[2] = {0};
   double filtd[2] = {0};
 
-  double lpf_gain = 6.605354574;
+  double lpf_gain = 1.080611891e+08;
 
 #ifdef DEBUG
   sbit = 0;
@@ -151,14 +151,17 @@ int main(int argc, char **argv) {
 
       /* Butterworth lopass */
       for (int iq=0;iq<=1;iq++) {
-        xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3];
-        xv[iq][3] = demod[iq] / lpf_gain;
-        yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3];
-        yv[iq][3] =   (xv[iq][0] + xv[iq][3]) + 3 * (xv[iq][1] + xv[iq][2])
-                     + (  0.0105030013 * yv[iq][0]) + ( -0.3368436806 * yv[iq][1])
-                     + (  0.1152020629 * yv[iq][2]);
-        filtd[iq] = yv[iq][3];
-      }
+
+        xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3]; xv[iq][3] = xv[iq][4]; xv[iq][4] = xv[iq][5];
+        xv[iq][5] = demod[iq] / lpf_gain;
+        yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3]; yv[iq][3] = yv[iq][4]; yv[iq][4] = yv[iq][5];
+        yv[iq][5] =   (xv[iq][0] + xv[iq][5]) + 5 * (xv[iq][1] + xv[iq][4]) + 10 * (xv[iq][2] + xv[iq][3])
+                     + (  0.8498599655 * yv[iq][0]) + ( -4.3875359464 * yv[iq][1])
+                     + (  9.0628533836 * yv[iq][2]) + ( -9.3625201736 * yv[iq][3])
+                     + (  4.8373424748 * yv[iq][4]);
+        filtd[iq] = yv[iq][5];
+
+     }
 
 #ifdef DEBUG
       outbuf[0] = filtd[0] * 32000;
