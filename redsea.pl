@@ -145,19 +145,28 @@ sub open_radio {
   my $gain = (exists $options{g} ? sprintf(' -g %.2f ', $options{g}) : q{});
   my $ppm  = (exists $options{p} ? sprintf(' -p %.0f ', $options{p}) : q{});
 
-  if (!can_run './rtl_redsea') {
+  if      (can_run './rtl_redsea') {
+    $rtl_redsea_exe = './rtl_redsea';
+  } elsif (can_run 'rtl_redsea.exe') {
+    $rtl_redsea_exe = 'rtl_redsea.exe';
+  } else {
     print "error: looks like rtl_redsea isn't compiled. To fix that, please ".
           "run:\n\ngcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
     exit(1);
   }
-  if (!can_run('rtl_fm')) {
+
+  if      (can_run('rtl_fm')) {
+    $rtl_fm_exe = 'rtl_fm';
+  } elsif (can_run('rtl_fm.exe')) {
+    $rtl_fm_exe = 'rtl_fm.exe';
+  } else {
     print "error: looks like rtl_fm is not installed!\n";
     exit(1);
   }
 
   $rtl_pid
-    = open $bitpipe, '-|', sprintf('rtl_fm -f %.1f -M fm -l 0 -A std '.
-                     $gain.$ppm.' -s %.1f | ./rtl_redsea',
+    = open $bitpipe, '-|', sprintf($rtl_fm_exe.' -f %.1f -M fm -l 0 -A std '.
+                     $gain.$ppm.' -s %.1f | '.$rtl_redsea_exe,
                      $freq, FS) or die($!);
 }
 
