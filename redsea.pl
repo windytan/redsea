@@ -145,6 +145,9 @@ sub open_radio {
   my $gain = (exists $options{g} ? sprintf(' -g %.2f ', $options{g}) : q{});
   my $ppm  = (exists $options{p} ? sprintf(' -p %.0f ', $options{p}) : q{});
 
+  my $rtl_redsea_exe;
+  my $rtl_fm_exe;
+
   if      (can_run './rtl_redsea') {
     $rtl_redsea_exe = './rtl_redsea';
   } elsif (can_run 'rtl_redsea.exe') {
