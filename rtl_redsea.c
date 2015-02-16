@@ -5,11 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 
-#define FS   250000.0
-#define FC_0 57000.0
-#define BUFS 1024
+#include "filters.h"
+
+#define FS     250000.0
+#define FC_0   57000.0
+#define BUFLEN 1024
 
 #ifdef DEBUG
 char dbit,sbit;
@@ -36,52 +37,6 @@ int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
 
-double filter_bp_57k(double input) {
-
-  /* Digital filter designed by mkfilter/mkshape/gencode   A.J. Fisher
-   *    Command line: mkfilter -Bu -Bp -o 5 -a 2.1200000000e-01
-   *                  2.4400000000e-01 -l
-   */
-
-  static double gain = 1.326631022e+05;
-  static double xv[10+1], yv[10+1];
-
-  xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
-  xv[5] = xv[6]; xv[6] = xv[7]; xv[7] = xv[8]; xv[8] = xv[9]; xv[9] = xv[10];
-  xv[10] = input / gain;
-  yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4]; yv[4] = yv[5];
-  yv[5] = yv[6]; yv[6] = yv[7]; yv[7] = yv[8]; yv[8] = yv[9]; yv[9] = yv[10];
-  yv[10] =   (xv[10] - xv[0]) + 5 * (xv[2] - xv[8]) + 10 * (xv[6] - xv[4])
-               + ( -0.5209978985 * yv[0]) + (  0.7684509019 * yv[1])
-               + ( -3.3976584040 * yv[2]) + (  3.6145943934 * yv[3])
-               + ( -8.2427299426 * yv[4]) + (  6.2405088675 * yv[5])
-               + ( -9.3877192266 * yv[6]) + (  4.6902163298 * yv[7])
-               + ( -5.0210158398 * yv[8]) + (  1.2948307430 * yv[9]);
-  return yv[10];
-}
-
-double filter_lp_2400_iq(double input, int iq) {
-
-  /* Digital filter designed by mkfilter/mkshape/gencode   A.J. Fisher
-        Command line: mkfilter -Bu -Lp -o 5 -a 8.0000000000e-03
-                      0.0000000000e+00 -l */
-
-  static double gain = 1.080611891e+08;
-  static double xv[2][5+1], yv[2][5+1];
-
-  xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3];
-  xv[iq][3] = xv[iq][4]; xv[iq][4] = xv[iq][5];
-  xv[iq][5] = input / gain;
-  yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3];
-  yv[iq][3] = yv[iq][4]; yv[iq][4] = yv[iq][5];
-  yv[iq][5] = (xv[iq][0] + xv[iq][5]) + 5 * (xv[iq][1] + xv[iq][4])
-               + 10 * (xv[iq][2] + xv[iq][3])
-               + (  0.8498599655 * yv[iq][0]) + ( -4.3875359464 * yv[iq][1])
-               + (  9.0628533836 * yv[iq][2]) + ( -9.3625201736 * yv[iq][3])
-               + (  4.8373424748 * yv[iq][4]);
-  return yv[iq][5];
-}
-
 void biphase(double acc) {
   static double prev_acc = 0;
   static int    counter = 0;
@@ -102,7 +57,8 @@ void biphase(double acc) {
       reading_frame = 1 - reading_frame;
     }
 #ifdef DEBUG
-    double qua = (1.0 * abs(tot_errs[0] - tot_errs[1]) / (tot_errs[0] + tot_errs[1])) * 100;
+    double qua = (1.0 * abs(tot_errs[0] - tot_errs[1]) /
+                  tot_errs[0] + tot_errs[1]) * 100;
     fprintf(stderr, "qual: %3.0f%%  pll: %.1f Hz\n", qua, fc);
 #endif
     tot_errs[0] = 0;
@@ -115,7 +71,7 @@ void biphase(double acc) {
 
 int main(int argc, char **argv) {
 
-  int16_t  sample[BUFS];
+  int16_t  sample[BUFLEN];
 #ifdef DEBUG
   fc = FC_0;
 #else
@@ -169,7 +125,7 @@ int main(int argc, char **argv) {
 #endif
 
   while (1) {
-    bytesread = fread(sample, sizeof(int16_t), BUFS, stdin);
+    bytesread = fread(sample, sizeof(int16_t), BUFLEN, stdin);
     if (bytesread < 1) exit(0);
 
     int i;
@@ -217,7 +173,7 @@ int main(int argc, char **argv) {
 #endif
 
 
-      /* refine sampling instant */
+      /* Clock phase recovery */
       if (prevdemod * demod[0] <= 0) {
         d_phi = fmod(clock_phi, M_PI);
         if (d_phi >= M_PI_2) d_phi -= M_PI;
@@ -245,7 +201,7 @@ int main(int argc, char **argv) {
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
 
-      /* PLL */
+      /* Subcarrier recovery PLL */
       double pll_alpha = 0.00005;
       double pll_beta = sqrt(pll_alpha);
       double zc;
