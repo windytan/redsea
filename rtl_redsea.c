@@ -60,6 +60,28 @@ double filter_bp_57k(double input) {
   return yv[10];
 }
 
+double filter_lp_2400_iq(double input, int iq) {
+
+  /* Digital filter designed by mkfilter/mkshape/gencode   A.J. Fisher
+        Command line: mkfilter -Bu -Lp -o 5 -a 8.0000000000e-03
+                      0.0000000000e+00 -l */
+
+  static double gain = 1.080611891e+08;
+  static double xv[2][5+1], yv[2][5+1];
+
+  xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3];
+  xv[iq][3] = xv[iq][4]; xv[iq][4] = xv[iq][5];
+  xv[iq][5] = input / gain;
+  yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3];
+  yv[iq][3] = yv[iq][4]; yv[iq][4] = yv[iq][5];
+  yv[iq][5] = (xv[iq][0] + xv[iq][5]) + 5 * (xv[iq][1] + xv[iq][4])
+               + 10 * (xv[iq][2] + xv[iq][3])
+               + (  0.8498599655 * yv[iq][0]) + ( -4.3875359464 * yv[iq][1])
+               + (  9.0628533836 * yv[iq][2]) + ( -9.3625201736 * yv[iq][3])
+               + (  4.8373424748 * yv[iq][4]);
+  return yv[iq][5];
+}
+
 void biphase(double acc) {
   static double prev_acc = 0;
   static int    counter = 0;
@@ -111,22 +133,18 @@ int main(int argc, char **argv) {
   double acc          = 0;
   double prevsample   = 0;
   double sample_f     = 0;
+  double demod[2]     = {0};
+  int    c;
+  int    fmfreq       = 0;
+  int    bytesread;
 
-  double xv[2][6] = {{0}};
-  double yv[2][6] = {{0}};
-  double demod[2] = {0};
 
-  double lpf_gain = 1.080611891e+08;
 
 #ifdef DEBUG
   sbit = 0;
   dbit = 0;
   reading_frame = 0;
 #endif
-
-  int c;
-  int fmfreq = 0;
-  int bytesread;
 
   while ((c = getopt (argc, argv, "f:")) != -1)
     switch (c) {
@@ -171,7 +189,7 @@ int main(int argc, char **argv) {
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
 
-      /* Band-pass filter */
+      /* Subcarrier band-pass */
       sample_f = filter_bp_57k(sample[i] / 32768.0);
 
       /* DSB demodulate */
@@ -187,22 +205,9 @@ int main(int argc, char **argv) {
       fwrite(outbuf, sizeof(int16_t), 1, IQ);
 #endif
 
-      /* Butterworth lopass */
-      /* Digital filter designed by mkfilter/mkshape/gencode   A.J. Fisher
-        Command line: /www/usr/fisher/helpers/mkfilter -Bu -Lp -o 5 -a
-                      8.0000000000e-03 0.0000000000e+00 -l */
-      for (int iq=0;iq<=1;iq++) {
-
-        xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3]; xv[iq][3] = xv[iq][4]; xv[iq][4] = xv[iq][5];
-        xv[iq][5] = demod[iq] / lpf_gain;
-        yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3]; yv[iq][3] = yv[iq][4]; yv[iq][4] = yv[iq][5];
-        yv[iq][5] =   (xv[iq][0] + xv[iq][5]) + 5 * (xv[iq][1] + xv[iq][4]) + 10 * (xv[iq][2] + xv[iq][3])
-                     + (  0.8498599655 * yv[iq][0]) + ( -4.3875359464 * yv[iq][1])
-                     + (  9.0628533836 * yv[iq][2]) + ( -9.3625201736 * yv[iq][3])
-                     + (  4.8373424748 * yv[iq][4]);
-        demod[iq] = yv[iq][5];
-
-      }
+      /* Anti-alias & data-shaping low-pass */
+      demod[0] = filter_lp_2400_iq(demod[0], 0);
+      demod[1] = filter_lp_2400_iq(demod[1], 1);
 
 #ifdef DEBUG
       outbuf[0] = demod[0] * 32000;
