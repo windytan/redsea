@@ -101,11 +101,18 @@ int main(int argc, char **argv) {
   double lo_clock     = 0;
   double prevclock    = 0;
   double d_phi        = 0;
+  double d_pphi       = 0;
+  double d_cphi       = 0;
   double prevdemod    = 0;
   double acc          = 0;
   double prevsample   = 0;
   double sample_f     = 0;
   double demod[2]     = {0};
+  double fp           = 19000;
+  double pilot;
+  double pilot_phi    = 0;
+  double pilot_lo;
+  double prev_pilot   = 0;
   int    c;
   int    fmfreq       = 0;
   int    bytesread;
@@ -156,6 +163,9 @@ int main(int argc, char **argv) {
       clock_phi = lo_phi / 48 + clock_offset;
       lo_clock  = (fmod(clock_phi, 2*M_PI) >= M_PI ? 1 : -1);
 
+      /* Subcarrier band-pass */
+      sample_f = filter_bp_57k(sample[i] / 32768.0);
+
 #ifdef DEBUG
       outbuf[0] = lo_iq[0] * 16000;
       fwrite(outbuf, sizeof(int16_t), 1, U);
@@ -163,12 +173,30 @@ int main(int argc, char **argv) {
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
 
-      /* Subcarrier band-pass */
-      sample_f = filter_bp_57k(sample[i] / 32768.0);
-
       /* DSB demodulate */
       demod[0] = (sample_f * lo_iq[0]);
       demod[1] = (sample_f * lo_iq[1]);
+
+      pilot = filter_bp_19k(sample[i] / 32768.0);
+      double ppll_alpha = 0.000001;
+      double ppll_beta = sqrt(ppll_alpha);
+      double pzc=0;
+
+      pilot_phi += 2 * M_PI * fp * (1.0/FS);
+      pilot_lo = sin(pilot_phi);
+      if (sign(prev_pilot) != sign(pilot)) {
+        pzc = pilot / (prev_pilot - pilot) / FS;
+        d_pphi = fmod(pilot_phi, 2 * M_PI) + (pzc * fp * 2 * M_PI)
+          - (pilot < 0 ? M_PI : 0);
+        if (d_pphi >= M_PI) d_pphi -= 2*M_PI;
+      }
+
+      fp        -= ppll_alpha * d_pphi;
+      pilot_phi -= ppll_beta  * d_pphi;
+      fc         = fp * 3;
+      prev_pilot = pilot;
+
+
 
 #ifdef DEBUG
       foutbuf[0] = pilot;
@@ -197,9 +225,9 @@ int main(int argc, char **argv) {
 
       /* Clock phase recovery */
       if (prevdemod * demod[0] <= 0) {
-        d_phi = fmod(clock_phi, M_PI);
-        if (d_phi >= M_PI_2) d_phi -= M_PI;
-        clock_offset -= 0.01 * d_phi;
+        d_cphi = fmod(clock_phi, M_PI);
+        if (d_cphi >= M_PI_2) d_cphi -= M_PI;
+        clock_offset -= 0.01 * d_cphi;
       }
 
       /* biphase symbol integrate & dump */
@@ -223,19 +251,18 @@ int main(int argc, char **argv) {
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
 
-      /* Subcarrier recovery PLL */
-      double pll_alpha = 0.00005;
+      /* Subcarrier phase recovery */
+      double pll_alpha = 0.00002;
       double pll_beta = sqrt(pll_alpha);
       double zc;
 
       if (sign(sample_f) != sign(prevsample)) {
         zc = sample_f / (prevsample - sample_f) / FS;
-        d_phi = fmod(lo_phi, 2 * M_PI) - (zc * fc * 2 * M_PI);
-        if (d_phi >= M_PI)  d_phi = -2 * M_PI + d_phi;
-        if (d_phi <= -M_PI) d_phi =  2 * M_PI - d_phi;
-        fc     -= pll_alpha * d_phi;
-        lo_phi -= pll_beta  * d_phi;
+        d_phi = fmod(lo_phi + zc * fc * 2 * M_PI, M_PI);
+        if (d_phi >= M_PI_2)  d_phi -= M_PI;
+        //fc     -= pll_alpha * d_phi;
       }
+      lo_phi -= pll_beta  * d_phi;
 
 #ifdef DEBUG
       outbuf[0] = d_phi / M_PI * 32768;
