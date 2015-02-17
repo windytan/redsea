@@ -23,7 +23,6 @@ $| ++;
 
 # DSP frequencies
 use constant FS => 250_000;
-use constant FC => 57_000;
 
 # Booleans
 use constant FALSE => 0;
@@ -1454,28 +1453,29 @@ sub parse_RTp {
   $len[0]   = extract_bits($_[2], 1, 6);
   $len[1]   = extract_bits($_[3], 0, 5);
 
-  say '  RadioText+: ';
+  if ($station{$pi}{'rtp_which'} == 0) {
+    my @tags = ();
+    for my $tagnum (0..1) {
 
-  if ($irun) {
-    say '    Item running';
-    if ($station{$pi}{'rtp_which'} == 0) {
-      for my $tag (0..1) {
-        my $total_received
-          = grep (defined $_,
-          @{$station{$pi}{'RTrcvd'}}[$start[$tag]..($start[$tag] +
-            $len[$tag] - 1)]);
-        if ($total_received == $len[$tag]) {
-          say '    Tag '.$rtpclass[$ctype[$tag]].': '.
-            substr($station{$pi}{'RTbuf'}, $start[$tag], $len[$tag]+1);
-        }
+      my $total_received
+        = grep (defined $_,
+        @{$station{$pi}{'RTrcvd'}}[$start[$tagnum]..($start[$tagnum] +
+          $len[$tagnum] - 1)]);
+      if ($total_received == $len[$tagnum]) {
+
+        my $tagname = $rtpclass[$ctype[$tagnum]];
+        my $tagdata = substr($station{$pi}{'RTbuf'}, $start[$tagnum],
+          $len[$tagnum]+1);
+        push @tags, $tagname.q{: "}.$tagdata.q{"};
       }
-    } else {
-      # (eRT)
-    }
+   }
+   if (@tags > 0) {
+    print_appdata('RadioText+', '{ item.is_running: '.
+      ($irun ? 'true' : 'false').', '.join(', ', @tags). ' }');
+   }
   } else {
-    say '    No item running';
+    # (eRT)
   }
-
 }
 
 # Program Item Number
@@ -1633,7 +1633,7 @@ sub print_appdata {
     my $timestamp = strftime('%Y-%m-%dT%H:%M:%S%z ', localtime);
     print $timestamp;
   }
-  say "[app] $appname $data";
+  say "[app:$appname] $data";
 }
 
 sub utter {
