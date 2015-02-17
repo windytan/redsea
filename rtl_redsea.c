@@ -32,6 +32,7 @@ char dbit,sbit;
 int tot_errs[2];
 int reading_frame;
 double fc;
+double qua;
 #endif
 
 void print_delta(char b) {
@@ -72,8 +73,8 @@ void biphase(double acc) {
       reading_frame = 1 - reading_frame;
     }
 #ifdef DEBUG
-    double qua = (1.0 * abs(tot_errs[0] - tot_errs[1]) /
-                  tot_errs[0] + tot_errs[1]) * 100;
+    qua = (1.0 * abs(tot_errs[0] - tot_errs[1]) /
+          (tot_errs[0] + tot_errs[1])) * 100;
     fprintf(stderr, "qual: %3.0f%%  pll: %.1f Hz\n", qua, fc);
 #endif
     tot_errs[0] = 0;
@@ -109,12 +110,11 @@ int main(int argc, char **argv) {
   int    fmfreq       = 0;
   int    bytesread;
 
-
-
 #ifdef DEBUG
   sbit = 0;
   dbit = 0;
   reading_frame = 0;
+  qua = 0;
 #endif
 
   while ((c = getopt (argc, argv, "f:")) != -1)
@@ -131,12 +131,13 @@ int main(int argc, char **argv) {
 
 #ifdef DEBUG
   int16_t outbuf[1];
+  float foutbuf[1];
   FILE *U;
-  U = popen("sox -c 5 -r 250000 -t .s16 - dbg-out.wav", "w");
+  U = popen("sox -c 6 -r 250000 -t .s16 - dbg-out.wav", "w");
   FILE *IQ;
   IQ = popen("sox -c 4 -r 250000 -t .s16 - dbg-out-iq.wav", "w");
   FILE *RAW;
-  RAW = popen("sox -c 1 -r 250000 -t .s16 - dbg-out-raw.wav", "w");
+  RAW = popen("sox -c 3 -r 250000 -t .f32 - dbg-out-pilot.wav", "w");
 #endif
 
   while (1) {
@@ -156,7 +157,9 @@ int main(int argc, char **argv) {
       lo_clock  = (fmod(clock_phi, 2*M_PI) >= M_PI ? 1 : -1);
 
 #ifdef DEBUG
-      outbuf[0] = lo_clock * 16000;
+      outbuf[0] = lo_iq[0] * 16000;
+      fwrite(outbuf, sizeof(int16_t), 1, U);
+      outbuf[0] = sample_f * 16000;
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
 
@@ -168,8 +171,12 @@ int main(int argc, char **argv) {
       demod[1] = (sample_f * lo_iq[1]);
 
 #ifdef DEBUG
-      outbuf[0] = sample[i];
-      fwrite(outbuf, sizeof(int16_t), 1, RAW);
+      foutbuf[0] = pilot;
+      fwrite(foutbuf, sizeof(float), 1, RAW);
+      foutbuf[0] = pilot_lo;
+      fwrite(foutbuf, sizeof(float), 1, RAW);
+      foutbuf[0] = d_pphi / M_PI;
+      fwrite(foutbuf, sizeof(float), 1, RAW);
       outbuf[0] = demod[0] * 32000;
       fwrite(outbuf, sizeof(int16_t), 1, IQ);
       outbuf[0] = demod[1] * 32000;
@@ -231,7 +238,7 @@ int main(int argc, char **argv) {
       }
 
 #ifdef DEBUG
-      outbuf[0] = reading_frame * 16000;
+      outbuf[0] = d_phi / M_PI * 32768;
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
 
