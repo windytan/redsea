@@ -52,6 +52,9 @@ my $correct_all = FALSE;
 # Some terminal control chars
 use constant   RESET => "\x1B[0m";
 use constant REVERSE => "\x1B[7m";
+use constant     RED => "\x1B[31m";
+use constant   GREEN => "\x1B[32m";
+use constant    GRAY => "\x1B[30;1m";
 
 my @group_buffer;
 my @group_data;
@@ -75,6 +78,7 @@ my $rtl_pid;
 my $debug = FALSE;
 
 my $is_scanning = FALSE;
+my $use_local_signal = FALSE;
 my $scan_seconds = 5;
 
 my $is_interactive = (-t STDOUT ? TRUE : FALSE);
@@ -141,35 +145,46 @@ sub get_options {
 
 sub open_radio {
   my $freq = shift;
-  my $gain = (exists $options{g} ? sprintf(' -g %.2f ', $options{g}) : q{});
-  my $ppm  = (exists $options{p} ? sprintf(' -p %.0f ', $options{p}) : q{});
 
-  my $rtl_redsea_exe;
-  my $rtl_fm_exe;
+  if ($use_local_signal) {
+    $rtl_pid = open $bitpipe, '-|', 'sox sig-noisy.wav -r 250000 -c 1 '.
+               '-t .s16 - | ./rtl_redsea';
 
-  if      (can_run './rtl_redsea') {
-    $rtl_redsea_exe = './rtl_redsea';
-  } elsif (can_run 'rtl_redsea.exe') {
-    $rtl_redsea_exe = 'rtl_redsea.exe';
   } else {
-    print "error: looks like rtl_redsea isn't compiled. To fix that, please ".
-          "run:\n\ngcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
-    exit(1);
-  }
 
-  if      (can_run('rtl_fm')) {
-    $rtl_fm_exe = 'rtl_fm';
-  } elsif (can_run('rtl_fm.exe')) {
-    $rtl_fm_exe = 'rtl_fm.exe';
-  } else {
-    print "error: looks like rtl_fm is not installed!\n";
-    exit(1);
-  }
+    my $gain =
+      (exists $options{g} ? sprintf(' -g %.2f ', $options{g}) : q{});
+    my $ppm  =
+      (exists $options{p} ? sprintf(' -p %.0f ', $options{p}) : q{});
 
-  $rtl_pid
-    = open $bitpipe, '-|', sprintf($rtl_fm_exe.' -f %.1f -M fm -l 0 -A std '.
-                     $gain.$ppm.' -s %.1f | '.$rtl_redsea_exe,
-                     $freq, FS) or die($!);
+    my $rtl_redsea_exe;
+    my $rtl_fm_exe;
+
+    if      (can_run './rtl_redsea') {
+      $rtl_redsea_exe = './rtl_redsea';
+    } elsif (can_run 'rtl_redsea.exe') {
+      $rtl_redsea_exe = 'rtl_redsea.exe';
+    } else {
+      print "error: looks like rtl_redsea isn't compiled. To fix that, ".
+            "please run:\n\n".
+            "gcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
+      exit(1);
+    }
+
+    if      (can_run('rtl_fm')) {
+      $rtl_fm_exe = 'rtl_fm';
+    } elsif (can_run('rtl_fm.exe')) {
+      $rtl_fm_exe = 'rtl_fm.exe';
+    } else {
+      print "error: looks like rtl_fm is not installed!\n";
+      exit(1);
+    }
+
+    $rtl_pid
+      = open $bitpipe, '-|', sprintf($rtl_fm_exe.' -f %.1f -M fm -l 0 '.
+                       '-A std '. $gain.$ppm.' -s %.1f | '.$rtl_redsea_exe,
+                       $freq, FS) or die($!);
+  }
 }
 
 # Next bit from radio
@@ -199,7 +214,7 @@ sub syndrome {
 
 # When a block has uncorrectable errors, dump the group received so far
 sub blockerror {
-  dbg("erroneous block");
+  dbg(GRAY."offset $expected_offset not received".RESET);
   my $data_length = 0;
 
   if ($has_block[A]) {
@@ -233,7 +248,7 @@ sub blockerror {
     $is_in_sync       = FALSE;
     @block_has_errors = ();
     $pi               = 0;
-    dbg ("Sync lost (45 errors out of 50)");
+    dbg (RED."Sync lost (45 errors out of 50)".RESET);
   }
 
   @has_block = ();
@@ -303,7 +318,8 @@ sub get_groups {
                ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$bnum]) {
               $is_in_sync      = TRUE;
               $expected_offset = $bnum;
-              dbg ( "sync acquired: correct offset ".$ofs2block[$bnum]." repeated at interval ".$dist);
+              dbg (GRAY."sync acquired: correct offset ".$ofs2block[$bnum].
+                   " repeated at interval ".$dist.RESET);
               last BLOCKS;
             } else {
               $prevbitcount = $bitcount;
@@ -335,8 +351,10 @@ sub get_groups {
         # hence is ignored
         if      ($expected_offset == A && $message == $pi && $pi != 0) {
           $has_sync_for[A]  = TRUE;
+          dbg(GREEN."ignoring error in check bits".RESET);
         } elsif ($expected_offset == C && $message == $pi && $pi != 0) {
           $has_sync_for[Ci] = TRUE;
+          dbg(GREEN."ignoring error in check bits".RESET);
         }
 
         # Detect & correct clock slips (C.1.2)
@@ -346,32 +364,35 @@ sub get_groups {
           $message           = $pi;
           $wideblock       >>= 1;
           $has_sync_for[A] = TRUE;
+          dbg(GREEN."clock slip corrected".RESET);
         } elsif ($expected_offset == A && $pi != 0 &&
                 (($wideblock >> 10) & _16BIT ) == $pi) {
           $message           = $pi;
           $wideblock         = ($wideblock << 1) + get_bit();
           $has_sync_for[A] = TRUE;
           $left_to_read      = 25;
-        }
+          dbg(GREEN."clock slip corrected".RESET);
+        } else {
 
-        # Detect & correct burst errors (B.2.2)
+          # Detect & correct burst errors (B.2.2)
 
-        $synd_reg = syndrome($block ^ $offset_word[$expected_offset]);
+          $synd_reg = syndrome($block ^ $offset_word[$expected_offset]);
 
-        dbg(sprintf("syndrome: %03x",$synd_reg));
+          if ($pi != 0 && $expected_offset == 0) {
+            dbg(GRAY.sprintf("%03x expecting PI=%04x(%016b), ".
+                "got %04x(%016b), xor=%016b", $synd_reg,
+                $pi,$pi,($block>>10),($block>>10), $pi ^ ($block>>10)).RESET);
+          }
 
-        if ($pi != 0 && $expected_offset == 0) {
-          dbg(sprintf("%03x expecting PI=%04x(%016b), got %04x(%016b),".
-              "xor=%016b", $synd_reg,
-              $pi,$pi,($block>>10),($block>>10), $pi ^ ($block>>10)));
-        }
+          if (defined $error_lookup[$synd_reg]) {
+            $message = ($block >> 10) ^ $error_lookup[$synd_reg];
+            $has_sync_for[$expected_offset] = TRUE;
 
-        if (defined $error_lookup[$synd_reg]) {
-          $message = ($block >> 10) ^ $error_lookup[$synd_reg];
-          $has_sync_for[$expected_offset] = TRUE;
-
-          dbg(REVERSE."error-corrected using vector ".
-            sprintf("%016b",$error_lookup[$synd_reg]).RESET);
+            dbg(GREEN.sprintf("%03x error-corrected o$expected_offset using ".
+              "vector %016b", $synd_reg, $error_lookup[$synd_reg]).RESET);
+          } else {
+            dbg(RED.sprintf("%03x uncorrectable",$synd_reg).RESET);
+          }
         }
 
         # If still no sync pulse
@@ -383,8 +404,8 @@ sub get_groups {
       # Error-free block received
       if ($has_sync_for[$expected_offset]) {
 
-        dbg ("offset $expected_offset, correct message ".
-          sprintf("%04x", $message));
+        dbg (GRAY."offset $expected_offset, correct message ".
+          sprintf("%04x", $message).RESET);
 
         $group_data[$ofs2block[$expected_offset]] = $message;
         $block_has_errors[$block_counter % 50]    = FALSE;
