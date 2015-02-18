@@ -23,9 +23,10 @@
 
 #include "filters.h"
 
-#define FS     250000.0
-#define FC_0   57000.0
-#define BUFLEN 1024
+#define FS      250000.0
+#define FC_0    57000.0
+#define IBUFLEN 4096
+#define OBUFLEN 128
 
 #ifdef DEBUG
 char dbit,sbit;
@@ -43,7 +44,7 @@ void print_delta(char b) {
   static int dbit = 0;
 #endif
   printf("%d", b ^ dbit);
-  if (nbit % 104 == 0)
+  if (nbit % OBUFLEN == 0)
     fflush(0);
   dbit = b;
   nbit++;
@@ -87,7 +88,7 @@ void biphase(double acc) {
 
 int main(int argc, char **argv) {
 
-  int16_t  sample[BUFLEN];
+  int16_t  sample[IBUFLEN];
 #ifdef DEBUG
   fc = FC_0;
 #else
@@ -274,6 +275,5 @@ int main(int argc, char **argv) {
       prevclock  = lo_clock;
       prevsample = sample_f;
     }
-
   }
 }
