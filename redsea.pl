@@ -714,6 +714,11 @@ sub Group1A {
 
   # Paging (M.2.1.1.2)
 
+  my $has_paging = FALSE;
+  if (extract_bits($blocks[1], 0, 5) != 0) {
+    my $has_paging = TRUE;
+  }
+
   print_appdata ('Pager', 'TNG: '.     extract_bits($blocks[1], 2, 3));
   print_appdata ('Pager', 'interval: '.extract_bits($blocks[1], 0, 2));
 
@@ -739,19 +744,23 @@ sub Group1A {
         given (extract_bits($blocks[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            print_appdata ('Pager', 'PAC: '.extract_bits($blocks[3], 4, 6));
-            print_appdata ('Pager', 'OPC: '.extract_bits($blocks[3], 0, 4));
+            if ($has_paging) {
+              print_appdata ('Pager', 'PAC: '.extract_bits($blocks[3], 4, 6));
+              print_appdata ('Pager', 'OPC: '.extract_bits($blocks[3], 0, 4));
+            }
           }
           # Sub type 1
           when (1) {
-            given (extract_bits($blocks[3], 8, 2)) {
-              when (0) {
-                print_appdata ('Pager', 'ECC: '.
-                  extract_bits($blocks[3], 0, 6));
-              }
-              when (3) {
-                print_appdata ('Pager', 'CCF: '.
-                  extract_bits($blocks[3], 0, 4));
+            if ($has_paging) {
+              given (extract_bits($blocks[3], 8, 2)) {
+                when (0) {
+                  print_appdata ('Pager', 'ECC: '.
+                    extract_bits($blocks[3], 0, 6));
+                }
+                when (3) {
+                  print_appdata ('Pager', 'CCF: '.
+                    extract_bits($blocks[3], 0, 4));
+                }
               }
             }
           }
@@ -775,27 +784,33 @@ sub Group1A {
     }
 
     when (2) {
-      print_appdata ('Pager', 'OPC: '.extract_bits($blocks[2], 8, 4));
-      print_appdata ('Pager', 'PAC: '.extract_bits($blocks[2], 0, 6));
+      if ($has_paging) {
+        print_appdata ('Pager', 'OPC: '.extract_bits($blocks[2], 8, 4));
+        print_appdata ('Pager', 'PAC: '.extract_bits($blocks[2], 0, 6));
+      }
 
       # No PIN, M.3.2.4.3
       if (@blocks == 4 && ($blocks[3] >> 11) == 0) {
         given (extract_bits($blocks[3], 10, 1)) {
           # Sub type 0
           when (0) {
-            print_appdata ('Pager', 'PAC: '.extract_bits($blocks[3], 4, 6));
-            print_appdata ('Pager', 'OPC: '.extract_bits($blocks[3], 0, 4));
+            if ($has_paging) {
+              print_appdata ('Pager', 'PAC: '.extract_bits($blocks[3], 4, 6));
+              print_appdata ('Pager', 'OPC: '.extract_bits($blocks[3], 0, 4));
+            }
           }
           # Sub type 1
           when (1) {
             given (extract_bits($blocks[3], 8, 2)) {
-              when (0) {
-                print_appdata ('Pager', 'ECC: '.
-                  extract_bits($blocks[3], 0, 6));
-              }
-              when (3) {
-                print_appdata ('Pager', 'CCF: '.
-                  extract_bits($blocks[3], 0, 4));
+              if ($has_paging) {
+                when (0) {
+                  print_appdata ('Pager', 'ECC: '.
+                    extract_bits($blocks[3], 0, 6));
+                }
+                when (3) {
+                  print_appdata ('Pager', 'CCF: '.
+                    extract_bits($blocks[3], 0, 4));
+                }
               }
             }
           }
