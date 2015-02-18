@@ -152,6 +152,11 @@ sub get_options {
     $fmfreq = $1 * $si{$2};
   }
 
+  # sensible guess
+  if ($fmfreq < 200e3) {
+    say 'Note: assuming '.sprintf('%.2f', $fmfreq).' MHz';
+    $fmfreq *= 1e6;
+  }
 
 }
 
