@@ -121,6 +121,8 @@ int main(int argc, char **argv) {
   dbit = 0;
   reading_frame = 0;
   qua = 0;
+  double t = 0;
+  int numsamples = 0;
 #endif
 
   while ((c = getopt (argc, argv, "f:")) != -1)
@@ -142,8 +144,9 @@ int main(int argc, char **argv) {
   U = popen("sox -c 6 -r 250000 -t .s16 - dbg-out.wav", "w");
   FILE *IQ;
   IQ = popen("sox -c 4 -r 250000 -t .s16 - dbg-out-iq.wav", "w");
-  FILE *RAW;
-  RAW = popen("sox -c 3 -r 250000 -t .f32 - dbg-out-pilot.wav", "w");
+  FILE *STATS;
+  STATS = fopen("stats.csv", "w");
+  fprintf(STATS, "t,fp,d_pphi,qual\n");
 #endif
 
   while (1) {
@@ -180,13 +183,6 @@ int main(int argc, char **argv) {
       /* Subcarrier band-pass */
       sample_f = filter_bp_57k(sample[i] / 32768.0);
 
-#ifdef DEBUG
-      outbuf[0] = lo_iq[0] * 16000;
-      fwrite(outbuf, sizeof(int16_t), 1, U);
-      outbuf[0] = sample_f * 16000;
-      fwrite(outbuf, sizeof(int16_t), 1, U);
-#endif
-
       /* DSB demodulate */
       demod[0] = (sample_f * lo_iq[0]);
       demod[1] = (sample_f * lo_iq[1]);
@@ -196,12 +192,10 @@ int main(int argc, char **argv) {
       lo_clock  = (fmod(clock_phi, 2*M_PI) >= M_PI ? 1 : -1);
 
 #ifdef DEBUG
-      foutbuf[0] = pilot;
-      fwrite(foutbuf, sizeof(float), 1, RAW);
-      foutbuf[0] = pilot_lo;
-      fwrite(foutbuf, sizeof(float), 1, RAW);
-      foutbuf[0] = d_pphi / M_PI;
-      fwrite(foutbuf, sizeof(float), 1, RAW);
+      outbuf[0] = lo_iq[0] * 16000;
+      fwrite(outbuf, sizeof(int16_t), 1, U);
+      outbuf[0] = sample_f * 16000;
+      fwrite(outbuf, sizeof(int16_t), 1, U);
       outbuf[0] = demod[0] * 32000;
       fwrite(outbuf, sizeof(int16_t), 1, IQ);
       outbuf[0] = demod[1] * 32000;
@@ -263,6 +257,10 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
       outbuf[0] = d_phi / M_PI * 32768;
       fwrite(outbuf, sizeof(int16_t), 1, U);
+      t += 1.0/FS;
+      numsamples ++;
+      if (numsamples % 125 == 0)
+        fprintf(STATS,"%f,%f,%f,%f\n",t,fp,d_pphi,qua);
 #endif
 
       /* For zero-crossing detection */
