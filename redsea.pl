@@ -719,8 +719,10 @@ sub Group1A {
     my $has_paging = TRUE;
   }
 
-  print_appdata ('Pager', 'TNG: '.     extract_bits($blocks[1], 2, 3));
-  print_appdata ('Pager', 'interval: '.extract_bits($blocks[1], 0, 2));
+  if ($has_paging) {
+    print_appdata ('Pager', 'TNG: '.     extract_bits($blocks[1], 2, 3));
+    print_appdata ('Pager', 'interval: '.extract_bits($blocks[1], 0, 2));
+  }
 
   # Slow labeling codes
 
@@ -737,7 +739,9 @@ sub Group1A {
   given ($slc_variant) {
 
     when (0) {
-      print_appdata ('Pager', 'OPC: '.extract_bits($blocks[2], 8, 4));
+      if ($has_paging) {
+        print_appdata ('Pager', 'OPC: '.extract_bits($blocks[2], 8, 4));
+      }
 
       # No PIN, M.3.2.4.3
       if (@blocks == 4 && ($blocks[3] >> 11) == 0) {
