@@ -85,3 +85,25 @@ double filter_lp_2400_iq(double input, int iq) {
                 + ( 4.8373424748 * yv[iq][4]);
   return yv[iq][5];
 }
+
+double filter_lp_pll(double input, int iq) {
+
+  /* Digital filter designed by mkfilter/mkshape/gencode A.J. Fisher
+     Command line: mkfilter -Bu -Lp -o 5 -a 8.0000000000e-03
+                   0.0000000000e+00 -l */
+
+  static double gain = 5.604550418e+09;
+  static double xv[2][5+1], yv[2][5+1];
+
+  xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3];
+  xv[iq][3] = xv[iq][4]; xv[iq][4] = xv[iq][5];
+  xv[iq][5] = input / gain;
+  yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3];
+  yv[iq][3] = yv[iq][4]; yv[iq][4] = yv[iq][5];
+  yv[iq][5] = (xv[iq][0] + xv[iq][5]) + 5 * (xv[iq][1] + xv[iq][4])
+                + 10 * (xv[iq][2] + xv[iq][3])
+                + (  0.9294148707 * yv[iq][0]) + ( -4.7151053641 * yv[iq][1])
+                + (  9.5687692520 * yv[iq][2]) + ( -9.7098810864 * yv[iq][3])
+                + (  4.9268023221 * yv[iq][4]);
+  return yv[iq][5];
+}
