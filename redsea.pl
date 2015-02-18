@@ -49,6 +49,8 @@ use constant {
   D  => 4,
 };
 
+my @ofs_letters = qw( A B C C' D );
+
 # Bit masks
 use constant {
   _5BIT  => 0x000001F,
@@ -124,7 +126,7 @@ sub dbg {
 
 sub get_options {
 
-  getopts('hlstp:g:', \%options);
+  getopts('hlstp:g:d', \%options);
 
   if (exists $options{h} || ($ARGV[0] // q{}) !~ /^[\d\.]+[kMG]?$/i) {
     print
@@ -143,6 +145,9 @@ sub get_options {
 
   if (exists $options{l}) {
     $verbosity = 1;
+  }
+  if (exists $options{d}) {
+    $debug = TRUE;
   }
 
   $fmfreq = $ARGV[0];
@@ -231,7 +236,7 @@ sub syndrome {
 
 # When a block has uncorrectable errors, dump the group received so far
 sub blockerror {
-  dbg(GRAY."offset $expected_offset not received".RESET);
+  dbg(GRAY."offset $ofs_letters[$expected_offset] not received".RESET);
   my $data_length = 0;
 
   if ($has_block[A]) {
@@ -335,7 +340,7 @@ sub get_groups {
                ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$bnum]) {
               $is_in_sync      = TRUE;
               $expected_offset = $bnum;
-              dbg (GRAY."sync acquired: correct offset ".$ofs2block[$bnum].
+              dbg (GRAY."sync acquired: correct offset ".$ofs_letters[$bnum].
                    " repeated at interval ".$dist.RESET);
               last BLOCKS;
             } else {
@@ -405,7 +410,8 @@ sub get_groups {
             $message = ($block >> 10) ^ $error_lookup[$synd_reg];
             $has_sync_for[$expected_offset] = TRUE;
 
-            dbg(GREEN.sprintf("%03x error-corrected o$expected_offset using ".
+            dbg(GREEN.sprintf("%03x error-corrected ".
+               $ofs_letters[$expected_offset]." using ".
               "vector %016b", $synd_reg, $error_lookup[$synd_reg]).RESET);
           } else {
             dbg(RED.sprintf("%03x uncorrectable",$synd_reg).RESET);
@@ -421,7 +427,7 @@ sub get_groups {
       # Error-free block received
       if ($has_sync_for[$expected_offset]) {
 
-        dbg (GRAY."offset $expected_offset, correct message ".
+        dbg (GRAY."offset $ofs_letters[$expected_offset], correct message ".
           sprintf("%04x", $message).RESET);
 
         $group_data[$ofs2block[$expected_offset]] = $message;
