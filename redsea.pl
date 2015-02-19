@@ -76,6 +76,7 @@ my @has_block;
 my @block_has_errors;
 my %options;
 my %station;
+my $source_file;
 
 my @countryISO, my @group_names, my @ptynamesUS, my @ptynames;
 my @TA_descr, my @TP_descr, my @langname, my @oda_app, my @char_table;
@@ -92,7 +93,6 @@ my $rtl_pid;
 my $debug = FALSE;
 
 my $is_scanning = FALSE;
-my $use_local_signal = FALSE;
 my $scan_seconds = 5;
 
 my $is_interactive = (-t STDOUT ? TRUE : FALSE);
@@ -126,9 +126,23 @@ sub dbg {
 
 sub get_options {
 
-  getopts('hlstp:g:d', \%options);
+  getopts('hlstp:g:df:', \%options);
 
-  if (exists $options{h} || ($ARGV[0] // q{}) !~ /^[\d\.]+[kMG]?$/i) {
+
+  if (exists $options{l}) {
+    $verbosity = 1;
+  }
+  if (exists $options{d}) {
+    $debug = TRUE;
+  }
+  if (exists $options{f}) {
+    $source_file = $options{f};
+  }
+
+  $fmfreq = $ARGV[0] // q{};
+
+  if (exists $options{h} || (not defined $source_file and
+      $fmfreq !~ /^[\d\.]+[kMG]?$/i)) {
     print
        "Usage: perl $0 [-hlst] [-p <error>] [-g <gain>] FREQ\n\n".
        "    -h          display this help and exit\n".
@@ -143,24 +157,19 @@ sub get_options {
     exit();
   }
 
-  if (exists $options{l}) {
-    $verbosity = 1;
-  }
-  if (exists $options{d}) {
-    $debug = TRUE;
-  }
 
-  $fmfreq = $ARGV[0];
-  if ($fmfreq =~ /^([\d\.]+)([kMG])$/i) {
-    my %si = ( 'k' => 1e3, 'K' => 1e3, 'm' => 1e6,
-               'M' => 1e6, 'g' => 1e9, 'G' => 1e9 );
-    $fmfreq = $1 * $si{$2};
-  }
+  if (not defined $source_file) {
+    if ($fmfreq =~ /^([\d\.]+)([kMG])$/i) {
+      my %si = ( 'k' => 1e3, 'K' => 1e3, 'm' => 1e6,
+                 'M' => 1e6, 'g' => 1e9, 'G' => 1e9 );
+      $fmfreq = $1 * $si{$2};
+    }
 
-  # sensible guess
-  if ($fmfreq < 200e3) {
-    say 'Note: assuming '.sprintf('%.2f', $fmfreq).' MHz';
-    $fmfreq *= 1e6;
+    # sensible guess
+    if ($fmfreq < 200e3) {
+      say 'Note: assuming '.sprintf('%.2f', $fmfreq).' MHz';
+      $fmfreq *= 1e6;
+    }
   }
 
 }
@@ -168,8 +177,8 @@ sub get_options {
 sub open_radio {
   my $freq = shift;
 
-  if ($use_local_signal) {
-    $rtl_pid = open $bitpipe, '-|', 'sox sig-noisy.wav -r 250000 -c 1 '.
+  if (defined $source_file) {
+    $rtl_pid = open $bitpipe, '-|', 'sox '.$source_file.' -r 250000 -c 1 '.
                '-t .s16 - | ./rtl_redsea';
 
   } else {
@@ -289,7 +298,9 @@ sub get_groups {
   my @ofs2block   = (0, 1, 2, 2, 3);
   my ($synd_reg, $pattern);
 
-  print STDERR 'Waiting for sync at '.sprintf('%.2f', $fmfreq / 1e6)." MHz\n";
+  if (not defined $source_file) {
+    print STDERR 'Waiting for sync at '.sprintf('%.2f', $fmfreq / 1e6)." MHz\n";
+  }
 
   my $start_time = time();
 
