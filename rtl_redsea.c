@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
 
       /* Pilot tone recovery */
 
-      pilot_sample      = filter_bp_19k(sample[i] / 32768.0);
+      pilot_sample      = filter_bp_19k(sample[i]);
       double pilot_bb_i, pilot_bb_q;
 
       pilot_phi  += 2 * M_PI * fp * (1.0/FS);
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
       pilot_bb_q  = filter_lp_pll(sin(pilot_phi) * pilot_sample, 1);
 
       double ppll_alpha = 0.0001;
-      double ppll_beta  = sqrt(ppll_alpha) * .01;
+      double ppll_beta  = 0.0001;
       d_pphi      = atan2(pilot_bb_q, pilot_bb_i);
       pilot_phi  -= ppll_beta  * d_pphi;
       fp         -= ppll_alpha * d_pphi;
