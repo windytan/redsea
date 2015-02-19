@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
   IQ = popen("sox -c 2 -r 250000 -t .s16 - dbg-out-iq.wav", "w");
   FILE *STATS;
   STATS = fopen("stats.csv", "w");
-  fprintf(STATS, "t,fp,d_pphi,qual\n");
+  fprintf(STATS, "t,fp,d_pphi,d_phi_sc,clock_offset,qua\n");
 #endif
 
   while (1) {
