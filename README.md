@@ -37,8 +37,9 @@ perl redsea.pl [-hlst] [-p <error>] [-g <gain>] FREQ
     -l          print groups in long format
     -s          print groups in short format (default)
     -t          print an ISO timestamp before each group
-    -g <gain>   gain (float), passed to rtl_fm (optional)
-    -p <error>  parts-per-million error, passed to rtl_fm (optional)
+    -g <gain>   gain (float), passed to rtl_fm (optional; don't use it)
+    -p <error>  parts-per-million error, passed to rtl_fm (optional;
+                allows for faster PLL lock if set correctly)
     FREQ        station frequency in Hz, can be SI suffixed (94.0M)
 ```
 
