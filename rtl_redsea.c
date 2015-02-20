@@ -104,6 +104,7 @@ int main(int argc, char **argv) {
   double prevclock      = 0;
   double prev_bb        = 0;
   double d_phi_sc       = 0;
+  double sc_phi_offset  = 0;
   double d_pphi         = 0;
   double d_cphi         = 0;
   double acc            = 0;
@@ -174,20 +175,20 @@ int main(int argc, char **argv) {
 
       /* Subcarrier downmix & phase recovery */
 
-      subcarr_phi   += 2 * M_PI * fc * (1.0/FS);
+      subcarr_phi    = pilot_phi * 3.0 + sc_phi_offset;
       subcarr_sample = filter_bp_57k(sample[i] / 32768.0);
       subcarr_bb[0]  = filter_lp_2400_iq(subcarr_sample * cos(subcarr_phi), 0);
       subcarr_bb[1]  = filter_lp_2400_iq(subcarr_sample * sin(subcarr_phi), 1);
 
-      double pll_beta = 0.00001;
+      double pll_beta = 0.0001;
 
       d_phi_sc     = atan2(subcarr_bb[1], subcarr_bb[0]) + M_PI;
       d_phi_sc     = fmod(d_phi_sc, M_PI) - M_PI_2;
-      subcarr_phi -= pll_beta * d_phi_sc;
+      sc_phi_offset -= pll_beta * d_phi_sc;
 
       /* 1187.5 Hz clock */
 
-      clock_phi = subcarr_phi / 48 + clock_offset;
+      clock_phi = subcarr_phi / 48.0 + clock_offset;
       lo_clock  = (fmod(clock_phi, 2*M_PI) >= M_PI ? 1 : -1);
 
 #ifdef DEBUG
@@ -204,7 +205,7 @@ int main(int argc, char **argv) {
       if (sign(prev_bb) != sign(subcarr_bb[1])) {
         d_cphi = fmod(clock_phi, M_PI);
         if (d_cphi >= M_PI_2) d_cphi -= M_PI;
-        clock_offset -= 0.001 * d_cphi;
+        clock_offset -= 0.005 * d_cphi;
       }
 
       /* biphase symbol integrate & dump */
@@ -230,7 +231,7 @@ int main(int argc, char **argv) {
       numsamples ++;
       if (numsamples % 125 == 0)
         fprintf(STATS,"%f,%f,%f,%f,%f,%f\n",
-            t,fp,d_pphi,d_phi_sc,clock_offset,qua);
+            t,fp,d_pphi,sc_phi_offset,clock_offset,qua);
 #endif
 
       prevclock = lo_clock;
