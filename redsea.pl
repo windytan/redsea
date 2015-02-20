@@ -124,6 +124,25 @@ sub dbg {
   }
 }
 
+sub print_usage {
+  my $usage = <<"END_USAGE";
+Usage: $0 [-hlst] [-p <error>] [-g <gain>] FREQ
+
+    -h          display this help and exit
+    -l          print groups in long format
+    -s          print groups in short format (default)
+    -t          print an ISO timestamp before each group
+    -g <gain>   gain (float), passed to rtl_fm (optional; don't use it)
+    -p <error>  parts-per-million error, passed to rtl_fm (optional;
+                allows for faster PLL lock if set correctly)
+    FREQ        station frequency in Hz, can be SI suffixed
+                (94.0M)
+
+END_USAGE
+
+  print $usage;
+}
+
 sub get_options {
 
   getopts('hlstp:g:df:', \%options);
@@ -143,17 +162,7 @@ sub get_options {
 
   if (exists $options{h} || (not defined $source_file and
       $fmfreq !~ /^[\d\.]+[kMG]?$/i)) {
-    print
-       "Usage: perl $0 [-hlst] [-p <error>] [-g <gain>] FREQ\n\n".
-       "    -h          display this help and exit\n".
-       "    -l          print groups in long format\n".
-       "    -s          print groups in short format (default)\n".
-       "    -t          print an ISO timestamp before each group\n".
-       "    -g <gain>   gain (float), passed to rtl_fm (optional)\n",
-       "    -p <error>  parts-per-million error, passed to rtl_fm ".
-                        "(optional)\n",
-       "    FREQ        station frequency in Hz, can be SI suffixed ".
-                        "(94.0M)\n\n";
+    print_usage();
     exit();
   }
 
