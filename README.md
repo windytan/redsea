@@ -9,6 +9,8 @@ and prints it to the terminal. It works with rtl_fm.
 ## Requirements
 
 * Linux or OSX
+* gcc
+* GNU make
 * [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
 * Perl &gt;= 5.12
 
