@@ -208,18 +208,24 @@ int main(int argc, char **argv) {
         clock_offset -= 0.005 * d_cphi;
       }
 
-      /* biphase symbol integrate & dump */
-      acc += subcarr_bb[1] * lo_clock;
-
 #ifdef DEBUG
       outbuf[0] = acc * 800;
       fwrite(outbuf, sizeof(int16_t), 1, U);
       sbit = 0;
 #endif
 
-      if (sign(lo_clock) != sign(prevclock)) {
-        biphase(acc);
-        acc = 0;
+      /* Decimate band-limited signal */
+      if (numsamples % 8 == 0) {
+
+        /* biphase symbol integrate & dump */
+        acc += subcarr_bb[1] * lo_clock;
+
+        if (sign(lo_clock) != sign(prevclock)) {
+          biphase(acc);
+          acc = 0;
+        }
+
+        prevclock = lo_clock;
       }
 
 #ifdef DEBUG
@@ -234,7 +240,6 @@ int main(int argc, char **argv) {
             t,fp,d_pphi,sc_phi_offset,clock_offset,qua);
 #endif
 
-      prevclock = lo_clock;
       prev_bb = subcarr_bb[1];
 
     }
