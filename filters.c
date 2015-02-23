@@ -23,12 +23,11 @@ double filter_bp_57k(double input) {
                    2.4400000000e-01 -l
    */
 
-  static double gain = 1.326631022e+05;
   static double xv[10+1], yv[10+1];
 
   xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
   xv[5] = xv[6]; xv[6] = xv[7]; xv[7] = xv[8]; xv[8] = xv[9]; xv[9] = xv[10];
-  xv[10] = input / gain;
+  xv[10] = input / 1.326631022e+05;
   yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4]; yv[4] = yv[5];
   yv[5] = yv[6]; yv[6] = yv[7]; yv[7] = yv[8]; yv[8] = yv[9]; yv[9] = yv[10];
   yv[10] = (xv[10] - xv[0]) + 5 * (xv[2] - xv[8]) + 10 * (xv[6] - xv[4])
@@ -47,12 +46,11 @@ double filter_bp_19k(double input) {
                    7.8000000000e-02 -l
    */
 
-  static double gain = 3.760742395e+05;
   static double xv[10+1], yv[10+1];
 
   xv[0] = xv[1]; xv[1] = xv[2]; xv[2] = xv[3]; xv[3] = xv[4]; xv[4] = xv[5];
   xv[5] = xv[6]; xv[6] = xv[7]; xv[7] = xv[8]; xv[8] = xv[9]; xv[9] = xv[10];
-  xv[10] = input / gain;
+  xv[10] = input / 3.760742395e+05;
   yv[0] = yv[1]; yv[1] = yv[2]; yv[2] = yv[3]; yv[3] = yv[4]; yv[4] = yv[5];
   yv[5] = yv[6]; yv[6] = yv[7]; yv[7] = yv[8]; yv[8] = yv[9]; yv[9] = yv[10];
   yv[10] = (xv[10] - xv[0]) + 5 * (xv[2] - xv[8]) + 10 * (xv[6] - xv[4])
@@ -70,12 +68,11 @@ double filter_lp_2400_iq(double input, int iq) {
      Command line: mkfilter -Bu -Lp -o 5 -a 8.0000000000e-03
                    0.0000000000e+00 -l */
 
-  static double gain = 1.080611891e+08;
   static double xv[2][5+1], yv[2][5+1];
 
   xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3];
   xv[iq][3] = xv[iq][4]; xv[iq][4] = xv[iq][5];
-  xv[iq][5] = input / gain;
+  xv[iq][5] = input / 1.080611891e+08;
   yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3];
   yv[iq][3] = yv[iq][4]; yv[iq][4] = yv[iq][5];
   yv[iq][5] = (xv[iq][0] + xv[iq][5]) + 5 * (xv[iq][1] + xv[iq][4])
@@ -92,12 +89,11 @@ double filter_lp_pll(double input, int iq) {
      Command line: mkfilter -Bu -Lp -o 5 -a 8.0000000000e-03
                    0.0000000000e+00 -l */
 
-  static double gain = 5.604550418e+09;
   static double xv[2][5+1], yv[2][5+1];
 
   xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; xv[iq][2] = xv[iq][3];
   xv[iq][3] = xv[iq][4]; xv[iq][4] = xv[iq][5];
-  xv[iq][5] = input / gain;
+  xv[iq][5] = input / 5.604550418e+09;
   yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; yv[iq][2] = yv[iq][3];
   yv[iq][3] = yv[iq][4]; yv[iq][4] = yv[iq][5];
   yv[iq][5] = (xv[iq][0] + xv[iq][5]) + 5 * (xv[iq][1] + xv[iq][4])
