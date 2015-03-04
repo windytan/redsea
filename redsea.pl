@@ -502,8 +502,8 @@ sub decode_group {
   }
 
   utter (('  PI:     '.sprintf('%04X',$newpi).
-    ((exists($station{$newpi}{'chname'})) ?
-      q{ }.$station{$newpi}{'chname'} : q{}),
+    ((exists($station{$newpi}{chname})) ?
+      q{ }.$station{$newpi}{chname} : q{}),
       sprintf('%04X',$newpi)));
 
   # PI is repeated -> confirmed
@@ -534,23 +534,23 @@ sub decode_group {
                    sprintf(' (%3s)', $full_group_type)));
 
   # Traffic Program (TP)
-  $station{$pi}{'TP'} = extract_bits($blocks[1], 10, 1);
-  utter ('  TP:     '.$TP_descr[$station{$pi}{'TP'}],
-         ' TP:'.$station{$pi}{'TP'});
+  $station{$pi}{TP} = extract_bits($blocks[1], 10, 1);
+  utter ('  TP:     '.$TP_descr[$station{$pi}{TP}],
+         ' TP:'.$station{$pi}{TP});
 
   # Program Type (PTY)
-  $station{$pi}{'PTY'} = extract_bits($blocks[1], 5, 5);
+  $station{$pi}{PTY} = extract_bits($blocks[1], 5, 5);
 
-  if (exists $station{$pi}{'ECC'} &&
-     ($countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] // q{})
+  if (exists $station{$pi}{ECC} &&
+     ($countryISO[$station{$pi}{ECC}][$station{$pi}{CC}] // q{})
        =~ /us|ca|mx/) {
-    utter ("  PTY:    ". sprintf("%02d",$station{$pi}{'PTY'}).
-           q{ }.$ptynamesUS[$station{$pi}{'PTY'}],
-           ' PTY:'.sprintf('%02d',$station{$pi}{'PTY'}));
+    utter ("  PTY:    ". sprintf("%02d",$station{$pi}{PTY}).
+           q{ }.$ptynamesUS[$station{$pi}{PTY}],
+           ' PTY:'.sprintf('%02d',$station{$pi}{PTY}));
   } else {
-    utter ('  PTY:    '. sprintf('%02d',$station{$pi}{'PTY'}).
-           q{ }.$ptynames[$station{$pi}{'PTY'}],
-           ' PTY:'.sprintf('%02d',$station{$pi}{'PTY'}));
+    utter ('  PTY:    '. sprintf('%02d',$station{$pi}{PTY}).
+           q{ }.$ptynames[$station{$pi}{PTY}],
+           ' PTY:'.sprintf('%02d',$station{$pi}{PTY}));
   }
 
   # Data specific to the group type
@@ -575,41 +575,41 @@ sub decode_group {
       Group2B (@blocks);
     }
     when (6)  {
-      exists ($station{$pi}{'ODAaid'}{6})  ?
+      exists ($station{$pi}{ODAaid}{6})  ?
         ODAGroup(6, @blocks)  : Group3A (@blocks);
       }
     when (8)  {
       Group4A (@_);
     }
     when (10) {
-      exists ($station{$pi}{'ODAaid'}{10}) ?
+      exists ($station{$pi}{ODAaid}{10}) ?
         ODAGroup(10, @blocks) : Group5A (@blocks);
     }
     when (11) {
-      exists ($station{$pi}{'ODAaid'}{11}) ?
+      exists ($station{$pi}{ODAaid}{11}) ?
         ODAGroup(11, @blocks) : Group5B (@blocks);
     }
     when (12) {
-      exists ($station{$pi}{'ODAaid'}{12}) ?
+      exists ($station{$pi}{ODAaid}{12}) ?
         ODAGroup(12, @blocks) : Group6A (@blocks);
     }
     when (13) {
-      exists ($station{$pi}{'ODAaid'}{13}) ?
+      exists ($station{$pi}{ODAaid}{13}) ?
         ODAGroup(13, @blocks) : Group6B (@blocks);
     }
     when (14) {
-      exists ($station{$pi}{'ODAaid'}{14}) ?
+      exists ($station{$pi}{ODAaid}{14}) ?
         ODAGroup(14, @blocks) : Group7A (@blocks);
     }
     when (18) {
-      exists ($station{$pi}{'ODAaid'}{18}) ?
+      exists ($station{$pi}{ODAaid}{18}) ?
         ODAGroup(18, @blocks) : Group9A (@blocks);
     }
     when (20) {
       Group10A(@blocks);
     }
     when (26) {
-      exists ($station{$pi}{'ODAaid'}{26}) ?
+      exists ($station{$pi}{ODAaid}{26}) ?
         ODAGroup(26, @blocks) : Group13A(@blocks);
     }
     when (28) {
@@ -643,15 +643,15 @@ sub Group0A {
   print_DI($DI_adr, $DI);
 
   # TA, M/S
-  $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
-  $station{$pi}{'MS'} = extract_bits($blocks[1], 3, 1);
+  $station{$pi}{TA} = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{MS} = extract_bits($blocks[1], 3, 1);
   utter ('  TA:     '.
-    $TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}],
-    ' TA:'.$station{$pi}{'TA'});
-  utter ('  M/S:    '.qw( Speech Music )[$station{$pi}{'MS'}],
-    ' MS:'.qw(S M)[$station{$pi}{'MS'}]);
+    $TA_descr[$station{$pi}{TP}][$station{$pi}{TA}],
+    ' TA:'.$station{$pi}{TA});
+  utter ('  M/S:    '.qw( Speech Music )[$station{$pi}{MS}],
+    ' MS:'.qw(S M)[$station{$pi}{MS}]);
 
-  $station{$pi}{'hasMS'} = TRUE;
+  $station{$pi}{hasMS} = TRUE;
 
   if (@blocks >= 3) {
     # AF
@@ -661,7 +661,7 @@ sub Group0A {
       utter ('  AF:     '.$af[$_],' AF:'.$af[$_]);
     }
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
-      ($station{$pi}{'freq'} = $af[1]) =~ s/ ?[kM]Hz//;
+      ($station{$pi}{freq} = $af[1]) =~ s/ ?[kM]Hz//;
     }
   }
 
@@ -669,12 +669,12 @@ sub Group0A {
 
     # Program Service Name (PS)
 
-    if ($station{$pi}{'denyPS'}) {
+    if ($station{$pi}{denyPS}) {
       utter ("          (Ignoring changes to PS)"," denyPS");
     } else {
       set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
         extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
-      if ($station{$pi}{'numPSrcvd'} == 4) {
+      if ($station{$pi}{numPSrcvd} == 4) {
         utter (q{}, ' PS_OK');
       }
     }
@@ -693,26 +693,26 @@ sub Group0B {
   print_DI($DI_adr, $DI);
 
   # Traffic Announcements, Music/Speech
-  $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
-  $station{$pi}{'MS'} = extract_bits($blocks[1], 3, 1);
+  $station{$pi}{TA} = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{MS} = extract_bits($blocks[1], 3, 1);
   utter ("  TA:     ".
-    $TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}],
-    " TA:$station{$pi}{'TA'}");
-  utter ("  M/S:    ".qw( Speech Music )[$station{$pi}{'MS'}],
-    " MS:".qw( S M)[$station{$pi}{'MS'}]);
+    $TA_descr[$station{$pi}{TP}][$station{$pi}{TA}],
+    " TA:$station{$pi}{TA}");
+  utter ("  M/S:    ".qw( Speech Music )[$station{$pi}{MS}],
+    " MS:".qw( S M)[$station{$pi}{MS}]);
 
-  $station{$pi}{'hasMS'} = TRUE;
+  $station{$pi}{hasMS} = TRUE;
 
   if (@blocks == 4) {
 
     # Program Service name
 
-    if ($station{$pi}{'denyPS'}) {
+    if ($station{$pi}{denyPS}) {
       utter ('          (Ignoring changes to PS)', ' denyPS');
     } else {
       set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
         extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
-      if ($station{$pi}{'numPSrcvd'} == 4) {
+      if ($station{$pi}{numPSrcvd} == 4) {
         utter (q{}, ' PS_OK');
       }
     }
@@ -746,13 +746,13 @@ sub Group1A {
 
   # Slow labeling codes
 
-  $station{$pi}{'LA'} = extract_bits($blocks[2], 15, 1);
-  utter ('  LA:     '.($station{$pi}{'LA'} ? 'Program is linked '.
-    (exists($station{$pi}{'LSN'}) &&
-    sprintf('to linkage set %Xh ', $station{$pi}{'LSN'})).
+  $station{$pi}{LA} = extract_bits($blocks[2], 15, 1);
+  utter ('  LA:     '.($station{$pi}{LA} ? 'Program is linked '.
+    (exists($station{$pi}{LSN}) &&
+    sprintf('to linkage set %Xh ', $station{$pi}{LSN})).
     'at the moment' : 'Program is not linked at the moment'),
-    ' LA:'.$station{$pi}{'LA'}.(exists($station{$pi}{'LSN'})
-    && sprintf('0x%X',$station{$pi}{'LSN'})));
+    ' LA:'.$station{$pi}{LA}.(exists($station{$pi}{LSN})
+    && sprintf('0x%X',$station{$pi}{LSN})));
 
   my $slc_variant = extract_bits($blocks[2], 12, 3);
 
@@ -791,20 +791,20 @@ sub Group1A {
         }
       }
 
-      $station{$pi}{'ECC'}    = extract_bits($blocks[2],  0, 8);
-      $station{$pi}{'CC'}     = extract_bits($pi,   12, 4);
-      utter (('  ECC:    '.sprintf('%02X', $station{$pi}{'ECC'}).
-        (defined $countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] &&
-              " ($countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}])"),
-           (' ECC:'.sprintf('%02X', $station{$pi}{'ECC'}).
-        (defined $countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}] &&
-              "[$countryISO[$station{$pi}{'ECC'}][$station{$pi}{'CC'}]]" ))));
+      $station{$pi}{ECC}    = extract_bits($blocks[2],  0, 8);
+      $station{$pi}{CC}     = extract_bits($pi,   12, 4);
+      utter (('  ECC:    '.sprintf('%02X', $station{$pi}{ECC}).
+        (defined $countryISO[$station{$pi}{ECC}][$station{$pi}{CC}] &&
+              " ($countryISO[$station{$pi}{ECC}][$station{$pi}{CC}])"),
+           (' ECC:'.sprintf('%02X', $station{$pi}{ECC}).
+        (defined $countryISO[$station{$pi}{ECC}][$station{$pi}{CC}] &&
+              "[$countryISO[$station{$pi}{ECC}][$station{$pi}{CC}]]" ))));
     }
 
     when (1) {
-      $station{$pi}{'tmcid'}       = extract_bits($blocks[2], 0, 12);
-      utter ('  TMC ID: '. sprintf('%xh',$station{$pi}{'tmcid'}),
-        ' TMCID:'.sprintf('%xh',$station{$pi}{'tmcid'}));
+      $station{$pi}{tmcid}       = extract_bits($blocks[2], 0, 12);
+      utter ('  TMC ID: '. sprintf('%xh',$station{$pi}{tmcid}),
+        ' TMCID:'.sprintf('%xh',$station{$pi}{tmcid}));
     }
 
     when (2) {
@@ -843,13 +843,13 @@ sub Group1A {
     }
 
     when (3) {
-      $station{$pi}{'lang'}        = extract_bits($blocks[2], 0, 8);
-      utter ('  Lang:   '. sprintf( ($station{$pi}{'lang'} <= 127 ?
-        "0x%X $langname[$station{$pi}{'lang'}]" : "Unknown language %Xh"),
-        $station{$pi}{'lang'}),
-        ' LANG:'.sprintf( ($station{$pi}{'lang'} <= 127 ?
-        "0x%X[$langname[$station{$pi}{'lang'}]]" : "%Hx[?]"),
-        $station{$pi}{'lang'}));
+      $station{$pi}{lang}        = extract_bits($blocks[2], 0, 8);
+      utter ('  Lang:   '. sprintf( ($station{$pi}{lang} <= 127 ?
+        "0x%X $langname[$station{$pi}{lang}]" : "Unknown language %Xh"),
+        $station{$pi}{lang}),
+        ' LANG:'.sprintf( ($station{$pi}{lang} <= 127 ?
+        "0x%X[$langname[$station{$pi}{lang}]]" : "%Hx[?]"),
+        $station{$pi}{lang}));
     }
 
     when (6) {
@@ -859,9 +859,9 @@ sub Group1A {
     }
 
     when (7) {
-      $station{$pi}{'EWS_channel'} = extract_bits($blocks[2], 0, 12);
-      utter ('  EWS channel: '. sprintf('0x%X',$station{$pi}{'EWS_channel'}),
-             ' EWSch:'. sprintf('0x%X',$station{$pi}{'EWS_channel'}));
+      $station{$pi}{EWS_channel} = extract_bits($blocks[2], 0, 12);
+      utter ('  EWS channel: '. sprintf('0x%X',$station{$pi}{EWS_channel}),
+             ' EWSch:'. sprintf('0x%X',$station{$pi}{EWS_channel}));
     }
 
     default {
@@ -890,8 +890,8 @@ sub Group2A {
   return if (@blocks < 3);
 
   my $text_seg_addr        = extract_bits($blocks[1], 0, 4) * 4;
-  $station{$pi}{'prev_textAB'} = $station{$pi}{'textAB'};
-  $station{$pi}{'textAB'}      = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{prev_textAB} = $station{$pi}{textAB};
+  $station{$pi}{textAB}      = extract_bits($blocks[1], 4, 1);
   my @chr                  = ();
 
   $chr[0] = extract_bits($blocks[2], 8, 8);
@@ -903,13 +903,13 @@ sub Group2A {
   }
 
   # Page 26
-  if (($station{$pi}{'prev_textAB'} // -1) != $station{$pi}{'textAB'}) {
-    if ($station{$pi}{'denyRTAB'} // FALSE) {
+  if (($station{$pi}{prev_textAB} // -1) != $station{$pi}{textAB}) {
+    if ($station{$pi}{denyRTAB} // FALSE) {
       utter ('          (Ignoring A/B flag change)', ' denyRTAB');
     } else {
       utter ('          (A/B flag change; text reset)', ' RT_RESET');
-      $station{$pi}{'RTbuf'}  = q{ } x 64;
-      $station{$pi}{'RTrcvd'} = ();
+      $station{$pi}{RTbuf}  = q{ } x 64;
+      $station{$pi}{RTrcvd} = ();
     }
   }
 
@@ -925,18 +925,18 @@ sub Group2B {
   return if (@blocks < 4);
 
   my $text_seg_addr            = extract_bits($blocks[1], 0, 4) * 2;
-  $station{$pi}{'prev_textAB'} = $station{$pi}{'textAB'};
-  $station{$pi}{'textAB'}      = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{prev_textAB} = $station{$pi}{textAB};
+  $station{$pi}{textAB}      = extract_bits($blocks[1], 4, 1);
   my @chr                      = (extract_bits($blocks[3], 8, 8),
                                   extract_bits($blocks[3], 0, 8));
 
-  if (($station{$pi}{'prev_textAB'} // -1) != $station{$pi}{'textAB'}) {
-    if ($station{$pi}{'denyRTAB'} // FALSE) {
+  if (($station{$pi}{prev_textAB} // -1) != $station{$pi}{textAB}) {
+    if ($station{$pi}{denyRTAB} // FALSE) {
       utter ('          (Ignoring A/B flag change)', ' denyRTAB');
     } else {
       utter ('          (A/B flag change; text reset)', ' RT_RESET');
-      $station{$pi}{'RTbuf'}  = q{ } x 64;
-      $station{$pi}{'RTrcvd'} = ();
+      $station{$pi}{RTbuf}  = q{ } x 64;
+      $station{$pi}{RTrcvd} = ();
     }
   }
 
@@ -976,53 +976,53 @@ sub Group3A {
     }
 
     default {
-      $station{$pi}{'ODAaid'}{$group_type} = $blocks[3];
+      $station{$pi}{ODAaid}{$group_type} = $blocks[3];
       utter ('  ODAgrp: '. extract_bits($blocks[1], 1, 4).
             (extract_bits($blocks[1], 0, 1) ? 'B' : 'A'),
             ' ODAgrp:'. extract_bits($blocks[1], 1, 4).
             (extract_bits($blocks[1], 0, 1) ? 'B' : 'A'));
-      utter ('  ODAapp: '. ($oda_app[$station{$pi}{'ODAaid'}{$group_type}] //
-        sprintf('%04Xh',$station{$pi}{'ODAaid'}{$group_type})),
-        ' ODAapp:'. sprintf('0x%04X',$station{$pi}{'ODAaid'}{$group_type}));
+      utter ('  ODAapp: '. ($oda_app[$station{$pi}{ODAaid}{$group_type}] //
+        sprintf('%04Xh',$station{$pi}{ODAaid}{$group_type})),
+        ' ODAapp:'. sprintf('0x%04X',$station{$pi}{ODAaid}{$group_type}));
     }
 
   }
 
-  given ($station{$pi}{'ODAaid'}{$group_type}) {
+  given ($station{$pi}{ODAaid}{$group_type}) {
 
     # Traffic Message Channel
     when ([0xCD46, 0xCD47]) {
-      $station{$pi}{'hasTMC'} = TRUE;
+      $station{$pi}{hasTMC} = TRUE;
       print_appdata ('TMC', sprintf('sysmsg %04x',$blocks[2]));
     }
 
     # RT+
     when (0x4BD7) {
-      $station{$pi}{'hasRTplus'} = TRUE;
-      $station{$pi}{'rtp_which'} = extract_bits($blocks[2], 13, 1);
-      $station{$pi}{'CB'}        = extract_bits($blocks[2], 12, 1);
-      $station{$pi}{'SCB'}       = extract_bits($blocks[2],  8, 4);
-      $station{$pi}{'templnum'}  = extract_bits($blocks[2],  0, 8);
-      utter ('  RT+ applies to '.($station{$pi}{'rtp_which'} ?
+      $station{$pi}{hasRTplus} = TRUE;
+      $station{$pi}{rtp_which} = extract_bits($blocks[2], 13, 1);
+      $station{$pi}{CB}        = extract_bits($blocks[2], 12, 1);
+      $station{$pi}{SCB}       = extract_bits($blocks[2],  8, 4);
+      $station{$pi}{templnum}  = extract_bits($blocks[2],  0, 8);
+      utter ('  RT+ applies to '.($station{$pi}{rtp_which} ?
         'enhanced RadioText' : 'RadioText'), q{});
-      utter ('  '.($station{$pi}{'CB'} ?
-        "Using template $station{$pi}{'templnum'}" : 'No template in use'),
+      utter ('  '.($station{$pi}{CB} ?
+        "Using template $station{$pi}{templnum}" : 'No template in use'),
         q{});
-      if (!$station{$pi}{'CB'}) {
-        utter (sprintf('  Server Control Bits: %Xh', $station{$pi}{'SCB'}),
-               sprintf(' SCB:%Xh', $station{$pi}{'SCB'}));
+      if (!$station{$pi}{CB}) {
+        utter (sprintf('  Server Control Bits: %Xh', $station{$pi}{SCB}),
+               sprintf(' SCB:%Xh', $station{$pi}{SCB}));
       }
     }
 
     # eRT
     when (0x6552) {
-      $station{$pi}{'haseRT'}     = TRUE;
-      if (not exists $station{$pi}{'eRTbuf'}) {
-        $station{$pi}{'eRTbuf'}     = q{ } x 64;
+      $station{$pi}{haseRT}     = TRUE;
+      if (not exists $station{$pi}{eRTbuf}) {
+        $station{$pi}{eRTbuf}     = q{ } x 64;
       }
-      $station{$pi}{'ert_isutf8'} = extract_bits($blocks[2], 0, 1);
-      $station{$pi}{'ert_txtdir'} = extract_bits($blocks[2], 1, 1);
-      $station{$pi}{'ert_chrtbl'} = extract_bits($blocks[2], 2, 4);
+      $station{$pi}{ert_isutf8} = extract_bits($blocks[2], 0, 1);
+      $station{$pi}{ert_txtdir} = extract_bits($blocks[2], 1, 1);
+      $station{$pi}{ert_chrtbl} = extract_bits($blocks[2], 2, 4);
     }
 
     # Unimplemented ODA
@@ -1172,12 +1172,12 @@ sub Group9A {
 sub Group10A {
   my @blocks = @_;
 
-  if (extract_bits($blocks[1], 4, 1) != ($station{$pi}{'PTYNAB'} // -1)) {
+  if (extract_bits($blocks[1], 4, 1) != ($station{$pi}{PTYNAB} // -1)) {
     utter ('         (A/B flag change, text reset)', q{});
-    $station{$pi}{'PTYN'} = q{ } x 8;
+    $station{$pi}{PTYN} = q{ } x 8;
   }
 
-  $station{$pi}{'PTYNAB'} = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{PTYNAB} = extract_bits($blocks[1], 4, 1);
 
   if (@blocks >= 3) {
     my @char = ();
@@ -1192,16 +1192,16 @@ sub Group10A {
     my $segaddr = extract_bits($blocks[1], 0, 1);
 
     for my $cnum (0..$#char) {
-      substr($station{$pi}{'PTYN'}, $segaddr*4 + $cnum, 1)
+      substr($station{$pi}{PTYN}, $segaddr*4 + $cnum, 1)
         = $char_table[$char[$cnum]];
     }
 
     my $displayed_PTYN
       = ($is_interactive ? '  PTYN:   '.
-      substr($station{$pi}{'PTYN'},0,$segaddr*4).REVERSE.
-      substr($station{$pi}{'PTYN'},$segaddr*4,scalar(@char)).RESET.
-      substr($station{$pi}{'PTYN'},$segaddr*4+scalar(@char)) :
-      $station{$pi}{'PTYN'});
+      substr($station{$pi}{PTYN},0,$segaddr*4).REVERSE.
+      substr($station{$pi}{PTYN},$segaddr*4,scalar(@char)).RESET.
+      substr($station{$pi}{PTYN},$segaddr*4+scalar(@char)) :
+      $station{$pi}{PTYN});
     utter ('  PTYN:   '.$displayed_PTYN, q{ PTYN:"}.$displayed_PTYN.q{"});
   }
 }
@@ -1225,24 +1225,24 @@ sub Group14A {
 
   return if (@blocks < 4);
 
-  $station{$pi}{'hasEON'}    = TRUE;
+  $station{$pi}{hasEON}    = TRUE;
   my $eon_pi                 = $blocks[3];
-  $station{$eon_pi}{'TP'}    = extract_bits($blocks[1], 4, 1);
+  $station{$eon_pi}{TP}    = extract_bits($blocks[1], 4, 1);
   my $eon_variant            = extract_bits($blocks[1], 0, 4);
   utter ('  Other Network', ' ON:');
   utter ('    PI:     '.sprintf('%04X',$eon_pi).
-    ((exists($station{$eon_pi}{'chname'})) &&
-    " ($station{$eon_pi}{'chname'})"),
+    ((exists($station{$eon_pi}{chname})) &&
+    " ($station{$eon_pi}{chname})"),
     sprintf("%04X[",$eon_pi));
-  utter ('    TP:     '.$TP_descr[$station{$eon_pi}{'TP'}],
-         'TP:'.$station{$eon_pi}{'TP'});
+  utter ('    TP:     '.$TP_descr[$station{$eon_pi}{TP}],
+         'TP:'.$station{$eon_pi}{TP});
 
   given ($eon_variant) {
 
     when ([0..3]) {
       utter(q{  },q{});
-      if (not exists($station{$eon_pi}{'PSbuf'})) {
-        $station{$eon_pi}{'PSbuf'} = q{ } x 8;
+      if (not exists($station{$eon_pi}{PSbuf})) {
+        $station{$eon_pi}{PSbuf} = q{ } x 8;
       }
       set_PS_chars($eon_pi, $eon_variant*2, extract_bits($blocks[2], 8, 8),
         extract_bits($blocks[2], 0, 8));
@@ -1272,37 +1272,37 @@ sub Group14A {
     }
 
     when (12) {
-      $station{$eon_pi}{'LA'}  = extract_bits($blocks[2], 15,  1);
-      $station{$eon_pi}{'EG'}  = extract_bits($blocks[2], 14,  1);
-      $station{$eon_pi}{'ILS'} = extract_bits($blocks[2], 13,  1);
-      $station{$eon_pi}{'LSN'} = extract_bits($blocks[2], 1,  12);
-      if ($station{$eon_pi}{'LA'})  {
+      $station{$eon_pi}{LA}  = extract_bits($blocks[2], 15,  1);
+      $station{$eon_pi}{EG}  = extract_bits($blocks[2], 14,  1);
+      $station{$eon_pi}{ILS} = extract_bits($blocks[2], 13,  1);
+      $station{$eon_pi}{LSN} = extract_bits($blocks[2], 1,  12);
+      if ($station{$eon_pi}{LA})  {
         utter ('    Link: Program is linked to linkage set '.
-               sprintf('%03X', $station{$eon_pi}{'LSN'}),
-               ' LSN:'.sprintf('%03X', $station{$eon_pi}{'LSN'}));
+               sprintf('%03X', $station{$eon_pi}{LSN}),
+               ' LSN:'.sprintf('%03X', $station{$eon_pi}{LSN}));
       }
-      if ($station{$eon_pi}{'EG'})  {
+      if ($station{$eon_pi}{EG})  {
         utter ('    Link: Program is member of an extended generic set',
           ' Link:EG');
       }
-      if ($station{$eon_pi}{'ILS'}) {
+      if ($station{$eon_pi}{ILS}) {
         utter ('    Link: Program is linked internationally', 'Link:ILS');
       }
       # TODO: Country codes, pg. 51
     }
 
     when (13) {
-      $station{$eon_pi}{'PTY'} = extract_bits($blocks[2], 11, 5);
-      $station{$eon_pi}{'TA'}  = extract_bits($blocks[2],  0, 1);
-      utter (("    PTY:    $station{$eon_pi}{'PTY'} ".
-        (exists $station{$eon_pi}{'ECC'} &&
-        ($countryISO[$station{$pi}{'ECC'}][$station{$eon_pi}{'CC'}] // q{})
-        =~ /us|ca|mx/ ? $ptynamesUS[$station{$eon_pi}{'PTY'}] :
-        $ptynames[$station{$eon_pi}{'PTY'}])),
-        ' PTY:'.$station{$eon_pi}{'PTY'});
+      $station{$eon_pi}{PTY} = extract_bits($blocks[2], 11, 5);
+      $station{$eon_pi}{TA}  = extract_bits($blocks[2],  0, 1);
+      utter (("    PTY:    $station{$eon_pi}{PTY} ".
+        (exists $station{$eon_pi}{ECC} &&
+        ($countryISO[$station{$pi}{ECC}][$station{$eon_pi}{CC}] // q{})
+        =~ /us|ca|mx/ ? $ptynamesUS[$station{$eon_pi}{PTY}] :
+        $ptynames[$station{$eon_pi}{PTY}])),
+        ' PTY:'.$station{$eon_pi}{PTY});
       utter ('    TA:     '.
-        $TA_descr[$station{$eon_pi}{'TP'}][$station{$eon_pi}{'TA'}],
-        ' TA:'.$station{$eon_pi}{'TA'});
+        $TA_descr[$station{$eon_pi}{TP}][$station{$eon_pi}{TA}],
+        ' TA:'.$station{$eon_pi}{TA});
     }
 
     when (14) {
@@ -1331,19 +1331,19 @@ sub Group14B {
   return if (@blocks < 4);
 
   my $eon_pi              =  $blocks[3];
-  $station{$eon_pi}{'TP'} = extract_bits($blocks[1], 4, 1);
-  $station{$eon_pi}{'TA'} = extract_bits($blocks[1], 3, 1);
+  $station{$eon_pi}{TP} = extract_bits($blocks[1], 4, 1);
+  $station{$eon_pi}{TA} = extract_bits($blocks[1], 3, 1);
   utter ('  Other Network', ' ON:');
   utter ('    PI:     '.sprintf('%04X', $eon_pi).
-    ((exists($station{$eon_pi}{'chname'})) &&
-    " ($station{$eon_pi}{'chname'})"),
+    ((exists($station{$eon_pi}{chname})) &&
+    " ($station{$eon_pi}{chname})"),
     sprintf('%04X[',$eon_pi));
   utter ('    TP:     '.
-    $TP_descr[$station{$eon_pi}{'TP'}],
-    'TP:'.$station{$eon_pi}{'TP'});
+    $TP_descr[$station{$eon_pi}{TP}],
+    'TP:'.$station{$eon_pi}{TP});
   utter ('    TA:     '.
-    $TA_descr[$station{$eon_pi}{'TP'}][$station{$eon_pi}{'TA'}],
-    'TA:'.$station{$eon_pi}{'TA'});
+    $TA_descr[$station{$eon_pi}{TP}][$station{$eon_pi}{TA}],
+    'TA:'.$station{$eon_pi}{TA});
 }
 
 # 15B: Fast basic tuning and switching information
@@ -1357,13 +1357,13 @@ sub Group15B {
   print_DI($DI_adr, $DI);
 
   # TA, M/S
-  $station{$pi}{'TA'} = extract_bits($blocks[1], 4, 1);
-  $station{$pi}{'MS'} = extract_bits($blocks[1], 3, 1);
-  utter ('  TA:     '.$TA_descr[$station{$pi}{'TP'}][$station{$pi}{'TA'}],
-         ' TA:'.$station{$pi}{'TA'});
-  utter ('  M/S:    '.qw( Speech Music )[$station{$pi}{'MS'}],
-         ' MS:'.qw(S M)[$station{$pi}{'MS'}]);
-  $station{$pi}{'hasMS'} = TRUE;
+  $station{$pi}{TA} = extract_bits($blocks[1], 4, 1);
+  $station{$pi}{MS} = extract_bits($blocks[1], 3, 1);
+  utter ('  TA:     '.$TA_descr[$station{$pi}{TP}][$station{$pi}{TA}],
+         ' TA:'.$station{$pi}{TA});
+  utter ('  M/S:    '.qw( Speech Music )[$station{$pi}{MS}],
+         ' MS:'.qw(S M)[$station{$pi}{MS}]);
+  $station{$pi}{hasMS} = TRUE;
 
 }
 
@@ -1375,8 +1375,8 @@ sub ODAGroup {
 
   return if (@blocks < 4);
 
-  if (exists $station{$pi}{'ODAaid'}{$group_type}) {
-    given ($station{$pi}{'ODAaid'}{$group_type}) {
+  if (exists $station{$pi}{ODAaid}{$group_type}) {
+    given ($station{$pi}{ODAaid}{$group_type}) {
 
       when ([0xCD46, 0xCD47]) {
         print_appdata ('TMC', sprintf('msg %02x %04x %04x',
@@ -1390,7 +1390,7 @@ sub ODAGroup {
       }
       default {
         say sprintf('          Unimplemented ODA %04x: %02x %04x %04x',
-          $station{$pi}{'ODAaid'}{$group_type},
+          $station{$pi}{ODAaid}{$group_type},
           extract_bits($blocks[1], 0, 5), $blocks[2], $blocks[3]);
       }
 
@@ -1402,11 +1402,11 @@ sub ODAGroup {
 
 sub screenReset {
 
-  $station{$pi}{'RTbuf'} = (q{ } x 64) if (!exists $station{$pi}{'RTbuf'});
-  $station{$pi}{'hasRT'} = FALSE       if (!exists $station{$pi}{'hasRT'});
-  $station{$pi}{'hasMS'} = FALSE       if (!exists $station{$pi}{'hasMS'});
-  $station{$pi}{'TP'}    = FALSE       if (!exists $station{$pi}{'TP'});
-  $station{$pi}{'TA'}    = FALSE       if (!exists $station{$pi}{'TA'});
+  $station{$pi}{RTbuf} = (q{ } x 64) if (!exists $station{$pi}{RTbuf});
+  $station{$pi}{hasRT} = FALSE       if (!exists $station{$pi}{hasRT});
+  $station{$pi}{hasMS} = FALSE       if (!exists $station{$pi}{hasMS});
+  $station{$pi}{TP}    = FALSE       if (!exists $station{$pi}{TP});
+  $station{$pi}{TA}    = FALSE       if (!exists $station{$pi}{TA});
 
 }
 
@@ -1415,43 +1415,43 @@ sub screenReset {
 sub set_rt_chars {
   (my $lok, my @a) = @_;
 
-  $station{$pi}{'hasRT'} = TRUE;
+  $station{$pi}{hasRT} = TRUE;
 
   for my $i (0..$#a) {
     given ($a[$i]) {
       when (0x0D) {
-        substr($station{$pi}{'RTbuf'}, $lok+$i, 1) = q{↵};
+        substr($station{$pi}{RTbuf}, $lok+$i, 1) = q{↵};
       }
       when (0x0A) {
-        substr($station{$pi}{'RTbuf'}, $lok+$i, 1) = q{␊};
+        substr($station{$pi}{RTbuf}, $lok+$i, 1) = q{␊};
       }
       default {
-        substr($station{$pi}{'RTbuf'}, $lok+$i, 1) = $char_table[$a[$i]];
+        substr($station{$pi}{RTbuf}, $lok+$i, 1) = $char_table[$a[$i]];
       }
     }
-    $station{$pi}{'RTrcvd'}[$lok+$i] = TRUE;
+    $station{$pi}{RTrcvd}[$lok+$i] = TRUE;
   }
 
-  my $minRTlen = ($station{$pi}{'RTbuf'} =~ /↵/ ?
-    index($station{$pi}{'RTbuf'}, q{↵}) + 1 :
-    $station{$pi}{'presetminRTlen'} // 64);
+  my $minRTlen = ($station{$pi}{RTbuf} =~ /↵/ ?
+    index($station{$pi}{RTbuf}, q{↵}) + 1 :
+    $station{$pi}{presetminRTlen} // 64);
 
   my $total_received
-    = grep (defined $_, @{$station{$pi}{'RTrcvd'}}[0..$minRTlen]);
-  $station{$pi}{'hasFullRT'} = ($total_received >= $minRTlen ? TRUE : FALSE);
+    = grep (defined $_, @{$station{$pi}{RTrcvd}}[0..$minRTlen]);
+  $station{$pi}{hasFullRT} = ($total_received >= $minRTlen ? TRUE : FALSE);
 
   my $displayed_RT
-    = ($is_interactive ? substr($station{$pi}{'RTbuf'},0,$lok).REVERSE.
-                         substr($station{$pi}{'RTbuf'},$lok,scalar(@a)).RESET.
-                         substr($station{$pi}{'RTbuf'},$lok+scalar(@a)) :
-                         $station{$pi}{'RTbuf'});
+    = ($is_interactive ? substr($station{$pi}{RTbuf},0,$lok).REVERSE.
+                         substr($station{$pi}{RTbuf},$lok,scalar(@a)).RESET.
+                         substr($station{$pi}{RTbuf},$lok+scalar(@a)) :
+                         $station{$pi}{RTbuf});
   utter ('  RT:     '.$displayed_RT, q{ RT:'}.$displayed_RT.q{'});
-  if ($station{$pi}{'hasFullRT'}) {
+  if ($station{$pi}{hasFullRT}) {
     utter (q{}, ' RT_OK');
   }
 
   utter ('          '. join(q{}, (map ((defined) ? q{^} : q{ },
-    @{$station{$pi}{'RTrcvd'}}[0..63]))), q{});
+    @{$station{$pi}{RTrcvd}}[0..63]))), q{});
 }
 
 # Enhanced RadioText
@@ -1459,24 +1459,24 @@ sub set_rt_chars {
 sub parse_eRT {
   my $addr = extract_bits($_[1], 0, 5);
 
-  if ($station{$pi}{'ert_chrtbl'} == 0x00 &&
-     !$station{$pi}{'ert_isutf8'}         &&
-      $station{$pi}{'ert_txtdir'} == 0) {
+  if ($station{$pi}{ert_chrtbl} == 0x00 &&
+     !$station{$pi}{ert_isutf8}         &&
+      $station{$pi}{ert_txtdir} == 0) {
 
     for (0..1) {
-      substr($station{$pi}{'eRTbuf'}, 2*$addr+$_, 1) = decode('UCS-2LE',
+      substr($station{$pi}{eRTbuf}, 2*$addr+$_, 1) = decode('UCS-2LE',
         chr(extract_bits($_[2+$_], 8, 8)).chr(extract_bits($_[2+$_], 0, 8)));
-      $station{$pi}{'eRTrcvd'}[2*$addr+$_]           = TRUE;
+      $station{$pi}{eRTrcvd}[2*$addr+$_]           = TRUE;
     }
 
-    say '  eRT:    '. substr($station{$pi}{'eRTbuf'},0,2*$addr).
+    say '  eRT:    '. substr($station{$pi}{eRTbuf},0,2*$addr).
                       ($is_interactive ? REVERSE : q{}).
-                      substr($station{$pi}{'eRTbuf'},2*$addr,2).
+                      substr($station{$pi}{eRTbuf},2*$addr,2).
                       ($is_interactive ? RESET : q{}).
-                      substr($station{$pi}{'eRTbuf'},2*$addr+2);
+                      substr($station{$pi}{eRTbuf},2*$addr+2);
 
     say '          '. join(q{}, (map ((defined) ? q{^} : q{ },
-      @{$station{$pi}{'eRTrcvd'}}[0..63])));
+      @{$station{$pi}{eRTrcvd}}[0..63])));
 
   }
 }
@@ -1488,32 +1488,32 @@ sub set_PS_chars {
   my $lok  = $_[1];
   my @khar = ($_[2], $_[3]);
 
-  if (not exists $station{$pspi}{'PSbuf'}) {
-    $station{$pspi}{'PSbuf'} = q{ } x 8
+  if (not exists $station{$pspi}{PSbuf}) {
+    $station{$pspi}{PSbuf} = q{ } x 8
   }
 
-  substr($station{$pspi}{'PSbuf'}, $lok, 2)
+  substr($station{$pspi}{PSbuf}, $lok, 2)
     = $char_table[$khar[0]].$char_table[$khar[1]];
 
   # Display PS name when received without gaps
 
-  if (not exists $station{$pspi}{'prevPSlok'}) {
-    $station{$pspi}{'prevPSlok'} = 0;
+  if (not exists $station{$pspi}{prevPSloc}) {
+    $station{$pspi}{prevPSloc} = 0;
   }
-  if ($lok != $station{$pspi}{'prevPSlok'} + 2 ||
-      $lok == $station{$pspi}{'prevPSlok'}) {
-    $station{$pspi}{'PSrcvd'} = ();
+  if ($lok != $station{$pspi}{prevPSloc} + 2 ||
+      $lok == $station{$pspi}{prevPSloc}) {
+    $station{$pspi}{PSrcvd} = ();
   }
-  $station{$pspi}{'PSrcvd'}[$lok/2] = TRUE;
-  $station{$pspi}{'prevPSlok'}      = $lok;
-  $station{$pspi}{'numPSrcvd'}
-    = grep (defined, @{$station{$pspi}{'PSrcvd'}}[0..3]);
+  $station{$pspi}{PSrcvd}[$lok/2] = TRUE;
+  $station{$pspi}{prevPSloc}      = $lok;
+  $station{$pspi}{numPSrcvd}
+    = grep (defined, @{$station{$pspi}{PSrcvd}}[0..3]);
 
   my $displayed_PS
-    = ($is_interactive ? substr($station{$pspi}{'PSbuf'},0,$lok).REVERSE.
-                         substr($station{$pspi}{'PSbuf'},$lok,2).RESET.
-                         substr($station{$pspi}{'PSbuf'},$lok+2) :
-                         $station{$pspi}{'PSbuf'});
+    = ($is_interactive ? substr($station{$pspi}{PSbuf},0,$lok).REVERSE.
+                         substr($station{$pspi}{PSbuf},$lok,2).RESET.
+                         substr($station{$pspi}{PSbuf},$lok+2) :
+                         $station{$pspi}{PSbuf});
   utter ('  PS:     '.$displayed_PS, q{ PS:'}.$displayed_PS.q{'});
 
 }
@@ -1536,18 +1536,18 @@ sub parse_RTp {
   $len[0]   = extract_bits($_[2], 1, 6);
   $len[1]   = extract_bits($_[3], 0, 5);
 
-  if ($station{$pi}{'rtp_which'} == 0) {
+  if ($station{$pi}{rtp_which} == 0) {
     my @tags = ();
     for my $tagnum (0..1) {
 
       my $total_received
         = grep (defined $_,
-        @{$station{$pi}{'RTrcvd'}}[$start[$tagnum]..($start[$tagnum] +
+        @{$station{$pi}{RTrcvd}}[$start[$tagnum]..($start[$tagnum] +
           $len[$tagnum] - 1)]);
       if ($total_received == $len[$tagnum]) {
 
         my $tagname = $rtpclass[$ctype[$tagnum]];
-        my $tagdata = substr($station{$pi}{'RTbuf'}, $start[$tagnum],
+        my $tagdata = substr($station{$pi}{RTbuf}, $start[$tagnum],
           $len[$tagnum]+1);
         push @tags, $tagname.q{: "}.$tagdata.q{"};
       }
