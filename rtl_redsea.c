@@ -122,8 +122,8 @@ int main(int argc, char **argv) {
   reading_frame = 0;
   qua = 0;
   double t = 0;
-  int numsamples = 0;
 #endif
+  int numsamples = 0;
 
   while ((c = getopt (argc, argv, "f:")) != -1)
     switch (c) {
