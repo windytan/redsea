@@ -128,7 +128,6 @@ int main(int argc, char **argv) {
   qua = 0;
   double t = 0;
 #endif
-  int numsamples = 0;
 
   while ((c = getopt (argc, argv, "f:")) != -1)
     switch (c) {
