@@ -50,6 +50,10 @@ void print_delta(char b) {
   nbit++;
 }
 
+void bit(char b) {
+
+}
+
 int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
@@ -115,6 +119,7 @@ int main(int argc, char **argv) {
   int    c;
   int    fmfreq         = 0;
   int    bytesread;
+  int numsamples = 0;
 
 #ifdef DEBUG
   sbit = 0;
@@ -122,7 +127,6 @@ int main(int argc, char **argv) {
   reading_frame = 0;
   qua = 0;
   double t = 0;
-  int numsamples = 0;
 #endif
 
   while ((c = getopt (argc, argv, "f:")) != -1)
@@ -189,10 +193,11 @@ int main(int argc, char **argv) {
       /* 1187.5 Hz clock */
 
       clock_phi = subcarr_phi / 48.0 + clock_offset;
-      lo_clock  = (fmod(clock_phi, 2*M_PI) >= M_PI ? 1 : -1);
+      lo_clock  = (fmod(clock_phi, 2*M_PI) < M_PI ? 1 : -1);
+      //lo_clock = sin(clock_phi);
 
 #ifdef DEBUG
-      outbuf[0] = lo_clock * 16000;
+      outbuf[0] = lo_clock * 6000;
       fwrite(outbuf, sizeof(int16_t), 1, U);
       outbuf[0] = subcarr_bb[0] * 32000;
       fwrite(outbuf, sizeof(int16_t), 1, IQ);
@@ -215,9 +220,10 @@ int main(int argc, char **argv) {
 #endif
 
       /* Decimate band-limited signal */
-      if (numsamples % 8 == 0) {
+      if (numsamples % 2 == 0) {
 
         /* biphase symbol integrate & dump */
+        //acc += atan2(subcarr_bb[1], subcarr_bb[0]) * lo_clock;
         acc += subcarr_bb[1] * lo_clock;
 
         if (sign(lo_clock) != sign(prevclock)) {
@@ -228,13 +234,14 @@ int main(int argc, char **argv) {
         prevclock = lo_clock;
       }
 
+      numsamples ++;
+
 #ifdef DEBUG
       outbuf[0] = dbit * 16000;
       fwrite(outbuf, sizeof(int16_t), 1, U);
       outbuf[0] = sbit * 16000;
       fwrite(outbuf, sizeof(int16_t), 1, U);
       t += 1.0/FS;
-      numsamples ++;
       if (numsamples % 125 == 0)
         fprintf(STATS,"%f,%f,%f,%f,%f,%f\n",
             t,fp,d_pphi,sc_phi_offset,clock_offset,qua);
