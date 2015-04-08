@@ -126,13 +126,12 @@ sub dbg {
 
 sub print_usage {
   my $usage = <<"END_USAGE";
-Usage: $0 [-hlst] [-p <error>] [-g <gain>] FREQ
+Usage: $0 [-hlst] [-p <error>] FREQ
 
     -h          display this help and exit
     -l          print groups in long format
     -s          print groups in short format (default)
     -t          print an ISO timestamp before each group
-    -g <gain>   gain (float), passed to rtl_fm (optional; don't use it)
     -p <error>  parts-per-million error, passed to rtl_fm (optional;
                 allows for faster PLL lock if set correctly)
     FREQ        station frequency in Hz, can be SI suffixed
@@ -145,7 +144,7 @@ END_USAGE
 
 sub get_options {
 
-  getopts('hlstp:g:df:', \%options);
+  getopts('hlstp:df:', \%options);
 
 
   if (exists $options{l}) {
@@ -192,8 +191,6 @@ sub open_radio {
 
   } else {
 
-    my $gain =
-      (exists $options{g} ? sprintf(' -g %.2f ', $options{g}) : q{});
     my $ppm  =
       (exists $options{p} ? sprintf(' -p %.0f ', $options{p}) : q{});
 
@@ -222,7 +219,7 @@ sub open_radio {
 
     $rtl_pid
       = open $bitpipe, '-|', sprintf($rtl_fm_exe.' -f %.1f -M fm -l 0 '.
-                       '-A std '. $gain.$ppm.' -F 0 -s %.1f | '.$rtl_redsea_exe,
+                       '-A std '.$ppm.' -F 0 -s %.1f | '.$rtl_redsea_exe,
                        $freq, FS) or die($!);
   }
 }
