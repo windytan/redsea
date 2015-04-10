@@ -32,7 +32,7 @@
 char dbit,sbit;
 int tot_errs[2];
 int reading_frame;
-double fc;
+double fsc;
 double qua;
 #endif
 
@@ -81,7 +81,7 @@ void biphase(double acc) {
     qua = (1.0 * abs(tot_errs[0] - tot_errs[1]) /
           (tot_errs[0] + tot_errs[1])) * 100;
     fprintf(stderr, "frame: %d  errs: %3d %3d  qual: %3.0f%%  pll: %.1f\n",
-        reading_frame, tot_errs[0], tot_errs[1], qua, fc);
+        reading_frame, tot_errs[0], tot_errs[1], qua, fsc);
 #endif
     tot_errs[0] = 0;
     tot_errs[1] = 0;
@@ -94,11 +94,6 @@ void biphase(double acc) {
 int main(int argc, char **argv) {
 
   int16_t  sample[IBUFLEN];
-#ifdef DEBUG
-  fc = FC_0;
-#else
-  double fc = FC_0;
-#endif
 
   double subcarr_phi    = 0;
   double subcarr_bb[2]  = {0};
@@ -108,25 +103,25 @@ int main(int argc, char **argv) {
   double prevclock      = 0;
   double prev_bb        = 0;
   double d_phi_sc       = 0;
-  double sc_phi_offset  = 0;
-  double d_pphi         = 0;
   double d_cphi         = 0;
   double acc            = 0;
   double subcarr_sample = 0;
-  double fp             = 19000;
-  double pilot_sample;
-  double pilot_phi      = 0;
   int    c;
   int    fmfreq         = 0;
   int    bytesread;
   int numsamples = 0;
+  double loop_out = 0;
+  double prev_d_phi_sc = 0;
 
 #ifdef DEBUG
   sbit = 0;
   dbit = 0;
   reading_frame = 0;
   qua = 0;
+  fsc = FC_0;
   double t = 0;
+#else
+  double fsc             = 57000;
 #endif
 
   while ((c = getopt (argc, argv, "f:")) != -1)
@@ -160,35 +155,24 @@ int main(int argc, char **argv) {
     for (i = 0; i < bytesread; i++) {
 
 
-      /* Pilot tone recovery */
-
-      pilot_sample      = filter_bp_19k(sample[i]);
-      double pilot_bb_i, pilot_bb_q;
-
-      pilot_phi  += 2 * M_PI * fp * (1.0/FS);
-      pilot_bb_i  = filter_lp_pll(cos(pilot_phi) * pilot_sample, 0);
-      pilot_bb_q  = filter_lp_pll(sin(pilot_phi) * pilot_sample, 1);
-
-      double ppll_alpha = 0.0001;
-      double ppll_beta  = 0.0001;
-      d_pphi      = atan2(pilot_bb_q, pilot_bb_i);
-      pilot_phi  -= ppll_beta  * d_pphi;
-      fp         -= ppll_alpha * d_pphi;
-      fc          = fp * 3;
-
-
       /* Subcarrier downmix & phase recovery */
 
-      subcarr_phi    = pilot_phi * 3.0 + sc_phi_offset;
-      subcarr_sample = filter_bp_57k(sample[i] / 32768.0);
-      subcarr_bb[0]  = filter_lp_2400_iq(subcarr_sample * cos(subcarr_phi), 0);
-      subcarr_bb[1]  = filter_lp_2400_iq(subcarr_sample * sin(subcarr_phi), 1);
+      subcarr_phi    += 2 * M_PI * fsc * (1.0/FS);
+      subcarr_bb[0]  = filter_lp_2400_iq(sample[i] / 32768.0 * cos(subcarr_phi), 0);
+      subcarr_bb[1]  = filter_lp_2400_iq(sample[i] / 32768.0 * sin(subcarr_phi), 1);
 
       double pll_beta = 0.0001;
 
-      d_phi_sc     = atan2(subcarr_bb[1], subcarr_bb[0]) + M_PI;
-      d_phi_sc     = fmod(d_phi_sc, M_PI) - M_PI_2;
-      sc_phi_offset -= pll_beta * d_phi_sc;
+      d_phi_sc     = atan2(subcarr_bb[1], subcarr_bb[0]);
+      if (d_phi_sc >= M_PI_2) {
+        d_phi_sc -= M_PI;
+      } else if (d_phi_sc <= -M_PI_2) {
+        d_phi_sc += M_PI;
+      }
+      loop_out = d_phi_sc + 0.9375 * prev_d_phi_sc;
+      subcarr_phi -= pll_beta * loop_out;
+      fsc         -= pll_beta * loop_out;
+      prev_d_phi_sc = d_phi_sc;
 
       /* 1187.5 Hz clock */
 
@@ -207,7 +191,7 @@ int main(int argc, char **argv) {
 
       /* Clock phase recovery */
 
-      if (sign(prev_bb) != sign(subcarr_bb[1])) {
+      if (sign(prev_bb) != sign(subcarr_bb[0])) {
         d_cphi = fmod(clock_phi, M_PI);
         if (d_cphi >= M_PI_2) d_cphi -= M_PI;
         clock_offset -= 0.005 * d_cphi;
@@ -224,7 +208,7 @@ int main(int argc, char **argv) {
 
         /* biphase symbol integrate & dump */
         //acc += atan2(subcarr_bb[1], subcarr_bb[0]) * lo_clock;
-        acc += subcarr_bb[1] * lo_clock;
+        acc += subcarr_bb[0] * lo_clock;
 
         if (sign(lo_clock) != sign(prevclock)) {
           biphase(acc);
@@ -243,11 +227,11 @@ int main(int argc, char **argv) {
       fwrite(outbuf, sizeof(int16_t), 1, U);
       t += 1.0/FS;
       if (numsamples % 125 == 0)
-        fprintf(STATS,"%f,%f,%f,%f,%f,%f\n",
-            t,fp,d_pphi,sc_phi_offset,clock_offset,qua);
+        fprintf(STATS,"%f,%f,%f,%f,%f\n",
+            t,fsc,d_phi_sc,clock_offset,qua);
 #endif
 
-      prev_bb = subcarr_bb[1];
+      prev_bb = subcarr_bb[0];
 
     }
   }
