@@ -36,22 +36,22 @@ double fsc;
 double qua;
 #endif
 
-void print_delta(char b) {
+void bit(char b) {
   static int nbit = 0;
+  printf("%d", b);
+  if (nbit % OBUFLEN == 0)
+    fflush(0);
+  nbit++;
+}
+
+void print_delta(char b) {
 #ifdef DEBUG
   sbit = (b ^ dbit ? 1 : -1);
 #else
   static int dbit = 0;
 #endif
-  printf("%d", b ^ dbit);
-  if (nbit % OBUFLEN == 0)
-    fflush(0);
+  bit(b ^ dbit);
   dbit = b;
-  nbit++;
-}
-
-void bit(char b) {
-
 }
 
 int sign(double a) {
@@ -109,9 +109,9 @@ int main(int argc, char **argv) {
   int    c;
   int    fmfreq         = 0;
   int    bytesread;
-  int numsamples = 0;
-  double loop_out = 0;
-  double prev_d_phi_sc = 0;
+  int    numsamples     = 0;
+  double loop_out       = 0;
+  double prev_loop      = 0;
 
 #ifdef DEBUG
   sbit = 0;
@@ -144,7 +144,12 @@ int main(int argc, char **argv) {
   IQ = popen("sox -c 2 -r 250000 -t .s16 - dbg-out-iq.wav", "w");
   FILE *STATS;
   STATS = fopen("stats.csv", "w");
-  fprintf(STATS, "t,fp,d_pphi,d_phi_sc,clock_offset,qua\n");
+  fprintf(STATS, "t,fp,d_phi_sc,clock_offset,qua\n");
+#endif
+
+#ifdef AUDIO
+  FILE *SND;
+  SND = popen("play -q -c 1 -r 250000 -t .s16 -","w");
 #endif
 
   while (1) {
@@ -154,6 +159,10 @@ int main(int argc, char **argv) {
     int i;
     for (i = 0; i < bytesread; i++) {
 
+#ifdef AUDIO
+      outbuf[0] = sample[i];
+      fwrite(outbuf, sizeof(int16_t), 1, SND);
+#endif
 
       /* Subcarrier downmix & phase recovery */
 
@@ -161,33 +170,30 @@ int main(int argc, char **argv) {
       subcarr_bb[0]  = filter_lp_2400_iq(sample[i] / 32768.0 * cos(subcarr_phi), 0);
       subcarr_bb[1]  = filter_lp_2400_iq(sample[i] / 32768.0 * sin(subcarr_phi), 1);
 
-      double pll_beta = 0.0001;
+#ifdef DEBUG
+      outbuf[0] = subcarr_bb[0] * 32000;
+      fwrite(outbuf, sizeof(int16_t), 1, IQ);
+      outbuf[0] = subcarr_bb[1] * 32000;
+      fwrite(outbuf, sizeof(int16_t), 1, IQ);
+#endif
 
-      d_phi_sc     = atan2(subcarr_bb[1], subcarr_bb[0]);
-      if (d_phi_sc >= M_PI_2) {
-        d_phi_sc -= M_PI;
-      } else if (d_phi_sc <= -M_PI_2) {
-        d_phi_sc += M_PI;
-      }
-      loop_out = d_phi_sc + 0.9375 * prev_d_phi_sc;
-      subcarr_phi -= pll_beta * loop_out;
-      fsc         -= pll_beta * loop_out;
-      prev_d_phi_sc = d_phi_sc;
+      double pll_beta  = 50;
+
+      d_phi_sc     = filter_lp_pll(subcarr_bb[1] * subcarr_bb[0]);
+#ifdef DEBUG
+      outbuf[0] = d_phi_sc * 6000;
+      fwrite(outbuf, sizeof(int16_t), 1, U);
+#endif
+      //loop_out     = d_phi_sc + pll_alpha * prev_loop;
+      subcarr_phi -= pll_beta * d_phi_sc;//prev_loop;
+      fsc         -= 0.5 * pll_beta * d_phi_sc;//prev_loop;
+      //prev_loop    = loop_out;
 
       /* 1187.5 Hz clock */
 
       clock_phi = subcarr_phi / 48.0 + clock_offset;
       lo_clock  = (fmod(clock_phi, 2*M_PI) < M_PI ? 1 : -1);
       //lo_clock = sin(clock_phi);
-
-#ifdef DEBUG
-      outbuf[0] = lo_clock * 6000;
-      fwrite(outbuf, sizeof(int16_t), 1, U);
-      outbuf[0] = subcarr_bb[0] * 32000;
-      fwrite(outbuf, sizeof(int16_t), 1, IQ);
-      outbuf[0] = subcarr_bb[1] * 32000;
-      fwrite(outbuf, sizeof(int16_t), 1, IQ);
-#endif
 
       /* Clock phase recovery */
 
@@ -204,10 +210,9 @@ int main(int argc, char **argv) {
 #endif
 
       /* Decimate band-limited signal */
-      if (numsamples % 2 == 0) {
+      if (numsamples % 8 == 0) {
 
         /* biphase symbol integrate & dump */
-        //acc += atan2(subcarr_bb[1], subcarr_bb[0]) * lo_clock;
         acc += subcarr_bb[0] * lo_clock;
 
         if (sign(lo_clock) != sign(prevclock)) {
