@@ -23,8 +23,6 @@
 
 #include "filters.h"
 
-#define AUDIO
-
 #define FS      250000.0
 #define FC_0    57000.0
 #define IBUFLEN 4096
