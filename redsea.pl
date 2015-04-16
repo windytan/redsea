@@ -219,7 +219,7 @@ sub open_radio {
 
     $rtl_pid
       = open $bitpipe, '-|', sprintf($rtl_fm_exe.' -f %.1f -M fm -l 0 '.
-                       '-A std '.$ppm.' -F 0 -s %.1f | '.$rtl_redsea_exe,
+                       '-A std '.$ppm.' -F 9 -s %.1f | '.$rtl_redsea_exe,
                        $freq, FS) or die($!);
   }
 }

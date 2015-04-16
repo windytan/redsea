@@ -23,6 +23,8 @@
 
 #include "filters.h"
 
+#define AUDIO
+
 #define FS      250000.0
 #define FC_0    57000.0
 #define IBUFLEN 4096
@@ -80,8 +82,8 @@ void biphase(double acc) {
 #ifdef DEBUG
     qua = (1.0 * abs(tot_errs[0] - tot_errs[1]) /
           (tot_errs[0] + tot_errs[1])) * 100;
-    fprintf(stderr, "frame: %d  errs: %3d %3d  qual: %3.0f%%  pll: %.1f\n",
-        reading_frame, tot_errs[0], tot_errs[1], qua, fsc);
+    fprintf(stderr, "frame: %d  errs: %3d %3d  qual: %3.0f%%  pll: %.1f (%.1f ppm)\n",
+        reading_frame, tot_errs[0], tot_errs[1], qua, fsc, (57000.0-fsc)/57000.0*1000000  );
 #endif
     tot_errs[0] = 0;
     tot_errs[1] = 0;
@@ -139,9 +141,11 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
   int16_t outbuf[1];
   FILE *U;
-  U = popen("sox -c 4 -r 250000 -t .s16 - dbg-out.wav", "w");
+  U = popen("sox -c 3 -r 250000 -t .s16 - dbg-out.wav", "w");
   FILE *IQ;
   IQ = popen("sox -c 2 -r 250000 -t .s16 - dbg-out-iq.wav", "w");
+  FILE *RAW;
+  RAW = popen("sox -c 1 -r 250000 -t .s16 - dbg-out-raw.wav", "w");
   FILE *STATS;
   STATS = fopen("stats.csv", "w");
   fprintf(STATS, "t,fp,d_phi_sc,clock_offset,qua\n");
@@ -162,6 +166,7 @@ int main(int argc, char **argv) {
 #ifdef AUDIO
       outbuf[0] = sample[i];
       fwrite(outbuf, sizeof(int16_t), 1, SND);
+      fwrite(outbuf, sizeof(int16_t), 1, RAW);
 #endif
 
       /* Subcarrier downmix & phase recovery */
@@ -179,14 +184,14 @@ int main(int argc, char **argv) {
 
       double pll_beta  = 50;
 
-      d_phi_sc     = filter_lp_pll(subcarr_bb[1] * subcarr_bb[0]);
+      d_phi_sc     = 2*filter_lp_pll(subcarr_bb[1] * subcarr_bb[0]);
 #ifdef DEBUG
-      outbuf[0] = d_phi_sc * 6000;
+      outbuf[0] = d_phi_sc * 6000000;
       fwrite(outbuf, sizeof(int16_t), 1, U);
 #endif
       //loop_out     = d_phi_sc + pll_alpha * prev_loop;
       subcarr_phi -= pll_beta * d_phi_sc;//prev_loop;
-      fsc         -= 0.5 * pll_beta * d_phi_sc;//prev_loop;
+      fsc         -= .5 * pll_beta * d_phi_sc;//prev_loop;
       //prev_loop    = loop_out;
 
       /* 1187.5 Hz clock */
@@ -203,12 +208,6 @@ int main(int argc, char **argv) {
         clock_offset -= 0.005 * d_cphi;
       }
 
-#ifdef DEBUG
-      outbuf[0] = acc * 800;
-      fwrite(outbuf, sizeof(int16_t), 1, U);
-      sbit = 0;
-#endif
-
       /* Decimate band-limited signal */
       if (numsamples % 8 == 0) {
 
@@ -223,12 +222,16 @@ int main(int argc, char **argv) {
         prevclock = lo_clock;
       }
 
+#ifdef DEBUG
+      outbuf[0] = acc * 800;
+      fwrite(outbuf, sizeof(int16_t), 1, U);
+      sbit = 0;
+#endif
+
       numsamples ++;
 
 #ifdef DEBUG
       outbuf[0] = dbit * 16000;
-      fwrite(outbuf, sizeof(int16_t), 1, U);
-      outbuf[0] = sbit * 16000;
       fwrite(outbuf, sizeof(int16_t), 1, U);
       t += 1.0/FS;
       if (numsamples % 125 == 0)
