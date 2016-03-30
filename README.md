@@ -9,8 +9,8 @@ and prints it to the terminal. It works with rtl_fm.
 ## Requirements
 
 * Linux or OSX
-* gcc
-* GNU make
+* g++
+* GNU autotools
 * [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
 * Perl &gt;= 5.12
 
@@ -47,7 +47,7 @@ perl redsea.pl [-hlst] [-p <error>] [-g <gain>] FREQ
 ## Licensing
 
 ```
-Copyright (c) 2007-2015, Oona Räisänen OH2EIQ (windyoona@gmail.com)
+Copyright (c) Oona Räisänen OH2EIQ (windyoona@gmail.com)
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
