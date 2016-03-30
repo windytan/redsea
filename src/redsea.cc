@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 
   double fsc             = 57000;
 
-  while ((c = getopt (argc, argv, "f:")) != -1)
+  while ((c = getopt (argc, argv, "f:")) != -1) {
     switch (c) {
       case 'f':
         fmfreq = atoi(optarg);
@@ -108,6 +108,7 @@ int main(int argc, char **argv) {
       default:
         break;
     }
+  }
 
   while (1) {
     bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
