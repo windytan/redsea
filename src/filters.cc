@@ -16,20 +16,24 @@
  *
  */
 
-double filter_lp_2400_iq(double input, int iq) {
+#include "filters.h"
+
+#include <complex>
+
+std::complex<double> filter_lp_2400_iq(std::complex<double> input) {
 
   /* Digital filter designed by mkfilter/mkshape/gencode A.J. Fisher
      Command line: /www/usr/fisher/helpers/mkfilter -Bu -Lp -o 10
      -a 4.8000000000e-03 0.0000000000e+00 -l */
 
-  static double xv[2][2+1], yv[2][2+1];
+  static std::complex<double> xv[2+1], yv[2+1];
 
-  xv[iq][0] = xv[iq][1]; xv[iq][1] = xv[iq][2]; 
-  xv[iq][2] = input / 4.491730007e+03;
-  yv[iq][0] = yv[iq][1]; yv[iq][1] = yv[iq][2]; 
-  yv[iq][2] =   (xv[iq][0] + xv[iq][2]) + 2 * xv[iq][1]
-    + ( -0.9582451124 * yv[iq][0]) + (  1.9573545869 * yv[iq][1]);
-  return yv[iq][2];
+  xv[0] = xv[1]; xv[1] = xv[2];
+  xv[2] = input / 4.491730007e+03;
+  yv[0] = yv[1]; yv[1] = yv[2];
+  yv[2] =   (xv[0] + xv[2]) + 2.0 * xv[1]
+    + ( -0.9582451124 * yv[0]) + (  1.9573545869 * yv[1]);
+  return yv[2];
 }
 
 double filter_lp_pll(double input) {

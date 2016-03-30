@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <complex>
 
 #include "filters.h"
 
@@ -77,7 +78,7 @@ int main(int argc, char **argv) {
   int16_t  sample[IBUFLEN];
 
   double subcarr_phi    = 0;
-  double subcarr_bb[2]  = {0};
+  std::complex<double> subcarr_bb  = 0;
   double clock_offset   = 0;
   double clock_phi      = 0;
   double lo_clock       = 0;
@@ -118,12 +119,11 @@ int main(int argc, char **argv) {
       /* Subcarrier downmix & phase recovery */
 
       subcarr_phi    += 2 * M_PI * fsc * (1.0/FS);
-      subcarr_bb[0]  = filter_lp_2400_iq(sample[i] / 32768.0 * cos(subcarr_phi), 0);
-      subcarr_bb[1]  = filter_lp_2400_iq(sample[i] / 32768.0 * sin(subcarr_phi), 1);
+      subcarr_bb  = filter_lp_2400_iq(sample[i] / 32768.0 * std::polar(1.0, subcarr_phi));
 
       double pll_beta  = 50;
 
-      d_phi_sc     = 2*filter_lp_pll(subcarr_bb[1] * subcarr_bb[0]);
+      d_phi_sc     = 2.0*filter_lp_pll(real(subcarr_bb) * imag(subcarr_bb));
       //loop_out     = d_phi_sc + pll_alpha * prev_loop;
       subcarr_phi -= pll_beta * d_phi_sc;//prev_loop;
       fsc         -= .5 * pll_beta * d_phi_sc;//prev_loop;
@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
 
       /* Clock phase recovery */
 
-      if (sign(prev_bb) != sign(subcarr_bb[0])) {
+      if (sign(prev_bb) != sign(real(subcarr_bb))) {
         d_cphi = fmod(clock_phi, M_PI);
         if (d_cphi >= M_PI_2) d_cphi -= M_PI;
         clock_offset -= 0.005 * d_cphi;
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
       if (numsamples % 8 == 0) {
 
         /* biphase symbol integrate & dump */
-        acc += subcarr_bb[0] * lo_clock;
+        acc += real(subcarr_bb) * lo_clock;
 
         if (sign(lo_clock) != sign(prevclock)) {
           biphase(acc);
@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
 
       numsamples ++;
 
-      prev_bb = subcarr_bb[0];
+      prev_bb = real(subcarr_bb);
 
     }
   }
