@@ -28,6 +28,9 @@
 #define IBUFLEN 4096
 #define OBUFLEN 128
 
+int tot_errs[2] = {0};
+int reading_frame = 0;
+
 void bit(char b) {
   static int nbit = 0;
   printf("%d", b);
