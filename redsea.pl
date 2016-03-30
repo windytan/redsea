@@ -1721,7 +1721,7 @@ sub utter {
   my ($long, $short) = @_;
   return if ($is_scanning);
 
-  if ($verbosity == 0) {
+  if ($verbosity == 0 && defined $short) {
     if ($short =~ /\n/) {
       print $linebuf.$short;
       $linebuf = q{};
