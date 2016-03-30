@@ -302,7 +302,7 @@ sub get_groups {
 
   my @offset_word = (0x0FC, 0x198, 0x168, 0x350, 0x1B4);
   my @ofs2block   = (0, 1, 2, 2, 3);
-  my ($synd_reg, $pattern);
+  my $synd_reg;
 
   if (not defined $source_file) {
     print STDERR 'Waiting for sync at '.sprintf('%.2f', $fmfreq / 1e6)." MHz\n";
@@ -1189,8 +1189,8 @@ sub Group10A {
     my $segaddr = extract_bits($blocks[1], 0, 1);
 
     for my $cnum (0..$#char) {
-      substr($station{$pi}{PTYN}, $segaddr*4 + $cnum, 1)
-        = $char_table[$char[$cnum]];
+      substr($station{$pi}{PTYN}, $segaddr*4 + $cnum, 1,
+        $char_table[$char[$cnum]]);
     }
 
     my $displayed_PTYN
@@ -1410,20 +1410,20 @@ sub screenReset {
 # Change characters in RadioText
 
 sub set_rt_chars {
-  (my $lok, my @a) = @_;
+  my ($lok, @a) = @_;
 
   $station{$pi}{hasRT} = TRUE;
 
   for my $i (0..$#a) {
     given ($a[$i]) {
       when (0x0D) {
-        substr($station{$pi}{RTbuf}, $lok+$i, 1) = q{↵};
+        substr($station{$pi}{RTbuf}, $lok+$i, 1, q{↵});
       }
       when (0x0A) {
-        substr($station{$pi}{RTbuf}, $lok+$i, 1) = q{␊};
+        substr($station{$pi}{RTbuf}, $lok+$i, 1, q{␊});
       }
       default {
-        substr($station{$pi}{RTbuf}, $lok+$i, 1) = $char_table[$a[$i]];
+        substr($station{$pi}{RTbuf}, $lok+$i, 1, $char_table[$a[$i]]);
       }
     }
     $station{$pi}{RTrcvd}[$lok+$i] = TRUE;
@@ -1434,7 +1434,7 @@ sub set_rt_chars {
     $station{$pi}{presetminRTlen} // 64);
 
   my $total_received
-    = grep (defined $_, @{$station{$pi}{RTrcvd}}[0..$minRTlen]);
+    = grep { defined } @{$station{$pi}{RTrcvd}}[0..$minRTlen];
   $station{$pi}{hasFullRT} = ($total_received >= $minRTlen ? TRUE : FALSE);
 
   my $displayed_RT
@@ -1447,8 +1447,8 @@ sub set_rt_chars {
     utter (q{}, ' RT_OK');
   }
 
-  utter ('          '. join(q{}, (map ((defined) ? q{^} : q{ },
-    @{$station{$pi}{RTrcvd}}[0..63]))), q{});
+  utter ('          '. join(q{}, map { defined ? q{^} : q{ } }
+    @{$station{$pi}{RTrcvd}}[0..63]));
 }
 
 # Enhanced RadioText
@@ -1461,8 +1461,8 @@ sub parse_eRT {
       $station{$pi}{ert_txtdir} == 0) {
 
     for (0..1) {
-      substr($station{$pi}{eRTbuf}, 2*$addr+$_, 1) = decode('UCS-2LE',
-        chr(extract_bits($_[2+$_], 8, 8)).chr(extract_bits($_[2+$_], 0, 8)));
+      substr($station{$pi}{eRTbuf}, 2*$addr+$_, 1, decode('UCS-2LE',
+        chr(extract_bits($_[2+$_], 8, 8)).chr(extract_bits($_[2+$_], 0, 8))));
       $station{$pi}{eRTrcvd}[2*$addr+$_]           = TRUE;
     }
 
@@ -1472,8 +1472,8 @@ sub parse_eRT {
                       ($is_interactive ? RESET : q{}).
                       substr($station{$pi}{eRTbuf},2*$addr+2);
 
-    say '          '. join(q{}, (map ((defined) ? q{^} : q{ },
-      @{$station{$pi}{eRTrcvd}}[0..63])));
+    say '          '. join(q{}, (map { defined ? q{^} : q{ } }
+      @{$station{$pi}{eRTrcvd}}[0..63]));
 
   }
 }
@@ -1481,16 +1481,14 @@ sub parse_eRT {
 # Change characters in the Program Service name
 
 sub set_PS_chars {
-  my $pspi = $_[0];
-  my $lok  = $_[1];
-  my @khar = ($_[2], $_[3]);
+  my ($pspi,$lok,@khar) = @_;
 
   if (not exists $station{$pspi}{PSbuf}) {
     $station{$pspi}{PSbuf} = q{ } x 8
   }
 
-  substr($station{$pspi}{PSbuf}, $lok, 2)
-    = $char_table[$khar[0]].$char_table[$khar[1]];
+  substr($station{$pspi}{PSbuf}, $lok, 2,
+    $char_table[$khar[0]].$char_table[$khar[1]]);
 
   # Display PS name when received without gaps
 
@@ -1504,7 +1502,7 @@ sub set_PS_chars {
   $station{$pspi}{PSrcvd}[$lok/2] = TRUE;
   $station{$pspi}{prevPSloc}      = $lok;
   $station{$pspi}{numPSrcvd}
-    = grep (defined, @{$station{$pspi}{PSrcvd}}[0..3]);
+    = grep { defined } @{$station{$pspi}{PSrcvd}}[0..3];
 
   my $displayed_PS
     = ($is_interactive ? substr($station{$pspi}{PSbuf},0,$lok).REVERSE.
@@ -1538,9 +1536,9 @@ sub parse_RTp {
     for my $tagnum (0..1) {
 
       my $total_received
-        = grep (defined $_,
+        = grep { defined }
         @{$station{$pi}{RTrcvd}}[$start[$tagnum]..($start[$tagnum] +
-          $len[$tagnum] - 1)]);
+          $len[$tagnum] - 1)];
       if ($total_received == $len[$tagnum]) {
 
         my $tagname = $rtpclass[$ctype[$tagnum]];
@@ -1636,11 +1634,14 @@ sub parse_AF {
 }
 
 sub read_table {
-  my $filename = 'tables/'.$_[0];
-  open my $fh, '<', $filename
-    or die "Can't open '$filename'";
+
+  my ($filename) = @_;
 
   my @arr;
+
+  $filename = 'tables/'.$filename;
+  open my $fh, '<', $filename
+    or die "Can't open '$filename'";
 
   while (<$fh>) {
     chomp();
@@ -1700,9 +1701,9 @@ sub init_data {
 }
 
 # Extract len bits from int, starting at nth bit from the right
-# bits (int, n, len)
 sub extract_bits {
-  return (($_[0] >> $_[1]) & (2 ** $_[2] - 1));
+  my ($int, $n, $len) = @_;
+  return (($int >> $n) & (2 ** $len - 1));
 }
 
 sub print_appdata {
