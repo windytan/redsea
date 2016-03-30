@@ -17,6 +17,8 @@ and prints it to the terminal. It works with rtl_fm.
 ## Compiling
 
 ```
+autoreconf --install
+./configure
 make
 ```
 
