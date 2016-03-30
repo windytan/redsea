@@ -1447,7 +1447,7 @@ sub set_rt_chars {
     utter (q{}, ' RT_OK');
   }
 
-  utter ('          '. join(q{}, map { defined ? q{^} : q{ } }
+  utter ('          '. join(q{}, map { defined() ? q{^} : q{ } }
     @{$station{$pi}{RTrcvd}}[0..63]));
 }
 
@@ -1472,7 +1472,7 @@ sub parse_eRT {
                       ($is_interactive ? RESET : q{}).
                       substr($station{$pi}{eRTbuf},2*$addr+2);
 
-    say '          '. join(q{}, (map { defined ? q{^} : q{ } }
+    say '          '. join(q{}, (map { defined() ? q{^} : q{ } }
       @{$station{$pi}{eRTrcvd}}[0..63]));
 
   }
