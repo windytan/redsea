@@ -87,13 +87,10 @@ int main(int argc, char **argv) {
   double d_phi_sc       = 0;
   double d_cphi         = 0;
   double acc            = 0;
-  double subcarr_sample = 0;
   int    c;
   int    fmfreq         = 0;
   int    bytesread;
   int    numsamples     = 0;
-  double loop_out       = 0;
-  double prev_loop      = 0;
 
   double fsc            = FC_0;
 
@@ -124,16 +121,13 @@ int main(int argc, char **argv) {
       double pll_beta  = 50;
 
       d_phi_sc     = 2.0*filter_lp_pll(real(subcarr_bb) * imag(subcarr_bb));
-      //loop_out     = d_phi_sc + pll_alpha * prev_loop;
-      subcarr_phi -= pll_beta * d_phi_sc;//prev_loop;
-      fsc         -= .5 * pll_beta * d_phi_sc;//prev_loop;
-      //prev_loop    = loop_out;
+      subcarr_phi -= pll_beta * d_phi_sc;
+      fsc         -= .5 * pll_beta * d_phi_sc;
 
       /* 1187.5 Hz clock */
 
       clock_phi = subcarr_phi / 48.0 + clock_offset;
       lo_clock  = (fmod(clock_phi, 2*M_PI) < M_PI ? 1 : -1);
-      //lo_clock = sin(clock_phi);
 
       /* Clock phase recovery */
 
