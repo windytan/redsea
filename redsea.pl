@@ -197,14 +197,14 @@ sub open_radio {
     my $rtl_redsea_exe;
     my $rtl_fm_exe;
 
-    if      (can_run './rtl_redsea') {
-      $rtl_redsea_exe = './rtl_redsea';
-    } elsif (can_run 'rtl_redsea.exe') {
-      $rtl_redsea_exe = 'rtl_redsea.exe';
+    if      (can_run './src/redsea') {
+      $rtl_redsea_exe = './src/redsea';
+    } elsif (can_run 'src/redsea.exe') {
+      $rtl_redsea_exe = 'src/redsea.exe';
     } else {
-      print "error: looks like rtl_redsea isn't compiled. To fix that, ".
+      print "error: looks like redsea isn't compiled. To fix that, ".
             "please run:\n\n".
-            "gcc -std=gnu99 -o rtl_redsea rtl_redsea.c -lm\n";
+            "make\n";
       exit(1);
     }
 
