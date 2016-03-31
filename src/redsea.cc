@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
   double loop_out       = 0;
   double prev_loop      = 0;
 
-  double fsc             = 57000;
+  double fsc            = FC_0;
 
   while ((c = getopt (argc, argv, "f:")) != -1) {
     switch (c) {
@@ -110,12 +110,11 @@ int main(int argc, char **argv) {
     }
   }
 
-  while (1) {
+  while (true) {
     bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
     if (bytesread < 1) exit(0);
 
-    int i;
-    for (i = 0; i < bytesread; i++) {
+    for (int i = 0; i < bytesread; i++) {
 
       /* Subcarrier downmix & phase recovery */
 
