@@ -1,7 +1,5 @@
-/* Part of redsea RDS decoder */
-
-#ifndef FILTERS_H
-#define FILTERS_H
+#ifndef FILTERS_H_
+#define FILTERS_H_
 
 #include <complex>
 
