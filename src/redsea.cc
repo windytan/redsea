@@ -78,14 +78,9 @@ int main(int argc, char **argv) {
   int16_t  sample[IBUFLEN];
 
   double subcarr_phi    = 0;
-  std::complex<double> subcarr_bb  = 0;
   double clock_offset   = 0;
-  double clock_phi      = 0;
-  double lo_clock       = 0;
   double prevclock      = 0;
   double prev_bb        = 0;
-  double d_phi_sc       = 0;
-  double d_cphi         = 0;
   double acc            = 0;
   int    c;
   int    fmfreq         = 0;
@@ -115,23 +110,24 @@ int main(int argc, char **argv) {
       /* Subcarrier downmix & phase recovery */
 
       subcarr_phi    += 2 * M_PI * fsc * (1.0/FS);
-      subcarr_bb  = filter_lp_2400_iq(sample[i] / 32768.0 * std::polar(1.0, subcarr_phi));
+      std::complex<double> subcarr_bb =
+        filter_lp_2400_iq(sample[i] / 32768.0 * std::polar(1.0, subcarr_phi));
 
-      double pll_beta  = 50;
+      double pll_beta = 50;
 
-      d_phi_sc     = 2.0*filter_lp_pll(real(subcarr_bb) * imag(subcarr_bb));
+      double d_phi_sc = 2.0*filter_lp_pll(real(subcarr_bb) * imag(subcarr_bb));
       subcarr_phi -= pll_beta * d_phi_sc;
       fsc         -= .5 * pll_beta * d_phi_sc;
 
       /* 1187.5 Hz clock */
 
-      clock_phi = subcarr_phi / 48.0 + clock_offset;
-      lo_clock  = (fmod(clock_phi, 2*M_PI) < M_PI ? 1 : -1);
+      double clock_phi = subcarr_phi / 48.0 + clock_offset;
+      double lo_clock  = (fmod(clock_phi, 2*M_PI) < M_PI ? 1 : -1);
 
       /* Clock phase recovery */
 
       if (sign(prev_bb) != sign(real(subcarr_bb))) {
-        d_cphi = fmod(clock_phi, M_PI);
+        double d_cphi = fmod(clock_phi, M_PI);
         if (d_cphi >= M_PI_2) d_cphi -= M_PI;
         clock_offset -= 0.005 * d_cphi;
       }
