@@ -187,7 +187,7 @@ sub open_radio {
 
   if (defined $source_file) {
     $rtl_pid = open $bitpipe, '-|', 'sox '.$source_file.' -r 250000 -c 1 '.
-               '-t .s16 - | ./rtl_redsea';
+               '-t .s16 - | ./src/redsea';
 
   } else {
 
