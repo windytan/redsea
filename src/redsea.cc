@@ -73,35 +73,18 @@ void biphase(double acc) {
   counter = (counter + 1) % 800;
 }
 
-int main(int argc, char **argv) {
+int main() {
 
-  int16_t  sample[IBUFLEN];
-
-  double subcarr_phi    = 0;
-  double clock_offset   = 0;
-  double prevclock      = 0;
-  double prev_bb        = 0;
-  double acc            = 0;
-  int    c;
-  int    fmfreq         = 0;
-  int    numsamples     = 0;
-
-  double fsc            = FC_0;
-
-  while ((c = getopt (argc, argv, "f:")) != -1) {
-    switch (c) {
-      case 'f':
-        fmfreq = atoi(optarg);
-        break;
-      case '?':
-        fprintf (stderr, "Unknown option `-%c`\n", optopt);
-        return EXIT_FAILURE;
-      default:
-        break;
-    }
-  }
+  double subcarr_phi  = 0;
+  double clock_offset = 0;
+  double prevclock    = 0;
+  double prev_bb      = 0;
+  double acc          = 0;
+  int    numsamples   = 0;
+  double fsc          = FC_0;
 
   while (true) {
+    int16_t sample[IBUFLEN];
     int bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
     if (bytesread < 1) exit(0);
 
