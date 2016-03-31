@@ -89,7 +89,6 @@ int main(int argc, char **argv) {
   double acc            = 0;
   int    c;
   int    fmfreq         = 0;
-  int    bytesread;
   int    numsamples     = 0;
 
   double fsc            = FC_0;
@@ -108,7 +107,7 @@ int main(int argc, char **argv) {
   }
 
   while (true) {
-    bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
+    int bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
     if (bytesread < 1) exit(0);
 
     for (int i = 0; i < bytesread; i++) {
