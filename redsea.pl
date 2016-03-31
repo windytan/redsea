@@ -418,20 +418,20 @@ sub get_groups {
           $synd_reg = syndrome($block ^ $offset_word[$expected_offset]);
 
           if ($pi != 0 && $expected_offset == 0) {
-            dbg(GRAY.sprintf("%03x expecting PI=%04x(%016b), ".
-                "got %04x(%016b), xor=%016b", $synd_reg,
-                $pi,$pi,($block>>10),($block>>10), $pi ^ ($block>>10)).RESET);
+            dbg(GRAY.sprintf("expecting PI=%04x(%016b), ".
+                "got %04x(%016b), xor=%016b, syndrome %03x",
+                $pi,$pi,($block>>10),($block>>10), $pi ^ ($block>>10), $synd_reg).RESET);
           }
 
           if (defined $error_lookup[$synd_reg]) {
             $message = ($block >> 10) ^ $error_lookup[$synd_reg];
             $has_sync_for[$expected_offset] = TRUE;
 
-            dbg(GREEN.sprintf("%03x error-corrected ".
+            dbg(GREEN.sprintf("error-corrected ".
                $ofs_letters[$expected_offset]." using ".
-              "vector %016b", $synd_reg, $error_lookup[$synd_reg]).RESET);
+              "vector %016b for syndrome %03x", $error_lookup[$synd_reg], $synd_reg).RESET);
           } else {
-            dbg(RED.sprintf("%03x uncorrectable",$synd_reg).RESET);
+            dbg(RED.sprintf("uncorrectable syndrome %03x",$synd_reg).RESET);
           }
         }
 
