@@ -28,6 +28,7 @@ use IPC::Cmd     qw/can_run/;
 use Encode       qw/decode/;
 use POSIX        qw/strftime/;
 use Getopt::Std;
+use JSON::XS;
 
 binmode(STDOUT, ':encoding(UTF-8)');
 
@@ -185,6 +186,22 @@ sub get_options {
 
 }
 
+sub truefalse {
+  $_[0] ? "true" : "false";
+}
+
+sub unpad {
+  (my $result = $_[0]) =~ s/^ +//;
+  $result =~ s/ +$//;
+  return $result;
+}
+
+sub print_tree {
+  my $aref = shift;
+  my $json_str = encode_json $aref;
+  print $json_str."\n";
+}
+
 sub open_radio {
   my $freq = shift;
 
@@ -263,12 +280,15 @@ sub decode_group {
   return if ($blocks[0] == 0x0000);
   my ($group_type, $full_group_type);
 
+  my %group_tree;
+
   $ednewpi = ($newpi // 0);
   $newpi   = $blocks[0];
 
   if (exists $options{t}) {
     my $timestamp = strftime('%Y-%m-%dT%H:%M:%S%z ', localtime);
     utter ($timestamp, $timestamp);
+    $group_tree{timestamp} = $timestamp;
   }
 
   if (@blocks >= 2) {
@@ -283,6 +303,7 @@ sub decode_group {
     ((exists($station{$newpi}{chname})) ?
       q{ }.$station{$newpi}{chname} : q{}),
       sprintf('%04X',$newpi)));
+  $group_tree{pi} = $newpi;
 
   # PI is repeated -> confirmed
   if ($newpi == $ednewpi) {
@@ -301,6 +322,7 @@ sub decode_group {
   # Nothing more to be done for PI only
   if (@blocks == 1) {
     utter ("\n","\n");
+    print_tree(\%group_tree);
     return;
   }
 
@@ -310,11 +332,13 @@ sub decode_group {
                    ' blocks)'),
    (@blocks == 4 ? sprintf(' %3s', $full_group_type) :
                    sprintf(' (%3s)', $full_group_type)));
+  $group_tree{group} = $full_group_type;
 
   # Traffic Program (TP)
   $station{$pi}{TP} = extract_bits($blocks[1], 10, 1);
   utter ('  TP:     '.$TP_descr[$station{$pi}{TP}],
          ' TP:'.$station{$pi}{TP});
+  $group_tree{tp} = $station{$pi}{TP} ? "true" : "false";
 
   # Program Type (PTY)
   $station{$pi}{PTY} = extract_bits($blocks[1], 5, 5);
@@ -330,82 +354,84 @@ sub decode_group {
            q{ }.$ptynames[$station{$pi}{PTY}],
            ' PTY:'.sprintf('%02d',$station{$pi}{PTY}));
   }
+  $group_tree{pty} = $station{$pi}{PTY};
 
   # Data specific to the group type
 
   given ($group_type) {
     when (0)  {
-      Group0A (@blocks);
+      Group0A (\%group_tree, @blocks);
     }
     when (1)  {
-      Group0B (@blocks);
+      Group0B (\%group_tree, @blocks);
     }
     when (2)  {
-      Group1A (@blocks);
+      Group1A (\%group_tree, @blocks);
     }
     when (3)  {
-      Group1B (@blocks);
+      Group1B (\%group_tree, @blocks);
     }
     when (4)  {
-      Group2A (@blocks);
+      Group2A (\%group_tree, @blocks);
     }
     when (5)  {
-      Group2B (@blocks);
+      Group2B (\%group_tree, @blocks);
     }
     when (6)  {
       exists ($station{$pi}{ODAaid}{6})  ?
-        ODAGroup(6, @blocks)  : Group3A (@blocks);
+        ODAGroup(6, \%group_tree, @blocks)  : Group3A (\%group_tree, @blocks);
       }
     when (8)  {
       Group4A (@_);
     }
     when (10) {
       exists ($station{$pi}{ODAaid}{10}) ?
-        ODAGroup(10, @blocks) : Group5A (@blocks);
+        ODAGroup(10, \%group_tree, @blocks) : Group5A (\%group_tree, @blocks);
     }
     when (11) {
       exists ($station{$pi}{ODAaid}{11}) ?
-        ODAGroup(11, @blocks) : Group5B (@blocks);
+        ODAGroup(11, \%group_tree, @blocks) : Group5B (\%group_tree, @blocks);
     }
     when (12) {
       exists ($station{$pi}{ODAaid}{12}) ?
-        ODAGroup(12, @blocks) : Group6A (@blocks);
+        ODAGroup(12, \%group_tree, @blocks) : Group6A (\%group_tree, @blocks);
     }
     when (13) {
       exists ($station{$pi}{ODAaid}{13}) ?
-        ODAGroup(13, @blocks) : Group6B (@blocks);
+        ODAGroup(13, \%group_tree, @blocks) : Group6B (\%group_tree, @blocks);
     }
     when (14) {
       exists ($station{$pi}{ODAaid}{14}) ?
-        ODAGroup(14, @blocks) : Group7A (@blocks);
+        ODAGroup(14, \%group_tree, @blocks) : Group7A (\%group_tree, @blocks);
     }
     when (18) {
       exists ($station{$pi}{ODAaid}{18}) ?
-        ODAGroup(18, @blocks) : Group9A (@blocks);
+        ODAGroup(18, \%group_tree, @blocks) : Group9A (\%group_tree, @blocks);
     }
     when (20) {
-      Group10A(@blocks);
+      Group10A(\%group_tree, @blocks);
     }
     when (26) {
       exists ($station{$pi}{ODAaid}{26}) ?
-        ODAGroup(26, @blocks) : Group13A(@blocks);
+        ODAGroup(26, \%group_tree, @blocks) : Group13A(\%group_tree, @blocks);
     }
     when (28) {
-      Group14A(@blocks);
+      Group14A(\%group_tree, @blocks);
     }
     when (29) {
-      Group14B(@blocks);
+      Group14B(\%group_tree, @blocks);
     }
     when (31) {
-      Group15B(@blocks);
+      Group15B(\%group_tree, @blocks);
     }
 
     default   {
-      ODAGroup($group_type, @blocks);
+      ODAGroup($group_type, \%group_tree, @blocks);
     }
   }
 
   utter("\n","\n");
+  print_tree(\%group_tree);
 
 }
 
@@ -413,6 +439,7 @@ sub decode_group {
 
 sub Group0A {
 
+  my $group_tree = shift;
   my @blocks = @_;
 
   # DI
@@ -428,6 +455,8 @@ sub Group0A {
     ' TA:'.$station{$pi}{TA});
   utter ('  M/S:    '.qw( Speech Music )[$station{$pi}{MS}],
     ' MS:'.qw(S M)[$station{$pi}{MS}]);
+  $$group_tree{ta} = truefalse($station{$pi}{ta});
+  $$group_tree{ms} = $station{$pi}{MS} ? "speech" : "music";
 
   $station{$pi}{hasMS} = TRUE;
 
@@ -438,6 +467,7 @@ sub Group0A {
       $af[$_] = parse_AF(TRUE, extract_bits($blocks[2], 8-$_*8, 8));
       utter ('  AF:     '.$af[$_],' AF:'.$af[$_]);
     }
+    $$group_tree{alt_freq} = \@af;
     if ($af[0] =~ /follow/ && $af[1] =~ /Hz/) {
       ($station{$pi}{freq} = $af[1]) =~ s/ ?[kM]Hz//;
     }
@@ -450,7 +480,7 @@ sub Group0A {
     if ($station{$pi}{denyPS}) {
       utter ("          (Ignoring changes to PS)"," denyPS");
     } else {
-      set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
+      set_PS_chars($group_tree, $pi, extract_bits($blocks[1], 0, 2) * 2,
         extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
       if ($station{$pi}{numPSrcvd} == 4) {
         utter (q{}, ' PS_OK');
@@ -463,6 +493,7 @@ sub Group0A {
 
 sub Group0B {
 
+  my $group_tree = shift;
   my @blocks = @_;
 
   # Decoder Identification
@@ -478,6 +509,8 @@ sub Group0B {
     " TA:$station{$pi}{TA}");
   utter ("  M/S:    ".qw( Speech Music )[$station{$pi}{MS}],
     " MS:".qw( S M)[$station{$pi}{MS}]);
+  $$group_tree{ta} = truefalse($station{$pi}{ta});
+  $$group_tree{ms} = $station{$pi}{ms} ? "speech" : "music";
 
   $station{$pi}{hasMS} = TRUE;
 
@@ -488,7 +521,7 @@ sub Group0B {
     if ($station{$pi}{denyPS}) {
       utter ('          (Ignoring changes to PS)', ' denyPS');
     } else {
-      set_PS_chars($pi, extract_bits($blocks[1], 0, 2) * 2,
+      set_PS_chars($group_tree, $pi, extract_bits($blocks[1], 0, 2) * 2,
         extract_bits($blocks[3], 8, 8), extract_bits($blocks[3], 0, 8));
       if ($station{$pi}{numPSrcvd} == 4) {
         utter (q{}, ' PS_OK');
@@ -502,6 +535,7 @@ sub Group0B {
 
 sub Group1A {
 
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -652,6 +686,8 @@ sub Group1A {
 # 1B: Program Item Number
 
 sub Group1B {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -663,6 +699,7 @@ sub Group1B {
 
 sub Group2A {
 
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 3);
@@ -691,13 +728,14 @@ sub Group2A {
     }
   }
 
-  set_rt_chars($text_seg_addr, @chr);
+  set_rt_chars($group_tree, $text_seg_addr, @chr);
 }
 
 # 2B: RadioText (32 characters)
 
 sub Group2B {
 
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -718,7 +756,7 @@ sub Group2B {
     }
   }
 
-  set_rt_chars($text_seg_addr, @chr);
+  set_rt_chars($group_tree, $text_seg_addr, @chr);
 
 }
 
@@ -726,6 +764,7 @@ sub Group2B {
 
 sub Group3A {
 
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -815,6 +854,7 @@ sub Group3A {
 
 sub Group4A {
 
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 3);
@@ -869,6 +909,7 @@ sub Group4A {
 
 sub Group5A {
 
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -884,6 +925,8 @@ sub Group5A {
 # 5B: Transparent data channels or ODA
 
 sub Group5B {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -899,6 +942,8 @@ sub Group5B {
 # 6A: In-House Applications or ODA
 
 sub Group6A {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -912,6 +957,8 @@ sub Group6A {
 # 6B: In-House Applications or ODA
 
 sub Group6B {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -935,6 +982,8 @@ sub Group7A {
 # 9A: Emergency warning systems or ODA
 
 sub Group9A {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -948,6 +997,8 @@ sub Group9A {
 # 10A: Program Type Name (PTYN)
 
 sub Group10A {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   if (extract_bits($blocks[1], 4, 1) != ($station{$pi}{PTYNAB} // -1)) {
@@ -987,6 +1038,8 @@ sub Group10A {
 # 13A: Enhanced Radio Paging or ODA
 
 sub Group13A {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -999,6 +1052,8 @@ sub Group13A {
 # 14A: Enhanced Other Networks (EON) information
 
 sub Group14A {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -1022,7 +1077,7 @@ sub Group14A {
       if (not exists($station{$eon_pi}{PSbuf})) {
         $station{$eon_pi}{PSbuf} = q{ } x 8;
       }
-      set_PS_chars($eon_pi, $eon_variant*2, extract_bits($blocks[2], 8, 8),
+      set_PS_chars($group_tree, $eon_pi, $eon_variant*2, extract_bits($blocks[2], 8, 8),
         extract_bits($blocks[2], 0, 8));
     }
 
@@ -1104,6 +1159,8 @@ sub Group14A {
 # 14B: Enhanced Other Networks (EON) information
 
 sub Group14B {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   return if (@blocks < 4);
@@ -1127,6 +1184,8 @@ sub Group14B {
 # 15B: Fast basic tuning and switching information
 
 sub Group15B {
+
+  my $group_tree = shift;
   my @blocks = @_;
 
   # DI
@@ -1149,7 +1208,7 @@ sub Group15B {
 
 sub ODAGroup {
 
-  my ($group_type, @blocks) = @_;
+  my ($group_type, $group_tree, @blocks) = @_;
 
   return if (@blocks < 4);
 
@@ -1191,7 +1250,7 @@ sub screenReset {
 # Change characters in RadioText
 
 sub set_rt_chars {
-  my ($lok, @a) = @_;
+  my ($group_tree, $lok, @a) = @_;
 
   $station{$pi}{hasRT} = TRUE;
 
@@ -1226,6 +1285,7 @@ sub set_rt_chars {
   utter ('  RT:     '.$displayed_RT, q{ RT:'}.$displayed_RT.q{'});
   if ($station{$pi}{hasFullRT}) {
     utter (q{}, ' RT_OK');
+    $$group_tree{radiotext} = unpad($station{$pi}{RTbuf});
   }
 
   utter ('          '. join(q{}, map { defined() ? q{^} : q{ } }
@@ -1262,7 +1322,7 @@ sub parse_eRT {
 # Change characters in the Program Service name
 
 sub set_PS_chars {
-  my ($pspi,$lok,@khar) = @_;
+  my ($group_tree,$pspi,$lok,@khar) = @_;
 
   if (not exists $station{$pspi}{PSbuf}) {
     $station{$pspi}{PSbuf} = q{ } x 8
@@ -1291,6 +1351,9 @@ sub set_PS_chars {
                          substr($station{$pspi}{PSbuf},$lok+2) :
                          $station{$pspi}{PSbuf});
   utter ('  PS:     '.$displayed_PS, q{ PS:'}.$displayed_PS.q{'});
+  if ($station{$pspi}{PSrcvd} == 4 && $pspi == $pi) {
+    $$group_tree{ps} = $station{$pspi}{PSbuf};
+  }
 
 }
 
