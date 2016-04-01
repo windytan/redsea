@@ -227,99 +227,14 @@ sub open_radio {
   }
 }
 
-# Next nybble from radio
-sub readNybble {
-  read $bitpipe, my $nybble, 1 or die 'End of stream';
-  my $num = hex($nybble);
-  my @bits;
-  for (0..3) {
-    $bits[$_] = ($num >> (3-$_)) & 1;
-  }
-  return @bits;
-}
-
-# Calculate the syndrome of a 26-bit vector
-sub syndrome {
-  my $vector = shift;
-
-  my ($l, $bit);
-  my $synd_reg = 0x000;
-
-  for my $k (reverse(0..25)) {
-    $bit       = ($vector  & (1 << $k));
-    $l         = ($synd_reg & 0x200);      # Store lefmost bit of register
-    $synd_reg  = ($synd_reg << 1) & 0x3FF; # Rotate register
-    $synd_reg ^= ($bit ? 0x31B : 0x00);    # Premult. input by x^325 mod g(x)
-    $synd_reg ^= ($l   ? 0x1B9 : 0x00);    # Division mod 2 by g(x)
-  }
-
-  return $synd_reg;
-}
-
-
-# When a block has uncorrectable errors, dump the group received so far
-sub blockerror {
-  dbg(GRAY."offset $ofs_letters[$expected_offset] not received".RESET);
-  my $data_length = 0;
-
-  if ($has_block[A]) {
-    $data_length = 1;
-
-    if ($has_block[B]) {
-      $data_length = 2;
-
-      if ($has_block[C] || $has_block[Ci]) {
-        $data_length = 3;
-      }
-    }
-    my @new_group;
-    @new_group = @group_data[0..$data_length-1];
-    push (@group_buffer, \@new_group);
-  } elsif ($has_block[Ci]) {
-    my @new_group;
-    @new_group = $group_data[2];
-    push (@group_buffer, \@new_group);
-  }
-
-  $block_has_errors[$block_counter % 50] = TRUE;
-
-  my $erroneous_blocks = 0;
-  for (@block_has_errors) {
-    $erroneous_blocks += ($_ // 0);
-  }
-
-  # Sync is lost when >45 out of last 50 blocks are erroneous (C.1.2)
-  if ($is_in_sync && $erroneous_blocks > 45) {
-    $is_in_sync       = FALSE;
-    @block_has_errors = ();
-    $pi               = 0;
-    dbg (RED."Sync lost (45 errors out of 50)".RESET);
-  }
-
-  @has_block = ();
-}
-
 sub receiveGroups {
-
-  my $block = my $wideblock = my $bitcount = my $prevbitcount = 0;
-  my ($dist, $message);
-  my $pi = my $i = 0;
-  my $j = my $data_length = my $buf = my $prevsync = 0;
-  my $left_to_read = 26;
-  my @has_sync_for;
-
-  my @offset_word = (0x0FC, 0x198, 0x168, 0x350, 0x1B4);
-  my @ofs2block   = (0, 1, 2, 2, 3);
-  my $synd_reg;
-
   if (not defined $source_file) {
     print STDERR 'Waiting for sync at '.sprintf('%.2f', $fmfreq / 1e6)." MHz\n";
   }
 
   my $start_time = time();
-  my @bitbuffer;
 
-  while (TRUE) {
+  while (<$bitpipe>) {
 
     if ($is_scanning) {
       my $elapsed_time = time() - $start_time;
@@ -332,157 +247,11 @@ sub receiveGroups {
       }
     }
 
-    # Compensate for clock slip corrections
-    $bitcount += 26-$left_to_read;
-
-    # Read from radio
-    for ($i=0; $i < ($is_in_sync ? $left_to_read : 1); $i++, $bitcount++) {
-      if (scalar @bitbuffer == 0) {
-        push @bitbuffer, readNybble();
-      }
-      $wideblock = ($wideblock << 1) + shift(@bitbuffer);
-    }
-
-    $left_to_read = 26;
-    $wideblock &= _28BIT;
-
-    $block = ($wideblock >> 1) & _26BIT;
-
-    # Find the offsets for which the syndrome is zero
-    for (A .. D) {
-      $has_sync_for[$_] = (syndrome($block ^ $offset_word[$_]) == 0);
-    }
-
-    # Acquire sync
-
-    if (!$is_in_sync) {
-
-      if ($has_sync_for[A] | $has_sync_for[B] | $has_sync_for[C] |
-          $has_sync_for[Ci] | $has_sync_for[D]) {
-
-        BLOCKS:
-        for my $bnum (A .. D) {
-          if ($has_sync_for[$bnum]) {
-            $dist = $bitcount - $prevbitcount;
-
-            if ($dist % 26 == 0 && $dist <= 156 &&
-               ($ofs2block[$prevsync] + $dist/26) % 4 == $ofs2block[$bnum]) {
-              $is_in_sync      = TRUE;
-              $expected_offset = $bnum;
-              dbg (GRAY."sync acquired: correct offset ".$ofs_letters[$bnum].
-                   " repeated at interval ".$dist.RESET);
-              last BLOCKS;
-            } else {
-              $prevbitcount = $bitcount;
-              $prevsync     = $bnum;
-            }
-          }
-        }
-      }
-    }
-
-    # Synchronous decoding
-
-    if ($is_in_sync) {
-
-      $block_counter ++;
-
-      $message = $block >> 10;
-
-      # If expecting C but we only got a Ci sync pulse, we have a Ci block
-      if ($expected_offset == C && !$has_sync_for[C] &&
-          $has_sync_for[Ci]) {
-        $expected_offset = Ci;
-      }
-
-      # If this block offset won't give a sync pulse
-      if (not $has_sync_for[$expected_offset]) {
-
-        # If it's a correct PI, the error was probably in the check bits and
-        # hence is ignored
-        if      ($expected_offset == A && $message == $pi && $pi != 0) {
-          $has_sync_for[A]  = TRUE;
-          dbg(GREEN."ignoring error in check bits".RESET);
-        } elsif ($expected_offset == C && $message == $pi && $pi != 0) {
-          $has_sync_for[Ci] = TRUE;
-          dbg(GREEN."ignoring error in check bits".RESET);
-        }
-
-        # Detect & correct clock slips (C.1.2)
-
-        elsif   ($expected_offset == A && $pi != 0 &&
-                (($wideblock >> 12) & _16BIT ) == $pi) {
-          $message           = $pi;
-          $wideblock       >>= 1;
-          $has_sync_for[A] = TRUE;
-          dbg(GREEN."clock slip corrected".RESET);
-        } elsif ($expected_offset == A && $pi != 0 &&
-                (($wideblock >> 10) & _16BIT ) == $pi) {
-          $message           = $pi;
-          $wideblock         = ($wideblock << 1) + get_bit();
-          $has_sync_for[A] = TRUE;
-          $left_to_read      = 25;
-          dbg(GREEN."clock slip corrected".RESET);
-        } else {
-
-          # Detect & correct burst errors (B.2.2)
-
-          $synd_reg = syndrome($block ^ $offset_word[$expected_offset]);
-
-          if ($pi != 0 && $expected_offset == 0) {
-            dbg(GRAY.sprintf("expecting PI=%04x(%016b), ".
-                "got %04x(%016b), xor=%016b, syndrome %03x",
-                $pi,$pi,($block>>10),($block>>10), $pi ^ ($block>>10), $synd_reg).RESET);
-          }
-
-          if (defined $error_lookup[$synd_reg]) {
-            $message = ($block >> 10) ^ $error_lookup[$synd_reg];
-            $has_sync_for[$expected_offset] = TRUE;
-
-            dbg(GREEN.sprintf("error-corrected ".
-               $ofs_letters[$expected_offset]." using ".
-              "vector %016b for syndrome %03x", $error_lookup[$synd_reg], $synd_reg).RESET);
-          } else {
-            dbg(RED.sprintf("uncorrectable syndrome %03x",$synd_reg).RESET);
-          }
-        }
-
-        # If still no sync pulse
-        if (not $has_sync_for[$expected_offset]) {
-          blockerror ();
-        }
-      }
-
-      # Error-free block received
-      if ($has_sync_for[$expected_offset]) {
-
-        dbg (GRAY."offset $ofs_letters[$expected_offset], correct message ".
-          sprintf("%04x", $message).RESET);
-
-        $group_data[$ofs2block[$expected_offset]] = $message;
-        $block_has_errors[$block_counter % 50]    = FALSE;
-        $has_block[$expected_offset]              = TRUE;
-
-        if ($expected_offset == A) {
-          $pi = $message;
-        }
-
-        # A complete group is received
-        if ($has_block[A] && $has_block[B] &&
-           ($has_block[C] || $has_block[Ci]) && $has_block[D]) {
-          decode_group(@group_data);
-        }
-      }
-
-      # The block offset we're expecting next
-      $expected_offset = ($expected_offset == C ? D :
-        ($expected_offset + 1) % 5);
-
-      if ($expected_offset == A) {
-        @has_block = ();
-      }
+    if (/^([a-f0-9]{4}) ([a-f0-9]{4}) ([a-f0-9]{4}) ([a-f0-9]{4})/) {
+      decode_group(hex($1), hex($2), hex($3), hex($4));
     }
   }
+
   return FALSE;
 }
 
