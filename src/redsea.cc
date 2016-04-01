@@ -164,7 +164,7 @@ uint16_t syndrome(int vec) {
   return synd_reg;
 }
 
-GroupReceiver::GroupReceiver() : has_sync_for_(5), offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
+BlockReceiver::BlockReceiver() : has_sync_for_(5), offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
   block_for_offset_({0, 1, 2, 2, 3}), group_data_(4), has_block_(5), bitcount_(0), left_to_read_(0),
   bit_receiver_(), wideblock_(0), block_has_errors_(50)
 
@@ -191,7 +191,7 @@ GroupReceiver::GroupReceiver() : has_sync_for_(5), offset_word_({0x0FC, 0x198, 0
   };
 }
 
-void GroupReceiver::blockError() {
+void BlockReceiver::blockError() {
   printf("offset %d not received\n",expected_offset_);
   int data_length = 0;
 
@@ -230,7 +230,7 @@ void GroupReceiver::blockError() {
 
 }
 
-std::vector<uint16_t> GroupReceiver::getNextGroup() {
+std::vector<uint16_t> BlockReceiver::getNextGroup() {
 
   has_whole_group_ = false;
 
@@ -376,9 +376,9 @@ std::vector<uint16_t> GroupReceiver::getNextGroup() {
 }
 
 int main() {
-  GroupReceiver group_receiver;
+  BlockReceiver block_receiver;
 
   while (true) {
-    group_receiver.getNextGroup();
+    block_receiver.getNextGroup();
   }
 }

@@ -40,9 +40,9 @@ class BitReceiver {
 
 };
 
-class GroupReceiver {
+class BlockReceiver {
   public:
-  GroupReceiver();
+  BlockReceiver();
   std::vector<uint16_t> getNextGroup();
 
   private:
