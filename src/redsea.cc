@@ -30,10 +30,16 @@ int reading_frame = 0;
 
 void bit(char b) {
   static int nbit = 0;
-  printf("%d", b);
-  if (nbit % OBUFLEN == 0)
-    fflush(0);
+  static int nybble = 0;
+  nybble = (nybble << 1) | b;
+
   nbit++;
+  if (nbit % 4 == 0) {
+    printf("%x", nybble & 0xf);
+    if ((nbit/4) % OBUFLEN == 0) {
+      fflush(0);
+    }
+  }
 }
 
 void print_delta(char b) {

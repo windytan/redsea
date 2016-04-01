@@ -224,10 +224,15 @@ sub open_radio {
   }
 }
 
-# Next bit from radio
-sub get_bit {
-  read $bitpipe, my $bit, 1 or die 'End of stream';
-  return $bit;
+# Next nybble from radio
+sub get_nybble {
+  read $bitpipe, my $nybble, 1 or die 'End of stream';
+  my $num = hex($nybble);
+  my @bits;
+  for (0..3) {
+    $bits[$_] = ($num >> (3-$_)) & 1;
+  }
+  return @bits;
 }
 
 # Calculate the syndrome of a 26-bit vector
@@ -309,6 +314,7 @@ sub get_groups {
   }
 
   my $start_time = time();
+  my @bitbuffer;
 
   while (TRUE) {
 
@@ -328,7 +334,10 @@ sub get_groups {
 
     # Read from radio
     for ($i=0; $i < ($is_in_sync ? $left_to_read : 1); $i++, $bitcount++) {
-      $wideblock = ($wideblock << 1) + get_bit();
+      if (scalar @bitbuffer == 0) {
+        push @bitbuffer, get_nybble();
+      }
+      $wideblock = ($wideblock << 1) + shift(@bitbuffer);
     }
 
     $left_to_read = 26;
