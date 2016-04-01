@@ -101,21 +101,24 @@ my $bitpipe;
 my $linebuf;
 my $fmfreq;
 
+main();
 
-init_data();
-get_options();
+sub main {
+  init_data();
+  get_options();
 
-if ($is_scanning) {
-  my $f;
-  for ($f = 87.9; $f < 106.5; $f += .1) {
-    printf("%.1f: ", $f);
-    open_radio($f * 1e6);
+  if ($is_scanning) {
+    my $f;
+    for ($f = 87.9; $f < 106.5; $f += .1) {
+      printf("%.1f: ", $f);
+      open_radio($f * 1e6);
+      get_groups();
+      printf("%04x\n",$pi);
+    }
+  } else {
+    open_radio($fmfreq);
     get_groups();
-    printf("%04x\n",$pi);
   }
-} else {
-  open_radio($fmfreq);
-  get_groups();
 }
 
 sub dbg {
