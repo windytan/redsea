@@ -154,10 +154,10 @@ uint16_t syndrome(int vec) {
   int bit,l;
 
   for (int k=25; k>=0; k--) {
-    bit       = (vec  & (1 << k));
+    bit       = (vec & (1 << k));
     l         = (synd_reg & 0x200);      // Store lefmost bit of register
     synd_reg  = (synd_reg << 1) & 0x3FF; // Rotate register
-    synd_reg ^= (bit ? 0x31B : 0x00);    // Premult. input by x^325 mod g(x)
+    synd_reg ^= (bit ? 0x31B : 0x00);    // Premultiply input by x^325 mod g(x)
     synd_reg ^= (l   ? 0x1B9 : 0x00);    // Division mod 2 by g(x)
   }
 
@@ -208,7 +208,7 @@ void GroupReceiver::blockError() {
     }
   }*/
 
-  block_has_errors_[block_counter_ % 50] = true;
+  block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 
   int erroneous_blocks = 0;
   for (bool e : block_has_errors_) {
@@ -216,10 +216,10 @@ void GroupReceiver::blockError() {
       erroneous_blocks ++;
   }
 
-  // Sync is lost when >45 out of last 50 blocks are erroneous (C.1.2)
+  // Sync is lost when >45 out of last 50 blocks are erroneous (Section C.1.2)
   if (is_in_sync_ && erroneous_blocks > 45) {
     is_in_sync_ = false;
-    for (int i=0; i<50; i++)
+    for (int i=0; i<block_has_errors_.size(); i++)
       block_has_errors_[i] = false;
     pi_ = 0x0000;
     printf("too many errors, sync lost\n");
@@ -251,8 +251,8 @@ std::vector<uint16_t> GroupReceiver::getNextGroup() {
 
     // Find the offsets for which the syndrome is zero
     bool has_sync_for_any = false;
-    for (int o=0; o<5; o++) {
-      has_sync_for_[o] = (syndrome(block ^ offset_word_[o]) == 0);
+    for (int o=A; o<=D; o++) {
+      has_sync_for_[o] = (syndrome(block ^ offset_word_[o]) == 0x000);
       has_sync_for_any |= has_sync_for_[o];
     }
 
@@ -355,6 +355,7 @@ std::vector<uint16_t> GroupReceiver::getNextGroup() {
 
         // Complete group received
         if (has_block_[A] && has_block_[B] && (has_block_[C] || has_block_[CI]) && has_block_[D]) {
+          has_whole_group_ = true;
           printf("%04x %04x %04x %04x\n",group_data_[0], group_data_[1], group_data_[2], group_data_[3]);
         }
       }
@@ -362,8 +363,8 @@ std::vector<uint16_t> GroupReceiver::getNextGroup() {
       expected_offset_ = (expected_offset_ == C ? D : (expected_offset_ + 1) % 5);
 
       if (expected_offset_ == A) {
-        for (int i=0; i<5; i++)
-          has_block_[i] = false;
+        for (int o=A; o<=D; o++)
+          has_block_[o] = false;
       }
 
     }

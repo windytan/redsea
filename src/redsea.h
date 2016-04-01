@@ -64,7 +64,7 @@ class GroupReceiver {
   std::vector<bool> block_has_errors_;
   BitReceiver bit_receiver_;
   bool has_whole_group_;
-  std::map<uint16_t,int> error_vector_;
+  std::map<uint16_t,uint16_t> error_vector_;
 
 
 };
