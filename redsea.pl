@@ -112,12 +112,12 @@ sub main {
     for ($f = 87.9; $f < 106.5; $f += .1) {
       printf("%.1f: ", $f);
       open_radio($f * 1e6);
-      get_groups();
+      receiveGroups();
       printf("%04x\n",$pi);
     }
   } else {
     open_radio($fmfreq);
-    get_groups();
+    receiveGroups();
   }
 }
 
@@ -228,7 +228,7 @@ sub open_radio {
 }
 
 # Next nybble from radio
-sub get_nybble {
+sub readNybble {
   read $bitpipe, my $nybble, 1 or die 'End of stream';
   my $num = hex($nybble);
   my @bits;
@@ -299,7 +299,7 @@ sub blockerror {
   @has_block = ();
 }
 
-sub get_groups {
+sub receiveGroups {
 
   my $block = my $wideblock = my $bitcount = my $prevbitcount = 0;
   my ($dist, $message);
@@ -338,7 +338,7 @@ sub get_groups {
     # Read from radio
     for ($i=0; $i < ($is_in_sync ? $left_to_read : 1); $i++, $bitcount++) {
       if (scalar @bitbuffer == 0) {
-        push @bitbuffer, get_nybble();
+        push @bitbuffer, readNybble();
       }
       $wideblock = ($wideblock << 1) + shift(@bitbuffer);
     }
