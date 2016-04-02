@@ -85,7 +85,87 @@ void Group::decode1 (std::vector<uint16_t> blockbits) {
   if (blockbits.size() < 4)
     return;
 
+  pin = blockbits[3];
 
+  if (type_ab == TYPE_A) {
+    has_pager = (extract_bits(blockbits[1], 0, 5) != 0);
+    if (has_pager) {
+      pager_tng = extract_bits(blockbits[1], 2, 3);
+      pager_interval = extract_bits(blockbits[1], 0, 2);
+    }
+    linkage_la = extract_bits(blockbits[2], 15, 1);
+
+    int slc_variant = extract_bits(blockbits[2], 12, 3);
+
+    if (slc_variant == 0) {
+      if (has_pager) {
+        pager_opc = extract_bits(blockbits[2], 8, 4);
+      }
+
+      // No PIN, section M.3.2.4.3
+      if (blockbits.size() == 4 && (blockbits[3] >> 11) == 0) {
+        int subtype = extract_bits(blockbits[3], 10, 1);
+        if (subtype == 0) {
+          if (has_pager) {
+            pager_pac = extract_bits(blockbits[3], 4, 6);
+            pager_opc = extract_bits(blockbits[3], 0, 4);
+          }
+        } else if (subtype == 1) {
+          if (has_pager) {
+            int b = extract_bits(blockbits[3], 8, 2);
+            if (b == 0) {
+              pager_ecc = extract_bits(blockbits[3], 0, 6);
+            } else if (b == 3) {
+              pager_ccf = extract_bits(blockbits[3], 0, 4);
+            }
+          }
+        }
+      }
+
+      ecc = extract_bits(blockbits[2],  0, 8);
+      cc  = extract_bits(blockbits[0], 12, 4);
+
+    } else if (slc_variant == 1) {
+      tmc_id = extract_bits(blockbits[2], 0, 12);
+
+    } else if (slc_variant == 2) {
+      if (has_pager) {
+        pager_pac = extract_bits(blockbits[2], 0, 6);
+        pager_opc = extract_bits(blockbits[2], 8, 4);
+      }
+
+      // No PIN, section M.3.2.4.3
+      if (blockbits.size() == 4 && (blockbits[3] >> 11) == 0) {
+        int subtype = extract_bits(blockbits[3], 10, 1);
+        if (subtype == 0) {
+          if (has_pager) {
+            pager_pac = extract_bits(blockbits[3], 4, 6);
+            pager_opc = extract_bits(blockbits[3], 0, 4);
+          }
+        } else if (subtype == 1) {
+          if (has_pager) {
+            int b = extract_bits(blockbits[3], 8, 2);
+            if (b == 0) {
+              pager_ecc = extract_bits(blockbits[3], 0, 6);
+            } else if (b == 3) {
+              pager_ccf = extract_bits(blockbits[3], 0, 4);
+            }
+          }
+        }
+      }
+
+    } else if (slc_variant == 3) {
+      lang = extract_bits(blockbits[2], 0, 8);
+
+    } else if (slc_variant == 6) {
+      // TODO:
+      // broadcaster data
+
+    } else if (slc_variant == 7) {
+      ews_channel = extract_bits(blockbits[2], 0, 12);
+    }
+
+  }
 
 }
 

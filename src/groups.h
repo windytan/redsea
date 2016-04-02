@@ -25,6 +25,20 @@ struct Group {
   std::vector<double> altfreqs;
   int ps_position;
   std::string ps_chars;
+  int pin;
+  bool has_pager;
+  int pager_tng;
+  int pager_interval;
+  bool linkage_la;
+  int pager_opc;
+  int pager_pac;
+  int pager_ecc;
+  int pager_ccf;
+  int ecc;
+  int cc;
+  int tmc_id;
+  int lang;
+  int ews_channel;
 };
 
 
