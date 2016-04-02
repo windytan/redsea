@@ -13,6 +13,7 @@ class BitStream {
   public:
   BitStream();
   int getNextBit();
+  bool eof() const;
 
   private:
   void demodulateMoreBits();
@@ -38,6 +39,8 @@ class BitStream {
   int bit_buffer_write_ptr_;
   int bit_buffer_read_ptr_;
   int bit_buffer_fill_count_;
+
+  bool is_eof_;
 
 };
 

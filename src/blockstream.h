@@ -13,6 +13,7 @@ class BlockStream {
   public:
   BlockStream();
   std::vector<uint16_t> getNextGroup();
+  bool eof() const;
 
   private:
   void blockError();

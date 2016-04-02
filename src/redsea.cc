@@ -34,8 +34,7 @@ int main() {
 
   uint16_t pi=0, prev_new_pi=0, new_pi=0;
 
-  while (true) {
-    Group group;
+  while (!block_stream.eof()) {
     auto blockbits = block_stream.getNextGroup();
 
     prev_new_pi = new_pi;

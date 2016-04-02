@@ -8,7 +8,7 @@ int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
 
-BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_fill_count_(0), bit_buffer_write_ptr_(0), bit_buffer_read_ptr_(0), bit_buffer_(BITBUFLEN), subcarr_phi_(0), clock_offset_(0) {
+BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_fill_count_(0), bit_buffer_write_ptr_(0), bit_buffer_read_ptr_(0), bit_buffer_(BITBUFLEN), subcarr_phi_(0), clock_offset_(0), is_eof_(false) {
 
 }
 
@@ -55,7 +55,10 @@ void BitStream::demodulateMoreBits() {
 
   int16_t sample[IBUFLEN];
   int bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
-  if (bytesread < 1) return;
+  if (bytesread < 1) {
+    is_eof_ = true;
+    return;
+  }
 
   for (int i = 0; i < bytesread; i++) {
 
@@ -106,7 +109,6 @@ void BitStream::demodulateMoreBits() {
 
 }
 
-
 int BitStream::getNextBit() {
   while (bit_buffer_fill_count_ < 1)
     demodulateMoreBits();
@@ -118,4 +120,6 @@ int BitStream::getNextBit() {
   return result;
 }
 
-
+bool BitStream::eof() const {
+  return is_eof_;
+}

@@ -233,4 +233,6 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
 }
 
-
+bool BlockStream::eof() const {
+  return bit_stream_.eof();
+}
