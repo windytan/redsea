@@ -24,148 +24,265 @@ std::string lcd_char(char code) {
 }
 
 // extract len bits from bitstring, starting at starting_at from the right
-uint16_t extract_bits (uint16_t bitstring, int starting_at, int len) {
+uint16_t bits (uint16_t bitstring, int starting_at, int len) {
   return ((bitstring >> starting_at) & ((1<<len) - 1));
 }
 
-Group::Group(std::vector<uint16_t> blockbits) {
-    type    = extract_bits(blockbits[1], 11, 5) >> 1;
-    type_ab = extract_bits(blockbits[1], 11,5) & 1;
-    tp      = extract_bits(blockbits[1], 10, 1);
-    pty     = extract_bits(blockbits[1],  5, 5);
+Station::Station() : Station(0x0000) {
 
-    if      (type == 0) { decode0(blockbits); }
-    else if (type == 1) { decode1(blockbits); }
-    /*if (group.type == 1) { Group0B(group, blockbits); }
-    if (group.type == 2) { Group1A(group, blockbits); }
-    if (group.type == 3) { Group1B(group, blockbits); }
-    if (group.type == 4) { Group2A(group, blockbits); }
-    if (group.type == 5) { Group2B(group, blockbits); }*/
 }
 
+Station::Station(uint16_t _pi) : pi_(_pi), ps_({" "," "," "," "," "," "," "," "}) {
 
-void Group::decode0 (std::vector<uint16_t> blockbits) {
-  di_address = 3 - extract_bits(blockbits[1], 0, 2);
-  di = extract_bits(blockbits[1], 2, 1);
-  ta = extract_bits(blockbits[1], 4, 1);
-  is_music = extract_bits(blockbits[1], 3, 1);
+}
 
-  if (blockbits.size() < 3)
+void Station::add(Group group) {
+
+  is_tp_   = bits(group.block2, 10, 1);
+  pty_     = bits(group.block2,  5, 5);
+
+  printf("%d%s\n",group.type, group.type_ab == TYPE_A ? "A" : "B");
+
+  if      (group.type == 0) { decode0(group); }
+  else if (group.type == 1) { decode1(group); }
+  else if (group.type == 2) { decode2(group); }
+  else if (group.type == 4) { decode4(group); }
+}
+
+void Station::addAltFreq(uint8_t af_code) {
+  if (af_code >= 1 && af_code <= 204) {
+    alt_freqs_.push_back(87.5 + af_code / 10.0);
+  } else if (af_code == 205) {
+    // filler
+  } else if (af_code == 224) {
+    // no AF exists
+  } else if (af_code >= 225 && af_code <= 249) {
+    num_alt_freqs_ = af_code - 224;
+  } else if (af_code == 250) {
+    // AM/LF freq follows
+  }
+}
+
+bool Station::hasPS() const {
+  return has_ps_;
+}
+
+std::string Station::getPS() const {
+
+  std::string chars_str;
+
+  if (has_ps_) {
+    for (std::string ch : ps_)
+      chars_str += ch;
+  }
+
+  return chars_str;
+
+}
+
+uint16_t Station::getPI() const {
+  return pi_;
+}
+
+void Station::updatePS(int pos, std::vector<int> chars) {
+
+  if (pos < 0 || pos+chars.size() > 8)
     return;
 
-  if (type_ab == TYPE_A) {
+  if (pos != prev_ps_pos_ + 2 || pos == prev_ps_pos_) {
+    has_ps_ = false;
+    ps_received_bitfield_ = 0x00;
+  }
+
+  for (int i=pos; i<pos + (int)chars.size(); i++) {
+    ps_received_bitfield_ |= (1 << i);
+    ps_.at(i) = lcd_char(chars.at(i-pos));
+  }
+
+  prev_ps_pos_ = pos;
+
+  if (ps_received_bitfield_ == 0xff) {
+    has_ps_ = true;
+  }
+}
+
+void Station::updateRadioText(int pos, std::vector<int> chars) {
+
+  /*if (pos < 0 || pos+chars.size() > 64)
+    return;
+
+  std::string chars_str;
+  for (int i=pos; i<pos + (int)chars.size(); i++) {
+    rt_received_bitfield_ |= (1 << i);
+  }*/
+
+}
+
+void Station::decode0 (Group group) {
+
+  // not implemented: Decoder Identification
+
+  is_ta_    = bits(group.block2, 4, 1);
+  is_music_ = bits(group.block2, 3, 1);
+
+  if (group.num_blocks < 3)
+    return;
+
+  if (group.type_ab == TYPE_A) {
     for (int i=0; i<2; i++) {
-      int af_code = extract_bits(blockbits[2], 8-i*8, 8);
-      if (af_code >= 1 && af_code <= 204) {
-        altfreqs.push_back(87.5 + af_code / 10.0);
-      } else if (af_code == 205) {
-        // filler
-      } else if (af_code == 224) {
-        // no AF exists
-      } else if (af_code >= 225 && af_code <= 249) {
-        num_altfreqs = af_code - 224;
-      } else if (af_code == 250) {
-        // AM/LF freq follows
-      }
+      addAltFreq(bits(group.block3, 8-i*8, 8));
     }
   }
 
-  if (blockbits.size() < 4)
+  if (group.num_blocks < 4)
     return;
 
-  ps_position = extract_bits(blockbits[1], 0, 2) * 2;
-  ps_chars = lcd_char(extract_bits(blockbits[3], 8, 8)) +
-    lcd_char(extract_bits(blockbits[3], 0, 8));
+  updatePS(bits(group.block2, 0, 2) * 2,
+      { bits(group.block4, 8, 8), bits(group.block4, 0, 8) });
 
-  std::cout << ps_chars << "\n";
 }
 
-void Group::decode1 (std::vector<uint16_t> blockbits) {
+void Station::decode1 (Group group) {
 
-  if (blockbits.size() < 4)
+  if (group.num_blocks < 4)
     return;
 
-  pin = blockbits[3];
+  pin_ = group.block4;
 
-  if (type_ab == TYPE_A) {
-    has_pager = (extract_bits(blockbits[1], 0, 5) != 0);
-    if (has_pager) {
-      pager_tng = extract_bits(blockbits[1], 2, 3);
-      pager_interval = extract_bits(blockbits[1], 0, 2);
+  if (group.type_ab == TYPE_A) {
+    pager_tng_ = bits(group.block2, 2, 3);
+    if (pager_tng_ != 0) {
+      pager_interval_ = bits(group.block2, 0, 2);
     }
-    linkage_la = extract_bits(blockbits[2], 15, 1);
+    linkage_la_ = bits(group.block3, 15, 1);
 
-    int slc_variant = extract_bits(blockbits[2], 12, 3);
+    int slc_variant = bits(group.block3, 12, 3);
 
     if (slc_variant == 0) {
-      if (has_pager) {
-        pager_opc = extract_bits(blockbits[2], 8, 4);
+      if (pager_tng_ != 0) {
+        pager_opc_ = bits(group.block3, 8, 4);
       }
 
       // No PIN, section M.3.2.4.3
-      if (blockbits.size() == 4 && (blockbits[3] >> 11) == 0) {
-        int subtype = extract_bits(blockbits[3], 10, 1);
+      if (group.num_blocks == 4 && (group.block4 >> 11) == 0) {
+        int subtype = bits(group.block4, 10, 1);
         if (subtype == 0) {
-          if (has_pager) {
-            pager_pac = extract_bits(blockbits[3], 4, 6);
-            pager_opc = extract_bits(blockbits[3], 0, 4);
+          if (pager_tng_ != 0) {
+            pager_pac_ = bits(group.block4, 4, 6);
+            pager_opc_ = bits(group.block4, 0, 4);
           }
         } else if (subtype == 1) {
-          if (has_pager) {
-            int b = extract_bits(blockbits[3], 8, 2);
+          if (pager_tng_ != 0) {
+            int b = bits(group.block4, 8, 2);
             if (b == 0) {
-              pager_ecc = extract_bits(blockbits[3], 0, 6);
+              pager_ecc_ = bits(group.block4, 0, 6);
             } else if (b == 3) {
-              pager_ccf = extract_bits(blockbits[3], 0, 4);
+              pager_ccf_ = bits(group.block4, 0, 4);
             }
           }
         }
       }
 
-      ecc = extract_bits(blockbits[2],  0, 8);
-      cc  = extract_bits(blockbits[0], 12, 4);
+      ecc_ = bits(group.block3,  0, 8);
+      cc_  = bits(group.block1, 12, 4);
 
     } else if (slc_variant == 1) {
-      tmc_id = extract_bits(blockbits[2], 0, 12);
+      tmc_id_ = bits(group.block3, 0, 12);
 
     } else if (slc_variant == 2) {
-      if (has_pager) {
-        pager_pac = extract_bits(blockbits[2], 0, 6);
-        pager_opc = extract_bits(blockbits[2], 8, 4);
+      if (pager_tng_ != 0) {
+        pager_pac_ = bits(group.block3, 0, 6);
+        pager_opc_ = bits(group.block3, 8, 4);
       }
 
       // No PIN, section M.3.2.4.3
-      if (blockbits.size() == 4 && (blockbits[3] >> 11) == 0) {
-        int subtype = extract_bits(blockbits[3], 10, 1);
+      if (group.num_blocks == 4 && (group.block4 >> 11) == 0) {
+        int subtype = bits(group.block4, 10, 1);
         if (subtype == 0) {
-          if (has_pager) {
-            pager_pac = extract_bits(blockbits[3], 4, 6);
-            pager_opc = extract_bits(blockbits[3], 0, 4);
+          if (pager_tng_ != 0) {
+            pager_pac_ = bits(group.block4, 4, 6);
+            pager_opc_ = bits(group.block4, 0, 4);
           }
         } else if (subtype == 1) {
-          if (has_pager) {
-            int b = extract_bits(blockbits[3], 8, 2);
+          if (pager_tng_ != 0) {
+            int b = bits(group.block4, 8, 2);
             if (b == 0) {
-              pager_ecc = extract_bits(blockbits[3], 0, 6);
+              pager_ecc_ = bits(group.block4, 0, 6);
             } else if (b == 3) {
-              pager_ccf = extract_bits(blockbits[3], 0, 4);
+              pager_ccf_ = bits(group.block4, 0, 4);
             }
           }
         }
       }
 
     } else if (slc_variant == 3) {
-      lang = extract_bits(blockbits[2], 0, 8);
+      lang_ = bits(group.block3, 0, 8);
 
     } else if (slc_variant == 6) {
       // TODO:
       // broadcaster data
 
     } else if (slc_variant == 7) {
-      ews_channel = extract_bits(blockbits[2], 0, 12);
+      ews_channel_ = bits(group.block3, 0, 12);
     }
 
   }
 
 }
 
+void Station::decode2 (Group group) {
+
+  if (group.num_blocks < 3)
+    return;
+
+  int rt_position = bits(group.block2, 0, 4) * (group.type_ab == TYPE_A ? 4 : 2);
+
+  //TODO: text A/B
+
+  std::string chars;
+
+  if (group.type_ab == TYPE_A) {
+    updateRadioText(rt_position, {bits(group.block3, 8, 8), bits(group.block3, 0, 8)});
+  }
+
+  if (group.num_blocks == 4) {
+    updateRadioText(rt_position+2, {bits(group.block4, 8, 8), bits(group.block4, 0, 8)});
+  }
+
+}
+
+void Station::decode4 (Group group) {
+
+  double mjd = (bits(group.block2, 0, 2) << 15) + bits(group.block3, 1, 15);
+  double lto;
+
+  if (group.num_blocks == 4) {
+    lto = (bits(group.block4, 5, 1) ? -1 : 1) * bits(group.block4, 0, 5) / 2.0;
+    mjd = int(mjd + lto / 24.0);
+  }
+
+  int yr = int((mjd - 15078.2) / 365.25);
+  int mo = int((mjd - 14956.1 - int(yr * 365.25)) / 30.6001);
+  int dy = mjd - 14956 - int(yr * 365.25) - int(mo * 30.6001);
+  if (mo == 14 || mo == 15) {
+    yr += 1;
+    mo -= 12;
+  }
+  yr += 1900;
+  mo -= 1;
+
+  if (group.num_blocks == 4) {
+    int ltom = (lto - int(lto)) * 60;
+
+    int hr = int((bits(group.block3, 0, 1) << 4) +
+        bits(group.block4, 12, 14) + lto) % 24;
+    int mn = bits(group.block4, 6, 6) + ltom;
+
+    char buff[100];
+    snprintf(buff, sizeof(buff),
+        "%04d-%02d-%02dT%02d:%02d%+03d:%02d\n",yr,mo,dy,hr,mn,int(lto),ltom);
+    clock_time_ = buff;
+    std::cout<<clock_time_<<"\n";
+
+  }
+}

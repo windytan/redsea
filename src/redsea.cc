@@ -23,14 +23,19 @@
 #include "blockstream.h"
 #include "groups.h"
 
-void printShort(Group group) {
-  printf("%04x %2d%s TP:%d PTY:%d\n", group.pi, group.type >> 1, (group.type & 1) ? "B" : "A",
-      group.tp, group.pty);
+void printShort(Station station) {
+  if (station.hasPS()) {
+    printf("%s %04x\n", station.getPS().c_str(), station.getPI());
+  }
+
+  //printf("%04x %2d%s TP:%d PTY:%d\n", station.pi, group.type, group.type_ab == 1 ? "B" : "A",
+  //    group.tp, group.pty);
 }
 
 
 int main() {
   BlockStream block_stream;
+  std::map<uint16_t, Station> stations;
 
   uint16_t pi=0, prev_new_pi=0, new_pi=0;
 
@@ -49,7 +54,12 @@ int main() {
 
     Group group(blockbits);
 
+    if (stations.find(pi) != stations.end()) {
+      stations[pi].add(group);
+    } else {
+      stations.insert({pi, Station(pi)});
+    }
 
-    printShort(group);
+    printShort(stations[pi]);
   }
 }

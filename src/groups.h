@@ -8,38 +8,79 @@ enum {
   TYPE_A, TYPE_B
 };
 
+uint16_t bits (uint16_t bitstring, int starting_at, int len);
+
 struct Group {
-  Group(std::vector<uint16_t>);
-  void decode0(std::vector<uint16_t>);
-  void decode1(std::vector<uint16_t>);
-  uint16_t pi;
+  Group(std::vector<uint16_t> blockbits) : num_blocks(blockbits.size()) {
+    if (num_blocks > 0)
+      block1 = blockbits[0];
+    if (num_blocks > 1) {
+      block2 = blockbits[1];
+      type    = bits(blockbits[1], 12, 4);
+      type_ab = bits(blockbits[1], 11, 1);
+    }
+    if (num_blocks > 2)
+      block3 = blockbits[2];
+    if (num_blocks > 3)
+      block4 = blockbits[3];
+  }
+
   int type;
   int type_ab;
-  bool tp;
-  bool ta;
-  bool is_music;
-  int pty;
-  int di_address;
-  int di;
-  int num_altfreqs;
-  std::vector<double> altfreqs;
-  int ps_position;
-  std::string ps_chars;
-  int pin;
-  bool has_pager;
-  int pager_tng;
-  int pager_interval;
-  bool linkage_la;
-  int pager_opc;
-  int pager_pac;
-  int pager_ecc;
-  int pager_ccf;
-  int ecc;
-  int cc;
-  int tmc_id;
-  int lang;
-  int ews_channel;
+  int num_blocks;
+  uint16_t block1;
+  uint16_t block2;
+  uint16_t block3;
+  uint16_t block4;
+
 };
+
+class Station {
+  public:
+    Station();
+    Station(uint16_t pi);
+    void add(Group);
+    bool hasPS() const;
+    std::string getPS() const;
+    uint16_t getPI() const;
+  private:
+    void decode0(Group);
+    void decode1(Group);
+    void decode2(Group);
+    void decode4(Group);
+    void addAltFreq(uint8_t);
+    void updatePS(int pos, std::vector<int> chars);
+    void updateRadioText(int pos, std::vector<int> chars);
+    uint16_t pi_;
+    std::vector<std::string> ps_;
+    int prev_ps_pos_;
+    uint16_t ps_received_bitfield_;
+    uint64_t rt_received_bitfield_;
+    int pty_;
+    bool is_tp_;
+    bool is_ta_;
+    bool is_music_;
+    std::vector<double> alt_freqs_;
+    int num_alt_freqs_;
+    int pin_;
+    int ecc_;
+    int cc_;
+    int tmc_id_;
+    int ews_channel_;
+    int lang_;
+    int linkage_la_;
+    bool has_ps_;
+    std::string clock_time_;
+
+    int pager_pac_;
+    int pager_opc_;
+    int pager_tng_;
+    int pager_ecc_;
+    int pager_ccf_;
+    int pager_interval_;
+
+};
+
 
 
 #endif // GROUPS_H_
