@@ -175,7 +175,6 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         // Detect & correct burst errors (Section B.2.2)
         } else {
 
-
           uint16_t synd_reg = syndrome(block ^ offset_word_[expected_offset_]);
 
           if (pi_ != 0 && expected_offset_ == A) {
@@ -214,7 +213,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         // Complete group received
         if (has_block_[A] && has_block_[B] && (has_block_[C] || has_block_[CI]) && has_block_[D]) {
           has_whole_group_ = true;
-          printf("%04x %04x %04x %04x\n",group_data_[0], group_data_[1], group_data_[2], group_data_[3]);
+          //printf("%04x %04x %04x %04x\n",group_data_[0], group_data_[1], group_data_[2], group_data_[3]);
         }
       }
 

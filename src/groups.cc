@@ -3,8 +3,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cassert>
 
-std::string lcd_char(char code) {
+std::string lcd_char(int code) {
+  assert (code >= 32);
   const std::vector<std::string> char_map ({
       " ","!","\"","#","¤","%","&","'","(",")","*","+",",","-",".","/",
       "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
