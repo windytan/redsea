@@ -1,17 +1,17 @@
-#ifndef BLOCKRECEIVER_H_
-#define BLOCKRECEIVER_H_
+#ifndef BLOCKSTREAM_H_
+#define BLOCKSTREAM_H_
 
 #include <map>
 
-#include "bitreceiver.h"
+#include "bitstream.h"
 
 enum {
   A, B, C, CI, D
 };
 
-class BlockReceiver {
+class BlockStream {
   public:
-  BlockReceiver();
+  BlockStream();
   std::vector<uint16_t> getNextGroup();
 
   private:
@@ -31,7 +31,7 @@ class BlockReceiver {
   std::vector<uint16_t> group_data_;
   std::vector<bool> has_block_;
   std::vector<bool> block_has_errors_;
-  BitReceiver bit_receiver_;
+  BitStream bit_stream_;
   bool has_whole_group_;
   std::map<uint16_t,uint16_t> error_vector_;
 
@@ -39,4 +39,4 @@ class BlockReceiver {
 };
 
 
-#endif // BLOCKRECEIVER_H_
+#endif // BLOCKSTREAM_H_

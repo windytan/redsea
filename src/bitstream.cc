@@ -1,14 +1,18 @@
-#include "bitreceiver.h"
+#include "bitstream.h"
 
 #include <complex>
 
 #include "filters.h"
 
-BitReceiver::BitReceiver() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_fill_count_(0), bit_buffer_write_ptr_(0), bit_buffer_read_ptr_(0), bit_buffer_(BITBUFLEN), subcarr_phi_(0), clock_offset_(0) {
+int sign(double a) {
+  return (a >= 0 ? 1 : 0);
+}
+
+BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_fill_count_(0), bit_buffer_write_ptr_(0), bit_buffer_read_ptr_(0), bit_buffer_(BITBUFLEN), subcarr_phi_(0), clock_offset_(0) {
 
 }
 
-void BitReceiver::bit(int b) {
+void BitStream::bit(int b) {
   bit_buffer_[bit_buffer_write_ptr_] = b;
   bit_buffer_write_ptr_ = (bit_buffer_write_ptr_ + 1) % BITBUFLEN;
   bit_buffer_fill_count_ ++;
@@ -20,16 +24,12 @@ void BitReceiver::bit(int b) {
   }*/
 }
 
-void BitReceiver::deltaBit(int b) {
+void BitStream::deltaBit(int b) {
   bit(b ^ dbit_);
   dbit_ = b;
 }
 
-int sign(double a) {
-  return (a >= 0 ? 1 : 0);
-}
-
-void BitReceiver::biphase(double acc) {
+void BitStream::biphase(double acc) {
 
   if (sign(acc) != sign(prev_acc_)) {
     tot_errs_[counter_ % 2] ++;
@@ -51,7 +51,7 @@ void BitReceiver::biphase(double acc) {
 }
 
 
-void BitReceiver::demodulateMoreBits() {
+void BitStream::demodulateMoreBits() {
 
   int16_t sample[IBUFLEN];
   int bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
@@ -107,7 +107,7 @@ void BitReceiver::demodulateMoreBits() {
 }
 
 
-int BitReceiver::getNextBit() {
+int BitStream::getNextBit() {
   while (bit_buffer_fill_count_ < 1)
     demodulateMoreBits();
 

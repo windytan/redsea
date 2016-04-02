@@ -1,4 +1,4 @@
-#include "blockreceiver.h"
+#include "blockstream.h"
 
 #define MASK_5BIT  0x000001F
 #define MASK_10BIT 0x00003FF
@@ -22,9 +22,9 @@ uint16_t syndrome(int vec) {
   return synd_reg;
 }
 
-BlockReceiver::BlockReceiver() : has_sync_for_(5), offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
+BlockStream::BlockStream() : has_sync_for_(5), offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
   block_for_offset_({0, 1, 2, 2, 3}), group_data_(4), has_block_(5), bitcount_(0), left_to_read_(0),
-  bit_receiver_(), wideblock_(0), block_has_errors_(50)
+  bit_stream_(), wideblock_(0), block_has_errors_(50)
 
 {
 
@@ -49,7 +49,7 @@ BlockReceiver::BlockReceiver() : has_sync_for_(5), offset_word_({0x0FC, 0x198, 0
   };
 }
 
-void BlockReceiver::blockError() {
+void BlockStream::blockError() {
   printf("offset %d not received\n",expected_offset_);
   int data_length = 0;
 
@@ -88,7 +88,7 @@ void BlockReceiver::blockError() {
 
 }
 
-std::vector<uint16_t> BlockReceiver::getNextGroup() {
+std::vector<uint16_t> BlockStream::getNextGroup() {
 
   has_whole_group_ = false;
 
@@ -99,7 +99,7 @@ std::vector<uint16_t> BlockReceiver::getNextGroup() {
 
     // Read from radio
     for (int i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++) {
-      wideblock_ = (wideblock_ << 1) + bit_receiver_.getNextBit();
+      wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
     }
 
     left_to_read_ = 26;
@@ -167,7 +167,7 @@ std::vector<uint16_t> BlockReceiver::getNextGroup() {
         } else if (expected_offset_ == A && pi_ != 0 &&
             ((wideblock_ >> 10) & MASK_16BIT) == pi_) {
           message = pi_;
-          wideblock_ = (wideblock_ << 1) + bit_receiver_.getNextBit();
+          wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
           has_sync_for_[A] = true;
           left_to_read_ = 25;
           printf("clock slip corrected\n");

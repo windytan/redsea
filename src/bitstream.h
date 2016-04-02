@@ -1,5 +1,5 @@
-#ifndef BITRECEIVER_H_
-#define BITRECEIVER_H_
+#ifndef BITSTREAM_H_
+#define BITSTREAM_H_
 
 #include <vector>
 
@@ -9,9 +9,9 @@
 #define OBUFLEN 128
 #define BITBUFLEN 1024
 
-class BitReceiver {
+class BitStream {
   public:
-  BitReceiver();
+  BitStream();
   int getNextBit();
 
   private:
@@ -42,4 +42,4 @@ class BitReceiver {
 };
 
 
-#endif // BITRECEIVER_H_
+#endif // BITSTREAM_H_

@@ -20,7 +20,7 @@
 
 #include <iostream>
 
-#include "blockreceiver.h"
+#include "blockstream.h"
 
 std::string lcd_char(char code) {
   std::vector<std::string> char_map ({
@@ -38,11 +38,11 @@ std::string lcd_char(char code) {
       "Â","Ä","Ê","Ë","Î","Ï","Ô","Ö","Û","Ü","ř","č","š","ž","đ","ŀ",
       "Ã","Å","Æ","Œ","ŷ","Ý","Õ","Ø","Þ","Ŋ","Ŕ","Ć","Ś","Ź","Ŧ","ð",
       "ã","å","æ","œ","ŵ","ý","õ","ø","þ","ŋ","ŕ","ć","ś","ź","ŧ"," "});
-  return char_map[code];
+  return char_map[code - 16];
 }
 
-// extract len bits from bitstring, starting at starting_at bit from the right
-int extract_bits (int bitstring, int starting_at, int len) {
+// extract len bits from bitstring, starting at starting_at from the right
+uint16_t extract_bits (uint16_t bitstring, int starting_at, int len) {
   return ((bitstring >> starting_at) & ((1<<len) - 1));
 }
 
@@ -75,20 +75,21 @@ void Group0A (Group& group, std::vector<uint16_t> blockbits) {
 
   group.ps_position = extract_bits(blockbits[1], 0, 2) * 2;
   group.ps_chars = lcd_char(extract_bits(blockbits[3], 8, 8)) +
-    lcd_char(extract_bits(blockbits[3], 8, 8));
+    lcd_char(extract_bits(blockbits[3], 0, 8));
 
   std::cout << group.ps_chars << "\n";
 }
 
 int main() {
-  BlockReceiver block_receiver;
+  BlockStream block_stream;
 
-  uint8_t pi=0, prev_new_pi=0, new_pi=0;
+  uint16_t pi=0, prev_new_pi=0, new_pi=0;
 
   while (true) {
     Group group;
-    auto blockbits = block_receiver.getNextGroup();
+    auto blockbits = block_stream.getNextGroup();
 
+    prev_new_pi = new_pi;
     new_pi = blockbits[0];
 
     if (new_pi == prev_new_pi) {
@@ -103,7 +104,6 @@ int main() {
     group.tp   = extract_bits(blockbits[1], 10, 1);
     group.pty  = extract_bits(blockbits[1],  5, 5);
 
-    std::cout << group.type << "\n";
     if (group.type == 0) { Group0A(group, blockbits); }
     /*if (group.type == 1) { Group0B(group, blockbits); }
     if (group.type == 2) { Group1A(group, blockbits); }
