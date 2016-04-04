@@ -30,11 +30,88 @@ uint16_t bits (uint16_t bitstring, int starting_at, int len) {
   return ((bitstring >> starting_at) & ((1<<len) - 1));
 }
 
+RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len), prev_pos_(-1) {
+  last_complete_string_ = getString();
+}
+
+void RDSString::setAt(int pos, int chr) {
+  if (pos < 0 || pos >= chars_.size())
+    return;
+
+  chars_[pos] = chr;
+
+  if (pos != prev_pos_ + 1) {
+    for (size_t i=0; i<is_char_sequential_.size(); i++)
+      is_char_sequential_[i] = false;
+  }
+
+  is_char_sequential_[pos] = true;
+
+  if (isComplete())
+    last_complete_string_ = getString();
+
+  prev_pos_ = pos;
+
+}
+
+int RDSString::lengthReceived() const {
+
+  int result = 0;
+  for (size_t i=0; i<is_char_sequential_.size(); i++) {
+    if (!is_char_sequential_[i])
+      break;
+    result = i+1;
+  }
+
+  return result;
+}
+
+int RDSString::lengthExpected() const {
+
+  int result = chars_.size();
+
+  for (size_t i=0; i<chars_.size(); i++) {
+    if (chars_[i] == 0x0D) {
+      result = i;
+      break;
+    }
+  }
+
+  return result;
+}
+
+std::string RDSString::getString() const {
+  std::string result;
+  int len = lengthExpected();
+  for (size_t i=0; i<len; i++) {
+    result += (is_char_sequential_[i] ? lcd_char(chars_[i]) : " ");
+  }
+
+  return result;
+
+}
+
+
+std::string RDSString::getLastCompleteString() const {
+  return last_complete_string_;
+}
+
+bool RDSString::isComplete() const {
+  return lengthReceived() >= lengthExpected();
+}
+
+void RDSString::clear() {
+  for (size_t i=0; i<chars_.size(); i++) {
+    is_char_sequential_[i] = false;
+  }
+  last_complete_string_ = getString();
+}
+
 Station::Station() : Station(0x0000) {
 
 }
 
-Station::Station(uint16_t _pi) : pi_(_pi), ps_({" "," "," "," "," "," "," "," "}) {
+Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64) {
 
 }
 
@@ -66,57 +143,36 @@ void Station::addAltFreq(uint8_t af_code) {
 }
 
 bool Station::hasPS() const {
-  return has_ps_;
+  return ps_.isComplete();
 }
 
 std::string Station::getPS() const {
+  return ps_.getLastCompleteString();
+}
 
-  std::string chars_str;
-
-  if (has_ps_) {
-    for (std::string ch : ps_)
-      chars_str += ch;
-  }
-
-  return chars_str;
-
+std::string Station::getRT() const {
+  return rt_.getLastCompleteString();
 }
 
 uint16_t Station::getPI() const {
   return pi_;
 }
 
+std::string Station::getCountryCode() const {
+
+}
+
 void Station::updatePS(int pos, std::vector<int> chars) {
 
-  if (pos < 0 || pos+chars.size() > 8)
-    return;
+  for (int i=pos; i<pos+chars.size(); i++)
+    ps_.setAt(i, chars[i-pos]);
 
-  if (pos != prev_ps_pos_ + 2 || pos == prev_ps_pos_) {
-    has_ps_ = false;
-    ps_received_bitfield_ = 0x00;
-  }
-
-  for (int i=pos; i<pos + (int)chars.size(); i++) {
-    ps_received_bitfield_ |= (1 << i);
-    ps_.at(i) = lcd_char(chars.at(i-pos));
-  }
-
-  prev_ps_pos_ = pos;
-
-  if (ps_received_bitfield_ == 0xff) {
-    has_ps_ = true;
-  }
 }
 
 void Station::updateRadioText(int pos, std::vector<int> chars) {
 
-  /*if (pos < 0 || pos+chars.size() > 64)
-    return;
-
-  std::string chars_str;
-  for (int i=pos; i<pos + (int)chars.size(); i++) {
-    rt_received_bitfield_ |= (1 << i);
-  }*/
+  for (int i=pos; i<pos+chars.size(); i++)
+    rt_.setAt(i, chars[i-pos]);
 
 }
 
@@ -238,8 +294,11 @@ void Station::decode2 (Group group) {
     return;
 
   int rt_position = bits(group.block2, 0, 4) * (group.type_ab == TYPE_A ? 4 : 2);
+  int prev_textAB = rt_ab_;
+  rt_ab_          = bits(group.block2, 4, 1);
 
-  //TODO: text A/B
+  if (prev_textAB != rt_ab_)
+    rt_.clear();
 
   std::string chars;
 

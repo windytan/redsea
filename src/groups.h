@@ -10,6 +10,25 @@ enum {
 
 uint16_t bits (uint16_t bitstring, int starting_at, int len);
 
+class RDSString {
+  public:
+  RDSString(int len=8);
+  void setAt(int, int);
+  int lengthReceived() const;
+  int lengthExpected() const;
+  std::string getString() const;
+  std::string getLastCompleteString() const;
+  bool isComplete() const;
+  void clear();
+
+  private:
+  std::vector<int> chars_;
+  std::vector<bool> is_char_sequential_;
+  int prev_pos_;
+  std::string last_complete_string_;
+
+};
+
 struct Group {
   Group(std::vector<uint16_t> blockbits) : num_blocks(blockbits.size()) {
     if (num_blocks > 0)
@@ -42,6 +61,7 @@ class Station {
     void add(Group);
     bool hasPS() const;
     std::string getPS() const;
+    std::string getRT() const;
     uint16_t getPI() const;
   private:
     void decode0(Group);
@@ -52,10 +72,9 @@ class Station {
     void updatePS(int pos, std::vector<int> chars);
     void updateRadioText(int pos, std::vector<int> chars);
     uint16_t pi_;
-    std::vector<std::string> ps_;
-    int prev_ps_pos_;
-    uint16_t ps_received_bitfield_;
-    uint64_t rt_received_bitfield_;
+    RDSString ps_;
+    RDSString rt_;
+    int rt_ab_;
     int pty_;
     bool is_tp_;
     bool is_ta_;
