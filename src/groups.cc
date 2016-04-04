@@ -316,6 +316,9 @@ void Station::decode2 (Group group) {
 
 void Station::decode4 (Group group) {
 
+  if (group.num_blocks < 3 || group.type_ab == TYPE_B)
+    return;
+
   double mjd = (bits(group.block2, 0, 2) << 15) + bits(group.block3, 1, 15);
   double lto;
 
