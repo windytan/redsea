@@ -22,13 +22,16 @@ uint16_t syndrome(int vec) {
   return synd_reg;
 }
 
-BlockStream::BlockStream() : has_sync_for_(5), offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
-  block_for_offset_({0, 1, 2, 2, 3}), group_data_(4), has_block_(5), bitcount_(0), left_to_read_(0),
-  bit_stream_(), wideblock_(0), block_has_errors_(50)
+BlockStream::BlockStream() : has_sync_for_(5), group_data_(4), has_block_(5),
+  bitcount_(0), left_to_read_(0), bit_stream_(), wideblock_(0), block_has_errors_(50)
 
 {
 
-  error_vector_ = {
+  offset_word_ = {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
+
+  block_for_offset_ = {0, 1, 2, 2, 3};
+
+  error_lookup_ = {
     {0x200, 0b1000000000000000},
     {0x300, 0b1100000000000000},
     {0x180, 0b0110000000000000},
