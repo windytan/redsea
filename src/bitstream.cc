@@ -120,6 +120,6 @@ int BitStream::getNextBit() {
   return result;
 }
 
-bool BitStream::eof() const {
+bool BitStream::isEOF() const {
   return is_eof_;
 }

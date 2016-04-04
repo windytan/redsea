@@ -13,7 +13,7 @@ class BitStream {
   public:
   BitStream();
   int getNextBit();
-  bool eof() const;
+  bool isEOF() const;
 
   private:
   void demodulateMoreBits();
