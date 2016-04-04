@@ -120,7 +120,7 @@ void Station::add(Group group) {
   is_tp_   = bits(group.block2, 10, 1);
   pty_     = bits(group.block2,  5, 5);
 
-  printf("%d%s\n",group.type, group.type_ab == TYPE_A ? "A" : "B");
+  printf(":%d%s\n",group.type, group.type_ab == TYPE_A ? "A" : "B");
 
   if      (group.type == 0) { decode0(group); }
   else if (group.type == 1) { decode1(group); }
@@ -341,9 +341,9 @@ void Station::decode4 (Group group) {
 
     char buff[100];
     snprintf(buff, sizeof(buff),
-        "%04d-%02d-%02dT%02d:%02d%+03d:%02d\n",yr,mo,dy,hr,mn,int(lto),ltom);
+        "%04d-%02d-%02dT%02d:%02d:00%+03d:%02d\n",yr,mo,dy,hr,mn,int(lto),ltom);
     clock_time_ = buff;
-    std::cout<<clock_time_<<"\n";
+    std::cout<<"clock_time:"<<clock_time_<<"\n";
 
   }
 }

@@ -83,7 +83,7 @@ void BlockStream::uncorrectable() {
     for (int i=0; i<block_has_errors_.size(); i++)
       block_has_errors_[i] = false;
     pi_ = 0x0000;
-    printf("too many errors, sync lost\n");
+    printf(":too many errors, sync lost\n");
   }
 
   for (int o=A; o<=D; o++)
@@ -129,7 +129,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
                 (block_for_offset_[prevsync_] + dist/26) % 4 == block_for_offset_[o]) {
               is_in_sync_ = true;
               expected_offset_ = o;
-              printf("sync!\n");
+              printf(":sync!\n");
             } else {
               prevbitcount_ = bitcount_;
               prevsync_ = o;
@@ -155,10 +155,10 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         // If message is a correct PI, error was probably in check bits
         if (expected_offset_ == A && message == pi_ && pi_ != 0) {
           has_sync_for_[A] = true;
-          printf("ignoring error in check bits\n");
+          printf(":ignoring error in check bits\n");
         } else if (expected_offset_ == C && message == pi_ && pi_ != 0) {
           has_sync_for_[CI] = true;
-          printf("ignoring error in check bits\n");
+          printf(":ignoring error in check bits\n");
 
         // Detect & correct clock slips (Section C.1.2)
         } else if (expected_offset_ == A && pi_ != 0 &&
@@ -166,14 +166,14 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
           message = pi_;
           wideblock_ >>= 1;
           has_sync_for_[A] = true;
-          printf("clock slip corrected\n");
+          printf(":clock slip corrected\n");
         } else if (expected_offset_ == A && pi_ != 0 &&
             ((wideblock_ >> 10) & MASK_16BIT) == pi_) {
           message = pi_;
           wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
           has_sync_for_[A] = true;
           left_to_read_ = 25;
-          printf("clock slip corrected\n");
+          printf(":clock slip corrected\n");
 
         // Detect & correct burst errors (Section B.2.2)
         } else {
@@ -181,16 +181,16 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
           uint16_t synd_reg = syndrome(block ^ offset_word_[expected_offset_]);
 
           if (pi_ != 0 && expected_offset_ == A) {
-            printf("expecting PI%04x, got %04x, xor %d, syndrome %03x\n",
+            printf(":expecting PI%04x, got %04x, xor %d, syndrome %03x\n",
                 pi_, block>>10, pi_ ^ (block>>10), synd_reg);
           }
 
-          if (error_vector_.find(synd_reg) != error_vector_.end()) {
-            message = (block >> 10) ^ error_vector_[synd_reg];
+          if (error_lookup_.find(synd_reg) != error_lookup_.end()) {
+            message = (block >> 10) ^ error_lookup_[synd_reg];
             has_sync_for_[expected_offset_] = true;
 
-            printf("error corrected block %d using vector %04x for syndrome %03x\n",
-                expected_offset_, error_vector_[synd_reg], synd_reg);
+            printf(":error corrected block %d using vector %04x for syndrome %03x\n",
+                expected_offset_, error_lookup_[synd_reg], synd_reg);
 
           }
 
@@ -216,7 +216,6 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         // Complete group received
         if (has_block_[A] && has_block_[B] && (has_block_[C] || has_block_[CI]) && has_block_[D]) {
           has_whole_group_ = true;
-          //printf("%04x %04x %04x %04x\n",group_data_[0], group_data_[1], group_data_[2], group_data_[3]);
         }
       }
 

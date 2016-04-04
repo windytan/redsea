@@ -24,9 +24,7 @@
 #include "groups.h"
 
 void printShort(Station station) {
-  if (station.hasPS()) {
-    printf("%s %04x\n", station.getPS().c_str(), station.getPI());
-  }
+    printf("%s 0x%04x %s\n", station.getPS().c_str(), station.getPI(), station.getRT().c_str());
 
   //printf("%04x %2d%s TP:%d PTY:%d\n", station.pi, group.type, group.type_ab == 1 ? "B" : "A",
   //    group.tp, group.pty);
