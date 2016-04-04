@@ -49,8 +49,8 @@ BlockStream::BlockStream() : has_sync_for_(5), offset_word_({0x0FC, 0x198, 0x168
   };
 }
 
-void BlockStream::blockError() {
-  printf("offset %d not received\n",expected_offset_);
+void BlockStream::uncorrectable() {
+  printf(":offset %d not received\n",expected_offset_);
   int data_length = 0;
 
   // TODO: return partial group
@@ -195,7 +195,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
         // Still no sync pulse
         if ( !has_sync_for_[expected_offset_]) {
-          blockError();
+          uncorrectable();
         }
       }
 

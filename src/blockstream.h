@@ -16,7 +16,7 @@ class BlockStream {
   bool isEOF() const;
 
   private:
-  void blockError();
+  void uncorrectable();
   int bitcount_;
   int prevbitcount_;
   int left_to_read_;
@@ -34,7 +34,7 @@ class BlockStream {
   std::vector<bool> block_has_errors_;
   BitStream bit_stream_;
   bool has_whole_group_;
-  std::map<uint16_t,uint16_t> error_vector_;
+  std::map<uint16_t,uint16_t> error_lookup_;
 
 
 };
