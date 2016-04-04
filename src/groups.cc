@@ -244,6 +244,8 @@ void Station::decode1 (Group group) {
       ecc_ = bits(group.block3,  0, 8);
       cc_  = bits(group.block1, 12, 4);
 
+      has_country_ = true;
+
     } else if (slc_variant == 1) {
       tmc_id_ = bits(group.block3, 0, 12);
 

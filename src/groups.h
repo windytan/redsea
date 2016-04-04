@@ -63,6 +63,7 @@ class Station {
     std::string getPS() const;
     std::string getRT() const;
     uint16_t getPI() const;
+    std::string getCountryCode() const;
   private:
     void decode0(Group);
     void decode1(Group);
@@ -88,8 +89,8 @@ class Station {
     int ews_channel_;
     int lang_;
     int linkage_la_;
-    bool has_ps_;
     std::string clock_time_;
+    bool has_country_;
 
     int pager_pac_;
     int pager_opc_;
