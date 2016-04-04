@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace redsea {
+
 enum {
   TYPE_A, TYPE_B
 };
@@ -101,6 +103,5 @@ class Station {
 
 };
 
-
-
+} // namespace redsea
 #endif // GROUPS_H_

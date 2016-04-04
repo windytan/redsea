@@ -6,6 +6,8 @@
 #define MASK_26BIT 0x3FFFFFF
 #define MASK_28BIT 0xFFFFFFF
 
+namespace redsea {
+
 uint16_t syndrome(int vec) {
 
   uint16_t synd_reg = 0x000;
@@ -237,3 +239,5 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 bool BlockStream::isEOF() const {
   return bit_stream_.isEOF();
 }
+
+} // namespace redsea

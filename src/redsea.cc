@@ -23,6 +23,8 @@
 #include "blockstream.h"
 #include "groups.h"
 
+namespace redsea {
+
 void printShort(Station station) {
     printf("%s 0x%04x %s\n", station.getPS().c_str(), station.getPI(), station.getRT().c_str());
 
@@ -30,10 +32,11 @@ void printShort(Station station) {
   //    group.tp, group.pty);
 }
 
+} // namespace redsea
 
 int main() {
-  BlockStream block_stream;
-  std::map<uint16_t, Station> stations;
+  redsea::BlockStream block_stream;
+  std::map<uint16_t, redsea::Station> stations;
 
   uint16_t pi=0, prev_new_pi=0, new_pi=0;
 
@@ -50,12 +53,12 @@ int main() {
       continue;
     }
 
-    Group group(blockbits);
+    redsea::Group group(blockbits);
 
     if (stations.find(pi) != stations.end()) {
       stations[pi].add(group);
     } else {
-      stations.insert({pi, Station(pi)});
+      stations.insert({pi, redsea::Station(pi)});
     }
 
     printShort(stations[pi]);

@@ -5,6 +5,8 @@
 
 #include "bitstream.h"
 
+namespace redsea {
+
 enum {
   A, B, C, CI, D
 };
@@ -39,5 +41,5 @@ class BlockStream {
 
 };
 
-
+} // namespace redsea
 #endif // BLOCKSTREAM_H_

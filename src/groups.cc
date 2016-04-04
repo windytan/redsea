@@ -5,6 +5,8 @@
 #include <vector>
 #include <cassert>
 
+namespace redsea {
+
 std::string lcd_char(int code) {
   assert (code >= 32);
   const std::vector<std::string> char_map ({
@@ -352,3 +354,5 @@ void Station::decode4 (Group group) {
 
   }
 }
+
+} // namespace redsea

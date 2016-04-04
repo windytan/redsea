@@ -9,6 +9,8 @@
 #define OBUFLEN 128
 #define BITBUFLEN 1024
 
+namespace redsea {
+
 class BitStream {
   public:
   BitStream();
@@ -44,5 +46,5 @@ class BitStream {
 
 };
 
-
+} // namespace redsea
 #endif // BITSTREAM_H_

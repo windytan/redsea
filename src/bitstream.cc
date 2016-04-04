@@ -4,6 +4,8 @@
 
 #include "filters.h"
 
+namespace redsea {
+
 int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
@@ -123,3 +125,5 @@ int BitStream::getNextBit() {
 bool BitStream::isEOF() const {
   return is_eof_;
 }
+
+} // namespace redsea
