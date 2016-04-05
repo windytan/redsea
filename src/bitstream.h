@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "wdsp/cirbuffer.h"
+
 #define FS      250000.0
 #define FC_0    57000.0
 #define IBUFLEN 4096
@@ -37,10 +39,7 @@ class BitStream {
 
   int dbit_;
 
-  std::vector<int> bit_buffer_;
-  int bit_buffer_write_ptr_;
-  int bit_buffer_read_ptr_;
-  int bit_buffer_fill_count_;
+  wdsp::CirBuffer<int> bit_buffer_;
 
   bool is_eof_;
 

@@ -10,14 +10,12 @@ int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
 
-BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_fill_count_(0), bit_buffer_write_ptr_(0), bit_buffer_read_ptr_(0), bit_buffer_(BITBUFLEN), subcarr_phi_(0), clock_offset_(0), is_eof_(false) {
+BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_(BITBUFLEN), subcarr_phi_(0), clock_offset_(0), is_eof_(false) {
 
 }
 
 void BitStream::bit(int b) {
-  bit_buffer_[bit_buffer_write_ptr_] = b;
-  bit_buffer_write_ptr_ = (bit_buffer_write_ptr_ + 1) % BITBUFLEN;
-  bit_buffer_fill_count_ ++;
+  bit_buffer_.append(b);
   /*if (nbit % 4 == 0) {
     printf("%x", nybble & 0xf);
     if ((nbit/4) % OBUFLEN == 0) {
@@ -112,12 +110,11 @@ void BitStream::demodulateMoreBits() {
 }
 
 int BitStream::getNextBit() {
-  while (bit_buffer_fill_count_ < 1)
+  while (bit_buffer_.getFillCount() < 1)
     demodulateMoreBits();
 
-  int result = bit_buffer_[bit_buffer_read_ptr_];
-  bit_buffer_fill_count_ --;
-  bit_buffer_read_ptr_ = (bit_buffer_read_ptr_ + 1) % BITBUFLEN;
+  int result = bit_buffer_.at(0);
+  bit_buffer_.forward(1);
   //printf("read %d, write %d, fill count %d\n",bit_buffer_read_ptr_, bit_buffer_write_ptr_, bit_buffer_fill_count_);
   return result;
 }
