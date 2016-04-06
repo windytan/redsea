@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "wdsp/cirbuffer.h"
+#include "wdsp/window.h"
 
 #define FS      250000.0
 #define FC_0    57000.0
