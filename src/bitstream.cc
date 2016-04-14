@@ -2,7 +2,15 @@
 
 #include <complex>
 
+#include "wdsp/wdsp.h"
+
 #include "filters.h"
+
+#define FS        250000.0
+#define FC_0      57000.0
+#define IBUFLEN   4096
+#define OBUFLEN   128
+#define BITBUFLEN 1024
 
 namespace redsea {
 
@@ -10,7 +18,7 @@ int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
 
-BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_(BITBUFLEN), subcarr_phi_(0), clock_offset_(0), is_eof_(false) {
+BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_(BITBUFLEN), mixer_phi_(0), clock_offset_(0), is_eof_(false), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 127)), subcarr_baseband_(IBUFLEN), mixer_lagged_(IBUFLEN) {
 
 }
 
@@ -55,7 +63,7 @@ void BitStream::demodulateMoreBits() {
 
   int16_t sample[IBUFLEN];
   int bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
-  if (bytesread < 1) {
+  if (bytesread < IBUFLEN) {
     is_eof_ = true;
     return;
   }
@@ -64,9 +72,15 @@ void BitStream::demodulateMoreBits() {
 
     /* Subcarrier downmix & phase recovery */
 
-    subcarr_phi_ += 2 * M_PI * fsc_ * (1.0/FS);
-    std::complex<double> subcarr_bb =
-      filter_lp_2400_iq(sample[i] / 32768.0 * std::polar(1.0, subcarr_phi_));
+    mixer_phi_ += 2 * M_PI * fsc_ * (1.0/FS);
+    //std::complex<double> subcarr_bb = wdsp::mix(sample[i] / 32768.0, subcarr_phi_);
+    subcarr_baseband_.appendOverlapFiltered(wdsp::mix(sample[i] / 32768.0, mixer_phi_),
+        subcarr_lopass_fir_);
+//      filter_lp_2400_iq(sample[i] / 32768.0 * std::polar(1.0, subcarr_phi_));
+
+    double pll_beta = 2e-3;
+
+    mixer_lagged_.append(std::polar(1.0,mixer_phi_));
 
     std::complex<double> sc_sample = subcarr_baseband_.getNext();
     std::complex<double> mi = mixer_lagged_.getNext();
@@ -87,14 +101,18 @@ void BitStream::demodulateMoreBits() {
     mixer_phi_ -= pll_beta * phi1;
     fsc_            -= .5 * pll_beta * phi1;
 
+    //printf("dd %f\ndd %f\n",phi1, phi2);
+    //printf("dd %f\ndd %f\n",mi.real(), mi.imag());
+    //printf("dd %f\ndd %f\n",sc_sample.real(), sc_sample.imag());
+    //printf("dd %f\n", phi1*0.02);
     /* 1187.5 Hz clock */
 
-    double clock_phi = subcarr_phi_ / 48.0 + clock_offset_;
+    double clock_phi = mixer_phi_ / 48.0 + clock_offset_;
     double lo_clock  = (fmod(clock_phi, 2*M_PI) < M_PI ? 1 : -1);
 
     /* Clock phase recovery */
 
-    if (sign(prev_bb_) != sign(real(subcarr_bb))) {
+    if (sign(prev_bb_) != sign(real(sc_sample))) {
       double d_cphi = fmod(clock_phi, M_PI);
       if (d_cphi >= M_PI_2) d_cphi -= M_PI;
       clock_offset_ -= 0.005 * d_cphi;
@@ -104,7 +122,7 @@ void BitStream::demodulateMoreBits() {
     if (numsamples_ % 8 == 0) {
 
       /* biphase symbol integrate & dump */
-      acc_ += real(subcarr_bb) * lo_clock;
+      acc_ += real(sc_sample) * lo_clock;
 
       if (sign(lo_clock) != sign(prevclock_)) {
         biphase(acc_);
@@ -116,7 +134,7 @@ void BitStream::demodulateMoreBits() {
 
     numsamples_ ++;
 
-    prev_bb_ = real(subcarr_bb);
+    prev_bb_ = real(sc_sample);
 
   }
 
