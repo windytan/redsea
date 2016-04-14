@@ -68,11 +68,24 @@ void BitStream::demodulateMoreBits() {
     std::complex<double> subcarr_bb =
       filter_lp_2400_iq(sample[i] / 32768.0 * std::polar(1.0, subcarr_phi_));
 
-    double pll_beta = 50;
+    std::complex<double> sc_sample = subcarr_baseband_.getNext();
+    std::complex<double> mi = mixer_lagged_.getNext();
 
-    double d_phi_sc = 2.0*filter_lp_pll(real(subcarr_bb) * imag(subcarr_bb));
-    subcarr_phi_ -= pll_beta * d_phi_sc;
-    fsc_         -= .5 * pll_beta * d_phi_sc;
+    //double delta_phi = arg(sc_sample * conj(mi));
+
+    //double delta_phi = 2.0*filter_lp_pll(real(sc_sample) * imag(sc_sample));
+    //double delta_phi = imag(sc_sample);
+
+    double phi1 = arg(sc_sample);
+    if (phi1 >= M_PI_2) {
+      phi1 -= M_PI;
+    } else if (phi1 <= -M_PI_2) {
+      phi1 += M_PI;
+    }
+    double phi2 = arg(mi);
+
+    mixer_phi_ -= pll_beta * phi1;
+    fsc_            -= .5 * pll_beta * phi1;
 
     /* 1187.5 Hz clock */
 
