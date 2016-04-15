@@ -116,7 +116,7 @@ void BitStream::demodulateMoreBits() {
 }
 
 int BitStream::getNextBit() {
-  while (bit_buffer_.getFillCount() < 1)
+  while (bit_buffer_.getFillCount() < 1 && !isEOF())
     demodulateMoreBits();
 
   int result = bit_buffer_.getNext();
