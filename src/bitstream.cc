@@ -18,22 +18,12 @@ int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
 
-BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_(BITBUFLEN), mixer_phi_(0), clock_offset_(0), is_eof_(false), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 127)), subcarr_baseband_(IBUFLEN), mixer_lagged_(IBUFLEN) {
+BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_(BITBUFLEN), mixer_phi_(0), clock_offset_(0), is_eof_(false), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 127)), subcarr_baseband_(IBUFLEN) {
 
-}
-
-void BitStream::bit(int b) {
-  bit_buffer_.append(b);
-  /*if (nbit % 4 == 0) {
-    printf("%x", nybble & 0xf);
-    if ((nbit/4) % OBUFLEN == 0) {
-      fflush(0);
-    }
-  }*/
 }
 
 void BitStream::deltaBit(int b) {
-  bit(b ^ dbit_);
+  bit_buffer_.append(b ^ dbit_);
   dbit_ = b;
 }
 
@@ -73,22 +63,12 @@ void BitStream::demodulateMoreBits() {
     /* Subcarrier downmix & phase recovery */
 
     mixer_phi_ += 2 * M_PI * fsc_ * (1.0/FS);
-    //std::complex<double> subcarr_bb = wdsp::mix(sample[i] / 32768.0, subcarr_phi_);
     subcarr_baseband_.appendOverlapFiltered(wdsp::mix(sample[i] / 32768.0, mixer_phi_),
         subcarr_lopass_fir_);
-//      filter_lp_2400_iq(sample[i] / 32768.0 * std::polar(1.0, subcarr_phi_));
 
     double pll_beta = 2e-3;
 
-    mixer_lagged_.append(std::polar(1.0,mixer_phi_));
-
     std::complex<double> sc_sample = subcarr_baseband_.getNext();
-    std::complex<double> mi = mixer_lagged_.getNext();
-
-    //double delta_phi = arg(sc_sample * conj(mi));
-
-    //double delta_phi = 2.0*filter_lp_pll(real(sc_sample) * imag(sc_sample));
-    //double delta_phi = imag(sc_sample);
 
     double phi1 = arg(sc_sample);
     if (phi1 >= M_PI_2) {
@@ -96,15 +76,10 @@ void BitStream::demodulateMoreBits() {
     } else if (phi1 <= -M_PI_2) {
       phi1 += M_PI;
     }
-    double phi2 = arg(mi);
 
     mixer_phi_ -= pll_beta * phi1;
     fsc_            -= .5 * pll_beta * phi1;
 
-    //printf("dd %f\ndd %f\n",phi1, phi2);
-    //printf("dd %f\ndd %f\n",mi.real(), mi.imag());
-    //printf("dd %f\ndd %f\n",sc_sample.real(), sc_sample.imag());
-    //printf("dd %f\n", phi1*0.02);
     /* 1187.5 Hz clock */
 
     double clock_phi = mixer_phi_ / 48.0 + clock_offset_;

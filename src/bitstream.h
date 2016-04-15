@@ -19,7 +19,6 @@ class BitStream {
   void demodulateMoreBits();
   void biphase(double acc);
   void deltaBit(int b);
-  void bit(int b);
   double mixer_phi_;
   double clock_offset_;
   double prevclock_;
@@ -39,7 +38,6 @@ class BitStream {
 
   std::vector<double> subcarr_lopass_fir_;
   wdsp::CirBuffer<std::complex<double>> subcarr_baseband_;
-  wdsp::CirBuffer<std::complex<double>> mixer_lagged_;
 
   bool is_eof_;
 
