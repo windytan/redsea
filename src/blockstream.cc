@@ -216,7 +216,8 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         }
 
         // Complete group received
-        if (has_block_[A] && has_block_[B] && (has_block_[C] || has_block_[CI]) && has_block_[D]) {
+        if (has_block_[A] && has_block_[B] && (has_block_[C] ||
+            has_block_[CI]) && has_block_[D]) {
           has_whole_group_ = true;
         }
       }
