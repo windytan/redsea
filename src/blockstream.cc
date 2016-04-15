@@ -82,7 +82,7 @@ void BlockStream::uncorrectable() {
   // Sync is lost when >45 out of last 50 blocks are erroneous (Section C.1.2)
   if (is_in_sync_ && erroneous_blocks > 45) {
     is_in_sync_ = false;
-    for (int i=0; i<block_has_errors_.size(); i++)
+    for (int i=0; i<(int)block_has_errors_.size(); i++)
       block_has_errors_[i] = false;
     pi_ = 0x0000;
     printf(":too many errors, sync lost\n");
