@@ -25,7 +25,7 @@ class BitStream {
   double prev_bb_;
   double acc_;
   int    numsamples_;
-  double fsc_;
+  double subcarr_freq_;
 
   double prev_acc_;
   int    counter_;

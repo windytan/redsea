@@ -18,7 +18,7 @@ int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
 
-BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), fsc_(FC_0), bit_buffer_(BITBUFLEN), mixer_phi_(0), clock_offset_(0), is_eof_(false), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 127)), subcarr_baseband_(IBUFLEN) {
+BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), subcarr_freq_(FC_0), bit_buffer_(BITBUFLEN), mixer_phi_(0), clock_offset_(0), is_eof_(false), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 127)), subcarr_baseband_(IBUFLEN) {
 
 }
 
@@ -62,7 +62,7 @@ void BitStream::demodulateMoreBits() {
 
     /* Subcarrier downmix & phase recovery */
 
-    mixer_phi_ += 2 * M_PI * fsc_ * (1.0/FS);
+    mixer_phi_ += 2 * M_PI * subcarr_freq_ * (1.0/FS);
     subcarr_baseband_.appendOverlapFiltered(wdsp::mix(sample[i] / 32768.0,
         mixer_phi_), subcarr_lopass_fir_);
 
@@ -81,8 +81,8 @@ void BitStream::demodulateMoreBits() {
         phi1 += M_PI;
       }
 
-      mixer_phi_ -= pll_beta * phi1;
-      fsc_       -= .5 * pll_beta * phi1;
+      mixer_phi_    -= pll_beta * phi1;
+      subcarr_freq_ -= .5 * pll_beta * phi1;
 
       /* 1187.5 Hz clock */
 
