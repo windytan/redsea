@@ -183,7 +183,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
           uint16_t synd_reg = syndrome(block ^ offset_word_[expected_offset_]);
 
           if (pi_ != 0 && expected_offset_ == A) {
-            printf(":expecting PI%04x, got %04x, xor %d, syndrome %03x\n",
+            printf(":expecting PI%04x, got %04x, xor %04x, syndrome %03x\n",
                 pi_, block>>10, pi_ ^ (block>>10), synd_reg);
           }
 
