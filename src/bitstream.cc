@@ -119,9 +119,7 @@ int BitStream::getNextBit() {
   while (bit_buffer_.getFillCount() < 1 && !isEOF())
     demodulateMoreBits();
 
-  int result = bit_buffer_.getNext();
-  //printf("read %d, write %d, fill count %d\n",bit_buffer_read_ptr_, bit_buffer_write_ptr_, bit_buffer_fill_count_);
-  return result;
+  return bit_buffer_.getNext();
 }
 
 bool BitStream::isEOF() const {
