@@ -63,38 +63,39 @@ void BitStream::demodulateMoreBits() {
     /* Subcarrier downmix & phase recovery */
 
     mixer_phi_ += 2 * M_PI * fsc_ * (1.0/FS);
-    subcarr_baseband_.appendOverlapFiltered(wdsp::mix(sample[i] / 32768.0, mixer_phi_),
-        subcarr_lopass_fir_);
+    subcarr_baseband_.appendOverlapFiltered(wdsp::mix(sample[i] / 32768.0,
+        mixer_phi_), subcarr_lopass_fir_);
 
-    double pll_beta = 2e-3;
-
-    std::complex<double> sc_sample = subcarr_baseband_.getNext();
-
-    double phi1 = arg(sc_sample);
-    if (phi1 >= M_PI_2) {
-      phi1 -= M_PI;
-    } else if (phi1 <= -M_PI_2) {
-      phi1 += M_PI;
-    }
-
-    mixer_phi_ -= pll_beta * phi1;
-    fsc_            -= .5 * pll_beta * phi1;
-
-    /* 1187.5 Hz clock */
-
-    double clock_phi = mixer_phi_ / 48.0 + clock_offset_;
-    double lo_clock  = (fmod(clock_phi, 2*M_PI) < M_PI ? 1 : -1);
-
-    /* Clock phase recovery */
-
-    if (sign(prev_bb_) != sign(real(sc_sample))) {
-      double d_cphi = fmod(clock_phi, M_PI);
-      if (d_cphi >= M_PI_2) d_cphi -= M_PI;
-      clock_offset_ -= 0.005 * d_cphi;
-    }
+    double pll_beta = 16e-3;
 
     /* Decimate band-limited signal */
     if (numsamples_ % 8 == 0) {
+
+      std::complex<double> sc_sample = subcarr_baseband_.at(0);
+      subcarr_baseband_.forward(8);
+
+      double phi1 = arg(sc_sample);
+      if (phi1 >= M_PI_2) {
+        phi1 -= M_PI;
+      } else if (phi1 <= -M_PI_2) {
+        phi1 += M_PI;
+      }
+
+      mixer_phi_ -= pll_beta * phi1;
+      fsc_       -= .5 * pll_beta * phi1;
+
+      /* 1187.5 Hz clock */
+
+      double clock_phi = mixer_phi_ / 48.0 + clock_offset_;
+      double lo_clock  = (fmod(clock_phi, 2*M_PI) < M_PI ? 1 : -1);
+
+      /* Clock phase recovery */
+
+      if (sign(prev_bb_) != sign(real(sc_sample))) {
+        double d_cphi = fmod(clock_phi, M_PI);
+        if (d_cphi >= M_PI_2) d_cphi -= M_PI;
+        clock_offset_ -= 0.005 * d_cphi;
+      }
 
       /* biphase symbol integrate & dump */
       acc_ += real(sc_sample) * lo_clock;
@@ -105,11 +106,10 @@ void BitStream::demodulateMoreBits() {
       }
 
       prevclock_ = lo_clock;
+      prev_bb_ = real(sc_sample);
     }
 
     numsamples_ ++;
-
-    prev_bb_ = real(sc_sample);
 
   }
 
