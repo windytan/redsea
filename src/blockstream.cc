@@ -97,7 +97,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
   has_whole_group_ = false;
 
-  while (!has_whole_group_ && !isEOF()) {
+  while (!(has_whole_group_ || isEOF())) {
 
     // Compensate for clock slip corrections
     bitcount_ += 26 - left_to_read_;
