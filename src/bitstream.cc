@@ -74,15 +74,15 @@ void BitStream::demodulateMoreBits() {
       std::complex<double> sc_sample = subcarr_baseband_.at(0);
       subcarr_baseband_.forward(8);
 
-      double phi1 = arg(sc_sample);
-      if (phi1 >= M_PI_2) {
-        phi1 -= M_PI;
-      } else if (phi1 <= -M_PI_2) {
-        phi1 += M_PI;
+      double phase_error = arg(sc_sample);
+      if (phase_error >= M_PI_2) {
+        phase_error -= M_PI;
+      } else if (phase_error <= -M_PI_2) {
+        phase_error += M_PI;
       }
 
-      mixer_phi_    -= pll_beta * phi1;
-      subcarr_freq_ -= .5 * pll_beta * phi1;
+      mixer_phi_    -= pll_beta * phase_error;
+      subcarr_freq_ -= .5 * pll_beta * phase_error;
 
       /* 1187.5 Hz clock */
 
