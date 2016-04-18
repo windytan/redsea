@@ -11,6 +11,7 @@ and prints it to the terminal. It works with rtl_fm.
 * Linux or OSX
 * g++
 * GNU autotools
+* wdsp (TBA)
 * [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
 
 ## Compiling
