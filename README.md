@@ -12,7 +12,6 @@ and prints it to the terminal. It works with rtl_fm.
 * g++
 * GNU autotools
 * [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
-* Perl &gt;= 5.12
 
 ## Compiling
 
@@ -24,26 +23,8 @@ make
 
 ## Usage
 
-### Simple
-
-Receive RDS of a channel at 94.0 MHz:
-
 ```
-perl redsea.pl 94.0M
-```
-
-### Full
-
-```
-perl redsea.pl [-hlst] [-p <error>] [-g <gain>] FREQ
-
-    -h          display this help and exit
-    -l          print groups in long format
-    -s          print groups in short format (default)
-    -t          print an ISO timestamp before each group
-    -p <error>  parts-per-million error, passed to rtl_fm (optional;
-                allows for faster PLL lock if set correctly)
-    FREQ        station frequency in Hz, can be SI suffixed (94.0M)
+rtl_fm -M -fm 87.9M -l 0 -A std -p 0 -s 250k -F 9 | ./src/redsea
 ```
 
 ## Licensing
