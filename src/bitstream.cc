@@ -109,6 +109,9 @@ void BitStream::demodulateMoreBits() {
       prev_bb_ = real(sc_sample);
     }
 
+    if (numsamples_ % 1000000 == 0)
+      printf(":%.2f Hz\n", subcarr_freq_);
+
     numsamples_ ++;
 
   }
