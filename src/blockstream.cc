@@ -6,9 +6,24 @@
 #define MASK_26BIT 0x3FFFFFF
 #define MASK_28BIT 0xFFFFFFF
 
+#define MAX_ERR_LEN 3
+
 namespace redsea {
 
-uint16_t syndrome(int vec) {
+namespace {
+
+uint16_t rol10(uint16_t word, int k) {
+  uint16_t result = word;
+  int l;
+  for (int i=0; i<k; i++) {
+    l      = (result & 0x200);
+    result = (result << 1) & 0x3FF;
+    result += (l ? 1 : 0);
+  }
+  return result;
+}
+
+uint16_t calcSyndrome(int vec) {
 
   uint16_t synd_reg = 0x000;
   int bit,l;
@@ -24,6 +39,20 @@ uint16_t syndrome(int vec) {
   return synd_reg;
 }
 
+uint16_t calcCheckBits(int dataWord) {
+  uint16_t generator = 0b0110111001;
+  uint16_t result    = 0;
+
+  for (int k=0; k<16; k++) {
+    if ((dataWord >> k) & 1) {
+      result ^= rol10(generator, k);
+    }
+  }
+  return result;
+}
+
+}
+
 BlockStream::BlockStream() : has_sync_for_(5), group_data_(4), has_block_(5),
   bitcount_(0), left_to_read_(0), bit_stream_(), wideblock_(0), block_has_errors_(50)
 
@@ -33,29 +62,20 @@ BlockStream::BlockStream() : has_sync_for_(5), group_data_(4), has_block_(5),
 
   block_for_offset_ = {0, 1, 2, 2, 3};
 
-  error_lookup_ = {
-    {0x200, 0b1000000000000000},
-    {0x300, 0b1100000000000000},
-    {0x180, 0b0110000000000000},
-    {0x0c0, 0b0011000000000000},
-    {0x060, 0b0001100000000000},
-    {0x030, 0b0000110000000000},
-    {0x018, 0b0000011000000000},
-    {0x00c, 0b0000001100000000},
-    {0x006, 0b0000000110000000},
-    {0x003, 0b0000000011000000},
-    {0x2dd, 0b0000000001100000},
-    {0x3b2, 0b0000000000110000},
-    {0x1d9, 0b0000000000011000},
-    {0x230, 0b0000000000001100},
-    {0x118, 0b0000000000000110},
-    {0x08c, 0b0000000000000011},
-    {0x046, 0b0000000000000001}
-  };
+  for (int e=1; e < (1<<MAX_ERR_LEN); e++) {
+    for (int shift=0; shift < 16; shift++) {
+      int errvec = (e << shift) & MASK_16BIT;
+
+      uint16_t m = calcCheckBits(0b1);
+      uint16_t sy = calcSyndrome(((1<<10) + m) ^ errvec);
+      error_lookup_[sy] = errvec;
+    }
+  }
+
 }
 
 void BlockStream::uncorrectable() {
-  printf(":offset %d not received\n",expected_offset_);
+  printf(":offset %d: not received\n",expected_offset_);
   int data_length = 0;
 
   // TODO: return partial group
@@ -112,10 +132,10 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
     int block = (wideblock_ >> 1) & MASK_26BIT;
 
-    // Find the offsets for which the syndrome is zero
+    // Find the offsets for which the calcSyndrome is zero
     bool has_sync_for_any = false;
     for (int o=A; o<=D; o++) {
-      has_sync_for_[o] = (syndrome(block ^ offset_word_[o]) == 0x000);
+      has_sync_for_[o] = (calcSyndrome(block ^ offset_word_[o]) == 0x000);
       has_sync_for_any |= has_sync_for_[o];
     }
 
@@ -157,10 +177,10 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         // If message is a correct PI, error was probably in check bits
         if (expected_offset_ == A && message == pi_ && pi_ != 0) {
           has_sync_for_[A] = true;
-          printf(":ignoring error in check bits\n");
+          printf(":offset 0: ignoring error in check bits\n");
         } else if (expected_offset_ == C && message == pi_ && pi_ != 0) {
           has_sync_for_[CI] = true;
-          printf(":ignoring error in check bits\n");
+          printf(":offset 0: ignoring error in check bits\n");
 
         // Detect & correct clock slips (Section C.1.2)
         } else if (expected_offset_ == A && pi_ != 0 &&
@@ -168,22 +188,22 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
           message = pi_;
           wideblock_ >>= 1;
           has_sync_for_[A] = true;
-          printf(":clock slip corrected\n");
+          printf(":offset 0: clock slip corrected\n");
         } else if (expected_offset_ == A && pi_ != 0 &&
             ((wideblock_ >> 10) & MASK_16BIT) == pi_) {
           message = pi_;
           wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
           has_sync_for_[A] = true;
           left_to_read_ = 25;
-          printf(":clock slip corrected\n");
+          printf(":offset 0: clock slip corrected\n");
 
         // Detect & correct burst errors (Section B.2.2)
         } else {
 
-          uint16_t synd_reg = syndrome(block ^ offset_word_[expected_offset_]);
+          uint16_t synd_reg = calcSyndrome(block ^ offset_word_[expected_offset_]);
 
           if (pi_ != 0 && expected_offset_ == A) {
-            printf(":expecting PI%04x, got %04x, xor %04x, syndrome %03x\n",
+            printf(":offset 0: expecting PI%04x, got %04x, xor %04x, syndrome %03x\n",
                 pi_, block>>10, pi_ ^ (block>>10), synd_reg);
           }
 
@@ -191,7 +211,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
             message = (block >> 10) ^ error_lookup_[synd_reg];
             has_sync_for_[expected_offset_] = true;
 
-            printf(":error corrected block %d using vector %04x for syndrome %03x\n",
+            printf(":offset %d: error corrected using vector %04x for syndrome %03x\n",
                 expected_offset_, error_lookup_[synd_reg], synd_reg);
 
           }
