@@ -18,7 +18,9 @@ int sign(double a) {
   return (a >= 0 ? 1 : 0);
 }
 
-BitStream::BitStream() : tot_errs_(2), reading_frame_(0), counter_(0), subcarr_freq_(FC_0), bit_buffer_(BITBUFLEN), mixer_phi_(0), clock_offset_(0), is_eof_(false), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 127)), subcarr_baseband_(IBUFLEN) {
+BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading_frame_(0),
+  bit_buffer_(BITBUFLEN), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 127)),
+  subcarr_baseband_(IBUFLEN), is_eof_(false) {
 
 }
 
