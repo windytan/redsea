@@ -1,4 +1,4 @@
-#include "blockstream.h"
+#include "bits2blocks.h"
 
 #define MASK_5BIT  0x000001F
 #define MASK_10BIT 0x00003FF
