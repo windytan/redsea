@@ -1,10 +1,8 @@
-#include "bitstream.h"
+#include "mpx2bits.h"
 
 #include <complex>
 
 #include "wdsp/wdsp.h"
-
-#include "filters.h"
 
 #define FS        250000.0
 #define FC_0      57000.0

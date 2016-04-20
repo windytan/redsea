@@ -1,5 +1,5 @@
-#ifndef BITSTREAM_H_
-#define BITSTREAM_H_
+#ifndef MPX2BITS_H_
+#define MPX2BITS_H_
 
 #define DBG_OUT
 
@@ -46,4 +46,4 @@ class BitStream {
 };
 
 } // namespace redsea
-#endif // BITSTREAM_H_
+#endif // MPX2BITS_H_

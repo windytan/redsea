@@ -20,7 +20,7 @@
 
 #include <iostream>
 
-#include "blockstream.h"
+#include "bits2blocks.h"
 #include "groups.h"
 
 namespace redsea {

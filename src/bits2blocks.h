@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "bitstream.h"
+#include "mpx2bits.h"
 
 namespace redsea {
 
