@@ -37,7 +37,9 @@ class BitStream {
   wdsp::CirBuffer<int> bit_buffer_;
 
   std::vector<double> subcarr_lopass_fir_;
+  std::vector<double> data_shaping_fir_;
   wdsp::CirBuffer<std::complex<double>> subcarr_baseband_;
+  wdsp::CirBuffer<std::complex<double>> subcarr_shaped_;
 
   bool is_eof_;
 

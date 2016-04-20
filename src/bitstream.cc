@@ -19,8 +19,9 @@ int sign(double a) {
 }
 
 BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading_frame_(0),
-  bit_buffer_(BITBUFLEN), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 127)),
-  subcarr_baseband_(IBUFLEN), is_eof_(false) {
+  bit_buffer_(BITBUFLEN), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 64)),
+  data_shaping_fir_(wdsp::FIR(1500.0 / (FS/8), 64)),
+  subcarr_baseband_(IBUFLEN), subcarr_shaped_(IBUFLEN/8), is_eof_(false) {
 
 }
 
@@ -76,7 +77,10 @@ void BitStream::demodulateMoreBits() {
       std::complex<double> baseband_sample = subcarr_baseband_.at(0);
       subcarr_baseband_.forward(8);
 
-      double phase_error = arg(baseband_sample);
+      subcarr_shaped_.appendOverlapFiltered(baseband_sample, data_shaping_fir_);
+      std::complex<double> shaped_sample = subcarr_shaped_.getNext();
+
+      double phase_error = arg(shaped_sample);
       if (phase_error >= M_PI_2) {
         phase_error -= M_PI;
       } else if (phase_error <= -M_PI_2) {
@@ -93,26 +97,25 @@ void BitStream::demodulateMoreBits() {
 
       /* Clock phase recovery */
 
-      if (sign(prev_bb_) != sign(real(baseband_sample))) {
+      if (sign(prev_bb_) != sign(real(shaped_sample))) {
         double d_cphi = fmod(clock_phi, M_PI);
         if (d_cphi >= M_PI_2) d_cphi -= M_PI;
         clock_offset_ -= 0.005 * d_cphi;
       }
 
       /* biphase symbol integrate & dump */
-      acc_ += real(baseband_sample) * lo_clock;
+      acc_ += real(shaped_sample) * lo_clock;
 
       if (sign(lo_clock) != sign(prevclock_)) {
         biphase(acc_);
         acc_ = 0;
       }
 
-      prevclock_ = lo_clock;
-      prev_bb_ = real(baseband_sample);
-    }
+      //printf("dd %f,%f\n",real(baseband_sample), imag(baseband_sample));
 
-    if (numsamples_ % 1000000 == 0)
-      printf(":%.2f Hz\n", subcarr_freq_);
+      prevclock_ = lo_clock;
+      prev_bb_ = real(shaped_sample);
+    }
 
     numsamples_ ++;
 
