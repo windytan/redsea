@@ -22,7 +22,7 @@ class BlockStream {
   int bitcount_;
   int prevbitcount_;
   int left_to_read_;
-  int wideblock_;
+  uint32_t wideblock_;
   int prevsync_;
   int block_counter_;
   int expected_offset_;
@@ -37,7 +37,6 @@ class BlockStream {
   BitStream bit_stream_;
   bool has_whole_group_;
   std::map<uint16_t,uint16_t> error_lookup_;
-
 
 };
 

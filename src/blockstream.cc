@@ -12,21 +12,21 @@ namespace redsea {
 
 namespace {
 
-uint16_t rol10(uint16_t word, int k) {
-  uint16_t result = word;
-  int l;
+uint32_t rol10(uint32_t word, int k) {
+  uint32_t result = word;
+  uint32_t l;
   for (int i=0; i<k; i++) {
-    l      = (result & 0x200);
-    result = (result << 1) & 0x3FF;
-    result += (l ? 1 : 0);
+    l       = (result & 0x200);
+    result  = (result << 1) & 0x3FF;
+    result ^= l;
   }
   return result;
 }
 
-uint16_t calcSyndrome(int vec) {
+uint32_t calcSyndrome(uint32_t vec) {
 
-  uint16_t synd_reg = 0x000;
-  int bit,l;
+  uint32_t synd_reg = 0x000;
+  uint32_t bit,l;
 
   for (int k=25; k>=0; k--) {
     bit       = (vec & (1 << k));
@@ -39,12 +39,12 @@ uint16_t calcSyndrome(int vec) {
   return synd_reg;
 }
 
-uint16_t calcCheckBits(int dataWord) {
-  uint16_t generator = 0b0110111001;
-  uint16_t result    = 0;
+uint32_t calcCheckBits(uint32_t dataWord) {
+  uint32_t generator = 0x1B9;
+  uint32_t result    = 0;
 
   for (int k=0; k<16; k++) {
-    if ((dataWord >> k) & 1) {
+    if ((dataWord >> k) & 0x01) {
       result ^= rol10(generator, k);
     }
   }
@@ -62,12 +62,12 @@ BlockStream::BlockStream() : has_sync_for_(5), group_data_(4), has_block_(5),
 
   block_for_offset_ = {0, 1, 2, 2, 3};
 
-  for (int e=1; e < (1<<MAX_ERR_LEN); e++) {
+  for (uint32_t e=1; e < (1<<MAX_ERR_LEN); e++) {
     for (int shift=0; shift < 16; shift++) {
-      int errvec = (e << shift) & MASK_16BIT;
+      uint32_t errvec = (e << shift) & MASK_16BIT;
 
-      uint16_t m = calcCheckBits(0b1);
-      uint16_t sy = calcSyndrome(((1<<10) + m) ^ errvec);
+      uint32_t m = calcCheckBits(0x01);
+      uint32_t sy = calcSyndrome(((1<<10) + m) ^ errvec);
       error_lookup_[sy] = errvec;
     }
   }
@@ -130,7 +130,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
     left_to_read_ = 26;
     wideblock_ &= MASK_28BIT;
 
-    int block = (wideblock_ >> 1) & MASK_26BIT;
+    uint32_t block = (wideblock_ >> 1) & MASK_26BIT;
 
     // Find the offsets for which the calcSyndrome is zero
     bool has_sync_for_any = false;

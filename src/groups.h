@@ -16,8 +16,8 @@ class RDSString {
   public:
   RDSString(int len=8);
   void setAt(int, int);
-  int lengthReceived() const;
-  int lengthExpected() const;
+  size_t lengthReceived() const;
+  size_t lengthExpected() const;
   std::string getString() const;
   std::string getLastCompleteString() const;
   bool isComplete() const;
@@ -67,10 +67,10 @@ class Station {
     uint16_t getPI() const;
     std::string getCountryCode() const;
   private:
-    void decode0(Group);
-    void decode1(Group);
-    void decode2(Group);
-    void decode4(Group);
+    void decodeType0(Group);
+    void decodeType1(Group);
+    void decodeType2(Group);
+    void decodeType4(Group);
     void addAltFreq(uint8_t);
     void updatePS(int pos, std::vector<int> chars);
     void updateRadioText(int pos, std::vector<int> chars);

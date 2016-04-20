@@ -37,7 +37,7 @@ RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len), prev_pos_
 }
 
 void RDSString::setAt(int pos, int chr) {
-  if (pos < 0 || pos >= chars_.size())
+  if (pos < 0 || pos >= (int)chars_.size())
     return;
 
   chars_[pos] = chr;
@@ -56,9 +56,9 @@ void RDSString::setAt(int pos, int chr) {
 
 }
 
-int RDSString::lengthReceived() const {
+size_t RDSString::lengthReceived() const {
 
-  int result = 0;
+  size_t result = 0;
   for (size_t i=0; i<is_char_sequential_.size(); i++) {
     if (!is_char_sequential_[i])
       break;
@@ -68,9 +68,9 @@ int RDSString::lengthReceived() const {
   return result;
 }
 
-int RDSString::lengthExpected() const {
+size_t RDSString::lengthExpected() const {
 
-  int result = chars_.size();
+  size_t result = chars_.size();
 
   for (size_t i=0; i<chars_.size(); i++) {
     if (chars_[i] == 0x0D) {
@@ -84,7 +84,7 @@ int RDSString::lengthExpected() const {
 
 std::string RDSString::getString() const {
   std::string result;
-  int len = lengthExpected();
+  size_t len = lengthExpected();
   for (size_t i=0; i<len; i++) {
     result += (is_char_sequential_[i] ? lcd_char(chars_[i]) : " ");
   }
@@ -124,10 +124,10 @@ void Station::add(Group group) {
 
   printf(":%d%s\n",group.type, group.type_ab == TYPE_A ? "A" : "B");
 
-  if      (group.type == 0) { decode0(group); }
-  else if (group.type == 1) { decode1(group); }
-  else if (group.type == 2) { decode2(group); }
-  else if (group.type == 4) { decode4(group); }
+  if      (group.type == 0) { decodeType0(group); }
+  else if (group.type == 1) { decodeType1(group); }
+  else if (group.type == 2) { decodeType2(group); }
+  else if (group.type == 4) { decodeType4(group); }
 }
 
 void Station::addAltFreq(uint8_t af_code) {
@@ -166,19 +166,19 @@ std::string Station::getCountryCode() const {
 
 void Station::updatePS(int pos, std::vector<int> chars) {
 
-  for (int i=pos; i<pos+chars.size(); i++)
+  for (int i=pos; i<pos+(int)chars.size(); i++)
     ps_.setAt(i, chars[i-pos]);
 
 }
 
 void Station::updateRadioText(int pos, std::vector<int> chars) {
 
-  for (int i=pos; i<pos+chars.size(); i++)
+  for (int i=pos; i<pos+(int)chars.size(); i++)
     rt_.setAt(i, chars[i-pos]);
 
 }
 
-void Station::decode0 (Group group) {
+void Station::decodeType0 (Group group) {
 
   // not implemented: Decoder Identification
 
@@ -202,7 +202,7 @@ void Station::decode0 (Group group) {
 
 }
 
-void Station::decode1 (Group group) {
+void Station::decodeType1 (Group group) {
 
   if (group.num_blocks < 4)
     return;
@@ -292,7 +292,7 @@ void Station::decode1 (Group group) {
 
 }
 
-void Station::decode2 (Group group) {
+void Station::decodeType2 (Group group) {
 
   if (group.num_blocks < 3)
     return;
@@ -316,7 +316,7 @@ void Station::decode2 (Group group) {
 
 }
 
-void Station::decode4 (Group group) {
+void Station::decodeType4 (Group group) {
 
   if (group.num_blocks < 3 || group.type_ab == TYPE_B)
     return;
