@@ -73,10 +73,10 @@ void BitStream::demodulateMoreBits() {
     /* Decimate band-limited signal */
     if (numsamples_ % 8 == 0) {
 
-      std::complex<double> sc_sample = subcarr_baseband_.at(0);
+      std::complex<double> baseband_sample = subcarr_baseband_.at(0);
       subcarr_baseband_.forward(8);
 
-      double phase_error = arg(sc_sample);
+      double phase_error = arg(baseband_sample);
       if (phase_error >= M_PI_2) {
         phase_error -= M_PI;
       } else if (phase_error <= -M_PI_2) {
@@ -93,14 +93,14 @@ void BitStream::demodulateMoreBits() {
 
       /* Clock phase recovery */
 
-      if (sign(prev_bb_) != sign(real(sc_sample))) {
+      if (sign(prev_bb_) != sign(real(baseband_sample))) {
         double d_cphi = fmod(clock_phi, M_PI);
         if (d_cphi >= M_PI_2) d_cphi -= M_PI;
         clock_offset_ -= 0.005 * d_cphi;
       }
 
       /* biphase symbol integrate & dump */
-      acc_ += real(sc_sample) * lo_clock;
+      acc_ += real(baseband_sample) * lo_clock;
 
       if (sign(lo_clock) != sign(prevclock_)) {
         biphase(acc_);
@@ -108,7 +108,7 @@ void BitStream::demodulateMoreBits() {
       }
 
       prevclock_ = lo_clock;
-      prev_bb_ = real(sc_sample);
+      prev_bb_ = real(baseband_sample);
     }
 
     if (numsamples_ % 1000000 == 0)
