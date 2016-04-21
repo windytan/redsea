@@ -25,7 +25,7 @@ make
 ## Usage
 
 ```
-rtl_fm -M -fm 87.9M -l 0 -A std -p 0 -s 250k -F 9 | ./src/redsea
+rtl_fm -M -fm -f 87.9M -l 0 -A std -p 0 -s 250k -F 9 | ./src/redsea
 ```
 
 ## Licensing
