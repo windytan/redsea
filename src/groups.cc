@@ -222,6 +222,14 @@ void Station::decodeType0 (Group group) {
     for (int i=0; i<2; i++) {
       addAltFreq(bits(group.block3, 8-i*8, 8));
     }
+
+    if ((int)alt_freqs_.size() == num_alt_freqs_) {
+      printf("alt_freqs: [ ");
+      for (auto f : alt_freqs_)
+        printf("%.1f, ", f);
+      printf("], ");
+      alt_freqs_.clear();
+    }
   }
 
   if (group.num_blocks < 4)

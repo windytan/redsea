@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 
 namespace redsea {
 
@@ -82,7 +83,7 @@ class Station {
     bool is_tp_;
     bool is_ta_;
     bool is_music_;
-    std::vector<double> alt_freqs_;
+    std::set<double> alt_freqs_;
     int num_alt_freqs_;
     int pin_;
     int ecc_;
