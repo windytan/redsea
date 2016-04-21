@@ -27,6 +27,22 @@ std::string getLCDchar(int code) {
   return char_map[code - 32];
 }
 
+std::string getPTYname(int pty) {
+  assert (pty >= 0 && pty <= 32);
+  const std::vector<std::string> pty_names ({
+   "No PTY", "News", "Current Affairs", "Information",
+   "Sport", "Education", "Drama", "Cultures",
+   "Science", "Varied Speech","Pop Music", "Rock Music",
+   "Easy Listening","Light Classics M","Serious Classics","Other Music",
+   "Weather & Metr", "Finance", "Children's Progs", "Social Affairs",
+   "Religion", "Phone In", "Travel & Touring", "Leisure & Hobby",
+   "Jazz Music", "Country Music", "National Music", "Oldies Music",
+   "Folk Music", "Documentary", "Alarm Test", "Alarm - Alarm !"
+  });
+  return pty_names[pty];
+
+}
+
 // extract len bits from bitstring, starting at starting_at from the right
 uint16_t bits (uint16_t bitstring, int starting_at, int len) {
   return ((bitstring >> starting_at) & ((1<<len) - 1));
