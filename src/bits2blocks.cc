@@ -6,7 +6,7 @@
 #define MASK_26BIT 0x3FFFFFF
 #define MASK_28BIT 0xFFFFFFF
 
-#define MAX_ERR_LEN 3
+#define MAX_ERR_LEN 0
 
 namespace redsea {
 
