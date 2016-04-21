@@ -23,8 +23,8 @@ Output format is currently JSON structures.
 
 ## Requirements
 
-* Linux or OSX
-* g++
+* Linux/OSX
+* C++11 compiler
 * GNU autotools
 * [wdsp](https://github.com/windytan/wdsp)
 * rtl_fm (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any other source that can output FM multiplex signals
