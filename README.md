@@ -2,9 +2,24 @@
 
 redsea is a command-line utility that decodes
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts
-and prints it to the terminal. It works with rtl_fm.
+and prints it to the terminal. It works well with rtl_fm.
 
 [explanatory blog post](http://www.windytan.com/2015/02/receiving-rds-with-rtl-sdr.html)
+
+## Features
+
+Readsea takes a wideband FM multiplex signal (s16, 250 kHz, single-channel) as input. It decodes the following info from RDS:
+
+* Program Identification code (PI)
+* Program Service name (PS)
+* Radiotext (RT)
+* Traffic Program (TP) and Traffic Announcement (TA) flags
+* Program Type (PTY)
+* Alternate Frequencies (AF)
+
+Redsea is a light-weight command line utility.
+
+Output format is currently JSON structures.
 
 ## Requirements
 
@@ -12,7 +27,7 @@ and prints it to the terminal. It works with rtl_fm.
 * g++
 * GNU autotools
 * wdsp (TBA)
-* [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)
+* rtl_fm (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any other source that can output FM multiplex signals
 
 ## Compiling
 
@@ -24,8 +39,16 @@ make
 
 ## Usage
 
+Live reception with rtl_fm:
+
 ```
-rtl_fm -M -fm -f 87.9M -l 0 -A std -p 0 -s 250k -F 9 | ./src/redsea
+rtl_fm -M fm -f 87.9M -l 0 -A std -p 0 -s 250k -F 9 | ./src/redsea
+```
+
+Decoding a pre-recorded multiplex signal via SoX:
+
+```
+sox multiplex.wav -c 1 -t .s16 -r 250k - | ./src/redsea
 ```
 
 ## Licensing
