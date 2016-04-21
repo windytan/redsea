@@ -26,7 +26,7 @@ Output format is currently JSON structures.
 * Linux or OSX
 * g++
 * GNU autotools
-* wdsp (TBA)
+* [wdsp](https://github.com/windytan/wdsp)
 * rtl_fm (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any other source that can output FM multiplex signals
 
 ## Compiling
