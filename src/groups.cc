@@ -393,4 +393,8 @@ void Station::decodeType4 (Group group) {
   }
 }
 
+void Station::decodeType14 (Group group) {
+
+}
+
 } // namespace redsea
