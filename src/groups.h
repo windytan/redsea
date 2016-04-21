@@ -60,7 +60,7 @@ class Station {
   public:
     Station();
     Station(uint16_t pi);
-    void add(Group);
+    void update(Group);
     bool hasPS() const;
     std::string getPS() const;
     std::string getRT() const;

@@ -102,7 +102,7 @@ std::string RDSString::getString() const {
   std::string result;
   size_t len = lengthExpected();
   for (size_t i=0; i<len; i++) {
-    result += (is_char_sequential_[i] ? lcd_char(chars_[i]) : " ");
+    result += (is_char_sequential_[i] ? getLCDchar(chars_[i]) : " ");
   }
 
   return result;
@@ -133,22 +133,28 @@ Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64) {
 
 }
 
-void Station::add(Group group) {
+void Station::update(Group group) {
 
   is_tp_   = bits(group.block2, 10, 1);
   pty_     = bits(group.block2,  5, 5);
 
   printf(":%d%s\n",group.type, group.type_ab == TYPE_A ? "A" : "B");
 
-  if      (group.type == 0) { decodeType0(group); }
-  else if (group.type == 1) { decodeType1(group); }
-  else if (group.type == 2) { decodeType2(group); }
-  else if (group.type == 4) { decodeType4(group); }
+  printf("tp: %s, ", is_tp_ ? "true" : "false");
+  printf("prog_type: \"%s\", ", getPTYname(pty_).c_str());
+
+  if      (group.type == 0)  { decodeType0(group); }
+  else if (group.type == 1)  { decodeType1(group); }
+  else if (group.type == 2)  { decodeType2(group); }
+  else if (group.type == 4)  { decodeType4(group); }
+  else if (group.type == 14) { decodeType14(group); }
+
+  printf("}\n");
 }
 
 void Station::addAltFreq(uint8_t af_code) {
   if (af_code >= 1 && af_code <= 204) {
-    alt_freqs_.push_back(87.5 + af_code / 10.0);
+    alt_freqs_.insert(87.5 + af_code / 10.0);
   } else if (af_code == 205) {
     // filler
   } else if (af_code == 224) {
@@ -337,7 +343,7 @@ void Station::decodeType4 (Group group) {
   if (group.num_blocks < 3 || group.type_ab == TYPE_B)
     return;
 
-  double mjd = (bits(group.block2, 0, 2) << 15) + bits(group.block3, 1, 15);
+  int mjd = (bits(group.block2, 0, 2) << 15) + bits(group.block3, 1, 15);
   double lto;
 
   if (group.num_blocks == 4) {

@@ -56,11 +56,11 @@ int main() {
     redsea::Group group(blockbits);
 
     if (stations.find(pi) != stations.end()) {
-      stations[pi].add(group);
+      stations[pi].update(group);
     } else {
       stations.insert({pi, redsea::Station(pi)});
     }
 
-    printShort(stations[pi]);
+    //printShort(stations[pi]);
   }
 }
