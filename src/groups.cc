@@ -138,7 +138,7 @@ void Station::update(Group group) {
   is_tp_   = bits(group.block2, 10, 1);
   pty_     = bits(group.block2,  5, 5);
 
-  printf(":%d%s\n",group.type, group.type_ab == TYPE_A ? "A" : "B");
+  printf("{ pi: \"%04x\", group: \"%d%s\", ", pi_, group.type, group.type_ab == TYPE_A ? "A" : "B");
 
   printf("tp: %s, ", is_tp_ ? "true" : "false");
   printf("prog_type: \"%s\", ", getPTYname(pty_).c_str());
@@ -191,12 +191,18 @@ void Station::updatePS(int pos, std::vector<int> chars) {
   for (int i=pos; i<pos+(int)chars.size(); i++)
     ps_.setAt(i, chars[i-pos]);
 
+  if (ps_.isComplete())
+    printf("ps: \"%s\", ",ps_.getLastCompleteString().c_str());
+
 }
 
 void Station::updateRadioText(int pos, std::vector<int> chars) {
 
   for (int i=pos; i<pos+(int)chars.size(); i++)
     rt_.setAt(i, chars[i-pos]);
+
+  if (rt_.isComplete())
+    printf("radiotext: \"%s\", ",rt_.getLastCompleteString().c_str());
 
 }
 
@@ -206,6 +212,8 @@ void Station::decodeType0 (Group group) {
 
   is_ta_    = bits(group.block2, 4, 1);
   is_music_ = bits(group.block2, 3, 1);
+
+  printf("ta: %s, ", is_ta_ ? "true" : "false");
 
   if (group.num_blocks < 3)
     return;
@@ -370,9 +378,9 @@ void Station::decodeType4 (Group group) {
 
     char buff[100];
     snprintf(buff, sizeof(buff),
-        "%04d-%02d-%02dT%02d:%02d:00%+03d:%02d\n",yr,mo,dy,hr,mn,int(lto),ltom);
+        "%04d-%02d-%02dT%02d:%02d:00%+03d:%02d",yr,mo,dy,hr,mn,int(lto),ltom);
     clock_time_ = buff;
-    std::cout<<"clock_time:"<<clock_time_<<"\n";
+    printf("clock_time: \"%s\", ", clock_time_.c_str());
 
   }
 }
