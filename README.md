@@ -8,7 +8,7 @@ and prints it to the terminal. It works well with rtl_fm.
 
 ## Features
 
-Readsea takes a wideband FM multiplex signal (s16, 250 kHz, single-channel) as input. It decodes the following info from RDS:
+Readsea takes a wideband FM multiplex signal as input. It decodes the following info from RDS:
 
 * Program Identification code (PI)
 * Program Service name (PS)
@@ -48,7 +48,7 @@ rtl_fm -M fm -f 87.9M -l 0 -A std -p 0 -s 250k -F 9 | ./src/redsea
 Decoding a pre-recorded multiplex signal via SoX:
 
 ```
-sox multiplex.wav -c 1 -t .s16 -r 250k - | ./src/redsea
+sox multiplex.wav -t .s16 -r 250k - | ./src/redsea
 ```
 
 ## Licensing
