@@ -42,14 +42,18 @@ make
 Live reception with rtl_fm:
 
 ```
-rtl_fm -M fm -f 87.9M -l 0 -A std -p 0 -s 250k -F 9 | ./src/redsea
+rtl_fm -M fm -f 87.9M -l 0 -A std -p 0 -s 228k -F 9 | ./src/redsea
 ```
 
 Decoding a pre-recorded multiplex signal via SoX:
 
 ```
-sox multiplex.wav -t .s16 -r 250k - | ./src/redsea
+sox multiplex.wav -t .s16 -r 228k - | ./src/redsea
 ```
+
+## Input format
+
+Redsea expects an FM multiplex signal, i.e. the full baseband signal of an FM station, as a single-channel, 16-bit, signed-integer PCM stream sampled at 228 kHz via standard input.
 
 ## Licensing
 
