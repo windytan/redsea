@@ -4,7 +4,7 @@
 
 #include "wdsp/wdsp.h"
 
-#define FS        250000.0
+#define FS        228000.0
 #define FC_0      57000.0
 #define IBUFLEN   4096
 #define OBUFLEN   128
