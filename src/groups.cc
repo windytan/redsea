@@ -298,16 +298,19 @@ void Station::update(Group group) {
   is_tp_   = bits(group.block2, 10, 1);
   pty_     = bits(group.block2,  5, 5);
 
-  printf("{ pi: \"%04x\", group: \"%d%s\", ", pi_, group.type, group.type_ab == TYPE_A ? "A" : "B");
+  printf("{ pi: \"0x%04x\", group: \"%s\", ", pi_, group.type.toString().c_str());
 
   printf("tp: %s, ", is_tp_ ? "true" : "false");
   printf("prog_type: \"%s\", ", getPTYname(pty_).c_str());
 
-  if      (group.type == 0)  { decodeType0(group); }
-  else if (group.type == 1)  { decodeType1(group); }
-  else if (group.type == 2)  { decodeType2(group); }
-  else if (group.type == 4)  { decodeType4(group); }
-  else if (group.type == 14) { decodeType14(group); }
+  if      (group.type.num == 0)  { decodeType0(group); }
+  else if (group.type.num == 1)  { decodeType1(group); }
+  else if (group.type.num == 2)  { decodeType2(group); }
+  else if (group.type.num == 3)  { decodeType3(group); }
+  else if (group.type.num == 4)  { decodeType4(group); }
+  else if (group.type.num == 8)  { decodeType8(group); }
+  else if (group.type.num == 14) { decodeType14(group); }
+  else                           { printf("/* TODO */ "); }
 
   printf("}\n");
 }
@@ -378,7 +381,7 @@ void Station::decodeType0 (Group group) {
   if (group.num_blocks < 3)
     return;
 
-  if (group.type_ab == TYPE_A) {
+  if (group.type.ab == TYPE_A) {
     for (int i=0; i<2; i++) {
       addAltFreq(bits(group.block3, 8-i*8, 8));
     }
@@ -407,7 +410,7 @@ void Station::decodeType1 (Group group) {
 
   pin_ = group.block4;
 
-  if (group.type_ab == TYPE_A) {
+  if (group.type.ab == TYPE_A) {
     pager_tng_ = bits(group.block2, 2, 3);
     if (pager_tng_ != 0) {
       pager_interval_ = bits(group.block2, 0, 2);
@@ -502,7 +505,7 @@ void Station::decodeType2 (Group group) {
   if (group.num_blocks < 3)
     return;
 
-  int rt_position = bits(group.block2, 0, 4) * (group.type_ab == TYPE_A ? 4 : 2);
+  int rt_position = bits(group.block2, 0, 4) * (group.type.ab == TYPE_A ? 4 : 2);
   int prev_textAB = rt_ab_;
   rt_ab_          = bits(group.block2, 4, 1);
 
@@ -511,7 +514,7 @@ void Station::decodeType2 (Group group) {
 
   std::string chars;
 
-  if (group.type_ab == TYPE_A) {
+  if (group.type.ab == TYPE_A) {
     updateRadioText(rt_position, {bits(group.block3, 8, 8), bits(group.block3, 0, 8)});
   }
 
@@ -523,7 +526,7 @@ void Station::decodeType2 (Group group) {
 
 void Station::decodeType4 (Group group) {
 
-  if (group.num_blocks < 3 || group.type_ab == TYPE_B)
+  if (group.num_blocks < 3 || group.type.ab == TYPE_B)
     return;
 
   int mjd = (bits(group.block2, 0, 2) << 15) + bits(group.block3, 1, 15);

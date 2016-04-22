@@ -1,9 +1,10 @@
 #ifndef GROUPS_H_
 #define GROUPS_H_
 
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
 
 namespace redsea {
 
@@ -32,14 +33,26 @@ class RDSString {
 
 };
 
+class GroupType {
+  public:
+  GroupType(uint16_t type_code=0x00);
+  GroupType(const GroupType& obj);
+
+  bool operator==(const GroupType& other);
+
+  std::string toString();
+
+  uint16_t num;
+  uint16_t ab;
+};
+bool operator<(const GroupType& obj1, const GroupType& obj2);
+
 struct Group {
-  Group(std::vector<uint16_t> blockbits) : num_blocks(blockbits.size()) {
+  Group(std::vector<uint16_t> blockbits) : num_blocks(blockbits.size()), type(bits(blockbits.at(1), 11, 5)) {
     if (num_blocks > 0)
       block1 = blockbits[0];
     if (num_blocks > 1) {
       block2 = blockbits[1];
-      type    = bits(blockbits[1], 12, 4);
-      type_ab = bits(blockbits[1], 11, 1);
     }
     if (num_blocks > 2)
       block3 = blockbits[2];
@@ -47,8 +60,7 @@ struct Group {
       block4 = blockbits[3];
   }
 
-  int type;
-  int type_ab;
+  GroupType type;
   int num_blocks;
   uint16_t block1;
   uint16_t block2;
@@ -95,6 +107,7 @@ class Station {
     int linkage_la_;
     std::string clock_time_;
     bool has_country_;
+    std::map<GroupType,uint16_t> oda_app_for_group_;
 
     int pager_pac_;
     int pager_opc_;
