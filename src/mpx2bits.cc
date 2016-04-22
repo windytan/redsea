@@ -17,7 +17,7 @@ int sign(double a) {
 }
 
 BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading_frame_(0),
-  bit_buffer_(BITBUFLEN), subcarr_lopass_fir_(wdsp::FIR(4000.0 / FS, 64)),
+  bit_buffer_(BITBUFLEN), antialias_fir_(wdsp::FIR(4000.0 / FS, 64)),
   data_shaping_fir_(wdsp::FIR(1500.0 / (FS/8), 64)),
   subcarr_baseband_(IBUFLEN), subcarr_shaped_(IBUFLEN/8), is_eof_(false) {
 
@@ -65,7 +65,7 @@ void BitStream::demodulateMoreBits() {
 
     mixer_phi_ += 2 * M_PI * subcarr_freq_ * (1.0/FS);
     subcarr_baseband_.appendOverlapFiltered(wdsp::mix(sample[i] / 32768.0,
-        mixer_phi_), subcarr_lopass_fir_);
+        mixer_phi_), antialias_fir_);
 
     double pll_beta = 16e-3;
 
