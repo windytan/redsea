@@ -1,9 +1,10 @@
 #include "groups.h"
 
+#include <cassert>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
-#include <cassert>
 
 namespace redsea {
 
@@ -41,6 +42,86 @@ std::string getPTYname(int pty) {
   });
   return pty_names[pty];
 
+}
+
+std::string getCountryString(uint16_t pi, uint16_t ecc) {
+  const std::map<uint16_t,std::vector<std::string>> country_codes ({
+    {0xA0,{"us","us","us","us","us","us","us","us","us","us","us","--","us","us","--"}},
+    {0xA1,{"--","--","--","--","--","--","--","--","--","--","ca","ca","ca","ca","gl"}},
+    {0xA2,{"ai","ag","ec","fk","bb","bz","ky","cr","cu","ar","br","bm","an","gp","bs"}},
+    {0xA3,{"bo","co","jm","mq","gf","py","ni","--","pa","dm","do","cl","gd","tc","gy"}},
+    {0xA4,{"gt","hn","aw","--","ms","tt","pe","sr","uy","kn","lc","sv","ht","ve","--"}},
+    {0xA5,{"--","--","--","--","--","--","--","--","--","--","mx","vc","mx","mx","mx"}},
+    {0xA6,{"--","--","--","--","--","--","--","--","--","--","--","--","--","--","pm"}},
+    {0xD0,{"cm","cf","dj","mg","ml","ao","gq","ga","gn","za","bf","cg","tg","bj","mw"}},
+    {0xD1,{"na","lr","gh","mr","st","cv","sn","gm","bi","--","bw","km","tz","et","bg"}},
+    {0xD2,{"sl","zw","mz","ug","sz","ke","so","ne","td","gw","zr","ci","tz","zm","--"}},
+    {0xD3,{"--","--","eh","--","rw","ls","--","sc","--","mu","--","sd","--","--","--"}},
+    {0xE0,{"de","dz","ad","il","it","be","ru","ps","al","at","hu","mt","de","--","eg"}},
+    {0xE1,{"gr","cy","sm","ch","jo","fi","lu","bg","dk","gi","iq","gb","ly","ro","fr"}},
+    {0xE2,{"ma","cz","pl","va","sk","sy","tn","--","li","is","mc","lt","yu","es","no"}},
+    {0xE3,{"ie","ie","tr","mk","tj","--","--","nl","lv","lb","az","hr","kz","se","by"}},
+    {0xE4,{"md","ee","kg","--","--","ua","--","pt","si","am","uz","ge","--","tm","ba"}},
+    {0xF0,{"au","au","au","au","au","au","au","au","sa","af","mm","cn","kp","bh","my"}},
+    {0xF1,{"ki","bt","bd","pk","fj","om","nr","ir","nz","sb","bn","lk","tw","kr","hk"}},
+    {0xF2,{"kw","qa","kh","ws","in","mo","vn","ph","jp","sg","mv","id","ae","np","vu"}},
+    {0xF3,{"la","th","to","--","--","--","--","--","pg","--","ye","--","--","fm","mn"}}
+  });
+
+  std::string result("--");
+
+  uint16_t pi_cc = pi >> 12;
+
+  if (country_codes.find(ecc) != country_codes.end() && pi_cc > 0) {
+    result = country_codes.at(ecc).at(pi_cc-1);
+  }
+
+  return result;
+
+}
+
+std::string getLanguageString(uint16_t code) {
+  std::vector<std::string> languages ({
+    "Unknown","Albanian","Breton","Catalan",
+    "Croatian","Welsh","Czech","Danish",
+    "German","English","Spanish","Esperanto",
+    "Estonian","Basque","Faroese","French",
+    "Frisian","Irish","Gaelic","Galician",
+    "Icelandic","Italian","Lappish","Latin",
+    "Latvian","Luxembourgian","Lithuanian","Hungarian",
+    "Maltese","Dutch","Norwegian","Occitan",
+    "Polish","Portuguese","Romanian","Romansh",
+    "Serbian","Slovak","Slovene","Finnish",
+    "Swedish","Turkish","Flemish","Walloon",
+    "","","","",
+    "","","","",
+    "","","","",
+    "","","","",
+    "","","","",
+    "Background","","","",
+    "","Zulu","Vietnamese","Uzbek",
+    "Urdu","Ukrainian","Thai","Telugu",
+    "Tatar","Tamil","Tadzhik","Swahili",
+    "SrananTongo","Somali","Sinhalese","Shona",
+    "Serbo-Croat","Ruthenian","Russian","Quechua",
+    "Pushtu","Punjabi","Persian","Papamiento",
+    "Oriya","Nepali","Ndebele","Marathi",
+    "Moldovian","Malaysian","Malagasay","Macedonian",
+    "Laotian","Korean","Khmer","Kazakh",
+    "Kannada","Japanese","Indonesian","Hindi",
+    "Hebrew","Hausa","Gurani","Gujurati",
+    "Greek","Georgian","Fulani","Dari",
+    "Churash","Chinese","Burmese","Bulgarian",
+    "Bengali","Belorussian","Bambora","Azerbaijan",
+    "Assamese","Armenian","Arabic","Amharic"
+  });
+
+  std::string result("");
+  if (code < languages.size()) {
+    result = languages[code];
+  }
+
+  return result;
 }
 
 // extract len bits from bitstring, starting at starting_at from the right
@@ -183,7 +264,7 @@ uint16_t Station::getPI() const {
 }
 
 std::string Station::getCountryCode() const {
-
+  return getCountryString(pi_, ecc_);
 }
 
 void Station::updatePS(int pos, std::vector<int> chars) {
@@ -284,10 +365,15 @@ void Station::decodeType1 (Group group) {
       ecc_ = bits(group.block3,  0, 8);
       cc_  = bits(group.block1, 12, 4);
 
-      has_country_ = true;
+      if (ecc_ != 0x00) {
+        has_country_ = true;
+
+        printf("country: \"%s\", ", getCountryString(pi_, ecc_).c_str());
+      }
 
     } else if (slc_variant == 1) {
       tmc_id_ = bits(group.block3, 0, 12);
+      printf("tmc_id: \"0x%03x\", ", tmc_id_);
 
     } else if (slc_variant == 2) {
       if (pager_tng_ != 0) {
@@ -317,6 +403,7 @@ void Station::decodeType1 (Group group) {
 
     } else if (slc_variant == 3) {
       lang_ = bits(group.block3, 0, 8);
+      printf("language: \"%s\", ", getLanguageString(lang_).c_str());
 
     } else if (slc_variant == 6) {
       // TODO:
@@ -324,6 +411,7 @@ void Station::decodeType1 (Group group) {
 
     } else if (slc_variant == 7) {
       ews_channel_ = bits(group.block3, 0, 12);
+      printf("ews: \"0x%03x\", ", ews_channel_);
     }
 
   }
