@@ -524,6 +524,26 @@ void Station::decodeType2 (Group group) {
 
 }
 
+void Station::decodeType3 (Group group) {
+
+  if (group.num_blocks < 4)
+    return;
+
+  if (group.type.ab != TYPE_A)
+    return;
+
+  GroupType oda_group(bits(group.block2, 0, 5));
+  uint16_t oda_msg = group.block3;
+  uint16_t oda_aid = group.block4;
+
+  oda_app_for_group_[oda_group] = oda_aid;
+
+  printf("open_data_app: { group: \"%s\", app_name: \"%s\", message: \"0x%02x\" }, ",
+      oda_group.toString().c_str(), getAppName(oda_aid).c_str(), group.block3);
+
+}
+
+
 void Station::decodeType4 (Group group) {
 
   if (group.num_blocks < 3 || group.type.ab == TYPE_B)
@@ -561,6 +581,18 @@ void Station::decodeType4 (Group group) {
     printf("clock_time: \"%s\", ", clock_time_.c_str());
 
   }
+}
+
+void Station::decodeType8 (Group group) {
+  if (oda_app_for_group_.find(group.type) == oda_app_for_group_.end())
+    return;
+
+  uint16_t aid = oda_app_for_group_[group.type];
+
+  if (aid == 0xCD46 || aid == 0xCD47) {
+    printf("tmc_message: \"0x%02x%04x%04x\", ", bits(group.block2, 0, 5), group.block3, group.block4);
+  }
+
 }
 
 void Station::decodeType14 (Group group) {
