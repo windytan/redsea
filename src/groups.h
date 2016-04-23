@@ -6,31 +6,13 @@
 #include <string>
 #include <vector>
 
+#include "rdsstring.h"
+#include "tmc.h"
+
 namespace redsea {
 
 enum {
   TYPE_A, TYPE_B
-};
-
-uint16_t bits (uint16_t bitstring, int starting_at, int len);
-
-class RDSString {
-  public:
-  RDSString(int len=8);
-  void setAt(int, int);
-  size_t lengthReceived() const;
-  size_t lengthExpected() const;
-  std::string getString() const;
-  std::string getLastCompleteString() const;
-  bool isComplete() const;
-  void clear();
-
-  private:
-  std::vector<int> chars_;
-  std::vector<bool> is_char_sequential_;
-  int prev_pos_;
-  std::string last_complete_string_;
-
 };
 
 class GroupType {
@@ -47,18 +29,9 @@ class GroupType {
 };
 bool operator<(const GroupType& obj1, const GroupType& obj2);
 
-struct Group {
-  Group(std::vector<uint16_t> blockbits) : num_blocks(blockbits.size()), type(bits(blockbits.at(1), 11, 5)) {
-    if (num_blocks > 0)
-      block1 = blockbits[0];
-    if (num_blocks > 1) {
-      block2 = blockbits[1];
-    }
-    if (num_blocks > 2)
-      block3 = blockbits[2];
-    if (num_blocks > 3)
-      block4 = blockbits[3];
-  }
+class Group {
+  public:
+  Group(std::vector<uint16_t> blockbits);
 
   GroupType type;
   int num_blocks;

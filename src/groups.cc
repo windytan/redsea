@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "data.h"
+#include "rdsstring.h"
+#include "util.h"
 
 namespace redsea {
 
@@ -23,86 +25,16 @@ bool operator==(const GroupType& obj1, const GroupType& obj2) {
 
 bool operator<(const GroupType& obj1, const GroupType& obj2) { return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab)); }
 
-// extract len bits from bitstring, starting at starting_at from the right
-uint16_t bits (uint16_t bitstring, int starting_at, int len) {
-  return ((bitstring >> starting_at) & ((1<<len) - 1));
-}
-
-RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len), prev_pos_(-1) {
-  last_complete_string_ = getString();
-}
-
-void RDSString::setAt(int pos, int chr) {
-  if (pos < 0 || pos >= (int)chars_.size())
-    return;
-
-  chars_[pos] = chr;
-
-  if (pos != prev_pos_ + 1) {
-    for (size_t i=0; i<is_char_sequential_.size(); i++)
-      is_char_sequential_[i] = false;
+Group::Group(std::vector<uint16_t> blockbits) : num_blocks(blockbits.size()), type(bits(blockbits.at(1), 11, 5)) {
+  if (num_blocks > 0)
+    block1 = blockbits[0];
+  if (num_blocks > 1) {
+    block2 = blockbits[1];
   }
-
-  is_char_sequential_[pos] = true;
-
-  if (isComplete())
-    last_complete_string_ = getString();
-
-  prev_pos_ = pos;
-
-}
-
-size_t RDSString::lengthReceived() const {
-
-  size_t result = 0;
-  for (size_t i=0; i<is_char_sequential_.size(); i++) {
-    if (!is_char_sequential_[i])
-      break;
-    result = i+1;
-  }
-
-  return result;
-}
-
-size_t RDSString::lengthExpected() const {
-
-  size_t result = chars_.size();
-
-  for (size_t i=0; i<chars_.size(); i++) {
-    if (chars_[i] == 0x0D) {
-      result = i;
-      break;
-    }
-  }
-
-  return result;
-}
-
-std::string RDSString::getString() const {
-  std::string result;
-  size_t len = lengthExpected();
-  for (size_t i=0; i<len; i++) {
-    result += (is_char_sequential_[i] ? getLCDchar(chars_[i]) : " ");
-  }
-
-  return result;
-
-}
-
-
-std::string RDSString::getLastCompleteString() const {
-  return last_complete_string_;
-}
-
-bool RDSString::isComplete() const {
-  return lengthReceived() >= lengthExpected();
-}
-
-void RDSString::clear() {
-  for (size_t i=0; i<chars_.size(); i++) {
-    is_char_sequential_[i] = false;
-  }
-  last_complete_string_ = getString();
+  if (num_blocks > 2)
+    block3 = blockbits[2];
+  if (num_blocks > 3)
+    block4 = blockbits[3];
 }
 
 Station::Station() : Station(0x0000) {
