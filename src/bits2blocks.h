@@ -37,6 +37,7 @@ class BlockStream {
   BitStream bit_stream_;
   bool has_whole_group_;
   std::map<uint16_t,uint16_t> error_lookup_;
+  int data_length_;
 
 };
 

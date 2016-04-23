@@ -64,29 +64,30 @@ BlockStream::BlockStream() : has_sync_for_(5), group_data_(4), has_block_(5),
 
   for (uint32_t e=1; e < (1<<MAX_ERR_LEN); e++) {
     for (int shift=0; shift < 16; shift++) {
-      uint32_t errvec = (e << shift) & MASK_16BIT;
+      uint32_t errvec = ((e << shift) & MASK_16BIT) << 10;
 
       uint32_t m = calcCheckBits(0x01);
       uint32_t sy = calcSyndrome(((1<<10) + m) ^ errvec);
-      error_lookup_[sy] = errvec;
+      error_lookup_[sy] = errvec>>10;
     }
   }
 
 }
 
 void BlockStream::uncorrectable() {
-  printf(":offset %d: not received\n",expected_offset_);
-  int data_length = 0;
+  //printf(":offset %d: not received\n",expected_offset_);
+  data_length_ = 0;
 
   // TODO: return partial group
   /*if (has_block_[A]) {
-    data_length = 1;
+    has_whole_group_ = true;
+    data_length_ = 1;
 
     if (has_block_[B]) {
-      data_length = 2;
+      data_length_ = 2;
 
       if (has_block_[C] || has_block_[CI]) {
-        data_length = 3;
+        data_length_ = 3;
       }
     }
   }*/
@@ -116,6 +117,7 @@ void BlockStream::uncorrectable() {
 std::vector<uint16_t> BlockStream::getNextGroup() {
 
   has_whole_group_ = false;
+  data_length_ = 0;
 
   while (!(has_whole_group_ || isEOF())) {
 
@@ -239,6 +241,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         if (has_block_[A] && has_block_[B] && (has_block_[C] ||
             has_block_[CI]) && has_block_[D]) {
           has_whole_group_ = true;
+          data_length_ = 4;
         }
       }
 
@@ -253,7 +256,10 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
   }
 
-  return group_data_;
+  auto result = group_data_;
+  result.resize(data_length_);
+
+  return result;
 
 }
 
