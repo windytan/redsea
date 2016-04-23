@@ -121,6 +121,8 @@ void Station::updateRadioText(int pos, std::vector<int> chars) {
 
 }
 
+
+/* Type 0: Basic tuning and switching information */
 void Station::decodeType0 (Group group) {
 
   // not implemented: Decoder Identification
@@ -160,6 +162,7 @@ void Station::decodeType0 (Group group) {
 
 }
 
+/* Type 1: Programme Item Number and slow labelling codes */
 void Station::decodeType1 (Group group) {
 
   if (group.num_blocks < 4)
@@ -257,6 +260,8 @@ void Station::decodeType1 (Group group) {
 
 }
 
+/* 2A: RadioText */
+/* 2B: RadioText */
 void Station::decodeType2 (Group group) {
 
   if (group.num_blocks < 3)
@@ -281,6 +286,8 @@ void Station::decodeType2 (Group group) {
 
 }
 
+/* Type 3A: Application idenfitication for Open Data */
+/* Type 3B: Open Data Application TODO */
 void Station::decodeType3 (Group group) {
 
   if (group.num_blocks < 4)
@@ -304,7 +311,8 @@ void Station::decodeType3 (Group group) {
 
 }
 
-
+/* 4A: Clock-time and date */
+/* 4B: Open Data Application TODO */
 void Station::decodeType4 (Group group) {
 
   if (group.num_blocks < 3 || group.type.ab == TYPE_B)
@@ -344,6 +352,8 @@ void Station::decodeType4 (Group group) {
   }
 }
 
+/* Type 8A: Traffic Message Channel */
+/* Type 8B: Open Data Application TODO */
 void Station::decodeType8 (Group group) {
   if (oda_app_for_group_.find(group.type) == oda_app_for_group_.end())
     return;
@@ -356,6 +366,7 @@ void Station::decodeType8 (Group group) {
 
 }
 
+/* Type 14: Enhanced Other Networks information */
 void Station::decodeType14 (Group group) {
 
 }
