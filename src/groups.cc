@@ -41,7 +41,7 @@ Station::Station() : Station(0x0000) {
 
 }
 
-Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64) {
+Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64), tmc_() {
 
 }
 
@@ -295,8 +295,12 @@ void Station::decodeType3 (Group group) {
 
   oda_app_for_group_[oda_group] = oda_aid;
 
-  printf(", open_data_app: { group: \"%s\", app_name: \"%s\", message: \"0x%02x\" }",
-      oda_group.toString().c_str(), getAppName(oda_aid).c_str(), group.block3);
+  if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
+    tmc_.systemGroup(group.block3);
+  } else {
+    printf(", open_data_app: { group: \"%s\", app_name: \"%s\", message: \"0x%02x\" }",
+        oda_group.toString().c_str(), getAppName(oda_aid).c_str(), group.block3);
+  }
 
 }
 
@@ -347,7 +351,7 @@ void Station::decodeType8 (Group group) {
   uint16_t aid = oda_app_for_group_[group.type];
 
   if (aid == 0xCD46 || aid == 0xCD47) {
-    printf(", tmc_message: \"0x%02x%04x%04x\"", bits(group.block2, 0, 5), group.block3, group.block4);
+    tmc_.userGroup(bits(group.block2, 0, 5), group.block3, group.block4);
   }
 
 }
