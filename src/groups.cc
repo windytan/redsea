@@ -170,6 +170,10 @@ void Station::decodeType1 (Group group) {
 
   pin_ = group.block4;
 
+  if (pin_ != 0x0000)
+    printf(", prog_item_started: { day: %d, time: \"%02d:%02d\" }",
+        bits(pin_, 11, 5), bits(pin_, 6, 5), bits(pin_, 0, 6) );
+
   if (group.type.ab == TYPE_A) {
     pager_tng_ = bits(group.block2, 2, 3);
     if (pager_tng_ != 0) {
