@@ -106,7 +106,7 @@ void BlockStream::uncorrectable() {
     for (int i=0; i<(int)block_has_errors_.size(); i++)
       block_has_errors_[i] = false;
     pi_ = 0x0000;
-    printf(":too many errors, sync lost\n");
+    //printf(":too many errors, sync lost\n");
   }
 
   for (int o=A; o<=D; o++)
@@ -153,7 +153,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
                 (block_for_offset_[prevsync_] + dist/26) % 4 == block_for_offset_[o]) {
               is_in_sync_ = true;
               expected_offset_ = o;
-              printf(":sync!\n");
+              //printf(":sync!\n");
             } else {
               prevbitcount_ = bitcount_;
               prevsync_ = o;
@@ -179,10 +179,10 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         // If message is a correct PI, error was probably in check bits
         if (expected_offset_ == A && message == pi_ && pi_ != 0) {
           has_sync_for_[A] = true;
-          printf(":offset 0: ignoring error in check bits\n");
+          //printf(":offset 0: ignoring error in check bits\n");
         } else if (expected_offset_ == C && message == pi_ && pi_ != 0) {
           has_sync_for_[CI] = true;
-          printf(":offset 0: ignoring error in check bits\n");
+          //printf(":offset 0: ignoring error in check bits\n");
 
         // Detect & correct clock slips (Section C.1.2)
         } else if (expected_offset_ == A && pi_ != 0 &&
@@ -190,14 +190,14 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
           message = pi_;
           wideblock_ >>= 1;
           has_sync_for_[A] = true;
-          printf(":offset 0: clock slip corrected\n");
+          //printf(":offset 0: clock slip corrected\n");
         } else if (expected_offset_ == A && pi_ != 0 &&
             ((wideblock_ >> 10) & MASK_16BIT) == pi_) {
           message = pi_;
           wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
           has_sync_for_[A] = true;
           left_to_read_ = 25;
-          printf(":offset 0: clock slip corrected\n");
+          //printf(":offset 0: clock slip corrected\n");
 
         // Detect & correct burst errors (Section B.2.2)
         } else {
@@ -205,16 +205,20 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
           uint16_t synd_reg = calcSyndrome(block ^ offset_word_[expected_offset_]);
 
           if (pi_ != 0 && expected_offset_ == A) {
-            printf(":offset 0: expecting PI%04x, got %04x, xor %04x, syndrome %03x\n",
-                pi_, block>>10, pi_ ^ (block>>10), synd_reg);
+            //printf(":offset 0: expecting PI%04x, got %04x, xor %04x, syndrome %03x\n",
+            //    pi_, block>>10, pi_ ^ (block>>10), synd_reg);
           }
 
           if (error_lookup_.find(synd_reg) != error_lookup_.end()) {
-            message = (block >> 10) ^ error_lookup_[synd_reg];
-            has_sync_for_[expected_offset_] = true;
+            uint32_t corrected_block = (block ^ offset_word_[expected_offset_]) ^ (error_lookup_[synd_reg] << 10);
 
-            printf(":offset %d: error corrected using vector %04x for syndrome %03x\n",
-                expected_offset_, error_lookup_[synd_reg], synd_reg);
+            if (calcSyndrome(corrected_block) == 0x000) {
+              message = (block >> 10) ^ error_lookup_[synd_reg];
+              has_sync_for_[expected_offset_] = true;
+            }
+
+            //printf(":offset %d: error corrected using vector %04x for syndrome %03x\n",
+            //    expected_offset_, error_lookup_[synd_reg], synd_reg);
 
           }
 
