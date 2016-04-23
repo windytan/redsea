@@ -4,7 +4,9 @@
 
 namespace redsea {
 
-TMC::TMC() : is_initialized_(false), ps_(8) {
+namespace tmc {
+
+TMC::TMC() : is_initialized_(false), has_encid_(false), ps_(8), multi_group_buffer_(5) {
 
 }
 
@@ -60,6 +62,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     sid_   = bits(y, 5, 6);
     encid_ = bits(y, 0, 5);
     ltnbe_ = bits(z, 10, 6);
+    has_encid_ = true;
 
     printf(", tmc: { service_id: \"0x%02x\", encryption_id: \"0x%02x\", location_table: \"0x%02x\" }",
         sid_, encid_, ltnbe_);
@@ -87,27 +90,103 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
   // User message
   } else {
 
+    if (is_encrypted_ && !has_encid_)
+      return;
+
     bool f = bits(x, 3, 1);
 
     // Single-group message
     if (f) {
-      uint16_t duration  = bits(x, 0, 3);
-      uint16_t divertadv = bits(y, 15, 1);
-      uint16_t direction = bits(y, 14, 1);
-      uint16_t extent    = bits(y, 11, 3);
-      uint16_t events0   = bits(y, 0, 11);
-      uint16_t location  = z;
+      newMessage(false, {{true, {x, y, z}}});
+      current_ci_ = 0;
 
-      printf(", tmc: { traffic_message: { event: %d, %slocation: %d, direction: \"%s\", "
-             "extent: %d, diversion_advised: %s }",
-             events0, (is_encrypted_ ? "encrypted_" : ""), location, direction ? "negative" : "positive",
-             extent, divertadv ? "true" : "false" );
-
+    // Part of multi-group message
     } else {
-      printf(", tmc: { /* TODO multi-group message */ }");
+
+      uint16_t ci = bits(x, 0, 3);
+      bool     fg = bits(y, 15, 1);
+
+      if (ci != current_ci_ /* TODO 15-second limit */) {
+        newMessage(true, multi_group_buffer_);
+        multi_group_buffer_[0].is_received = false;
+        current_ci_ = ci;
+      }
+
+      int cur_grp;
+
+      if (fg)
+        cur_grp = 0;
+      else if (bits(y, 14, 1))
+        cur_grp = 1;
+      else
+        cur_grp = 4 - bits(y, 12, 2);
+
+      multi_group_buffer_.at(cur_grp) = {true, {y, z}};
+
+      //printf(", tmc: { /* TODO multi-group message */ }");
     }
   }
 
 }
 
+void TMC::newMessage(bool is_multi, std::vector<MessagePart> parts) {
+
+  Message message;
+
+  // single-group
+  if (!is_multi) {
+    message.duration  = bits(parts[0].data[0], 0, 3);
+    message.divertadv = bits(parts[0].data[1], 15, 1);
+    message.direction = bits(parts[0].data[1], 14, 1);
+    message.extent    = bits(parts[0].data[1], 11, 3);
+    message.events.push_back(bits(parts[0].data[1], 0, 11));
+    message.location  = parts[0].data[2];
+    message.is_complete = true;
+
+  // multi-group
+  } else {
+
+    // Need at least the first group
+    if (!parts[0].is_received)
+      return;
+
+    // First group
+    message.direction = bits(parts[0].data[0], 14, 1);
+    message.extent    = bits(parts[0].data[0], 11, 3);
+    message.events.push_back(bits(parts[0].data[0], 0, 11));
+    message.location  = parts[0].data[1];
+
+    // Subsequent parts, TODO
+    if (parts[1].is_received) {
+
+      uint16_t sg_gsi = bits(parts[1].data[0], 12, 2);
+      //printf("tmc: sg_gsi=%d\n",sg_gsi);
+
+      for (int i=0; i<parts.size(); i++) {
+        //printf("  tmc: %d=%d\n", i,parts[i].is_received);
+      }
+
+    }
+  }
+
+  printf(", tmc: { traffic_message: { ");
+  if (message.events.size() > 1) {
+    printf("events: [ %s ]", commaJoin(message.events).c_str());
+  } else {
+    printf("event: %d", message.events[0]);
+  }
+
+  printf(", %slocation: \"0x%02x\", direction: \"%s\", "
+         "extent: %d, diversion_advised: %s } }",
+         (is_encrypted_ ? "encrypted_" : ""), message.location,
+         message.direction ? "negative" : "positive",
+         message.extent, message.divertadv ? "true" : "false" );
+
+}
+
+Message::Message() : events() {
+
+}
+
+} // namespace tmc
 } // namespace redsea

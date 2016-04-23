@@ -91,7 +91,7 @@ class Station {
     int pager_ccf_;
     int pager_interval_;
 
-    TMC tmc_;
+    tmc::TMC tmc_;
 
 };
 

@@ -17,4 +17,14 @@ std::string commaJoin(std::vector<std::string> strings) {
   return result;
 }
 
+std::string commaJoin(std::vector<std::uint16_t> nums) {
+  std::string result("");
+  for (size_t i=0; i<nums.size(); i++) {
+    result += std::to_string(nums[i]);
+    if (i < nums.size()-1)
+      result += ", ";
+  }
+  return result;
+}
+
 } // namespace redsea
