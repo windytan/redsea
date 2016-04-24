@@ -37,6 +37,8 @@ autoreconf --install
 make
 ```
 
+libwdsp.a must be available in src/ and the wdsp directory should also be symlinked there. A better arrangement will come eventually.
+
 ## Usage
 
 Live reception with rtl_fm:
