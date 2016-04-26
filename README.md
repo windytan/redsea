@@ -8,7 +8,7 @@ and prints it to the terminal. It works well with rtl_fm.
 
 ## Features
 
-Readsea takes a wideband FM multiplex signal as input. It decodes the following info from RDS:
+Redsea takes a wideband FM multiplex signal as input. It decodes the following info from RDS:
 
 * Program Identification code (PI)
 * Program Service name (PS)
