@@ -1,5 +1,6 @@
 #include "tmc.h"
 
+#include "tmc_events.h"
 #include "util.h"
 
 namespace redsea {
@@ -173,7 +174,7 @@ void TMC::newMessage(bool is_multi, std::vector<MessagePart> parts) {
   if (message.events.size() > 1) {
     printf("events: [ %s ]", commaJoin(message.events).c_str());
   } else {
-    printf("event: %d", message.events[0]);
+    printf("event: [ code: %d, description: \"%s\" ]", message.events[0], getEvent(message.events[0]).description.c_str());
   }
 
   printf(", %slocation: \"0x%02x\", direction: \"%s\", "
