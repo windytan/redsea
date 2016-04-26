@@ -14,7 +14,7 @@ Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature, uint16_t 
 
 Event getEvent(uint16_t code) {
 
-  std::map<uint16_t,Event> events ({
+  const std::map<uint16_t,Event> events ({
 #ifdef WITH_TMC_EVENTS
     {1, {"traffic problem", "", EVENT_INFO, Q_SMALL_NUMBER, DURATION_DYNAMIC, DIR_SINGLE, URGENCY_U, 1}},
     {2, {"queuing traffic. Danger of stationary traffic", "queuing traffic with average speeds _. Danger of stationary traffic", EVENT_INFO, Q_UPTO_KMH, DURATION_DYNAMIC, DIR_SINGLE, URGENCY_U, 1}},
@@ -1570,7 +1570,10 @@ Event getEvent(uint16_t code) {
     {2047, {"(null message) {completely silent message, see protocol, sect. 3.5.4}", "", EVENT_INFO, Q_SMALL_NUMBER, DURATION_DYNAMIC, DIR_BOTH, URGENCY_NONE, 31}}
 #endif
   });
-  return events[code];
+  if (events.find(code) != events.end())
+    return events.find(code)->second;
+  else
+    return Event();
 
 }
 
