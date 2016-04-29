@@ -25,7 +25,7 @@ bool operator==(const GroupType& obj1, const GroupType& obj2) {
 
 bool operator<(const GroupType& obj1, const GroupType& obj2) { return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab)); }
 
-Group::Group(std::vector<uint16_t> blockbits) : num_blocks(blockbits.size()), type(bits(blockbits.at(1), 11, 5)) {
+Group::Group(std::vector<uint16_t> blockbits) : num_blocks(blockbits.size()), type(blockbits.size() > 0 ? bits(blockbits.at(1), 11, 5) : TYPE_A) {
   if (num_blocks > 0)
     block1 = blockbits[0];
   if (num_blocks > 1) {
