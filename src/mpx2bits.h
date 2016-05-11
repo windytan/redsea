@@ -5,6 +5,7 @@
 
 #include <vector>
 
+#include "wdsp/wdsp.h"
 #include "wdsp/cirbuffer.h"
 
 namespace redsea {
