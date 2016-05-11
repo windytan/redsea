@@ -1,11 +1,94 @@
 #include "tmc.h"
 
+#include <deque>
+
 #include "tmc_events.h"
 #include "util.h"
 
 namespace redsea {
 
 namespace tmc {
+
+namespace {
+
+uint16_t popBits(std::deque<int>& bit_deque, int len) {
+  uint16_t result = 0x00;
+  if (bit_deque.size() >= len) {
+    for (int i=0; i<len; i++) {
+      result = (result << 1) | bit_deque.at(0);
+      bit_deque.pop_front();
+    }
+  }
+  return result;
+}
+
+// label, field_data
+std::vector<std::pair<uint16_t,uint16_t>> getFreeformFields(std::vector<MessagePart> parts) {
+  const std::vector<int> field_size({3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
+
+  uint16_t sg_gsi = bits(parts[1].data[0], 12, 2);
+
+  // Concatenate freeform data from used message length (derived from
+  // GSI of second group)
+  std::deque<int> freeform_data_bits;
+  for (int i=0; i<parts.size(); i++) {
+    if (!parts[i].is_received)
+      break;
+
+    if (i <= 1 || i >= parts.size() - sg_gsi) {
+      for (int b=0; b<12; b++)
+        freeform_data_bits.push_back((parts[i].data[0] >> (11-b)) & 0x1);
+      for (int b=0; b<16; b++)
+        freeform_data_bits.push_back((parts[i].data[1] >> (15-b)) & 0x1);
+    }
+  }
+
+  // Decode freeform data
+  int bits_left = freeform_data_bits.size();
+  std::vector<std::pair<uint16_t,uint16_t>> result;
+  while (freeform_data_bits.size() > 4) {
+    uint16_t label = popBits(freeform_data_bits, 4);
+    if (freeform_data_bits.size() < field_size.at(label))
+      break;
+
+    uint16_t field_data = popBits(freeform_data_bits, field_size.at(label));
+
+    result.push_back({label, field_data});
+  }
+
+  return result;
+}
+
+std::string timeString(uint16_t field_data) {
+  std::string time_string("");
+  if (field_data <= 95) {
+    char t[6];
+    std::snprintf(t, 6, "%02d:%02d", field_data/4, 15*(field_data % 4));
+    time_string = t;
+  } else if (field_data <= 200) {
+    char t[25];
+    std::snprintf(t, 25, "after %d days at %02d:00", (field_data-96)/24,
+        (field_data-96)%24);
+    time_string = t;
+  } else if (field_data <= 231) {
+    char t[20];
+    std::snprintf(t, 20, "day %d of the month", field_data-200);
+    time_string = t;
+  } else {
+    int mo = (field_data-232) / 2;
+    bool end_mid = (field_data-232) % 2;
+    std::vector<std::string> month_names({"Jan","Feb","Mar","Apr","May",
+        "Jun","Jul","Aug","Sep","Oct","Nov","Dec"});
+    if (mo < 12) {
+      time_string = (end_mid ? "end of " : "mid-") + month_names.at(mo);
+    }
+  }
+
+  return time_string;
+}
+
+}
+
 
 TMC::TMC() : is_initialized_(false), has_encid_(false), ps_(8), multi_group_buffer_(5) {
 
