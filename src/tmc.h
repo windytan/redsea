@@ -37,14 +37,25 @@ class TMC {
 
 class Message {
   public:
-    Message();
+    Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> parts);
+    std::string toString() const;
+    void print() const;
+    bool is_encrypted;
     uint16_t duration;
+    uint16_t duration_type;
     bool divertadv;
     uint16_t direction;
     uint16_t extent;
     std::vector<uint16_t> events;
+    std::vector<uint16_t> supplementary;
     uint16_t location;
     bool is_complete;
+    bool has_length_affected;
+    uint16_t length_affected;
+    bool has_time_until;
+    uint16_t time_until;
+    bool has_time_starts;
+    uint16_t time_starts;
 };
 
 } // namespace tmc

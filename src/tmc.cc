@@ -181,7 +181,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
 
     // Single-group message
     if (f) {
-      newMessage(false, {{true, {x, y, z}}});
+      Message message(false, is_encrypted_, {{true, {x, y, z}}});
+      message.print();
       current_ci_ = 0;
 
     // Part of multi-group message
@@ -191,7 +192,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       bool     fg = bits(y, 15, 1);
 
       if (ci != current_ci_ /* TODO 15-second limit */) {
-        newMessage(true, multi_group_buffer_);
+        Message message(true, is_encrypted_, multi_group_buffer_);
+        message.print();
         multi_group_buffer_[0].is_received = false;
         current_ci_ = ci;
       }
@@ -207,25 +209,23 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
 
       multi_group_buffer_.at(cur_grp) = {true, {y, z}};
 
-      //printf(", tmc: { /* TODO multi-group message */ }");
     }
   }
 
 }
 
-void TMC::newMessage(bool is_multi, std::vector<MessagePart> parts) {
-
-  Message message;
+Message::Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> parts) : events(),
+  is_encrypted(is_loc_encrypted) {
 
   // single-group
   if (!is_multi) {
-    message.duration  = bits(parts[0].data[0], 0, 3);
-    message.divertadv = bits(parts[0].data[1], 15, 1);
-    message.direction = bits(parts[0].data[1], 14, 1);
-    message.extent    = bits(parts[0].data[1], 11, 3);
-    message.events.push_back(bits(parts[0].data[1], 0, 11));
-    message.location  = parts[0].data[2];
-    message.is_complete = true;
+    duration  = bits(parts[0].data[0], 0, 3);
+    divertadv = bits(parts[0].data[1], 15, 1);
+    direction = bits(parts[0].data[1], 14, 1);
+    extent    = bits(parts[0].data[1], 11, 3);
+    events.push_back(bits(parts[0].data[1], 0, 11));
+    location  = parts[0].data[2];
+    is_complete = true;
 
   // multi-group
   } else {
@@ -234,41 +234,74 @@ void TMC::newMessage(bool is_multi, std::vector<MessagePart> parts) {
     if (!parts[0].is_received)
       return;
 
+    is_complete=true;
+
     // First group
-    message.direction = bits(parts[0].data[0], 14, 1);
-    message.extent    = bits(parts[0].data[0], 11, 3);
-    message.events.push_back(bits(parts[0].data[0], 0, 11));
-    message.location  = parts[0].data[1];
+    direction = bits(parts[0].data[0], 14, 1);
+    extent    = bits(parts[0].data[0], 11, 3);
+    events.push_back(bits(parts[0].data[0], 0, 11));
+    location  = parts[0].data[1];
 
-    // Subsequent parts, TODO
+    // Subsequent parts
     if (parts[1].is_received) {
+      auto freeform = getFreeformFields(parts);
 
-      uint16_t sg_gsi = bits(parts[1].data[0], 12, 2);
-      //printf("tmc: sg_gsi=%d\n",sg_gsi);
+      for (auto p : freeform) {
+        uint16_t label = p.first;
+        uint16_t field_data = p.second;
+        printf ("tmc: label %04x: field_data %04x\n",label,field_data);
 
-      for (int i=0; i<parts.size(); i++) {
-        //printf("  tmc: %d=%d\n", i,parts[i].is_received);
+        // Duration
+        if (label == 0) {
+          duration = field_data;
+
+        // Length of route affected
+        } else if (label == 2) {
+            length_affected = field_data;
+            has_length_affected = true;
+
+        // Start / stop time
+        } else if (label == 7) {
+          time_starts = field_data;
+          has_time_starts = true;
+        } else if (label == 8) {
+          time_until = field_data;
+          has_time_until = true;
+        } else {
+          printf("/* TODO label=%d */",label);
+        }
       }
-
     }
   }
-
-  printf(", tmc: { traffic_message: { ");
-  if (message.events.size() > 1) {
-    printf("events: [ %s ]", commaJoin(message.events).c_str());
-  } else {
-    printf("event: { code: %d, description: \"%s\" }", message.events[0], getEvent(message.events[0]).description.c_str());
-  }
-
-  printf(", %slocation: \"0x%02x\", direction: \"%s\", "
-         "extent: %d, diversion_advised: %s } }",
-         (is_encrypted_ ? "encrypted_" : ""), message.location,
-         message.direction ? "negative" : "positive",
-         message.extent, message.divertadv ? "true" : "false" );
-
 }
 
-Message::Message() : events() {
+void Message::print() const {
+  printf("traffic_message: { ");
+
+  if (!is_complete || events.empty()) {
+    printf("}\n");
+    return;
+  }
+
+  if (events.size() > 1) {
+    printf("events: [ %s ]", commaJoin(events).c_str());
+  } else {
+    printf("event: { code: %d, description: \"%s\" }", events[0], getEvent(events[0]).description.c_str());
+  }
+
+  printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, diversion_advised: %s",
+         (is_encrypted ? "encrypted_" : ""), location,
+         direction ? "negative" : "positive",
+         extent, divertadv ? "true" : "false" );
+
+
+  if (has_time_starts)
+    printf(", starts: \"%s\"", timeString(time_starts).c_str());
+  if (has_time_until)
+    printf(", until: \"%s\"", timeString(time_until).c_str());
+
+
+  printf ("}");
 
 }
 
