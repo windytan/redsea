@@ -19,7 +19,7 @@ int sign(double a) {
 BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading_frame_(0),
   bit_buffer_(BITBUFLEN), antialias_fir_(wdsp::FIR(4000.0 / FS, 64)),
   data_shaping_fir_(wdsp::FIR(1500.0 / (FS/8), 64)),
-  subcarr_baseband_(IBUFLEN), subcarr_shaped_(IBUFLEN/8), is_eof_(false) {
+  subcarr_baseband_(IBUFLEN), subcarr_shaped_(IBUFLEN/8), is_eof_(false), phase_diff_delay_(24) {
 
 }
 
@@ -87,6 +87,14 @@ void BitStream::demodulateMoreBits() {
 
       mixer_phi_    -= pll_beta * phase_error;
       subcarr_freq_ -= .5 * pll_beta * phase_error;
+
+
+      std::complex<double> lagged = phase_diff_delay_.getPut(shaped_sample);
+      std::complex<double> diff = shaped_sample * lagged;
+
+      //double diff = phase_error - lagged;
+
+      //printf("dd %f,%f\n", real(diff), imag(diff));
 
       /* 1187.5 Hz clock */
 

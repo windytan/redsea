@@ -42,6 +42,7 @@ class BitStream {
   wdsp::CirBuffer<std::complex<double>> subcarr_shaped_;
 
   bool is_eof_;
+  wdsp::Delay<std::complex<double>> phase_diff_delay_;
 
 };
 
