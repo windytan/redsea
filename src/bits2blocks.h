@@ -19,13 +19,13 @@ class BlockStream {
 
   private:
   void uncorrectable();
-  int bitcount_;
-  int prevbitcount_;
-  int left_to_read_;
+  unsigned bitcount_;
+  unsigned prevbitcount_;
+  unsigned left_to_read_;
   uint32_t wideblock_;
-  int prevsync_;
-  int block_counter_;
-  int expected_offset_;
+  unsigned prevsync_;
+  unsigned block_counter_;
+  unsigned expected_offset_;
   uint16_t pi_;
   std::vector<bool> has_sync_for_;
   bool is_in_sync_;
@@ -37,7 +37,7 @@ class BlockStream {
   BitStream bit_stream_;
   bool has_whole_group_;
   std::map<uint16_t,uint16_t> error_lookup_;
-  int data_length_;
+  unsigned data_length_;
 
 };
 

@@ -15,7 +15,7 @@ namespace {
 uint32_t rol10(uint32_t word, int k) {
   uint32_t result = word;
   uint32_t l;
-  for (int i=0; i<k; i++) {
+  for (unsigned i=0; i<k; i++) {
     l       = (result & 0x200);
     result  = (result << 1) & 0x3FF;
     result ^= l;
@@ -43,7 +43,7 @@ uint32_t calcCheckBits(uint32_t dataWord) {
   uint32_t generator = 0x1B9;
   uint32_t result    = 0;
 
-  for (int k=0; k<16; k++) {
+  for (unsigned k=0; k<16; k++) {
     if ((dataWord >> k) & 0x01) {
       result ^= rol10(generator, k);
     }
@@ -63,7 +63,7 @@ BlockStream::BlockStream() : has_sync_for_(5), group_data_(4), has_block_(5),
   block_for_offset_ = {0, 1, 2, 2, 3};
 
   for (uint32_t e=1; e < (1<<MAX_ERR_LEN); e++) {
-    for (int shift=0; shift < 16; shift++) {
+    for (unsigned shift=0; shift < 16; shift++) {
       uint32_t errvec = ((e << shift) & MASK_16BIT) << 10;
 
       uint32_t m = calcCheckBits(0x01);
@@ -94,7 +94,7 @@ void BlockStream::uncorrectable() {
 
   block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 
-  int erroneous_blocks = 0;
+  unsigned erroneous_blocks = 0;
   for (bool e : block_has_errors_) {
     if (e)
       erroneous_blocks ++;
@@ -103,13 +103,13 @@ void BlockStream::uncorrectable() {
   // Sync is lost when >45 out of last 50 blocks are erroneous (Section C.1.2)
   if (is_in_sync_ && erroneous_blocks > 45) {
     is_in_sync_ = false;
-    for (int i=0; i<(int)block_has_errors_.size(); i++)
+    for (unsigned i=0; i<block_has_errors_.size(); i++)
       block_has_errors_[i] = false;
     pi_ = 0x0000;
     //printf(":too many errors, sync lost\n");
   }
 
-  for (int o=A; o<=D; o++)
+  for (unsigned o=A; o<=D; o++)
     has_block_[o] = false;
 
 }
@@ -125,7 +125,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
     bitcount_ += 26 - left_to_read_;
 
     // Read from radio
-    for (int i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++) {
+    for (unsigned i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++) {
       wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
     }
 
@@ -145,9 +145,9 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
     if (!is_in_sync_) {
       if (has_sync_for_any) {
-        for (int o=A; o<=D; o++) {
+        for (unsigned o=A; o<=D; o++) {
           if (has_sync_for_[o]) {
-            int dist = bitcount_ - prevbitcount_;
+            unsigned dist = bitcount_ - prevbitcount_;
 
             if (dist % 26 == 0 && dist <= 156 &&
                 (block_for_offset_[prevsync_] + dist/26) % 4 == block_for_offset_[o]) {
@@ -252,7 +252,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
       expected_offset_ = (expected_offset_ == C ? D : (expected_offset_ + 1) % 5);
 
       if (expected_offset_ == A) {
-        for (int o=A; o<=D; o++)
+        for (unsigned o=A; o<=D; o++)
           has_block_[o] = false;
       }
 
