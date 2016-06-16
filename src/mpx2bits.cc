@@ -121,7 +121,7 @@ BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading
   //liquid_firdes_prototype(LIQUID_FIRFILT_RCOS, k, m, beta, 0, h);
 
   float coeffs[antialias_fir_.size()];
-  for (int i=0;i<antialias_fir_.size();i++)
+  for (int i=0;i<(int)antialias_fir_.size();i++)
     coeffs[i] = antialias_fir_[i];
   float coeffs_phase[64];
   for (int i=0;i<64;i++)

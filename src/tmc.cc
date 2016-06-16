@@ -13,7 +13,7 @@ namespace {
 
 uint16_t popBits(std::deque<int>& bit_deque, int len) {
   uint16_t result = 0x00;
-  if (bit_deque.size() >= len) {
+  if ((int)bit_deque.size() >= len) {
     for (int i=0; i<len; i++) {
       result = (result << 1) | bit_deque.at(0);
       bit_deque.pop_front();
@@ -31,11 +31,11 @@ std::vector<std::pair<uint16_t,uint16_t>> getFreeformFields(std::vector<MessageP
   // Concatenate freeform data from used message length (derived from
   // GSI of second group)
   std::deque<int> freeform_data_bits;
-  for (int i=0; i<parts.size(); i++) {
+  for (int i=0; i<(int)parts.size(); i++) {
     if (!parts[i].is_received)
       break;
 
-    if (i <= 1 || i >= parts.size() - sg_gsi) {
+    if (i <= 1 || i >= (int)parts.size() - sg_gsi) {
       for (int b=0; b<12; b++)
         freeform_data_bits.push_back((parts[i].data[0] >> (11-b)) & 0x1);
       for (int b=0; b<16; b++)
@@ -48,7 +48,7 @@ std::vector<std::pair<uint16_t,uint16_t>> getFreeformFields(std::vector<MessageP
   std::vector<std::pair<uint16_t,uint16_t>> result;
   while (freeform_data_bits.size() > 4) {
     uint16_t label = popBits(freeform_data_bits, 4);
-    if (freeform_data_bits.size() < field_size.at(label))
+    if ((int)freeform_data_bits.size() < field_size.at(label))
       break;
 
     uint16_t field_data = popBits(freeform_data_bits, field_size.at(label));

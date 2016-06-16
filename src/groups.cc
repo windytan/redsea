@@ -145,7 +145,7 @@ void Station::decodeType0 (Group group) {
       int i = 0;
       for (auto f : alt_freqs_) {
         printf("%.1f", f);
-        if (i < alt_freqs_.size() - 1)
+        if (i < (int)alt_freqs_.size() - 1)
           printf(", ");
         i++;
       }

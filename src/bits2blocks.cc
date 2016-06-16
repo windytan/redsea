@@ -15,7 +15,7 @@ namespace {
 uint32_t rol10(uint32_t word, int k) {
   uint32_t result = word;
   uint32_t l;
-  for (unsigned i=0; i<k; i++) {
+  for (int i=0; i<k; i++) {
     l       = (result & 0x200);
     result  = (result << 1) & 0x3FF;
     result ^= l;
