@@ -118,7 +118,7 @@ BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading
   unsigned hlen = 2*k*m+1;
   float h[hlen];
   float beta=0.33f;
-  liquid_firdes_prototype(LIQUID_FIRFILT_RCOS, k, m, beta, 0, h);
+  //liquid_firdes_prototype(LIQUID_FIRFILT_RCOS, k, m, beta, 0, h);
 
   float coeffs[antialias_fir_.size()];
   for (int i=0;i<antialias_fir_.size();i++)
