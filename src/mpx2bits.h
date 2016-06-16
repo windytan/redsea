@@ -12,49 +12,26 @@
 
 namespace redsea {
 
-class LiquidPLL {
+std::vector<float> FIR(float f_cutoff, int len);
+float sinc(float);
+
+class BitBuffer {
   public:
-  LiquidPLL();
-  ~LiquidPLL();
-  float inOut(float err);
+    BitBuffer(int len);
+    int size() const;
+    void append(uint8_t input_element);
+    void forward(int n);
+    int getTail() const;
+    int getFillCount() const;
+    uint8_t at(int n) const;
+    uint8_t getNext();
 
   private:
-  float phase_offset_;
-  float frequency_offset_;
-  float phase_error_;
-  float phi_hat_;
-  float wn_;
-  float zeta_;
-  float K_;
-
-  iirfilt_rrrf loopfilter_;
-
-  float b_[3];
-  float a_[3];
-
-};
-
-class LoopFilter {
-  public:
-  LoopFilter();
-  std::complex<float> output() const;
-  float phiHat() const;
-  void input(float dphi);
-
-  private:
-  float m_bw;
-  float m_zeta;
-  float m_K;
-  float m_t1;
-  float m_t2;
-  float m_b0;
-  float m_b1;
-  float m_b2;
-  float m_a1;
-  float m_a2;
-  float m_v0;
-  float m_v1;
-  float m_v2;
+    std::vector<uint8_t> m_data;
+    int  m_head;
+    int  m_tail;
+    int  m_fill_count;
+    const int m_len;
 
 };
 
@@ -74,7 +51,7 @@ class BitStream {
   float prevclock_;
   float prev_bb_;
   float acc_;
-  int    numsamples_;
+  int   numsamples_;
   float subcarr_freq_;
   float gain_;
 
