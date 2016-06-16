@@ -129,7 +129,6 @@ BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading
 
   firfilt_ = firfilt_crcf_create(coeffs,antialias_fir_.size());
   firfilt_phase_ = firfilt_crcf_create(coeffs_phase,64);
-  modem_print(liq_modem_);
   nco_crcf_set_frequency(nco_if_, FC_0 * 2 * PI_f / FS);
   agc_crcf_set_bandwidth(agc_,1e-3f);
 }

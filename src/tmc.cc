@@ -249,7 +249,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> 
       for (auto p : freeform) {
         uint16_t label = p.first;
         uint16_t field_data = p.second;
-        printf ("tmc: label %04x: field_data %04x\n",label,field_data);
+        //printf ("tmc: label %04x: field_data %04x\n",label,field_data);
 
         // Duration
         if (label == 0) {
@@ -268,7 +268,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> 
           time_until = field_data;
           has_time_until = true;
         } else {
-          printf("/* TODO label=%d */",label);
+          printf(" /* TODO label=%d */",label);
         }
       }
     }
@@ -276,7 +276,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> 
 }
 
 void Message::print() const {
-  printf("traffic_message: { ");
+  printf(", traffic_message: { ");
 
   if (!is_complete || events.empty()) {
     printf("}\n");
