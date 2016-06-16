@@ -55,7 +55,7 @@ sox multiplex.wav -t .s16 -r 228k - | ./src/redsea
 
 ## Input format
 
-Redsea expects an FM multiplex signal, i.e. the full baseband signal of an FM station, as a single-channel, 16-bit, signed-integer PCM stream sampled at 228 kHz via standard input.
+Redsea expects an FM multiplex signal, i.e. the full baseband signal of an FM station after demodulation, as a single-channel, 16-bit, signed-integer PCM stream sampled at 228 kHz via standard input.
 
 ## Licensing
 
