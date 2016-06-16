@@ -112,11 +112,11 @@ BitStream::BitStream() : subcarr_freq_(FC_0), gain_(1.0f), counter_(0), tot_errs
   ph0_(0.0f), phase_delay_(wdelayf_create(192))
   {
 
-  unsigned k = 192;
+  /*unsigned k = 192;
   unsigned m = 4;
   unsigned hlen = 2*k*m+1;
   float h[hlen];
-  float beta=0.33f;
+  float beta=0.33f;*/
   //liquid_firdes_prototype(LIQUID_FIRFILT_RCOS, k, m, beta, 0, h);
 
   float coeffs[antialias_fir_.size()];
@@ -171,7 +171,6 @@ void BitStream::demodulateMoreBits() {
 
     firfilt_crcf_push(firfilt_phase_, dphc);
 
-    float dph_lpf;
     firfilt_crcf_execute(firfilt_phase_, &dphc_lpf);
     if (numsamples_ % 192 == 0) {
       unsigned bit = real(dphc_lpf)>0;

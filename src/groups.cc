@@ -310,7 +310,7 @@ void Station::decodeType3 (Group group) {
     tmc_.systemGroup(group.block3);
   } else {
     printf(", open_data_app: { group: \"%s\", app_name: \"%s\", message: \"0x%02x\" }",
-        oda_group.toString().c_str(), getAppName(oda_aid).c_str(), group.block3);
+        oda_group.toString().c_str(), getAppName(oda_aid).c_str(), oda_msg);
   }
 
 }
