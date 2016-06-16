@@ -194,7 +194,12 @@ int BitStream::getNextBit() {
   while (bit_buffer_.getFillCount() < 1 && !isEOF())
     demodulateMoreBits();
 
-  return bit_buffer_.getNext();
+  int bit = 0;
+
+  if (bit_buffer_.getFillCount() > 0)
+    bit = bit_buffer_.getNext();
+
+  return bit;
 }
 
 bool BitStream::isEOF() const {
