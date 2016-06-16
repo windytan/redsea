@@ -53,8 +53,8 @@ uint32_t calcCheckBits(uint32_t dataWord) {
 
 }
 
-BlockStream::BlockStream() : has_sync_for_(5), group_data_(4), has_block_(5),
-  bitcount_(0), left_to_read_(0), bit_stream_(), wideblock_(0), block_has_errors_(50)
+BlockStream::BlockStream() : bitcount_(0), left_to_read_(0), wideblock_(0), has_sync_for_(5),
+  group_data_(4), has_block_(5), block_has_errors_(50), bit_stream_()
 
 {
 
