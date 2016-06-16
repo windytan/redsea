@@ -102,9 +102,8 @@ void BitBuffer::append(uint8_t input_element) {
 
 
 
-BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading_frame_(0),
+BitStream::BitStream() : subcarr_freq_(FC_0), gain_(1.0f), counter_(0), tot_errs_(2), reading_frame_(0),
   bit_buffer_(BITBUFLEN), antialias_fir_(FIR(1500.0f / FS, 512)),
-  gain_(1.0f),
   phase_fir_(FIR(4000.0f / FS, 64)),
   is_eof_(false),
   m_inte(0.0f), liq_modem_(modem_create(LIQUID_MODEM_DPSK2)),

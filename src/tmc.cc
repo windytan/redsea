@@ -90,7 +90,7 @@ std::string timeString(uint16_t field_data) {
 }
 
 
-TMC::TMC() : is_initialized_(false), has_encid_(false), ps_(8), multi_group_buffer_(5) {
+TMC::TMC() : is_initialized_(false), has_encid_(false), multi_group_buffer_(5), ps_(8) {
 
 }
 
@@ -214,8 +214,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
 
 }
 
-Message::Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> parts) : events(),
-  is_encrypted(is_loc_encrypted) {
+Message::Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> parts) :
+  is_encrypted(is_loc_encrypted), events() {
 
   // single-group
   if (!is_multi) {
