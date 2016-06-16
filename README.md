@@ -16,6 +16,8 @@ Redsea takes a wideband FM multiplex signal as input. It decodes the following i
 * Traffic Program (TP) and Traffic Announcement (TA) flags
 * Program Type (PTY)
 * Alternate Frequencies (AF)
+* Clock Time and Date (CT)
+* Program Item Number (PIN)
 
 Redsea is a light-weight command line utility.
 
@@ -26,8 +28,8 @@ Output format is currently JSON structures.
 * Linux/OSX
 * C++11 compiler
 * GNU autotools
-* [wdsp](https://github.com/windytan/wdsp)
-* rtl_fm (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any other source that can output FM multiplex signals
+* [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
+* rtl_fm (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any other source that can output demodulated FM multiplex signals
 
 ## Compiling
 
@@ -36,8 +38,6 @@ autoreconf --install
 ./configure
 make
 ```
-
-libwdsp.a must be available in src/ and the wdsp directory should also be symlinked there. A better arrangement will come eventually.
 
 ## Usage
 
