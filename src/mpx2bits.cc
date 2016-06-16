@@ -5,7 +5,7 @@
 #include "liquid/liquid.h"
 
 #define FS        228000.0f
-#define FC_0      56990.0f
+#define FC_0      57000.0f
 #define IBUFLEN   4096
 #define OBUFLEN   128
 #define BITBUFLEN 1024
