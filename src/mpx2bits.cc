@@ -110,8 +110,25 @@ BitStream::BitStream() : subcarr_freq_(FC_0), counter_(0), tot_errs_(2), reading
   m_inte(0.0f), liq_modem_(modem_create(LIQUID_MODEM_DPSK2)),
   agc_(agc_crcf_create()),
   nco_if_(nco_crcf_create(LIQUID_VCO)),
-  ph0_(0.0f) {
+  ph0_(0.0f), phase_delay_(wdelayf_create(192))
+  {
 
+  unsigned k = 192;
+  unsigned m = 4;
+  unsigned hlen = 2*k*m+1;
+  float h[hlen];
+  float beta=0.33f;
+  liquid_firdes_prototype(LIQUID_FIRFILT_RCOS, k, m, beta, 0, h);
+
+  float coeffs[antialias_fir_.size()];
+  for (int i=0;i<antialias_fir_.size();i++)
+    coeffs[i] = antialias_fir_[i];
+  float coeffs_phase[64];
+  for (int i=0;i<64;i++)
+    coeffs_phase[i] = phase_fir_[i];
+
+  firfilt_ = firfilt_crcf_create(coeffs,antialias_fir_.size());
+  firfilt_phase_ = firfilt_crcf_create(coeffs_phase,64);
   modem_print(liq_modem_);
   nco_crcf_set_frequency(nco_if_, FC_0 * 2 * PI_f / FS);
   agc_crcf_set_bandwidth(agc_,1e-3f);
@@ -134,29 +151,38 @@ void BitStream::demodulateMoreBits() {
 
   for (int i = 0; i < bytesread; i++) {
 
-    std::complex<float> mixed;
-    nco_crcf_mix_down(nco_if_, sample[i], &mixed);
-    subcarr_baseband_.appendOverlapFiltered(mixed, antialias_fir_);
+    std::complex<float> shaped_sample, shaped_sample_unnorm, sample_down, sample_lpf;
+    nco_crcf_mix_down(nco_if_, sample[i], &sample_down);
 
-    nco_crcf_step(nco_if_);
+    firfilt_crcf_push(firfilt_, sample_down);
+    firfilt_crcf_execute(firfilt_, &sample_lpf);
 
-    if (numsamples_ % DECIMATE == 0) {
+    agc_crcf_execute(agc_, sample_lpf, &shaped_sample_unnorm);
+    nco_crcf_mix_up(nco_if_, shaped_sample_unnorm, &shaped_sample);
 
-      std::complex<float> baseband_sample = subcarr_baseband_.at(0);
-      subcarr_baseband_.forward(DECIMATE);
+    float ph0;
+    float ph1 = arg(shaped_sample);
+    wdelayf_push(phase_delay_, ph1);
+    wdelayf_read(phase_delay_, &ph0);
+    float dph = ph1 - ph0;
+    if (dph > M_PI)
+      dph -= 2*M_PI;
+    if (dph < -M_PI)
+      dph += 2*M_PI;
+    std::complex<float> dphc(dph,0),dphc_lpf;
 
-      subcarr_shaped_.appendOverlapFiltered(baseband_sample, data_shaping_fir_);
-      std::complex<float> shaped_sample_unnorm = subcarr_shaped_.getNext();
-      std::complex<float> shaped_sample;
-      agc_crcf_execute(agc_, shaped_sample_unnorm, &shaped_sample);
+    firfilt_crcf_push(firfilt_phase_, dphc);
 
-      if (numsamples_ % 192 == 0) {
-        unsigned bit;
-        modem_demodulate(liq_modem_, shaped_sample, &bit);
-        bit_buffer_.append(bit);
-      }
+    float dph_lpf;
+    firfilt_crcf_execute(firfilt_phase_, &dphc_lpf);
+    if (numsamples_ % 192 == 0) {
+      unsigned bit = real(dphc_lpf)>0;
+      //modem_demodulate(liq_modem_, shaped_sample, &bit);
+      bit_buffer_.append(bit);
 
     }
+
+    nco_crcf_step(nco_if_);
 
     numsamples_ ++;
 

@@ -62,27 +62,25 @@ class BitStream {
 
   int dbit_;
 
-  wdsp::CirBuffer<int> bit_buffer_;
+  BitBuffer bit_buffer_;
 
   std::vector<float> antialias_fir_;
-  std::vector<float> data_shaping_fir_;
-  wdsp::CirBuffer<std::complex<float>> subcarr_baseband_;
-  wdsp::CirBuffer<std::complex<float>> subcarr_shaped_;
+  std::vector<float> phase_fir_;
 
   bool is_eof_;
-  wdsp::Delay<std::complex<float>> phase_diff_delay_;
-
-  //LoopFilter loop_filter_;
 
   float m_inte;
 
   modem liq_modem_;
-  //LiquidPLL pll_;
   agc_crcf agc_;
   nco_crcf nco_if_;
 
   float ph0_;
 
+  wdelayf phase_delay_;
+
+  firfilt_crcf firfilt_;
+  firfilt_crcf firfilt_phase_;
 
 };
 
