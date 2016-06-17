@@ -26,7 +26,7 @@ uint16_t popBits(std::deque<int>& bit_deque, int len) {
 std::vector<std::pair<uint16_t,uint16_t>> getFreeformFields(std::vector<MessagePart> parts) {
   const std::vector<int> field_size({3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
-  uint16_t sg_gsi = bits(parts[1].data[0], 12, 2);
+  uint16_t second_gsi = bits(parts[1].data[0], 12, 2);
 
   // Concatenate freeform data from used message length (derived from
   // GSI of second group)
@@ -35,7 +35,7 @@ std::vector<std::pair<uint16_t,uint16_t>> getFreeformFields(std::vector<MessageP
     if (!parts[i].is_received)
       break;
 
-    if (i <= 1 || i >= (int)parts.size() - sg_gsi) {
+    if (i <= 1 || i >= (int)parts.size() - second_gsi) {
       for (int b=0; b<12; b++)
         freeform_data_bits.push_back((parts[i].data[0] >> (11-b)) & 0x1);
       for (int b=0; b<16; b++)
