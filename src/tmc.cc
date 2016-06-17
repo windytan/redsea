@@ -1,13 +1,16 @@
 #include "tmc.h"
 
 #include <deque>
+#include <fstream>
+#include <sstream>
 
-#include "tmc_events.h"
 #include "util.h"
 
 namespace redsea {
 
 namespace tmc {
+
+std::map<uint16_t,Event> g_event_data;
 
 namespace {
 
@@ -87,8 +90,74 @@ std::string timeString(uint16_t field_data) {
   return time_string;
 }
 
+std::string sentence(std::string in) {
+  std::string result = in + ".";
+  result[0] = std::toupper(result[0]);
+  return result;
 }
 
+}
+
+Event::Event() {
+
+}
+
+Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature, uint16_t _qtype, uint16_t _dur, uint16_t _dir, uint16_t _urg, uint16_t _class) :
+  description(_desc), description_with_quantifier(_desc_q), nature(_nature), quantifier_type(_qtype), duration_type(_dur), directionality(_dir), urgency(_urg), update_class(_class) {
+}
+
+Event getEvent(uint16_t code) {
+
+  if (g_event_data.find(code) != g_event_data.end())
+    return g_event_data.find(code)->second;
+  else
+    return Event();
+
+}
+
+std::string getSupplInfoString(uint16_t code) {
+  std::map<uint16_t,std::string> suppl_info_list;
+  return suppl_info_list[code];
+}
+
+
+void loadEventData() {
+  std::ifstream in("data/tmc_events.csv");
+
+  if (!in.is_open())
+    return;
+
+  for (std::string line; std::getline(in, line); ) {
+    if (!in.good())
+      break;
+
+    std::stringstream iss(line);
+    uint16_t code;
+    std::vector<std::string> strings(2);
+    std::vector<uint16_t> nums(6);
+
+    for (int col=0; col<9; col++) {
+      std::string val;
+      std::getline(iss, val, ';');
+      if (!iss.good())
+        break;
+
+      if (col == 0)
+        code = std::stoi(val);
+      else if (col <= 2)
+        strings[col-1] = val;
+      else
+        nums[col-3] = std::stoi(val);
+    }
+
+    g_event_data.insert({code, {strings[0], strings[1], nums[0], nums[1],
+        nums[2], nums[3], nums[4], nums[5]}});
+
+  }
+
+  in.close();
+
+}
 
 TMC::TMC() : is_initialized_(false), has_encid_(false), multi_group_buffer_(5), ps_(8) {
 
@@ -96,8 +165,12 @@ TMC::TMC() : is_initialized_(false), has_encid_(false), multi_group_buffer_(5), 
 
 void TMC::systemGroup(uint16_t message) {
 
+
   if (bits(message, 14, 1) == 0) {
     printf(", tmc: { system_info: { ");
+
+    if (g_event_data.empty())
+      loadEventData();
 
     is_initialized_ = true;
     ltn_ = bits(message, 6, 6);
