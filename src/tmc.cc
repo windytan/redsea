@@ -26,8 +26,11 @@ uint16_t popBits(std::deque<int>& bit_deque, int len) {
 }
 
 // label, field_data
-std::vector<std::pair<uint16_t,uint16_t>> getFreeformFields(std::vector<MessagePart> parts) {
-  const std::vector<int> field_size({3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
+std::vector<std::pair<uint16_t,uint16_t>>
+  getFreeformFields(std::vector<MessagePart> parts) {
+
+  const std::vector<int> field_size(
+      {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
   uint16_t second_gsi = bits(parts[1].data[0], 12, 2);
 
@@ -96,14 +99,17 @@ std::string sentence(std::string in) {
   return result;
 }
 
-}
+} // namespace
 
 Event::Event() {
 
 }
 
-Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature, uint16_t _qtype, uint16_t _dur, uint16_t _dir, uint16_t _urg, uint16_t _class) :
-  description(_desc), description_with_quantifier(_desc_q), nature(_nature), quantifier_type(_qtype), duration_type(_dur), directionality(_dir), urgency(_urg), update_class(_class) {
+Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature,
+    uint16_t _qtype, uint16_t _dur, uint16_t _dir, uint16_t _urg,
+    uint16_t _class) : description(_desc), description_with_quantifier(_desc_q),
+    nature(_nature), quantifier_type(_qtype), duration_type(_dur),
+    directionality(_dir), urgency(_urg), update_class(_class) {
 }
 
 Event getEvent(uint16_t code) {
@@ -159,7 +165,8 @@ void loadEventData() {
 
 }
 
-TMC::TMC() : is_initialized_(false), has_encid_(false), multi_group_buffer_(5), ps_(8) {
+TMC::TMC() : is_initialized_(false), has_encid_(false), multi_group_buffer_(5),
+  ps_(8) {
 
 }
 
@@ -221,8 +228,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     ltnbe_ = bits(z, 10, 6);
     has_encid_ = true;
 
-    printf(", tmc: { service_id: \"0x%02x\", encryption_id: \"0x%02x\", location_table: \"0x%02x\" }",
-        sid_, encid_, ltnbe_);
+    printf(", tmc: { service_id: \"0x%02x\", encryption_id: \"0x%02x\", "
+        "location_table: \"0x%02x\" }", sid_, encid_, ltnbe_);
 
   // Tuning information
   } else if (t) {
@@ -238,7 +245,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       ps_.setAt(pos+3, bits(z, 0, 8));
 
       if (ps_.isComplete())
-        printf(", tmc: { service_provider: \"%s\" }", ps_.getLastCompleteString().c_str());
+        printf(", tmc: { service_provider: \"%s\" }",
+            ps_.getLastCompleteString().c_str());
 
     } else {
       printf(", tmc: { /* TODO: tuning info variant %d */ }", variant);
@@ -287,8 +295,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
 
 }
 
-Message::Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> parts) :
-  is_encrypted(is_loc_encrypted), events() {
+Message::Message(bool is_multi, bool is_loc_encrypted,
+    std::vector<MessagePart> parts) : is_encrypted(is_loc_encrypted), events() {
 
   // single-group
   if (!is_multi) {
@@ -359,10 +367,12 @@ void Message::print() const {
   if (events.size() > 1) {
     printf("events: [ %s ]", commaJoin(events).c_str());
   } else {
-    printf("event: { code: %d, description: \"%s\" }", events[0], getEvent(events[0]).description.c_str());
+    printf("event: { code: %d, description: \"%s\" }", events[0],
+        sentence(getEvent(events[0]).description).c_str());
   }
 
-  printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, diversion_advised: %s",
+  printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, "
+         "diversion_advised: %s",
          (is_encrypted ? "encrypted_" : ""), location,
          direction ? "negative" : "positive",
          extent, divertadv ? "true" : "false" );
