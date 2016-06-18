@@ -102,8 +102,9 @@ void BitBuffer::append(uint8_t input_element) {
 
 
 
-BitStream::BitStream() : subcarr_freq_(FC_0), gain_(1.0f), counter_(0), tot_errs_(2), reading_frame_(0),
-  bit_buffer_(BITBUFLEN), antialias_fir_(FIR(1500.0f / FS, 512)),
+BitStream::BitStream() : subcarr_freq_(FC_0), gain_(1.0f), counter_(0),
+  tot_errs_(2), reading_frame_(0), bit_buffer_(BITBUFLEN),
+  antialias_fir_(FIR(1500.0f / FS, 512)),
   phase_fir_(FIR(4000.0f / FS, 64)),
   is_eof_(false),
   m_inte(0.0f), liq_modem_(modem_create(LIQUID_MODEM_DPSK2)),
@@ -149,7 +150,8 @@ void BitStream::demodulateMoreBits() {
 
   for (int i = 0; i < bytesread; i++) {
 
-    std::complex<float> shaped_sample, shaped_sample_unnorm, sample_down, sample_lpf;
+    std::complex<float> shaped_sample, shaped_sample_unnorm, sample_down,
+      sample_lpf;
     nco_crcf_mix_down(nco_if_, sample[i], &sample_down);
 
     firfilt_crcf_push(firfilt_, sample_down);

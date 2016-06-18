@@ -25,13 +25,16 @@ enum eDurationType {
   DURATION_DYNAMIC, DURATION_LASTING
 };
 enum eQuantifierType {
-  Q_SMALL_NUMBER, Q_NUMBER, Q_LESS_THAN_METRES, Q_PERCENT, Q_UPTO_KMH, Q_UPTO_TIME, Q_DEG_CELSIUS, Q_TIME, Q_TONNES, Q_METRES, Q_UPTO_MILLIMETRES, Q_MHZ, Q_KHZ
+  Q_SMALL_NUMBER, Q_NUMBER, Q_LESS_THAN_METRES, Q_PERCENT, Q_UPTO_KMH,
+  Q_UPTO_TIME, Q_DEG_CELSIUS, Q_TIME, Q_TONNES, Q_METRES, Q_UPTO_MILLIMETRES,
+  Q_MHZ, Q_KHZ
 };
 
 class Event {
   public:
     Event();
-    Event(std::string, std::string, uint16_t, uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
+    Event(std::string, std::string, uint16_t, uint16_t, uint16_t, uint16_t,
+        uint16_t, uint16_t);
     std::string description;
     std::string description_with_quantifier;
     uint16_t nature;
@@ -48,8 +51,8 @@ void loadEventData();
 
 struct MessagePart {
   MessagePart() {};
-  MessagePart(bool _is_received, std::vector<uint16_t> _data) : is_received(_is_received),
-    data(_data) {};
+  MessagePart(bool _is_received, std::vector<uint16_t> _data) :
+    is_received(_is_received), data(_data) {};
   bool is_received;
   std::vector<uint16_t> data;
 };
@@ -77,7 +80,8 @@ class TMC {
 
 class Message {
   public:
-    Message(bool is_multi, bool is_loc_encrypted, std::vector<MessagePart> parts);
+    Message(bool is_multi, bool is_loc_encrypted,
+        std::vector<MessagePart> parts);
     std::string toString() const;
     void print() const;
     bool is_encrypted;

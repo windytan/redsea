@@ -12,7 +12,8 @@
 
 namespace redsea {
 
-GroupType::GroupType(uint16_t type_code) : num((type_code >> 1) & 0xF), ab(type_code & 0x1) {}
+GroupType::GroupType(uint16_t type_code) : num((type_code >> 1) & 0xF),
+  ab(type_code & 0x1) {}
 GroupType::GroupType(const GroupType& obj) : num(obj.num), ab(obj.ab) {}
 
 std::string GroupType::toString() {
@@ -23,9 +24,12 @@ bool operator==(const GroupType& obj1, const GroupType& obj2) {
   return (obj1.num == obj2.num && obj1.ab == obj2.ab);
 }
 
-bool operator<(const GroupType& obj1, const GroupType& obj2) { return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab)); }
+bool operator<(const GroupType& obj1, const GroupType& obj2) {
+  return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab));
+}
 
-Group::Group(std::vector<uint16_t> blockbits) : type(blockbits.size() > 0 ? bits(blockbits.at(1), 11, 5) : TYPE_A), num_blocks(blockbits.size()) {
+Group::Group(std::vector<uint16_t> blockbits) : type(blockbits.size() > 0 ?
+    bits(blockbits.at(1), 11, 5) : TYPE_A), num_blocks(blockbits.size()) {
   if (num_blocks > 0)
     block1 = blockbits[0];
   if (num_blocks > 1) {
@@ -271,7 +275,8 @@ void Station::decodeType2 (Group group) {
   if (group.num_blocks < 3)
     return;
 
-  int rt_position = bits(group.block2, 0, 4) * (group.type.ab == TYPE_A ? 4 : 2);
+  int rt_position = bits(group.block2, 0, 4) *
+    (group.type.ab == TYPE_A ? 4 : 2);
   int prev_textAB = rt_ab_;
   rt_ab_          = bits(group.block2, 4, 1);
 
@@ -281,11 +286,13 @@ void Station::decodeType2 (Group group) {
   std::string chars;
 
   if (group.type.ab == TYPE_A) {
-    updateRadioText(rt_position, {bits(group.block3, 8, 8), bits(group.block3, 0, 8)});
+    updateRadioText(rt_position,
+        {bits(group.block3, 8, 8), bits(group.block3, 0, 8)});
   }
 
   if (group.num_blocks == 4) {
-    updateRadioText(rt_position+2, {bits(group.block4, 8, 8), bits(group.block4, 0, 8)});
+    updateRadioText(rt_position+2,
+        {bits(group.block4, 8, 8), bits(group.block4, 0, 8)});
   }
 
 }
@@ -309,7 +316,8 @@ void Station::decodeType3 (Group group) {
   if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
     tmc_.systemGroup(group.block3);
   } else {
-    printf(", open_data_app: { group: \"%s\", app_name: \"%s\", message: \"0x%02x\" }",
+    printf(", open_data_app: { group: \"%s\", app_name: \"%s\", "
+        "message: \"0x%02x\" }",
         oda_group.toString().c_str(), getAppName(oda_aid).c_str(), oda_msg);
   }
 

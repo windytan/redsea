@@ -53,10 +53,9 @@ uint32_t calcCheckBits(uint32_t dataWord) {
 
 }
 
-BlockStream::BlockStream() : bitcount_(0), left_to_read_(0), wideblock_(0), has_sync_for_(5),
-  group_data_(4), has_block_(5), block_has_errors_(50), bit_stream_()
-
-{
+BlockStream::BlockStream() : bitcount_(0), left_to_read_(0), wideblock_(0),
+  has_sync_for_(5), group_data_(4), has_block_(5), block_has_errors_(50),
+  bit_stream_() {
 
   offset_word_ = {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
 
@@ -125,7 +124,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
     bitcount_ += 26 - left_to_read_;
 
     // Read from radio
-    for (unsigned i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++) {
+    for (unsigned i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++,bitcount_++) {
       wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
     }
 
@@ -150,7 +149,8 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
             unsigned dist = bitcount_ - prevbitcount_;
 
             if (dist % 26 == 0 && dist <= 156 &&
-                (block_for_offset_[prevsync_] + dist/26) % 4 == block_for_offset_[o]) {
+                (block_for_offset_[prevsync_] + dist/26) % 4 ==
+                block_for_offset_[o]) {
               is_in_sync_ = true;
               expected_offset_ = o;
               //printf(":sync!\n");
@@ -202,23 +202,26 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         // Detect & correct burst errors (Section B.2.2)
         } else {
 
-          uint16_t synd_reg = calcSyndrome(block ^ offset_word_[expected_offset_]);
+          uint16_t synd_reg =
+            calcSyndrome(block ^ offset_word_[expected_offset_]);
 
           if (pi_ != 0 && expected_offset_ == A) {
-            //printf(":offset 0: expecting PI%04x, got %04x, xor %04x, syndrome %03x\n",
-            //    pi_, block>>10, pi_ ^ (block>>10), synd_reg);
+            //printf(":offset 0: expecting PI%04x, got %04x, xor %04x, "
+            //  "syndrome %03x\n", pi_, block>>10, pi_ ^ (block>>10), synd_reg);
           }
 
           if (error_lookup_.find(synd_reg) != error_lookup_.end()) {
-            uint32_t corrected_block = (block ^ offset_word_[expected_offset_]) ^ (error_lookup_[synd_reg] << 10);
+            uint32_t corrected_block = (block ^ offset_word_[expected_offset_])
+              ^ (error_lookup_[synd_reg] << 10);
 
             if (calcSyndrome(corrected_block) == 0x000) {
               message = (block >> 10) ^ error_lookup_[synd_reg];
               has_sync_for_[expected_offset_] = true;
             }
 
-            //printf(":offset %d: error corrected using vector %04x for syndrome %03x\n",
-            //    expected_offset_, error_lookup_[synd_reg], synd_reg);
+            //printf(":offset %d: error corrected using vector %04x for "
+            //  "syndrome %03x\n", expected_offset_, error_lookup_[synd_reg],
+            //  synd_reg);
 
           }
 
@@ -249,7 +252,8 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         }
       }
 
-      expected_offset_ = (expected_offset_ == C ? D : (expected_offset_ + 1) % 5);
+      expected_offset_ = (expected_offset_ == C ? D :
+          (expected_offset_ + 1) % 5);
 
       if (expected_offset_ == A) {
         for (unsigned o=A; o<=D; o++)
