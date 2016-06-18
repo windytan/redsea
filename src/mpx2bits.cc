@@ -63,7 +63,7 @@ void BitBuffer::forward(int n) {
   m_tail = (m_tail + n) % m_len;
   m_fill_count -= n;
   if (m_fill_count < 0) {
-    std::cerr << "buffer underrun!\n";
+    //std::cerr << "buffer underrun!\n";
     m_fill_count = 0;
   }
 }

@@ -3,12 +3,11 @@
 
 #define DBG_OUT
 
+#include <cassert>
 #include <complex>
 #include <vector>
 
 #include "liquid/liquid.h"
-#include "wdsp/wdsp.h"
-#include "wdsp/cirbuffer.h"
 
 namespace redsea {
 
