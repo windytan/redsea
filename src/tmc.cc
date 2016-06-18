@@ -50,7 +50,7 @@ std::vector<std::pair<uint16_t,uint16_t>>
   }
 
   // Decode freeform data
-  int bits_left = freeform_data_bits.size();
+  //int bits_left = freeform_data_bits.size();
   std::vector<std::pair<uint16_t,uint16_t>> result;
   while (freeform_data_bits.size() > 4) {
     uint16_t label = popBits(freeform_data_bits, 4);
