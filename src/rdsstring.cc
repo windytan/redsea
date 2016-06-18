@@ -4,7 +4,8 @@
 
 namespace redsea {
 
-RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len), prev_pos_(-1) {
+RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
+  prev_pos_(-1) {
   last_complete_string_ = getString();
 }
 

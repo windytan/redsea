@@ -26,9 +26,11 @@
 namespace redsea {
 
 void printShort(Station station) {
-    printf("%s 0x%04x %s\n", station.getPS().c_str(), station.getPI(), station.getRT().c_str());
+    printf("%s 0x%04x %s\n", station.getPS().c_str(), station.getPI(),
+        station.getRT().c_str());
 
-  //printf("%04x %2d%s TP:%d PTY:%d\n", station.pi, group.type, group.type_ab == 1 ? "B" : "A",
+  //printf("%04x %2d%s TP:%d PTY:%d\n", station.pi, group.type,
+  //    group.type_ab == 1 ? "B" : "A",
   //    group.tp, group.pty);
 }
 
