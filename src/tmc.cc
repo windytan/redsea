@@ -70,19 +70,29 @@ std::vector<std::pair<uint16_t,uint16_t>>
 
 std::string timeString(uint16_t field_data) {
   std::string time_string("");
+
   if (field_data <= 95) {
     char t[6];
     std::snprintf(t, 6, "%02d:%02d", field_data/4, 15*(field_data % 4));
     time_string = t;
+
   } else if (field_data <= 200) {
+    int days = (field_data - 96) / 24;
+    int hour = (field_data - 96) % 24;
     char t[25];
-    std::snprintf(t, 25, "after %d days at %02d:00", (field_data-96)/24,
-        (field_data-96)%24);
+    if (days == 0)
+      std::snprintf(t, 25, "at %02d:00", hour);
+    else if (days == 1)
+      std::snprintf(t, 25, "after 1 day at %02d:00", hour);
+    else
+      std::snprintf(t, 25, "after %d days at %02d:00", days, hour);
     time_string = t;
+
   } else if (field_data <= 231) {
     char t[20];
     std::snprintf(t, 20, "day %d of the month", field_data-200);
     time_string = t;
+
   } else {
     int mo = (field_data-232) / 2;
     bool end_mid = (field_data-232) % 2;
