@@ -106,27 +106,6 @@ std::string timeString(uint16_t field_data) {
   return time_string;
 }
 
-std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
-  std::string q("_");
-  std::regex q_re("_");
-  printf("q_value = %d, q_type=%d\n",q_value,ev.quantifier_type);
-  if (ev.quantifier_type == Q_SMALL_NUMBER) {
-    int num = q_value;
-    if (num > 28)
-      num += (num - 28);
-    q = std::to_string(num);
-  }
-  std::string desc = std::regex_replace(ev.description_with_quantifier,
-      q_re, q);
-  return desc;
-}
-
-std::string ucfirst(std::string in) {
-  if (in.size() > 0)
-    in[0] = std::toupper(in[0]);
-  return in;
-}
-
 uint16_t getQuantifierSize(uint16_t code) {
 
   if (code <= 5)
@@ -136,6 +115,91 @@ uint16_t getQuantifierSize(uint16_t code) {
   else
     return 0;
 
+}
+
+std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
+  std::string q("_");
+  std::regex q_re("_");
+  printf("q_value = %d, q_type=%d\n",q_value,ev.quantifier_type);
+
+  if (getQuantifierSize(ev.quantifier_type) == 5 && q_value == 0)
+    q_value = 32;
+
+  if (ev.quantifier_type == Q_SMALL_NUMBER) {
+    int num = q_value;
+    if (num > 28)
+      num += (num - 28);
+    q = std::to_string(num);
+
+  } else if (ev.quantifier_type == Q_NUMBER) {
+    int num;
+    if (q_value <= 4)
+      num = q_value;
+    else if (q_value <= 14)
+      num = (q_value - 4) * 10;
+    else
+      num = (q_value - 12) * 50;
+    q = std::to_string(num);
+
+  } else if (ev.quantifier_type == Q_LESS_THAN_METRES) {
+    q = "less than " + std::to_string(q_value * 10) + " metres";
+
+  } else if (ev.quantifier_type == Q_PERCENT) {
+    q = std::to_string(q_value == 32 ? 0 : q_value * 5) + " %";
+
+  } else if (ev.quantifier_type == Q_UPTO_KMH) {
+    q = "of up to " + std::to_string(q_value * 5) + " km/h";
+
+  } else if (ev.quantifier_type == Q_UPTO_TIME) {
+
+    if (q_value <= 10)
+      q = "of up to " + std::to_string(q_value * 5) + " minutes";
+    else if (q_value <= 22)
+      q = "of up to " + std::to_string(q_value - 10) + " hours";
+    else
+      q = "of up to " + std::to_string((q_value - 20) * 6) + " hours";
+
+  } else if (ev.quantifier_type == Q_DEG_CELSIUS) {
+    q = std::to_string(q_value - 51) + " degrees Celsius";
+
+  } else if (ev.quantifier_type == Q_TIME) {
+    int m = (q_value - 1) * 10;
+    int h = m / 60;
+    m = m % 60;
+
+    char t[6];
+    std::snprintf(t, 6, "%02d:%02d", m, h);
+    q = t;
+
+  } else if (ev.quantifier_type == Q_TONNES) {
+    int decitonnes;
+    if (q_value <= 100)
+      decitonnes = q_value;
+    else
+      decitonnes = 100 + (q_value - 100) * 5;
+
+    int whole_tonnes = decitonnes / 10;
+    decitonnes = decitonnes % 10;
+
+    q = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes);
+
+  } else if (ev.quantifier_type == Q_UPTO_MILLIMETRES) {
+    q = "of up to " + std::to_string(q_value) + " millimetres";
+
+  } else {
+    q = "TODO";
+
+  }
+
+  std::string desc = std::regex_replace(ev.description_with_quantifier,
+      q_re, q);
+  return desc;
+}
+
+std::string ucfirst(std::string in) {
+  if (in.size() > 0)
+    in[0] = std::toupper(in[0]);
+  return in;
 }
 
 } // namespace
