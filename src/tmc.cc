@@ -127,6 +127,17 @@ std::string ucfirst(std::string in) {
   return in;
 }
 
+uint16_t getQuantifierSize(uint16_t code) {
+
+  if (code <= 5)
+    return 5;
+  else if (code <= 12)
+    return 8;
+  else
+    return 0;
+
+}
+
 } // namespace
 
 Event::Event() {
@@ -404,12 +415,24 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
           length_affected = field_data;
           has_length_affected = true;
 
-        // Quantifier
-        } else if (label == 5) {
-          // TODO: check correct field length for quantifier type
+        // 5-bit quantifier
+        } else if (label == 4) {
           if (events.size() > 0 && quantifiers.count(events.size()-1) == 0 &&
-              getEvent(events.back()).allows_quantifier) {
+              getEvent(events.back()).allows_quantifier &&
+              getQuantifierSize(getEvent(events.back()).quantifier_type) == 5) {
             quantifiers.insert({events.size()-1, field_data});
+          } else {
+            printf(" /* ignoring invalid quantifier */");
+          }
+
+        // 8-bit quantifier
+        } else if (label == 5) {
+          if (events.size() > 0 && quantifiers.count(events.size()-1) == 0 &&
+              getEvent(events.back()).allows_quantifier &&
+              getQuantifierSize(getEvent(events.back()).quantifier_type) == 8) {
+            quantifiers.insert({events.size()-1, field_data});
+          } else {
+            printf(" /* ignoring invalid quantifier */");
           }
 
         // Supplementary info
