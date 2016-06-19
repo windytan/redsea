@@ -357,7 +357,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
 }
 
 void Message::print() const {
-  printf(", traffic_message: { ");
+  printf(", tmc_message: { ");
 
   if (!is_complete || events.empty()) {
     printf("}\n");
