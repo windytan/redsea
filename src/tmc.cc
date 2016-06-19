@@ -370,17 +370,17 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 Message::Message(bool is_multi, bool is_loc_encrypted,
-    std::vector<MessagePart> parts) : is_encrypted(is_loc_encrypted), events() {
+    std::vector<MessagePart> parts) : is_encrypted_(is_loc_encrypted), events_() {
 
   // single-group
   if (!is_multi) {
-    duration  = bits(parts[0].data[0], 0, 3);
-    divertadv = bits(parts[0].data[1], 15, 1);
-    direction = bits(parts[0].data[1], 14, 1);
-    extent    = bits(parts[0].data[1], 11, 3);
-    events.push_back(bits(parts[0].data[1], 0, 11));
-    location  = parts[0].data[2];
-    is_complete = true;
+    duration_  = bits(parts[0].data[0], 0, 3);
+    divertadv_ = bits(parts[0].data[1], 15, 1);
+    direction_ = bits(parts[0].data[1], 14, 1);
+    extent_    = bits(parts[0].data[1], 11, 3);
+    events_.push_back(bits(parts[0].data[1], 0, 11));
+    location_  = parts[0].data[2];
+    is_complete_ = true;
 
   // multi-group
   } else {
@@ -389,13 +389,13 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     if (!parts[0].is_received)
       return;
 
-    is_complete=true;
+    is_complete_ = true;
 
     // First group
-    direction = bits(parts[0].data[0], 14, 1);
-    extent    = bits(parts[0].data[0], 11, 3);
-    events.push_back(bits(parts[0].data[0], 0, 11));
-    location  = parts[0].data[1];
+    direction_ = bits(parts[0].data[0], 14, 1);
+    extent_    = bits(parts[0].data[0], 11, 3);
+    events_.push_back(bits(parts[0].data[0], 0, 11));
+    location_  = parts[0].data[1];
 
     // Subsequent parts
     if (parts[1].is_received) {
@@ -407,45 +407,48 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
 
         // Duration
         if (label == 0) {
-          duration = field_data;
+          duration_ = field_data;
 
         // Length of route affected
         } else if (label == 2) {
-          length_affected = field_data;
-          has_length_affected = true;
+          length_affected_ = field_data;
+          has_length_affected_ = true;
 
         // 5-bit quantifier
         } else if (label == 4) {
-          if (events.size() > 0 && quantifiers.count(events.size()-1) == 0 &&
-              getEvent(events.back()).allows_quantifier &&
-              getQuantifierSize(getEvent(events.back()).quantifier_type) == 5) {
-            quantifiers.insert({events.size()-1, field_data});
+          if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
+              getEvent(events_.back()).allows_quantifier &&
+              getQuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
+            quantifiers_.insert({events_.size()-1, field_data});
           } else {
             printf(" /* ignoring invalid quantifier */");
           }
 
         // 8-bit quantifier
         } else if (label == 5) {
-          if (events.size() > 0 && quantifiers.count(events.size()-1) == 0 &&
-              getEvent(events.back()).allows_quantifier &&
-              getQuantifierSize(getEvent(events.back()).quantifier_type) == 8) {
-            quantifiers.insert({events.size()-1, field_data});
+          if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
+              getEvent(events_.back()).allows_quantifier &&
+              getQuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
+            quantifiers_.insert({events_.size()-1, field_data});
           } else {
             printf(" /* ignoring invalid quantifier */");
           }
 
         // Supplementary info
         } else if (label == 6) {
-          supplementary.push_back(field_data);
+          supplementary_.push_back(field_data);
 
         // Start / stop time
         } else if (label == 7) {
-          time_starts = field_data;
-          has_time_starts = true;
+          time_starts_ = field_data;
+          has_time_starts_ = true;
 
         } else if (label == 8) {
-          time_until = field_data;
-          has_time_until = true;
+          time_until_ = field_data;
+          has_time_until_ = true;
+
+        } else if (label == 10) {
+          diversion_.push_back(field_data);
 
         } else {
           printf(" /* TODO label=%d (data=0x%04x) */",label,field_data);
@@ -458,23 +461,23 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
 void Message::print() const {
   printf(", tmc_message: { ");
 
-  if (!is_complete || events.empty()) {
+  if (!is_complete_ || events_.empty()) {
     printf("/* incomplete */ }\n");
     return;
   }
 
-  printf("event_codes: [ %s ]", join(events, ", ").c_str());
+  printf("event_codes: [ %s ]", join(events_, ", ").c_str());
 
-  if (supplementary.size() > 0)
-    printf(", supplementary_codes: [ %s ]", join(supplementary, ", ").c_str());
+  if (supplementary_.size() > 0)
+    printf(", supplementary_codes: [ %s ]", join(supplementary_, ", ").c_str());
 
   std::vector<std::string> sentences;
-  for (size_t i=0; i<events.size(); i++) {
+  for (size_t i=0; i<events_.size(); i++) {
     std::string desc;
-    if (isEvent(events[0])) {
-      Event ev = getEvent(events[0]);
-      if (quantifiers.count(0) == 1) {
-        desc = getDescWithQuantifier(ev, quantifiers.at(0));
+    if (isEvent(events_[0])) {
+      Event ev = getEvent(events_[0]);
+      if (quantifiers_.count(0) == 1) {
+        desc = getDescWithQuantifier(ev, quantifiers_.at(0));
       } else {
         desc = ev.description;
       }
@@ -482,7 +485,7 @@ void Message::print() const {
     }
   }
 
-  for (uint16_t s : supplementary) {
+  for (uint16_t s : supplementary_) {
     if (isSuppl(s))
       sentences.push_back(ucfirst(g_suppl_data.find(s)->second));
   }
@@ -492,15 +495,15 @@ void Message::print() const {
 
   printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, "
          "diversion_advised: %s",
-         (is_encrypted ? "encrypted_" : ""), location,
-         direction ? "negative" : "positive",
-         extent, divertadv ? "true" : "false" );
+         (is_encrypted_ ? "encrypted_" : ""), location_,
+         direction_ ? "negative" : "positive",
+         extent_, divertadv_ ? "true" : "false" );
 
 
-  if (has_time_starts)
-    printf(", starts: \"%s\"", timeString(time_starts).c_str());
-  if (has_time_until)
-    printf(", until: \"%s\"", timeString(time_until).c_str());
+  if (has_time_starts_)
+    printf(", starts: \"%s\"", timeString(time_starts_).c_str());
+  if (has_time_until_)
+    printf(", until: \"%s\"", timeString(time_until_).c_str());
 
 
   printf (" }");

@@ -85,23 +85,26 @@ class Message {
         std::vector<MessagePart> parts);
     std::string toString() const;
     void print() const;
-    bool is_encrypted;
-    uint16_t duration;
-    uint16_t duration_type;
-    bool divertadv;
-    uint16_t direction;
-    uint16_t extent;
-    std::vector<uint16_t> events;
-    std::vector<uint16_t> supplementary;
-    std::map<uint16_t, uint16_t> quantifiers;
-    uint16_t location;
-    bool is_complete;
-    bool has_length_affected;
-    uint16_t length_affected;
-    bool has_time_until;
-    uint16_t time_until;
-    bool has_time_starts;
-    uint16_t time_starts;
+
+  private:
+    bool is_encrypted_;
+    uint16_t duration_;
+    uint16_t duration_type_;
+    bool divertadv_;
+    uint16_t direction_;
+    uint16_t extent_;
+    std::vector<uint16_t> events_;
+    std::vector<uint16_t> supplementary_;
+    std::map<uint16_t, uint16_t> quantifiers_;
+    std::vector<uint16_t> diversion_;
+    uint16_t location_;
+    bool is_complete_;
+    bool has_length_affected_;
+    uint16_t length_affected_;
+    bool has_time_until_;
+    uint16_t time_until_;
+    bool has_time_starts_;
+    uint16_t time_starts_;
 };
 
 } // namespace tmc
