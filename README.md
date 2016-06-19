@@ -46,7 +46,7 @@ Live reception with rtl_fm:
 rtl_fm -M fm -f 87.9M -l 0 -A std -p 0 -s 228k -F 9 | ./src/redsea
 ```
 
-Decoding a pre-recorded multiplex (demodulated baseband) signal via SoX:
+Decoding a pre-recorded FM multiplex signal via SoX:
 
 ```
 sox multiplex.wav -t .s16 -r 228k - | ./src/redsea
