@@ -404,7 +404,6 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
       for (auto p : freeform) {
         uint16_t label = p.first;
         uint16_t field_data = p.second;
-        //printf ("tmc: label %04x: field_data %04x\n",label,field_data);
 
         // Duration
         if (label == 0) {
@@ -449,7 +448,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
           has_time_until = true;
 
         } else {
-          printf(" /* TODO label=%d */",label);
+          printf(" /* TODO label=%d (data=0x%04x) */",label,field_data);
         }
       }
     }
