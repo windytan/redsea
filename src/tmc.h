@@ -34,7 +34,7 @@ class Event {
   public:
     Event();
     Event(std::string, std::string, uint16_t, uint16_t, uint16_t, uint16_t,
-        uint16_t, uint16_t);
+        uint16_t, uint16_t, bool);
     std::string description;
     std::string description_with_quantifier;
     uint16_t nature;
@@ -43,6 +43,7 @@ class Event {
     uint16_t directionality;
     uint16_t urgency;
     uint16_t update_class;
+    bool allows_quantifier;
 
 };
 
@@ -92,6 +93,7 @@ class Message {
     uint16_t extent;
     std::vector<uint16_t> events;
     std::vector<uint16_t> supplementary;
+    std::map<uint16_t, uint16_t> quantifiers;
     uint16_t location;
     bool is_complete;
     bool has_length_affected;

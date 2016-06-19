@@ -2,7 +2,9 @@
 
 #include <deque>
 #include <fstream>
+#include <regex>
 #include <sstream>
+#include <string>
 
 #include "util.h"
 
@@ -93,10 +95,25 @@ std::string timeString(uint16_t field_data) {
   return time_string;
 }
 
-std::string sentence(std::string in) {
-  std::string result = in + ".";
-  result[0] = std::toupper(result[0]);
-  return result;
+std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
+  std::string q("_");
+  std::regex q_re("_");
+  printf("q_value = %d, q_type=%d\n",q_value,ev.quantifier_type);
+  if (ev.quantifier_type == Q_SMALL_NUMBER) {
+    int num = q_value;
+    if (num > 28)
+      num += (num - 28);
+    q = std::to_string(num);
+  }
+  std::string desc = std::regex_replace(ev.description_with_quantifier,
+      q_re, q);
+  return desc;
+}
+
+std::string ucfirst(std::string in) {
+  if (in.size() > 0)
+    in[0] = std::toupper(in[0]);
+  return in;
 }
 
 } // namespace
@@ -107,9 +124,10 @@ Event::Event() {
 
 Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature,
     uint16_t _qtype, uint16_t _dur, uint16_t _dir, uint16_t _urg,
-    uint16_t _class) : description(_desc), description_with_quantifier(_desc_q),
-    nature(_nature), quantifier_type(_qtype), duration_type(_dur),
-    directionality(_dir), urgency(_urg), update_class(_class) {
+    uint16_t _class, bool _allow_q) : description(_desc),
+    description_with_quantifier(_desc_q), nature(_nature),
+    quantifier_type(_qtype), duration_type(_dur), directionality(_dir),
+    urgency(_urg), update_class(_class), allows_quantifier(_allow_q) {
 }
 
 Event getEvent(uint16_t code) {
@@ -338,16 +356,30 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
 
         // Length of route affected
         } else if (label == 2) {
-            length_affected = field_data;
-            has_length_affected = true;
+          length_affected = field_data;
+          has_length_affected = true;
+
+        // Quantifier
+        } else if (label == 5) {
+          // TODO: check correct field length for quantifier type
+          if (events.size() > 0 && quantifiers.count(events.size()-1) == 0 &&
+              getEvent(events.back()).allows_quantifier) {
+            quantifiers.insert({events.size()-1, field_data});
+          }
+
+        // Supplementary info
+        } else if (label == 6) {
+          supplementary.push_back(field_data);
 
         // Start / stop time
         } else if (label == 7) {
           time_starts = field_data;
           has_time_starts = true;
+
         } else if (label == 8) {
           time_until = field_data;
           has_time_until = true;
+
         } else {
           printf(" /* TODO label=%d */",label);
         }
@@ -364,11 +396,20 @@ void Message::print() const {
     return;
   }
 
-  if (events.size() > 1) {
-    printf("events: [ %s ]", commaJoin(events).c_str());
-  } else {
-    printf("event: { code: %d, description: \"%s\" }", events[0],
-        sentence(getEvent(events[0]).description).c_str());
+  printf("event: { codes: [ %s ]", join(events, ", ").c_str());
+
+  std::vector<std::string> sentences;
+  for (int i=0; i<events.size(); i++) {
+    std::string desc;
+    if (isEvent(events[0])) {
+      Event ev = getEvent(events[0]);
+      if (quantifiers.count(0) == 1) {
+        desc = getDescWithQuantifier(ev, quantifiers.at(0));
+      } else {
+        desc = ev.description;
+      }
+      sentences.push_back(ucfirst(desc));
+    }
   }
 
   printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, "
