@@ -105,7 +105,7 @@ void BitBuffer::append(uint8_t input_element) {
 BitStream::BitStream() : subcarr_freq_(FC_0), gain_(1.0f), counter_(0),
   tot_errs_(2), reading_frame_(0), bit_buffer_(BITBUFLEN),
   antialias_fir_(FIR(1500.0f / FS, 512)),
-  phase_fir_(FIR(4000.0f / FS, 64)),
+  phase_fir_(FIR(4000.0f / FS, 256)),
   is_eof_(false),
   m_inte(0.0f), liq_modem_(modem_create(LIQUID_MODEM_DPSK2)),
   agc_(agc_crcf_create()),
@@ -123,8 +123,8 @@ BitStream::BitStream() : subcarr_freq_(FC_0), gain_(1.0f), counter_(0),
   float coeffs[antialias_fir_.size()];
   for (int i=0;i<(int)antialias_fir_.size();i++)
     coeffs[i] = antialias_fir_[i];
-  float coeffs_phase[64];
-  for (int i=0;i<64;i++)
+  float coeffs_phase[256];
+  for (int i=0;i<256;i++)
     coeffs_phase[i] = phase_fir_[i];
 
   firfilt_ = firfilt_crcf_create(coeffs,antialias_fir_.size());
