@@ -13,6 +13,7 @@ namespace redsea {
 namespace tmc {
 
 std::map<uint16_t,Event> g_event_data;
+std::map<uint16_t,std::string> g_suppl_data;
 
 namespace {
 
@@ -139,6 +140,14 @@ Event getEvent(uint16_t code) {
 
 }
 
+bool isEvent(uint16_t code) {
+  return g_event_data.count(code) != 0;
+}
+
+bool isSuppl(uint16_t code) {
+  return g_suppl_data.count(code) != 0;
+}
+
 std::string getSupplInfoString(uint16_t code) {
   std::map<uint16_t,std::string> suppl_info_list;
   return suppl_info_list[code];
@@ -173,9 +182,34 @@ void loadEventData() {
       else
         nums[col-3] = std::stoi(val);
     }
+    bool allow_q = (strings[1].size() > 0);
 
     g_event_data.insert({code, {strings[0], strings[1], nums[0], nums[1],
-        nums[2], nums[3], nums[4], nums[5]}});
+        nums[2], nums[3], nums[4], nums[5], allow_q}});
+
+  }
+
+  in.close();
+
+  in.open("data/tmc_suppl.csv");
+
+  if (!in.is_open())
+    return;
+
+  for (std::string line; std::getline(in, line); ) {
+    if (!in.good())
+      break;
+
+    std::stringstream iss(line);
+    uint16_t code;
+    std::string code_str,desc;
+
+    std::getline(iss, code_str, ';');
+    std::getline(iss, desc, ';');
+
+    code = std::stoi(code_str);
+
+    g_suppl_data.insert({code, desc});
 
   }
 
@@ -411,6 +445,14 @@ void Message::print() const {
       sentences.push_back(ucfirst(desc));
     }
   }
+
+  for (uint16_t s : supplementary) {
+    if (isSuppl(s))
+      sentences.push_back(ucfirst(g_suppl_data.find(s)->second));
+  }
+
+  printf(", description: \"%s\" }",
+      std::string(join(sentences, ". ") + ".").c_str());
 
   printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, "
          "diversion_advised: %s",
