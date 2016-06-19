@@ -5,4 +5,4 @@
 #include <map>
 #include <string>
 
-#endif
+#endif // REDSEA_H_
