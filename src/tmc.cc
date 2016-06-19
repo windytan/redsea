@@ -28,7 +28,7 @@ uint16_t popBits(std::deque<int>& bit_deque, int len) {
   return result;
 }
 
-// label, field_data
+// label, field_data (ISO 14819-1: 5.5)
 std::vector<std::pair<uint16_t,uint16_t>>
   getFreeformFields(std::vector<MessagePart> parts) {
 
@@ -327,7 +327,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       if (ci != current_ci_ /* TODO 15-second limit */) {
         Message message(true, is_encrypted_, multi_group_buffer_);
         message.print();
-        multi_group_buffer_[0].is_received = false;
+        for (auto& g : multi_group_buffer_)
+          g.is_received = false;
         current_ci_ = ci;
       }
 
