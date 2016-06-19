@@ -11,13 +11,18 @@ enum {
   A, B, C, CI, D
 };
 
+enum eInputType {
+  INPUT_MPX, INPUT_ASCIIBITS
+};
+
 class BlockStream {
   public:
-  BlockStream();
+  BlockStream(int input_type=INPUT_MPX);
   std::vector<uint16_t> getNextGroup();
   bool isEOF() const;
 
   private:
+  int getNextBit();
   void uncorrectable();
   unsigned bitcount_;
   unsigned prevbitcount_;
@@ -34,10 +39,12 @@ class BlockStream {
   std::vector<uint16_t> group_data_;
   std::vector<bool> has_block_;
   std::vector<bool> block_has_errors_;
-  BitStream bit_stream_;
+  DPSK dpsk_;
+  AsciiBits ascii_bits_;
   bool has_whole_group_;
   std::map<uint16_t,uint16_t> error_lookup_;
   unsigned data_length_;
+  const int input_type_;
 
 };
 

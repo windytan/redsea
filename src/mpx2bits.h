@@ -34,52 +34,64 @@ class BitBuffer {
 
 };
 
-class BitStream {
+class DPSK {
   public:
-  BitStream();
-  ~BitStream();
-  int getNextBit();
-  bool isEOF() const;
+    DPSK();
+    ~DPSK();
+    int getNextBit();
+    bool isEOF() const;
+  private:
+    void demodulateMoreBits();
+    void biphase(float acc);
+    void deltaBit(int b);
+    double mixer_phi_;
+    float clock_offset_;
+    float prevclock_;
+    float prev_bb_;
+    float acc_;
+    int   numsamples_;
+    float subcarr_freq_;
+    float gain_;
+
+    float prev_acc_;
+    unsigned counter_;
+    std::vector<int> tot_errs_;
+    unsigned reading_frame_;
+
+    int dbit_;
+
+    BitBuffer bit_buffer_;
+
+    std::vector<float> antialias_fir_;
+    std::vector<float> phase_fir_;
+
+    bool is_eof_;
+
+    float m_inte;
+
+    modem liq_modem_;
+    agc_crcf agc_;
+    nco_crcf nco_if_;
+
+    float ph0_;
+
+    wdelayf phase_delay_;
+
+    firfilt_crcf firfilt_;
+    firfilt_crcf firfilt_phase_;
+
+};
+
+class AsciiBits {
+
+  public:
+    AsciiBits();
+    ~AsciiBits();
+    int getNextBit();
+    bool isEOF() const;
 
   private:
-  void demodulateMoreBits();
-  void biphase(float acc);
-  void deltaBit(int b);
-  double mixer_phi_;
-  float clock_offset_;
-  float prevclock_;
-  float prev_bb_;
-  float acc_;
-  int   numsamples_;
-  float subcarr_freq_;
-  float gain_;
-
-  float prev_acc_;
-  unsigned counter_;
-  std::vector<int>    tot_errs_;
-  unsigned reading_frame_;
-
-  int dbit_;
-
-  BitBuffer bit_buffer_;
-
-  std::vector<float> antialias_fir_;
-  std::vector<float> phase_fir_;
-
-  bool is_eof_;
-
-  float m_inte;
-
-  modem liq_modem_;
-  agc_crcf agc_;
-  nco_crcf nco_if_;
-
-  float ph0_;
-
-  wdelayf phase_delay_;
-
-  firfilt_crcf firfilt_;
-  firfilt_crcf firfilt_phase_;
+    bool is_eof_;
 
 };
 

@@ -53,9 +53,9 @@ uint32_t calcCheckBits(uint32_t dataWord) {
 
 }
 
-BlockStream::BlockStream() : bitcount_(0), left_to_read_(0), wideblock_(0),
-  has_sync_for_(5), group_data_(4), has_block_(5), block_has_errors_(50),
-  bit_stream_() {
+BlockStream::BlockStream(int input_type) : bitcount_(0), left_to_read_(0),
+  wideblock_(0), has_sync_for_(5), group_data_(4), has_block_(5),
+  block_has_errors_(50), dpsk_(), ascii_bits_(), input_type_(input_type) {
 
   offset_word_ = {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
 
@@ -71,6 +71,18 @@ BlockStream::BlockStream() : bitcount_(0), left_to_read_(0), wideblock_(0),
     }
   }
 
+}
+
+int BlockStream::getNextBit() {
+  int result = 0;
+  if (input_type_ == INPUT_MPX) {
+    result = dpsk_.getNextBit();
+
+  } else if (input_type_ == INPUT_ASCIIBITS) {
+    result = ascii_bits_.getNextBit();
+  }
+
+  return result;
 }
 
 void BlockStream::uncorrectable() {
@@ -125,7 +137,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
     // Read from radio
     for (unsigned i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++,bitcount_++) {
-      wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
+      wideblock_ = (wideblock_ << 1) + getNextBit();
     }
 
     left_to_read_ = 26;
@@ -194,7 +206,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         } else if (expected_offset_ == A && pi_ != 0 &&
             ((wideblock_ >> 10) & MASK_16BIT) == pi_) {
           message = pi_;
-          wideblock_ = (wideblock_ << 1) + bit_stream_.getNextBit();
+          wideblock_ = (wideblock_ << 1) + getNextBit();
           has_sync_for_[A] = true;
           left_to_read_ = 25;
           //printf(":offset 0: clock slip corrected\n");
@@ -272,7 +284,10 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 }
 
 bool BlockStream::isEOF() const {
-  return bit_stream_.isEOF();
+  if (input_type_ == INPUT_MPX)
+    return dpsk_.isEOF();
+  else
+    return ascii_bits_.isEOF();
 }
 
 } // namespace redsea

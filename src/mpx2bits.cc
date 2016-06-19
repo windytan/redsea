@@ -100,10 +100,8 @@ void BitBuffer::append(uint8_t input_element) {
 
 }
 
-
-
-BitStream::BitStream() : subcarr_freq_(FC_0), gain_(1.0f), counter_(0),
-  tot_errs_(2), reading_frame_(0), bit_buffer_(BITBUFLEN),
+DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
+  counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(BITBUFLEN),
   antialias_fir_(FIR(1500.0f / FS, 512)),
   phase_fir_(FIR(4000.0f / FS, 256)),
   is_eof_(false),
@@ -133,13 +131,13 @@ BitStream::BitStream() : subcarr_freq_(FC_0), gain_(1.0f), counter_(0),
   agc_crcf_set_bandwidth(agc_,1e-3f);
 }
 
-BitStream::~BitStream() {
+DPSK::~DPSK() {
   modem_destroy(liq_modem_);
   agc_crcf_destroy(agc_);
   nco_crcf_destroy(nco_if_);
 }
 
-void BitStream::demodulateMoreBits() {
+void DPSK::demodulateMoreBits() {
 
   int16_t sample[IBUFLEN];
   int bytesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
@@ -189,7 +187,7 @@ void BitStream::demodulateMoreBits() {
 
 }
 
-int BitStream::getNextBit() {
+int DPSK::getNextBit() {
   while (bit_buffer_.getFillCount() < 1 && !isEOF())
     demodulateMoreBits();
 
@@ -201,7 +199,33 @@ int BitStream::getNextBit() {
   return bit;
 }
 
-bool BitStream::isEOF() const {
+bool DPSK::isEOF() const {
+  return is_eof_;
+}
+
+AsciiBits::AsciiBits() : is_eof_(false) {
+
+}
+
+AsciiBits::~AsciiBits() {
+
+}
+
+int AsciiBits::getNextBit() {
+  int result = 0;
+  while (result != '0' && result != '1' && result != EOF)
+    result = getchar();
+
+  if (result == EOF) {
+    is_eof_ = true;
+    return 0;
+  }
+
+  return (result == '1');
+
+}
+
+bool AsciiBits::isEOF() const {
   return is_eof_;
 }
 

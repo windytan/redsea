@@ -18,6 +18,7 @@
 
 #include "redsea.h"
 
+#include <getopt.h>
 #include <iostream>
 
 #include "bits2blocks.h"
@@ -36,8 +37,22 @@ void printShort(Station station) {
 
 } // namespace redsea
 
-int main() {
-  redsea::BlockStream block_stream;
+int main(int argc, char** argv) {
+
+  int option_char;
+  int input_type = redsea::INPUT_MPX;
+
+  while ((option_char = getopt(argc, argv, "b")) != EOF) {
+    switch (option_char) {
+      case 'b':
+        input_type = redsea::INPUT_ASCIIBITS;
+        break;
+      case '?':
+        break;
+    }
+  }
+
+  redsea::BlockStream block_stream(input_type);
   std::map<uint16_t, redsea::Station> stations;
 
   uint16_t pi=0, prev_new_pi=0, new_pi=0;

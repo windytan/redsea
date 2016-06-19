@@ -1,6 +1,6 @@
 # redsea
 
-redsea is a command-line utility that decodes
+redsea is a lightweight command-line utility that decodes
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) data from FM broadcasts
 and prints it to the terminal. It works well with rtl_fm.
 
@@ -8,7 +8,7 @@ and prints it to the terminal. It works well with rtl_fm.
 
 ## Features
 
-Redsea takes a wideband FM multiplex signal as input. It decodes the following info from RDS:
+Redsea decodes the following info from RDS:
 
 * Program Identification code (PI)
 * Program Service name (PS)
@@ -19,8 +19,6 @@ Redsea takes a wideband FM multiplex signal as input. It decodes the following i
 * Clock Time and Date (CT)
 * Program Item Number (PIN)
 * Traffic Message Channel (TMC)
-
-Redsea is a light-weight command line utility.
 
 Output format is currently JSON structures.
 
@@ -48,15 +46,17 @@ Live reception with rtl_fm:
 rtl_fm -M fm -f 87.9M -l 0 -A std -p 0 -s 228k -F 9 | ./src/redsea
 ```
 
-Decoding a pre-recorded multiplex signal via SoX:
+Decoding a pre-recorded multiplex (demodulated baseband) signal via SoX:
 
 ```
 sox multiplex.wav -t .s16 -r 228k - | ./src/redsea
 ```
 
-## Input format
+Decoding a stream of ASCII `0`s and `1`s:
 
-Redsea expects an FM multiplex signal, i.e. the full baseband signal of an FM station after demodulation, as a single-channel, 16-bit, signed-integer PCM stream sampled at 228 kHz via standard input.
+```
+./src/redsea -b < bits.txt
+```
 
 ## Licensing
 
