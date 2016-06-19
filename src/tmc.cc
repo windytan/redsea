@@ -493,6 +493,10 @@ void Message::print() const {
   printf(", description: \"%s\"",
       std::string(join(sentences, ". ") + ".").c_str());
 
+  if (!diversion_.empty()) {
+    printf(", diversion_route: [ %s ]", join(diversion_, ", ").c_str());
+  }
+
   printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, "
          "diversion_advised: %s",
          (is_encrypted_ ? "encrypted_" : ""), location_,
