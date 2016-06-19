@@ -207,7 +207,7 @@ void TMC::systemGroup(uint16_t message) {
     if (mgs_u)
       scope.push_back("\"urban\"");
 
-    printf(", scope: [ %s ]", commaJoin(scope).c_str());
+    printf(", scope: [ %s ]", join(scope, ", ").c_str());
 
     printf(" } }");
   }

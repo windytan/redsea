@@ -7,22 +7,22 @@ uint16_t bits (uint16_t bitstring, int starting_at, int len) {
   return ((bitstring >> starting_at) & ((1<<len) - 1));
 }
 
-std::string commaJoin(std::vector<std::string> strings) {
+std::string join(std::vector<std::string> strings, std::string d) {
   std::string result("");
   for (size_t i=0; i<strings.size(); i++) {
     result += strings[i];
     if (i < strings.size()-1)
-      result += ", ";
+      result += d;
   }
   return result;
 }
 
-std::string commaJoin(std::vector<std::uint16_t> nums) {
+std::string join(std::vector<std::uint16_t> nums, std::string d) {
   std::string result("");
   for (size_t i=0; i<nums.size(); i++) {
     result += std::to_string(nums[i]);
     if (i < nums.size()-1)
-      result += ", ";
+      result += d;
   }
   return result;
 }
