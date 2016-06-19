@@ -463,10 +463,10 @@ void Message::print() const {
     return;
   }
 
-  printf("event: { codes: [ %s ]", join(events, ", ").c_str());
+  printf("event_codes: [ %s ]", join(events, ", ").c_str());
 
   if (supplementary.size() > 0)
-    printf(", supplementary: [ %s ]", join(supplementary, ", ").c_str());
+    printf(", supplementary_codes: [ %s ]", join(supplementary, ", ").c_str());
 
   std::vector<std::string> sentences;
   for (size_t i=0; i<events.size(); i++) {
@@ -487,7 +487,7 @@ void Message::print() const {
       sentences.push_back(ucfirst(g_suppl_data.find(s)->second));
   }
 
-  printf(", description: \"%s\" }",
+  printf(", description: \"%s\"",
       std::string(join(sentences, ". ") + ".").c_str());
 
   printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, "
