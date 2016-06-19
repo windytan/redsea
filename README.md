@@ -18,6 +18,7 @@ Redsea takes a wideband FM multiplex signal as input. It decodes the following i
 * Alternate Frequencies (AF)
 * Clock Time and Date (CT)
 * Program Item Number (PIN)
+* Traffic Message Channel (TMC)
 
 Redsea is a light-weight command line utility.
 
