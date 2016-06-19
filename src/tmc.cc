@@ -444,7 +444,7 @@ void Message::print() const {
   printf("event: { codes: [ %s ]", join(events, ", ").c_str());
 
   std::vector<std::string> sentences;
-  for (int i=0; i<events.size(); i++) {
+  for (size_t i=0; i<events.size(); i++) {
     std::string desc;
     if (isEvent(events[0])) {
       Event ev = getEvent(events[0]);
