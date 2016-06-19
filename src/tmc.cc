@@ -466,6 +466,9 @@ void Message::print() const {
 
   printf("event: { codes: [ %s ]", join(events, ", ").c_str());
 
+  if (supplementary.size() > 0)
+    printf(", supplementary: [ %s ]", join(supplementary, ", ").c_str());
+
   std::vector<std::string> sentences;
   for (size_t i=0; i<events.size(); i++) {
     std::string desc;
@@ -501,7 +504,7 @@ void Message::print() const {
     printf(", until: \"%s\"", timeString(time_until).c_str());
 
 
-  printf ("}");
+  printf (" }");
 
 }
 
