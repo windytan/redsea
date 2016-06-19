@@ -437,7 +437,7 @@ void Message::print() const {
   printf(", tmc_message: { ");
 
   if (!is_complete || events.empty()) {
-    printf("}\n");
+    printf("/* incomplete */ }\n");
     return;
   }
 
