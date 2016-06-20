@@ -172,6 +172,8 @@ void DPSK::demodulateMoreBits() {
     firfilt_crcf_push(firfilt_phase_, dphc);
 
     firfilt_crcf_execute(firfilt_phase_, &dphc_lpf);
+
+    //printf("pe:%f,%f\n",real(shaped_sample_unnorm), imag(shaped_sample_unnorm));
     if (numsamples_ % 192 == 0) {
       unsigned bit = real(dphc_lpf)>0;
       //modem_demodulate(liq_modem_, shaped_sample, &bit);
