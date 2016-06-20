@@ -561,7 +561,7 @@ void Message::print() const {
     printf(", diversion_route: [ %s ]", join(diversion_, ", ").c_str());
   }
 
-  printf(", %slocation: \"0x%02x\", direction: \"%s\", extent: %d, "
+  printf(", %slocation: %d, direction: \"%s\", extent: %d, "
          "diversion_advised: %s",
          (is_encrypted_ ? "encrypted_" : ""), location_,
          direction_ ? "negative" : "positive",
