@@ -14,6 +14,8 @@ autoreconf --install
 make
 ```
 
+If you get an error message about the STDCXX_11 macro, try installing `autoconf-archive`.
+
 ## Usage
 
 ### Live decoding with rtl_fm
