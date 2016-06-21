@@ -14,21 +14,29 @@ autoreconf --install
 make
 ```
 
+If you get an error message about the STDCXX_11 macro, try installing `autoconf-archive`.
+
 ## Usage
 
-Live reception with rtl_fm:
+### Live decoding with rtl_fm
 
 ```
 rtl_fm -M fm -f 87.9M -l 0 -A std -p 0 -s 228k -F 9 | ./src/redsea
 ```
 
-Decoding a pre-recorded FM multiplex signal via SoX:
+The `-f` parameter sets the station frequency. Note that `rtl_fm` will tune a bit off, this is normal behavior.
+
+### Decoding a pre-recorded signal with SoX
 
 ```
 sox multiplex.wav -t .s16 -r 228k - | ./src/redsea
 ```
 
-Decoding a stream of ASCII `0`s and `1`s:
+The signal should have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).
+
+### Decoding serial data
+
+Raw serial RDS bits can be fed into the program as ASCII `0`s and `1`s using the `-b` option:
 
 ```
 ./src/redsea -b < bits.txt
