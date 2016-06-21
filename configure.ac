@@ -13,6 +13,6 @@ AC_LANG([C++])
 AX_CXX_COMPILE_STDCXX_11(,[mandatory])
 CXXFLAGS='-Wall -std=c++11'
 
-AC_CHECK_HEADERS([liquid.h])
+AC_CHECK_HEADERS([liquid/liquid.h])
 
 AC_OUTPUT
