@@ -9,7 +9,6 @@
 #define IBUFLEN   4096
 #define OBUFLEN   128
 #define BITBUFLEN 1024
-#define DECIMATE  8
 
 #define PI_f      3.1415926535898f
 #define PI_2_f    1.5707963267949f
@@ -20,6 +19,10 @@ namespace {
 
   int wrap_mod(int i, int len) {
     return (i < 0 ? (i % len) + len : (i % len));
+  }
+
+  int sign(float x) {
+    return (x >= 0);
   }
 }
 
@@ -103,12 +106,13 @@ void BitBuffer::append(uint8_t input_element) {
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(BITBUFLEN),
   antialias_fir_(FIR(1500.0f / FS, 512)),
-  phase_fir_(FIR(4000.0f / FS, 256)),
+  phase_fir_(FIR(1200.0f / FS * 12, 64)),
   is_eof_(false),
-  m_inte(0.0f), liq_modem_(modem_create(LIQUID_MODEM_DPSK2)),
+  m_inte(0.0f),
   agc_(agc_crcf_create()),
   nco_if_(nco_crcf_create(LIQUID_VCO)),
-  ph0_(0.0f), phase_delay_(wdelayf_create(192))
+  ph0_(0.0f), phase_delay_(wdelayf_create(17)), prevsign_(0),
+  clock_shift_(0), clock_phase_(0), last_rising_at_(0), lastbit_(0)
   {
 
   /*unsigned k = 192;
@@ -118,21 +122,20 @@ DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   float beta=0.33f;*/
   //liquid_firdes_prototype(LIQUID_FIRFILT_RCOS, k, m, beta, 0, h);
 
-  float coeffs[antialias_fir_.size()];
+  float coeffs[512];
   for (int i=0;i<(int)antialias_fir_.size();i++)
     coeffs[i] = antialias_fir_[i];
-  float coeffs_phase[256];
-  for (int i=0;i<256;i++)
+  float coeffs_phase[512];
+  for (int i=0;i<phase_fir_.size();i++)
     coeffs_phase[i] = phase_fir_[i];
 
   firfilt_ = firfilt_crcf_create(coeffs,antialias_fir_.size());
-  firfilt_phase_ = firfilt_crcf_create(coeffs_phase,64);
+  firfilt_phase_ = firfilt_crcf_create(coeffs_phase,phase_fir_.size());
   nco_crcf_set_frequency(nco_if_, FC_0 * 2 * PI_f / FS);
   agc_crcf_set_bandwidth(agc_,1e-3f);
 }
 
 DPSK::~DPSK() {
-  modem_destroy(liq_modem_);
   agc_crcf_destroy(agc_);
   nco_crcf_destroy(nco_if_);
 }
@@ -148,36 +151,48 @@ void DPSK::demodulateMoreBits() {
 
   for (int i = 0; i < bytesread; i++) {
 
-    std::complex<float> shaped_sample, shaped_sample_unnorm, sample_down,
-      sample_lpf;
+    std::complex<float> sample_down, sample_shaped_unnorm, sample_shaped;
     nco_crcf_mix_down(nco_if_, sample[i], &sample_down);
 
     firfilt_crcf_push(firfilt_, sample_down);
-    firfilt_crcf_execute(firfilt_, &sample_lpf);
+    firfilt_crcf_execute(firfilt_, &sample_shaped_unnorm);
 
-    agc_crcf_execute(agc_, sample_lpf, &shaped_sample_unnorm);
-    nco_crcf_mix_up(nco_if_, shaped_sample_unnorm, &shaped_sample);
+    agc_crcf_execute(agc_, sample_shaped_unnorm, &sample_shaped);
 
-    float ph0;
-    float ph1 = arg(shaped_sample);
-    wdelayf_push(phase_delay_, ph1);
-    wdelayf_read(phase_delay_, &ph0);
-    float dph = ph1 - ph0;
-    if (dph > M_PI)
-      dph -= 2*M_PI;
-    if (dph < -M_PI)
-      dph += 2*M_PI;
-    std::complex<float> dphc(dph,0),dphc_lpf;
+    if (numsamples_ % 12 == 0) {
 
-    firfilt_crcf_push(firfilt_phase_, dphc);
+      float ph0;
+      float ph1 = arg(sample_shaped);
+      wdelayf_push(phase_delay_, ph1);
+      wdelayf_read(phase_delay_, &ph0);
+      float dph = ph1 - ph0;
+      if (dph > M_PI)
+        dph -= 2*M_PI;
+      if (dph < -M_PI)
+        dph += 2*M_PI;
+      dph = fabs(dph) - M_PI_2;
+      std::complex<float> dphc(dph,0),dphc_lpf;
 
-    firfilt_crcf_execute(firfilt_phase_, &dphc_lpf);
+      firfilt_crcf_push(firfilt_phase_, dphc);
+      firfilt_crcf_execute(firfilt_phase_, &dphc_lpf);
 
-    //printf("pe:%f,%f\n",real(shaped_sample_unnorm), imag(shaped_sample_unnorm));
-    if (numsamples_ % 192 == 0) {
-      unsigned bit = real(dphc_lpf)>0;
-      //modem_demodulate(liq_modem_, shaped_sample, &bit);
-      bit_buffer_.append(bit);
+      int bval = sign(real(dphc_lpf));
+
+      if (clock_phase_ % 16 == 0) {
+        unsigned bit = bval;
+        bit_buffer_.append(bit);
+      }
+
+      /*if (bval != prevsign_) {
+        printf("rising at %d\n",clock_phase_ % 16);
+        if (clock_phase_ > 7)
+          clock_phase_ --;
+        else
+          clock_phase_ ++;
+      }*/
+      prevsign_ = bval;
+
+      clock_phase_ ++;
 
     }
 

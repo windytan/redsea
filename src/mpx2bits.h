@@ -69,7 +69,6 @@ class DPSK {
 
     float m_inte;
 
-    modem liq_modem_;
     agc_crcf agc_;
     nco_crcf nco_if_;
 
@@ -79,6 +78,12 @@ class DPSK {
 
     firfilt_crcf firfilt_;
     firfilt_crcf firfilt_phase_;
+
+    int clock_shift_;
+    int clock_phase_;
+    int prevsign_;
+    int last_rising_at_;
+    int lastbit_;
 
 };
 
