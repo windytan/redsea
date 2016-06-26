@@ -1,6 +1,7 @@
 #include "mpx2bits.h"
 
 #include <complex>
+#include <deque>
 
 #include "liquid/liquid.h"
 
@@ -56,55 +57,8 @@ std::vector<float> FIR(float f_cutoff, int len) {
 
 }
 
-BitBuffer::BitBuffer(int size) :
-  m_data(size), m_head(0), m_tail(0), m_fill_count(0), m_len(size) {
-
-  assert(size > 0);
-}
-
-void BitBuffer::forward(int n) {
-  m_tail = (m_tail + n) % m_len;
-  m_fill_count -= n;
-  if (m_fill_count < 0) {
-    //std::cerr << "buffer underrun!\n";
-    m_fill_count = 0;
-  }
-}
-
-int BitBuffer::getFillCount() const {
-  return m_fill_count;
-}
-
-int BitBuffer::size() const {
-  return m_data.size();
-}
-
-uint8_t BitBuffer::at(int n) const {
-  return m_data[wrap_mod(n + m_tail, m_len)];
-}
-
-uint8_t BitBuffer::getNext() {
-  uint8_t result = at(0);
-  forward(1);
-  return result;
-}
-
-int BitBuffer::getTail() const {
-  return m_tail;
-}
-
-void BitBuffer::append(uint8_t input_element) {
-
-  m_data.at(m_head) = input_element;
-
-  m_head = (m_head + 1) % m_len;
-  m_fill_count += 1;
-  m_fill_count = std::min(m_fill_count, m_len);
-
-}
-
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
-  counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(BITBUFLEN),
+  counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(),
   antialias_fir_(FIR(1500.0f / FS, 512)),
   phase_fir_(FIR(1200.0f / FS * 12, 64)),
   is_eof_(false),
@@ -180,7 +134,7 @@ void DPSK::demodulateMoreBits() {
 
       if (clock_phase_ % 16 == 0) {
         unsigned bit = bval;
-        bit_buffer_.append(bit);
+        bit_buffer_.push_back(bit);
       }
 
       /*if (bval != prevsign_) {
@@ -205,13 +159,15 @@ void DPSK::demodulateMoreBits() {
 }
 
 int DPSK::getNextBit() {
-  while (bit_buffer_.getFillCount() < 1 && !isEOF())
+  while (bit_buffer_.size() < 1 && !isEOF())
     demodulateMoreBits();
 
   int bit = 0;
 
-  if (bit_buffer_.getFillCount() > 0)
-    bit = bit_buffer_.getNext();
+  if (bit_buffer_.size() > 0) {
+    bit = bit_buffer_.front();
+    bit_buffer_.pop_front();
+  }
 
   return bit;
 }

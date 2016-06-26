@@ -4,6 +4,7 @@
 #define DBG_OUT
 
 #include <cassert>
+#include <deque>
 #include <complex>
 #include <vector>
 
@@ -13,26 +14,6 @@ namespace redsea {
 
 std::vector<float> FIR(float f_cutoff, int len);
 float sinc(float);
-
-class BitBuffer {
-  public:
-    BitBuffer(int len);
-    int size() const;
-    void append(uint8_t input_element);
-    void forward(int n);
-    int getTail() const;
-    int getFillCount() const;
-    uint8_t at(int n) const;
-    uint8_t getNext();
-
-  private:
-    std::vector<uint8_t> m_data;
-    int  m_head;
-    int  m_tail;
-    int  m_fill_count;
-    const int m_len;
-
-};
 
 class DPSK {
   public:
@@ -60,7 +41,7 @@ class DPSK {
 
     int dbit_;
 
-    BitBuffer bit_buffer_;
+    std::deque<int> bit_buffer_;
 
     std::vector<float> antialias_fir_;
     std::vector<float> phase_fir_;
