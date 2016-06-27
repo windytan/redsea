@@ -54,8 +54,9 @@ uint32_t calcCheckBits(uint32_t dataWord) {
 }
 
 BlockStream::BlockStream(int input_type) : bitcount_(0), left_to_read_(0),
-  wideblock_(0), has_sync_for_(5), group_data_(4), has_block_(5),
-  block_has_errors_(50), dpsk_(), ascii_bits_(), input_type_(input_type) {
+  wideblock_(0), expected_offset_(0), has_sync_for_(5), group_data_(4),
+  has_block_(5), block_has_errors_(50), dpsk_(), ascii_bits_(),
+  input_type_(input_type) {
 
   offset_word_ = {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
 
