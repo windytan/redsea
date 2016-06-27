@@ -12,9 +12,6 @@
 
 namespace redsea {
 
-std::vector<float> FIR(float f_cutoff, int len);
-float sinc(float);
-
 class DPSK {
   public:
     DPSK();

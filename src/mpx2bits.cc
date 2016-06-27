@@ -23,36 +23,6 @@ namespace {
   }
 }
 
-float sinc(float x) {
-  return (x == 0.0 ? 1.0f : sin(x) / x);
-}
-
-float Blackman (int i, int M) {
-  return 0.42 - 0.5 * cos(2 * M_PI * i/M) +
-    0.08 * cos(4 * M_PI * i/M);
-}
-
-std::vector<float> FIR(float f_cutoff, int len) {
-
-  assert(f_cutoff >= 0 && f_cutoff <= 0.5);
-  assert(len > 0);
-
-  int M = len-1;
-  std::vector<float> result(len);
-  float sum = 0;
-
-  for (int i=0; i<len; i++) {
-    result[i] = sinc(2*M_PI*f_cutoff*(i-M/2.0)) * Blackman(i, M);
-    sum += result[i];
-  }
-  for (int i=0; i<len; i++) {
-    result[i] /= sum;
-  }
-
-  return result;
-
-}
-
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(),
   fir_lpf_(512, 1500.0f / FS),
