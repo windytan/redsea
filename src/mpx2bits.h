@@ -8,7 +8,7 @@
 #include <complex>
 #include <vector>
 
-#include "liquid/liquid.h"
+#include "liquid_wrappers.h"
 
 namespace redsea {
 
@@ -43,12 +43,10 @@ class DPSK {
 
     std::deque<int> bit_buffer_;
 
-    std::vector<float> antialias_fir_;
-    std::vector<float> phase_fir_;
+    liquid::FIRFilter fir_lpf_;
+    liquid::FIRFilter fir_phase_;
 
     bool is_eof_;
-
-    float m_inte;
 
     agc_crcf agc_;
     nco_crcf nco_if_;
@@ -56,9 +54,6 @@ class DPSK {
     float ph0_;
 
     wdelayf phase_delay_;
-
-    firfilt_crcf firfilt_;
-    firfilt_crcf firfilt_phase_;
 
     int clock_shift_;
     int clock_phase_;

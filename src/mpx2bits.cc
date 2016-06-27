@@ -3,7 +3,7 @@
 #include <complex>
 #include <deque>
 
-#include "liquid/liquid.h"
+#include "liquid_wrappers.h"
 
 #define FS        228000.0f
 #define FC_0      57000.0f
@@ -17,10 +17,6 @@
 namespace redsea {
 
 namespace {
-
-  int wrap_mod(int i, int len) {
-    return (i < 0 ? (i % len) + len : (i % len));
-  }
 
   int sign(float x) {
     return (x >= 0);
@@ -59,32 +55,15 @@ std::vector<float> FIR(float f_cutoff, int len) {
 
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(),
-  antialias_fir_(FIR(1500.0f / FS, 512)),
-  phase_fir_(FIR(1200.0f / FS * 12, 64)),
+  fir_lpf_(512, 1500.0f / FS),
+  fir_phase_(64, 1200.0f / FS * 12),
   is_eof_(false),
-  m_inte(0.0f),
   agc_(agc_crcf_create()),
   nco_if_(nco_crcf_create(LIQUID_VCO)),
   ph0_(0.0f), phase_delay_(wdelayf_create(17)), prevsign_(0),
   clock_shift_(0), clock_phase_(0), last_rising_at_(0), lastbit_(0)
   {
 
-  /*unsigned k = 192;
-  unsigned m = 4;
-  unsigned hlen = 2*k*m+1;
-  float h[hlen];
-  float beta=0.33f;*/
-  //liquid_firdes_prototype(LIQUID_FIRFILT_RCOS, k, m, beta, 0, h);
-
-  float coeffs[512];
-  for (int i=0;i<(int)antialias_fir_.size();i++)
-    coeffs[i] = antialias_fir_[i];
-  float coeffs_phase[512];
-  for (int i=0;i<phase_fir_.size();i++)
-    coeffs_phase[i] = phase_fir_[i];
-
-  firfilt_ = firfilt_crcf_create(coeffs,antialias_fir_.size());
-  firfilt_phase_ = firfilt_crcf_create(coeffs_phase,phase_fir_.size());
   nco_crcf_set_frequency(nco_if_, FC_0 * 2 * PI_f / FS);
   agc_crcf_set_bandwidth(agc_,1e-3f);
 }
@@ -108,8 +87,8 @@ void DPSK::demodulateMoreBits() {
     std::complex<float> sample_down, sample_shaped_unnorm, sample_shaped;
     nco_crcf_mix_down(nco_if_, sample[i], &sample_down);
 
-    firfilt_crcf_push(firfilt_, sample_down);
-    firfilt_crcf_execute(firfilt_, &sample_shaped_unnorm);
+    fir_lpf_.push(sample_down);
+    sample_shaped_unnorm = fir_lpf_.execute();
 
     agc_crcf_execute(agc_, sample_shaped_unnorm, &sample_shaped);
 
@@ -125,10 +104,13 @@ void DPSK::demodulateMoreBits() {
       if (dph < -M_PI)
         dph += 2*M_PI;
       dph = fabs(dph) - M_PI_2;
-      std::complex<float> dphc(dph,0),dphc_lpf;
+      std::complex<float> dphc(dph,0),dphc_lpf,sq;
 
-      firfilt_crcf_push(firfilt_phase_, dphc);
-      firfilt_crcf_execute(firfilt_phase_, &dphc_lpf);
+      sq = sample_shaped * sample_shaped;
+      //printf("pe:%f,%f\n",1000*real(sq),1000*imag(sq));
+
+      fir_phase_.push(dphc);
+      dphc_lpf = fir_phase_.execute();
 
       int bval = sign(real(dphc_lpf));
 
