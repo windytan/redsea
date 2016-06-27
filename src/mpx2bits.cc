@@ -28,19 +28,15 @@ DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   fir_lpf_(512, 1500.0f / FS),
   fir_phase_(64, 1200.0f / FS * 12),
   is_eof_(false),
-  agc_(agc_crcf_create()),
-  nco_if_(nco_crcf_create(LIQUID_VCO)),
+  agc_(0.001f),
+  nco_if_(FC_0 * 2 * PI_f / FS),
   ph0_(0.0f), phase_delay_(wdelayf_create(17)), prevsign_(0),
   clock_shift_(0), clock_phase_(0), last_rising_at_(0), lastbit_(0)
   {
 
-  nco_crcf_set_frequency(nco_if_, FC_0 * 2 * PI_f / FS);
-  agc_crcf_set_bandwidth(agc_,1e-3f);
 }
 
 DPSK::~DPSK() {
-  agc_crcf_destroy(agc_);
-  nco_crcf_destroy(nco_if_);
 }
 
 void DPSK::demodulateMoreBits() {
@@ -54,13 +50,12 @@ void DPSK::demodulateMoreBits() {
 
   for (int i = 0; i < bytesread; i++) {
 
-    std::complex<float> sample_down, sample_shaped_unnorm, sample_shaped;
-    nco_crcf_mix_down(nco_if_, sample[i], &sample_down);
+    std::complex<float> sample_down = nco_if_.mixDown(sample[i]);
 
     fir_lpf_.push(sample_down);
-    sample_shaped_unnorm = fir_lpf_.execute();
+    std::complex<float> sample_shaped_unnorm = fir_lpf_.execute();
 
-    agc_crcf_execute(agc_, sample_shaped_unnorm, &sample_shaped);
+    std::complex<float> sample_shaped = agc_.execute(sample_shaped_unnorm);
 
     if (numsamples_ % 12 == 0) {
 
@@ -102,7 +97,7 @@ void DPSK::demodulateMoreBits() {
 
     }
 
-    nco_crcf_step(nco_if_);
+    nco_if_.step();
 
     numsamples_ ++;
 

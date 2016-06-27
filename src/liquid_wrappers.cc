@@ -7,6 +7,21 @@
 
 namespace liquid {
 
+AGC::AGC(float bw) {
+  object_ = agc_crcf_create();
+  agc_crcf_set_bandwidth(object_, bw);
+}
+
+AGC::~AGC() {
+  agc_crcf_destroy(object_);
+}
+
+std::complex<float> AGC::execute(std::complex<float> s) {
+  std::complex<float> result;
+  agc_crcf_execute(object_, s, &result);
+  return result;
+}
+
 FIRFilter::FIRFilter(int len, float fc, float As, float mu) {
 
   assert (fc >= 0.0f && fc <= 0.5f);
@@ -30,6 +45,26 @@ std::complex<float> FIRFilter::execute() {
   std::complex<float> result;
   firfilt_crcf_execute(object_, &result);
   return result;
+}
+
+NCO::NCO(float freq) {
+  object_ = nco_crcf_create(LIQUID_VCO);
+  nco_crcf_set_frequency(object_, freq);
+
+}
+
+NCO::~NCO() {
+  nco_crcf_destroy(object_);
+}
+
+std::complex<float> NCO::mixDown(std::complex<float> s) {
+  std::complex<float> result;
+  nco_crcf_mix_down(object_, s, &result);
+  return result;
+}
+
+void NCO::step() {
+  nco_crcf_step(object_);
 }
 
 } // namespace liquid

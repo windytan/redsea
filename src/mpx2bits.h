@@ -45,8 +45,8 @@ class DPSK {
 
     bool is_eof_;
 
-    agc_crcf agc_;
-    nco_crcf nco_if_;
+    liquid::AGC agc_;
+    liquid::NCO nco_if_;
 
     float ph0_;
 

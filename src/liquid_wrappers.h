@@ -7,6 +7,17 @@
 
 namespace liquid {
 
+class AGC {
+
+  public:
+  AGC(float bw);
+  ~AGC();
+  std::complex<float> execute(std::complex<float> s);
+
+  private:
+  agc_crcf object_;
+};
+
 class FIRFilter {
 
   public:
@@ -17,6 +28,19 @@ class FIRFilter {
 
   private:
   firfilt_crcf object_;
+
+};
+
+class NCO {
+
+  public:
+  NCO(float freq);
+  ~NCO();
+  std::complex<float> mixDown(std::complex<float> s);
+  void step();
+
+  private:
+  nco_crcf object_;
 
 };
 
