@@ -5,8 +5,6 @@
 
 #include "liquid/liquid.h"
 
-#define MAX_FIR_LEN 512
-
 namespace liquid {
 
 class FIRFilter {

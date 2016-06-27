@@ -9,15 +9,12 @@ namespace liquid {
 
 FIRFilter::FIRFilter(int len, float fc, float As, float mu) {
 
-  assert (len > 0 && len <= MAX_FIR_LEN);
   assert (fc >= 0.0f && fc <= 0.5f);
   assert (As > 0.0f);
   assert (mu >= -0.5f && mu <= 0.5f);
 
-  float h[MAX_FIR_LEN];
-  liquid_firdes_kaiser(len, fc, As, mu, h);
-
-  object_ = firfilt_crcf_create(h, len);
+  object_ = firfilt_crcf_create_kaiser(len, fc, As, mu);
+  firfilt_crcf_set_scale(object_, 2.0f * fc);
 
 }
 
