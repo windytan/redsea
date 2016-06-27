@@ -51,12 +51,15 @@ class DPSK {
     float ph0_;
 
     wdelayf phase_delay_;
+    wdelaycf sym_delay_;
 
     int clock_shift_;
     int clock_phase_;
     int prevsign_;
     int last_rising_at_;
     int lastbit_;
+
+    modem modem_;
 
 };
 

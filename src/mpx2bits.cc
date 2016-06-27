@@ -25,13 +25,15 @@ namespace {
 
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(),
-  fir_lpf_(512, 1500.0f / FS),
-  fir_phase_(64, 1200.0f / FS * 12),
+  fir_lpf_(511, 2100.0f / FS),
+  fir_phase_(63, 1200.0f / FS * 12),
   is_eof_(false),
   agc_(0.001f),
   nco_if_(FC_0 * 2 * PI_f / FS),
-  ph0_(0.0f), phase_delay_(wdelayf_create(17)), prevsign_(0),
-  clock_shift_(0), clock_phase_(0), last_rising_at_(0), lastbit_(0)
+  ph0_(0.0f), phase_delay_(wdelayf_create(17)), sym_delay_(wdelaycf_create(17)),
+  prevsign_(0),
+  clock_shift_(0), clock_phase_(0), last_rising_at_(0), lastbit_(0),
+  modem_(modem_create(LIQUID_MODEM_DPSK2))
   {
 
 }
@@ -61,8 +63,11 @@ void DPSK::demodulateMoreBits() {
 
       float ph0;
       float ph1 = arg(sample_shaped);
+      std::complex<float> sym0;
       wdelayf_push(phase_delay_, ph1);
       wdelayf_read(phase_delay_, &ph0);
+      wdelaycf_push(sym_delay_, sample_shaped);
+      wdelaycf_read(sym_delay_, &sym0);
       float dph = ph1 - ph0;
       if (dph > M_PI)
         dph -= 2*M_PI;
