@@ -121,7 +121,7 @@ void BlockStream::uncorrectable() {
     //printf(":too many errors, sync lost\n");
   }
 
-  for (unsigned o=A; o<=D; o++)
+  for (int o : {A, B, C, CI, D})
     has_block_[o] = false;
 
 }
@@ -148,7 +148,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
     // Find the offsets for which the calcSyndrome is zero
     bool has_sync_for_any = false;
-    for (int o=A; o<=D; o++) {
+    for (int o : {A, B, C, CI, D}) {
       has_sync_for_[o] = (calcSyndrome(block ^ offset_word_[o]) == 0x000);
       has_sync_for_any |= has_sync_for_[o];
     }
@@ -157,7 +157,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
     if (!is_in_sync_) {
       if (has_sync_for_any) {
-        for (unsigned o=A; o<=D; o++) {
+        for (int o : {A, B, C, CI, D}) {
           if (has_sync_for_[o]) {
             unsigned dist = bitcount_ - prevbitcount_;
 
@@ -269,7 +269,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
           (expected_offset_ + 1) % 5);
 
       if (expected_offset_ == A) {
-        for (unsigned o=A; o<=D; o++)
+        for (int o : {A, B, C, CI, D})
           has_block_[o] = false;
       }
 
