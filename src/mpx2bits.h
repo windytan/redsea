@@ -17,11 +17,15 @@ class RunningSum {
     RunningSum(int len);
     ~RunningSum();
     float pushAndRead(float);
+    int lastMaxIndex() const;
   private:
     std::vector<float> values_;
     int len_;
     float sum_;
     int i_;
+    int max_i_;
+    int last_max_i_;
+    float max_sum_;
 };
 
 class DPSK {

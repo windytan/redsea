@@ -33,7 +33,8 @@ float phaseDiff(std::complex<float> a, std::complex<float> b) {
   return dph;
 }
 
-RunningSum::RunningSum(int len) : values_(len), len_(len), i_(0) {
+RunningSum::RunningSum(int len) : values_(len), len_(len), i_(0), max_i_(0),
+  last_max_i_(0) {
 }
 
 RunningSum::~RunningSum() {
@@ -41,9 +42,27 @@ RunningSum::~RunningSum() {
 
 float RunningSum::pushAndRead(float s) {
   sum_ += s;
-  sum_ -= values_[i_ % len_];
-  values_[i_ % len_] = s;
+  sum_ -= values_[i_];
+  values_[i_] = s;
+
+  if (fabs(sum_) > max_sum_) {
+    max_i_ = i_;
+    max_sum_ = fabs(sum_);
+  }
+
+  i_ = (i_ + 1) % len_;
+
+  if (i_ == max_i_) {
+    last_max_i_ = max_i_;
+    max_sum_ = sum_;
+    max_i_ = i_;
+  }
+
   return sum_;
+}
+
+int RunningSum::lastMaxIndex() const {
+  return last_max_i_;
 }
 
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
@@ -96,12 +115,13 @@ void DPSK::demodulateMoreBits() {
 
       float bval = running_sum_.pushAndRead(real(dphc_lpf));
 
-      if (clock_phase_ % 16 == 0) {
+      if (clock_phase_ == 0) {
         unsigned bit = sign(bval);
         bit_buffer_.push_back(bit);
+        //printf("lmi:%d\n",running_sum_.lastMaxIndex());
       }
 
-      clock_phase_ ++;
+      clock_phase_ = (clock_phase_ + 1) % 16;
 
     }
 
