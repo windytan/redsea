@@ -137,7 +137,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
     bitcount_ += 26 - left_to_read_;
 
     // Read from radio
-    for (int i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++,bitcount_++) {
+    for (int i=0; i < (is_in_sync_ ? (int)left_to_read_ : 1); i++,bitcount_++) {
       wideblock_ = (wideblock_ << 1) + getNextBit();
     }
 
