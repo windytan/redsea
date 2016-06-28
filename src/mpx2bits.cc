@@ -39,7 +39,7 @@ RunningSum::RunningSum(int len) : values_(len), len_(len), i_(0) {
 RunningSum::~RunningSum() {
 }
 
-float RunningSum::push(float s) {
+float RunningSum::pushAndRead(float s) {
   sum_ += s;
   sum_ -= values_[i_ % len_];
   values_[i_ % len_] = s;
@@ -94,7 +94,7 @@ void DPSK::demodulateMoreBits() {
       fir_phase_.push(dphc);
       dphc_lpf = fir_phase_.execute();
 
-      float bval = running_sum_.push(real(dphc_lpf));
+      float bval = running_sum_.pushAndRead(real(dphc_lpf));
 
       if (clock_phase_ % 16 == 0) {
         unsigned bit = sign(bval);

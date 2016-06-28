@@ -16,7 +16,7 @@ class RunningSum {
   public:
     RunningSum(int len);
     ~RunningSum();
-    float push(float);
+    float pushAndRead(float);
   private:
     std::vector<float> values_;
     int len_;
