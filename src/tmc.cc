@@ -12,10 +12,10 @@ namespace redsea {
 
 namespace tmc {
 
+namespace {
+
 std::map<uint16_t,Event> g_event_data;
 std::map<uint16_t,std::string> g_suppl_data;
-
-namespace {
 
 uint16_t popBits(std::deque<int>& bit_deque, int len) {
   uint16_t result = 0x00;
