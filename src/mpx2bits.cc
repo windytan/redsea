@@ -23,6 +23,19 @@ namespace {
   }
 }
 
+RunningSum::RunningSum(int len) : values_(len), len_(len), i_(0) {
+}
+
+RunningSum::~RunningSum() {
+}
+
+float RunningSum::push(float s) {
+  sum_ += s;
+  sum_ -= values_[i_ % len_];
+  values_[i_ % len_] = s;
+  return sum_;
+}
+
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(),
   fir_lpf_(511, 2100.0f / FS),
@@ -31,9 +44,8 @@ DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   agc_(0.001f),
   nco_if_(FC_0 * 2 * PI_f / FS),
   ph0_(0.0f), phase_delay_(wdelayf_create(17)), sym_delay_(wdelaycf_create(17)),
-  prevsign_(0),
   clock_shift_(0), clock_phase_(0), last_rising_at_(0), lastbit_(0),
-  modem_(modem_create(LIQUID_MODEM_DPSK2))
+  running_sum_(16)
   {
 
 }
@@ -66,8 +78,8 @@ void DPSK::demodulateMoreBits() {
       std::complex<float> sym0;
       wdelayf_push(phase_delay_, ph1);
       wdelayf_read(phase_delay_, &ph0);
-      wdelaycf_push(sym_delay_, sample_shaped);
-      wdelaycf_read(sym_delay_, &sym0);
+      //wdelaycf_push(sym_delay_, sample_shaped);
+      //wdelaycf_read(sym_delay_, &sym0);
       float dph = ph1 - ph0;
       if (dph > M_PI)
         dph -= 2*M_PI;
@@ -76,27 +88,17 @@ void DPSK::demodulateMoreBits() {
       dph = fabs(dph) - M_PI_2;
       std::complex<float> dphc(dph,0),dphc_lpf,sq;
 
-      sq = sample_shaped * sample_shaped;
-      //printf("pe:%f,%f\n",1000*real(sq),1000*imag(sq));
+      //printf("pe:%f,%f\n",real(sample_shaped),imag(sample_shaped));
 
       fir_phase_.push(dphc);
       dphc_lpf = fir_phase_.execute();
 
-      int bval = sign(real(dphc_lpf));
+      float bval = running_sum_.push(real(dphc_lpf));
 
       if (clock_phase_ % 16 == 0) {
-        unsigned bit = bval;
+        unsigned bit = sign(bval);
         bit_buffer_.push_back(bit);
       }
-
-      /*if (bval != prevsign_) {
-        printf("rising at %d\n",clock_phase_ % 16);
-        if (clock_phase_ > 7)
-          clock_phase_ --;
-        else
-          clock_phase_ ++;
-      }*/
-      prevsign_ = bval;
 
       clock_phase_ ++;
 

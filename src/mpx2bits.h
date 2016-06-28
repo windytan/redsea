@@ -12,6 +12,18 @@
 
 namespace redsea {
 
+class RunningSum {
+  public:
+    RunningSum(int len);
+    ~RunningSum();
+    float push(float);
+  private:
+    std::vector<float> values_;
+    int len_;
+    float sum_;
+    int i_;
+};
+
 class DPSK {
   public:
     DPSK();
@@ -55,11 +67,10 @@ class DPSK {
 
     int clock_shift_;
     int clock_phase_;
-    int prevsign_;
     int last_rising_at_;
     int lastbit_;
 
-    modem modem_;
+    RunningSum running_sum_;
 
 };
 
