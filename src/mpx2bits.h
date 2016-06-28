@@ -62,7 +62,6 @@ class DPSK {
 
     float ph0_;
 
-    wdelayf phase_delay_;
     wdelaycf sym_delay_;
 
     int clock_shift_;

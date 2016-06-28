@@ -23,6 +23,16 @@ namespace {
   }
 }
 
+float phaseDiff(std::complex<float> a, std::complex<float> b) {
+  float dph = arg(b) - arg(a);
+  if (dph > M_PI)
+    dph -= 2*M_PI;
+  if (dph < -M_PI)
+    dph += 2*M_PI;
+  dph = fabs(dph) - M_PI_2;
+  return dph;
+}
+
 RunningSum::RunningSum(int len) : values_(len), len_(len), i_(0) {
 }
 
@@ -43,7 +53,7 @@ DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   is_eof_(false),
   agc_(0.001f),
   nco_if_(FC_0 * 2 * PI_f / FS),
-  ph0_(0.0f), phase_delay_(wdelayf_create(17)), sym_delay_(wdelaycf_create(17)),
+  ph0_(0.0f), sym_delay_(wdelaycf_create(17)),
   clock_shift_(0), clock_phase_(0), last_rising_at_(0), lastbit_(0),
   running_sum_(16)
   {
@@ -73,19 +83,10 @@ void DPSK::demodulateMoreBits() {
 
     if (numsamples_ % 12 == 0) {
 
-      float ph0;
-      float ph1 = arg(sample_shaped);
       std::complex<float> sym0;
-      wdelayf_push(phase_delay_, ph1);
-      wdelayf_read(phase_delay_, &ph0);
-      //wdelaycf_push(sym_delay_, sample_shaped);
-      //wdelaycf_read(sym_delay_, &sym0);
-      float dph = ph1 - ph0;
-      if (dph > M_PI)
-        dph -= 2*M_PI;
-      if (dph < -M_PI)
-        dph += 2*M_PI;
-      dph = fabs(dph) - M_PI_2;
+      wdelaycf_push(sym_delay_, sample_shaped);
+      wdelaycf_read(sym_delay_, &sym0);
+      float dph = phaseDiff(sample_shaped, sym0);
       std::complex<float> dphc(dph,0),dphc_lpf,sq;
 
       //printf("pe:%f,%f\n",real(sample_shaped),imag(sample_shaped));
