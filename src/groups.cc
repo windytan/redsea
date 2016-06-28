@@ -355,11 +355,16 @@ void Station::decodeType4 (Group group) {
         bits(group.block4, 12, 14) + lto) % 24;
     int mn = bits(group.block4, 6, 6) + ltom;
 
-    char buff[100];
-    snprintf(buff, sizeof(buff),
-        "%04d-%02d-%02dT%02d:%02d:00%+03d:%02d",yr,mo,dy,hr,mn,int(lto),ltom);
-    clock_time_ = buff;
-    printf(", clock_time: \"%s\"", clock_time_.c_str());
+    if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31 && hr >= 0 && hr <= 23 &&
+        mn >= 0 && mn <= 59) {
+      char buff[100];
+      snprintf(buff, sizeof(buff),
+          "%04d-%02d-%02dT%02d:%02d:00%+03d:%02d",yr,mo,dy,hr,mn,int(lto),ltom);
+      clock_time_ = buff;
+      printf(", clock_time: \"%s\"", clock_time_.c_str());
+    } else {
+      printf(" /* invalid date/time */");
+    }
 
   }
 }
