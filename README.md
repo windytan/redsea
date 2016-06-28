@@ -64,7 +64,7 @@ Redsea decodes the following info from RDS:
 * Program Item Number (PIN)
 * Traffic Message Channel (TMC)
 
-Output format is currently JSON structures.
+Output format is currently line delimited JSON.
 
 ## Licensing
 
