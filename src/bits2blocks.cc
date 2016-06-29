@@ -51,16 +51,35 @@ uint32_t calcCheckBits(uint32_t dataWord) {
   return result;
 }
 
+unsigned nextOffsetFor(unsigned o) {
+  unsigned result;
+  switch (o) {
+    case A:
+      result = B;
+      break;
+    case B:
+      result = C;
+      break;
+    case C:
+    case CI:
+      result = D;
+      break;
+    case D:
+      result = A;
+      break;
+  }
+  return result;
 }
 
-BlockStream::BlockStream(int input_type) : bitcount_(0), left_to_read_(0),
-  wideblock_(0), expected_offset_(0), has_sync_for_(5), group_data_(4),
-  has_block_(5), block_has_errors_(50), dpsk_(), ascii_bits_(),
-  input_type_(input_type) {
+}
 
-  offset_word_ = {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
-
-  block_for_offset_ = {0, 1, 2, 2, 3};
+BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
+  left_to_read_(0), wideblock_(0), prevsync_(0), block_counter_(0),
+  expected_offset_(0), pi_(0), has_sync_for_(5), is_in_sync_(false),
+  offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
+  block_for_offset_({0, 1, 2, 2, 3}), group_data_(4), has_block_(5),
+  block_has_errors_(50), dpsk_(), ascii_bits_(), has_whole_group_(false),
+  error_lookup_(), data_length_(0), input_type_(input_type) {
 
   for (uint32_t e=1; e < (1<<MAX_ERR_LEN); e++) {
     for (unsigned shift=0; shift < 16; shift++) {
@@ -265,8 +284,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         }
       }
 
-      expected_offset_ = (expected_offset_ == C ? D :
-          (expected_offset_ + 1) % 5);
+      expected_offset_ = nextOffsetFor(expected_offset_);
 
       if (expected_offset_ == A) {
         for (int o : {A, B, C, CI, D})
