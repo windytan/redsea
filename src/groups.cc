@@ -54,10 +54,11 @@ void Station::update(Group group) {
   is_tp_   = bits(group.block2, 10, 1);
   pty_     = bits(group.block2,  5, 5);
 
-  printf("{ pi: \"0x%04x\", group: \"%s\"", pi_, group.type.toString().c_str());
+  printf("{\"pi\":\"0x%04x\",\"group\":\"%s\"", pi_,
+      group.type.toString().c_str());
 
-  printf(", tp: %s", is_tp_ ? "true" : "false");
-  printf(", prog_type: \"%s\"", getPTYname(pty_).c_str());
+  printf(",\"tp\":\"%s\"", is_tp_ ? "true" : "false");
+  printf(",\"prog_type\":\"%s\"", getPTYname(pty_).c_str());
 
   if      (group.type.num == 0)  { decodeType0(group); }
   else if (group.type.num == 1)  { decodeType1(group); }
@@ -66,9 +67,9 @@ void Station::update(Group group) {
   else if (group.type.num == 4)  { decodeType4(group); }
   else if (group.type.num == 8)  { decodeType8(group); }
   else if (group.type.num == 14) { decodeType14(group); }
-  else                           { printf("/* TODO */ "); }
+  else                           { printf("/* TODO */"); }
 
-  printf(" }\n");
+  printf("}\n");
 }
 
 void Station::addAltFreq(uint8_t af_code) {
@@ -111,7 +112,7 @@ void Station::updatePS(int pos, std::vector<int> chars) {
     ps_.setAt(i, chars[i-pos]);
 
   if (ps_.isComplete())
-    printf(", ps: \"%s\"",ps_.getLastCompleteString().c_str());
+    printf(",\"ps\":\"%s\"",ps_.getLastCompleteString().c_str());
 
 }
 
@@ -121,7 +122,7 @@ void Station::updateRadioText(int pos, std::vector<int> chars) {
     rt_.setAt(i, chars[i-pos]);
 
   if (rt_.isComplete())
-    printf(", radiotext: \"%s\"",rt_.getLastCompleteString().c_str());
+    printf(",\"radiotext\":\"%s\"",rt_.getLastCompleteString().c_str());
 
 }
 
@@ -134,7 +135,7 @@ void Station::decodeType0 (Group group) {
   is_ta_    = bits(group.block2, 4, 1);
   is_music_ = bits(group.block2, 3, 1);
 
-  printf(", ta: %s", is_ta_ ? "true" : "false");
+  printf(",\"ta\":\"%s\"", is_ta_ ? "true" : "false");
 
   if (group.num_blocks < 3)
     return;
@@ -145,15 +146,15 @@ void Station::decodeType0 (Group group) {
     }
 
     if ((int)alt_freqs_.size() == num_alt_freqs_) {
-      printf(", alt_freqs: [ ");
+      printf(",\"alt_freqs\":[");
       int i = 0;
       for (auto f : alt_freqs_) {
-        printf("%.1f", f);
+        printf("\"%.1f\"", f);
         if (i < (int)alt_freqs_.size() - 1)
-          printf(", ");
+          printf(",");
         i++;
       }
-      printf(" ]");
+      printf("]");
       alt_freqs_.clear();
     }
   }
@@ -175,7 +176,7 @@ void Station::decodeType1 (Group group) {
   pin_ = group.block4;
 
   if (pin_ != 0x0000)
-    printf(", prog_item_started: { day: %d, time: \"%02d:%02d\" }",
+    printf(",\"prog_item_started\":{\"day\":%d,\"time\":\"%02d:%02d\"}",
         bits(pin_, 11, 5), bits(pin_, 6, 5), bits(pin_, 0, 6) );
 
   if (group.type.ab == TYPE_A) {
@@ -218,12 +219,12 @@ void Station::decodeType1 (Group group) {
       if (ecc_ != 0x00) {
         has_country_ = true;
 
-        printf(", country: \"%s\"", getCountryString(pi_, ecc_).c_str());
+        printf(",\"country\":\"%s\"", getCountryString(pi_, ecc_).c_str());
       }
 
     } else if (slc_variant == 1) {
       tmc_id_ = bits(group.block3, 0, 12);
-      printf(", tmc_id: \"0x%03x\"", tmc_id_);
+      printf(",\"tmc_id\":\"0x%03x\"", tmc_id_);
 
     } else if (slc_variant == 2) {
       if (pager_tng_ != 0) {
@@ -253,7 +254,7 @@ void Station::decodeType1 (Group group) {
 
     } else if (slc_variant == 3) {
       lang_ = bits(group.block3, 0, 8);
-      printf(", language: \"%s\"", getLanguageString(lang_).c_str());
+      printf(",\"language\":\"%s\"", getLanguageString(lang_).c_str());
 
     } else if (slc_variant == 6) {
       // TODO:
@@ -261,7 +262,7 @@ void Station::decodeType1 (Group group) {
 
     } else if (slc_variant == 7) {
       ews_channel_ = bits(group.block3, 0, 12);
-      printf(", ews: \"0x%03x\"", ews_channel_);
+      printf(",\"ews\":\"0x%03x\"", ews_channel_);
     }
 
   }
@@ -316,8 +317,8 @@ void Station::decodeType3 (Group group) {
   if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
     tmc_.systemGroup(group.block3);
   } else {
-    printf(", open_data_app: { group: \"%s\", app_name: \"%s\", "
-        "message: \"0x%02x\" }",
+    printf(",\"open_data_app\":{\"group\":\"%s\",\"app_name\":\"%s\","
+        "\"message\":\"0x%02x\"}",
         oda_group.toString().c_str(), getAppName(oda_aid).c_str(), oda_msg);
   }
 
@@ -361,9 +362,9 @@ void Station::decodeType4 (Group group) {
       snprintf(buff, sizeof(buff),
           "%04d-%02d-%02dT%02d:%02d:00%+03d:%02d",yr,mo,dy,hr,mn,int(lto),ltom);
       clock_time_ = buff;
-      printf(", clock_time: \"%s\"", clock_time_.c_str());
+      printf(",\"clock_time\":\"%s\"", clock_time_.c_str());
     } else {
-      printf(" /* invalid date/time */");
+      printf("/* invalid date/time */");
     }
 
   }

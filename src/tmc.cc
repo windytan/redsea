@@ -120,7 +120,7 @@ uint16_t getQuantifierSize(uint16_t code) {
 std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
   std::string q("_");
   std::regex q_re("_");
-  printf("q_value = %d, q_type=%d\n",q_value,ev.quantifier_type);
+  printf("/*q_value = %d, q_type=%d*/",q_value,ev.quantifier_type);
 
   if (getQuantifierSize(ev.quantifier_type) == 5 && q_value == 0)
     q_value = 32;
@@ -311,7 +311,7 @@ void TMC::systemGroup(uint16_t message) {
 
 
   if (bits(message, 14, 1) == 0) {
-    printf(", tmc: { system_info: { ");
+    printf(",\"tmc\":{\"system_info\":{");
 
     if (g_event_data.empty())
       loadEventData();
@@ -320,10 +320,10 @@ void TMC::systemGroup(uint16_t message) {
     ltn_ = bits(message, 6, 6);
     is_encrypted_ = (ltn_ == 0);
 
-    printf("is_encrypted: %s", is_encrypted_ ? "true" : "false");
+    printf("\"is_encrypted\":\"%s\"", is_encrypted_ ? "true" : "false");
 
     if (!is_encrypted_)
-      printf(", location_table: \"0x%02x\"", ltn_);
+      printf(",\"location_table\":\"0x%02x\"", ltn_);
 
     bool afi   = bits(message, 5, 1);
     bool m     = bits(message, 4, 1);
@@ -332,7 +332,7 @@ void TMC::systemGroup(uint16_t message) {
     bool mgs_r = bits(message, 1, 1);
     bool mgs_u = bits(message, 0, 1);
 
-    printf(", is_on_alt_freqs: %s", afi ? "true" : "false");
+    printf(",\"is_on_alt_freqs\":\"%s\"", afi ? "true" : "false");
 
     std::vector<std::string> scope;
     if (mgs_i)
@@ -344,9 +344,9 @@ void TMC::systemGroup(uint16_t message) {
     if (mgs_u)
       scope.push_back("\"urban\"");
 
-    printf(", scope: [ %s ]", join(scope, ", ").c_str());
+    printf(",\"scope\":[%s]", join(scope, ",").c_str());
 
-    printf(" } }");
+    printf("}}");
   }
 
 }
@@ -365,8 +365,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     ltnbe_ = bits(z, 10, 6);
     has_encid_ = true;
 
-    printf(", tmc: { service_id: \"0x%02x\", encryption_id: \"0x%02x\", "
-        "location_table: \"0x%02x\" }", sid_, encid_, ltnbe_);
+    printf(",\"tmc\":{\"service_id\":\"0x%02x\",\"encryption_id\":\"0x%02x\","
+        "\"location_table\":\"0x%02x\"}", sid_, encid_, ltnbe_);
 
   // Tuning information
   } else if (t) {
@@ -382,11 +382,11 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       ps_.setAt(pos+3, bits(z, 0, 8));
 
       if (ps_.isComplete())
-        printf(", tmc: { service_provider: \"%s\" }",
+        printf(",\"tmc\":{\"service_provider\":\"%s\"}",
             ps_.getLastCompleteString().c_str());
 
     } else {
-      printf(", tmc: { /* TODO: tuning info variant %d */ }", variant);
+      printf(",\"tmc\":{/* TODO: tuning info variant %d */}", variant);
     }
 
   // User message
@@ -485,7 +485,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
               getQuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
             quantifiers_.insert({events_.size()-1, field_data});
           } else {
-            printf(" /* ignoring invalid quantifier */");
+            printf("/* ignoring invalid quantifier */");
           }
 
         // 8-bit quantifier
@@ -495,7 +495,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
               getQuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
             quantifiers_.insert({events_.size()-1, field_data});
           } else {
-            printf(" /* ignoring invalid quantifier */");
+            printf("/* ignoring invalid quantifier */");
           }
 
         // Supplementary info
@@ -515,7 +515,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
           diversion_.push_back(field_data);
 
         } else {
-          printf(" /* TODO label=%d (data=0x%04x) */",label,field_data);
+          printf("/* TODO label=%d data=0x%04x */",label,field_data);
         }
       }
     }
@@ -523,17 +523,17 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
 }
 
 void Message::print() const {
-  printf(", tmc_message: { ");
+  printf(",\"tmc_message\":{");
 
   if (!is_complete_ || events_.empty()) {
-    printf("/* incomplete */ }\n");
+    printf("/* incomplete */}\n");
     return;
   }
 
-  printf("event_codes: [ %s ]", join(events_, ", ").c_str());
+  printf("\"event_codes\":[%s]", join(events_, ",").c_str());
 
   if (supplementary_.size() > 0)
-    printf(", supplementary_codes: [ %s ]", join(supplementary_, ", ").c_str());
+    printf(",\"supplementary_codes\":[%s]", join(supplementary_, ",").c_str());
 
   std::vector<std::string> sentences;
   for (size_t i=0; i<events_.size(); i++) {
@@ -554,27 +554,27 @@ void Message::print() const {
       sentences.push_back(ucfirst(g_suppl_data.find(s)->second));
   }
 
-  printf(", description: \"%s\"",
+  printf(",\"description\":\"%s\"",
       std::string(join(sentences, ". ") + ".").c_str());
 
   if (!diversion_.empty()) {
-    printf(", diversion_route: [ %s ]", join(diversion_, ", ").c_str());
+    printf(",\"diversion_route\":[%s]", join(diversion_, ",").c_str());
   }
 
-  printf(", %slocation: %d, direction: \"%s\", extent: %d, "
-         "diversion_advised: %s",
+  printf(",\"%slocation\":%d,\"direction\":\"%s\",\"extent\":%d,"
+         "\"diversion_advised\":\"%s\"",
          (is_encrypted_ ? "encrypted_" : ""), location_,
          direction_ ? "negative" : "positive",
          extent_, divertadv_ ? "true" : "false" );
 
 
   if (has_time_starts_)
-    printf(", starts: \"%s\"", timeString(time_starts_).c_str());
+    printf(",\"starts\":\"%s\"", timeString(time_starts_).c_str());
   if (has_time_until_)
-    printf(", until: \"%s\"", timeString(time_until_).c_str());
+    printf(",\"until\":\"%s\"", timeString(time_until_).c_str());
 
 
-  printf (" }");
+  printf ("}");
 
 }
 
