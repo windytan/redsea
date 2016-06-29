@@ -180,7 +180,7 @@ std::string getAppName(uint16_t aid) {
     { 0xE911, "EAS open protocol" }
   });
 
-  std::string result("");
+  std::string result("(Unknown)");
   if (oda_apps.find(aid) != oda_apps.end()) {
     result = oda_apps[aid];
   }
