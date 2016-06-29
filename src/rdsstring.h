@@ -13,7 +13,9 @@ class RDSString {
   size_t lengthReceived() const;
   size_t lengthExpected() const;
   std::string getString() const;
+  std::string getTrimmedString() const;
   std::string getLastCompleteString() const;
+  std::string getLastCompleteStringTrimmed() const;
   bool isComplete() const;
   void clear();
 

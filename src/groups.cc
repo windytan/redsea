@@ -122,7 +122,7 @@ void Station::updateRadioText(int pos, std::vector<int> chars) {
     rt_.setAt(i, chars[i-pos]);
 
   if (rt_.isComplete())
-    printf(",\"radiotext\":\"%s\"",rt_.getLastCompleteString().c_str());
+    printf(",\"radiotext\":\"%s\"",rt_.getLastCompleteStringTrimmed().c_str());
 
 }
 

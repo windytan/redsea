@@ -1,8 +1,19 @@
 #include "rdsstring.h"
 
+#include <algorithm>
+
 #include "data.h"
 
 namespace redsea {
+
+namespace {
+
+std::string rtrim(std::string s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+  return s;
+}
+
+}
 
 RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
   prev_pos_(-1) {
@@ -66,8 +77,16 @@ std::string RDSString::getString() const {
 
 }
 
+std::string RDSString::getTrimmedString() const {
+  return rtrim(getString());
+}
+
 std::string RDSString::getLastCompleteString() const {
   return last_complete_string_;
+}
+
+std::string RDSString::getLastCompleteStringTrimmed() const {
+  return rtrim(last_complete_string_);
 }
 
 bool RDSString::isComplete() const {
