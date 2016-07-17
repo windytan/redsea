@@ -105,6 +105,8 @@ class Message {
     uint16_t time_until_;
     bool has_time_starts_;
     uint16_t time_starts_;
+    bool has_speed_limit_;
+    uint16_t speed_limit_;
 };
 
 } // namespace tmc

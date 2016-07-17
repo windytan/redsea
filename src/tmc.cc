@@ -465,7 +465,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     if (parts[1].is_received) {
       auto freeform = getFreeformFields(parts);
 
-      for (auto p : freeform) {
+      for (std::pair<uint16_t,uint16_t> p : freeform) {
         uint16_t label = p.first;
         uint16_t field_data = p.second;
 
@@ -477,6 +477,11 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
         } else if (label == 2) {
           length_affected_ = field_data;
           has_length_affected_ = true;
+
+        // speed limit advice
+        } else if (label == 3) {
+          speed_limit_ = field_data * 5;
+          has_speed_limit_ = true;
 
         // 5-bit quantifier
         } else if (label == 4) {
@@ -560,6 +565,9 @@ void Message::print() const {
   if (!diversion_.empty()) {
     printf(",\"diversion_route\":[%s]", join(diversion_, ",").c_str());
   }
+
+  if (has_speed_limit_)
+    printf(",\"speed_limit\":\"%d km/h\"", speed_limit_);
 
   printf(",\"%slocation\":%d,\"direction\":\"%s\",\"extent\":%d,"
          "\"diversion_advised\":\"%s\"",
