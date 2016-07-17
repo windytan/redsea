@@ -63,17 +63,23 @@ class DPSK {
 
     liquid::AGC agc_;
     liquid::NCO nco_if_;
+    liquid::NCO nco_doublerate_;
 
     float ph0_;
 
     wdelaycf sym_delay_;
 
-    int clock_shift_;
     int clock_phase_;
     int last_rising_at_;
     int lastbit_;
 
     RunningSum running_sum_;
+
+    symsync_crcf symsync_;
+
+    float clock_shift_;
+
+    std::complex<float> prev_dphc_;
 
 };
 

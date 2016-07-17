@@ -63,6 +63,17 @@ std::complex<float> NCO::mixDown(std::complex<float> s) {
   return result;
 }
 
+std::complex<float> NCO::mixUp(std::complex<float> s) {
+  std::complex<float> result;
+  nco_crcf_mix_up(object_, s, &result);
+  return result;
+}
+
+void NCO::mixBlockDown(std::complex<float>* x, std::complex<float>* y,
+    int n) {
+  nco_crcf_mix_block_down(object_, x, y, n);
+}
+
 void NCO::step() {
   nco_crcf_step(object_);
 }

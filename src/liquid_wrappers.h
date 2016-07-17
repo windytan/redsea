@@ -37,6 +37,9 @@ class NCO {
   NCO(float freq);
   ~NCO();
   std::complex<float> mixDown(std::complex<float> s);
+  std::complex<float> mixUp(std::complex<float> s);
+  void mixBlockDown(std::complex<float>* x, std::complex<float>* y,
+      int n);
   void step();
 
   private:
