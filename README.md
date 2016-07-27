@@ -8,6 +8,8 @@ and prints it to the terminal. It works well with rtl_fm.
 
 ## Compiling
 
+You will need [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) and GNU autotools.
+
 ```
 autoreconf --install
 ./configure
