@@ -7,7 +7,7 @@
 namespace redsea {
 
 std::string getLCDchar(int code) {
-  assert (code >= 32);
+  std::string result(" ");
   const std::vector<std::string> char_map ({
       " ","!","\\\"","#","¤","%","&","'","(",")","*","+",",","-",".","/",
       "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
@@ -23,7 +23,12 @@ std::string getLCDchar(int code) {
       "Â","Ä","Ê","Ë","Î","Ï","Ô","Ö","Û","Ü","ř","č","š","ž","đ","ŀ",
       "Ã","Å","Æ","Œ","ŷ","Ý","Õ","Ø","Þ","Ŋ","Ŕ","Ć","Ś","Ź","Ŧ","ð",
       "ã","å","æ","œ","ŵ","ý","õ","ø","þ","ŋ","ŕ","ć","ś","ź","ŧ"," "});
-  return char_map[code - 32];
+
+  int idx = code - 32;
+  if (idx >= 0 && idx < (int)char_map.size())
+    result = char_map[idx];
+
+  return result;
 }
 
 std::string getPTYname(int pty) {
