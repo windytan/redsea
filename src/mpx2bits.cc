@@ -107,7 +107,7 @@ void DPSK::demodulateMoreBits() {
     std::complex<float> sample_shaped = agc_.execute(sample_shaped_unnorm);
 
     std::complex<double> sq = std::pow(sample_shaped, 2);
-    printf("pe:%.10f,%.10f\n",real(sq),imag(sq));
+    //printf("pe:%.10f,%.10f\n",real(sq),imag(sq));
 
     if (numsamples_ % 12 == 0) {
 
