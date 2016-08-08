@@ -78,4 +78,18 @@ void NCO::step() {
   nco_crcf_step(object_);
 }
 
+SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
+    float beta, unsigned num_filters) :
+  object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)) {
+
+}
+
+SymSync::~SymSync() {
+  symsync_crcf_destroy(object_);
+}
+
+void SymSync::setBandwidth(float bw) {
+  symsync_crcf_set_lf_bw(object_, bw);
+}
+
 } // namespace liquid

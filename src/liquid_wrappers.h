@@ -47,6 +47,17 @@ class NCO {
 
 };
 
-}
+class SymSync {
+  public:
+    SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
+        float beta, unsigned num_filters);
+    ~SymSync();
+    void setBandwidth(float);
+
+  private:
+    symsync_crcf object_;
+};
+
+} // namespace liquid
 
 #endif // LIQUID_WRAPPERS_H_
