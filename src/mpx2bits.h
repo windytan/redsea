@@ -61,34 +61,26 @@ class DPSK {
     std::vector<int> tot_errs_;
     unsigned reading_frame_;
 
-    int dbit_;
-
     std::deque<int> bit_buffer_;
 
     liquid::FIRFilter fir_lpf_;
-    liquid::FIRFilter fir_phase_;
 
     bool is_eof_;
 
     liquid::AGC agc_;
     liquid::NCO nco_if_;
-    liquid::NCO nco_doublerate_;
+    liquid::NCO nco_carrier_;
 
-    float ph0_;
+    liquid::SymSync symsync_;
 
-    wdelaycf sym_delay_;
+    liquid::Modem modem_;
 
-    int clock_phase_;
-    int last_rising_at_;
-    int lastbit_;
+    unsigned prev_sym_;
+    unsigned sym_clk_;
+    unsigned biphase_;
+    unsigned prev_biphase_;
 
-    RunningSum running_sum_;
-
-    symsync_crcf symsync_;
-
-    float clock_shift_;
-
-    std::complex<float> prev_dphc_;
+    DeltaDecoder delta_decoder_;
 
 };
 
