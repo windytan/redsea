@@ -28,6 +28,15 @@ class RunningSum {
     float max_sum_;
 };
 
+class DeltaDecoder {
+  public:
+    DeltaDecoder();
+    ~DeltaDecoder();
+    unsigned decode(unsigned);
+  private:
+    unsigned prev_;
+};
+
 class DPSK {
   public:
     DPSK();
