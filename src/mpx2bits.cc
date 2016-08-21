@@ -65,6 +65,20 @@ int RunningSum::lastMaxIndex() const {
   return last_max_i_;
 }
 
+DeltaDecoder::DeltaDecoder() : prev_(0) {
+
+}
+
+DeltaDecoder::~DeltaDecoder() {
+
+}
+
+unsigned DeltaDecoder::decode(unsigned d) {
+  unsigned bit = (d != prev_);
+  prev_ = d;
+  return bit;
+}
+
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(),
   fir_lpf_(511, 2100.0f / FS),
