@@ -82,20 +82,19 @@ unsigned DeltaDecoder::decode(unsigned d) {
 DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
   counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(),
   fir_lpf_(511, 2100.0f / FS),
-  fir_phase_(63, 1500.0 / FS * 12),
   is_eof_(false),
   agc_(0.001f),
   nco_if_(FC_0 * 2 * PI_f / FS),
-  nco_doublerate_(1187.5 * 2 * 2 * PI_f / FS),
-  ph0_(0.0f), sym_delay_(wdelaycf_create(17)),
-  clock_shift_(0), clock_phase_(0), last_rising_at_(0), lastbit_(0),
-  running_sum_(16), symsync_(symsync_crcf_create_rnyquist(LIQUID_FIRFILT_RRC, 2,
-        5, 0.5f, 32)),
-  prev_dphc_(0.0f)
+  nco_carrier_(0.0f),//FC_0 * 2 * PI_f / FS),
+  symsync_(LIQUID_FIRFILT_RRC, 2, 5, 0.5f, 32),
+  modem_(LIQUID_MODEM_DPSK2),
+  prev_sym_(0), sym_clk_(0),
+  biphase_(0), prev_biphase_(0)
   {
 
-    symsync_crcf_set_lf_bw(symsync_, 0.02f);
-    symsync_crcf_set_output_rate(symsync_,2);
+    symsync_.setBandwidth(0.02f);
+    symsync_.setOutputRate(1);
+    nco_carrier_.setPLLBandwidth(0.0004f);
 
 }
 
@@ -120,48 +119,42 @@ void DPSK::demodulateMoreBits() {
 
     std::complex<float> sample_shaped = agc_.execute(sample_shaped_unnorm);
 
-    std::complex<double> sq = std::pow(sample_shaped, 2);
-    //printf("pe:%.10f,%.10f\n",real(sq),imag(sq));
+    //std::complex<float> sample_bp = nco_if_.mixUp(sample_shaped);
+    //std::complex<float> sample_pll = nco_carrier_.mixDown(sample_bp);
 
-    if (numsamples_ % 12 == 0) {
+    //printf("pe:%.10f,%.10f\n",real(sample_bp), imag(sample_bp));
 
-      std::complex<float> sym0;
-      wdelaycf_push(sym_delay_, sample_shaped);
-      wdelaycf_read(sym_delay_, &sym0);
-      float dph = phaseDiff(sample_shaped, sym0);
-      std::complex<float> dphc(dph,0),dphc_lpf;
+      //printf("pe:%.10f,%.10f\n",real(sample_pll),imag(sample_pll));
+    if (numsamples_ % 48 == 0) {
+      std::vector<std::complex<float>> y;
+      y = symsync_.execute(sample_shaped);
+      for (auto sy : y) {
+        unsigned u = modem_.demodulate(sy);
+        nco_carrier_.stepPLL(modem_.getPhaseError());
+        biphase_ ^= u;
 
-      //printf("pe:%f,%f\n",real(sq)*1000,imag(sq)*1000);
+        if (sym_clk_ == 1) {
 
-      fir_phase_.push(dphc);
-      dphc_lpf = fir_phase_.execute();
+          if (prev_biphase_ == 0 && biphase_ == 1) {
+            bit_buffer_.push_back(delta_decoder_.decode(1));
+          }
+          if (prev_biphase_ == 1 && biphase_ == 0) {
+            bit_buffer_.push_back(delta_decoder_.decode(0));
+          }
+        }
 
-      //printf("pe:%f,%f\n",real(dphc),imag(dphc));
+        if (prev_biphase_ == biphase_)
+          sym_clk_ = 0;
 
-      if (sign(real(dphc_lpf)) != sign(real(prev_dphc_))) {
-        float fractional_zc = clock_phase_ - 1 +
-          (-real(prev_dphc_)) / (real(dphc_lpf) - real(prev_dphc_));
-        //printf("zc:%d,%f\n",numsamples_,fractional_zc);
-        clock_shift_ += (fractional_zc > 7.0f ? -1 : 1) * 0.00003;
+        prev_biphase_ = biphase_;
+
+        sym_clk_ = (sym_clk_ + 1) % 2;
 
       }
-
-      prev_dphc_ = dphc_lpf;
-
-      float bval = running_sum_.pushAndRead(real(dphc_lpf));
-
-      if (clock_phase_ == 0) {
-        unsigned bit = sign(bval);
-        bit_buffer_.push_back(bit);
-        //printf("lmi:%d\n",running_sum_.lastMaxIndex());
-      }
-      //printf("g:%d,%f\n",clock_phase_,fabs(bval));
-
-      clock_phase_ = int(clock_phase_ + 1 + clock_shift_ + .5) % 16;
-
     }
 
     nco_if_.step();
+    nco_carrier_.step();
 
     numsamples_ ++;
 
