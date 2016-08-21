@@ -78,6 +78,14 @@ void NCO::step() {
   nco_crcf_step(object_);
 }
 
+void NCO::setPLLBandwidth(float bw) {
+  nco_crcf_pll_set_bandwidth(object_, bw);
+}
+
+void NCO::stepPLL(float dphi) {
+  nco_crcf_pll_step(object_, dphi);
+}
+
 SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
     float beta, unsigned num_filters) :
   object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)) {
@@ -90,6 +98,42 @@ SymSync::~SymSync() {
 
 void SymSync::setBandwidth(float bw) {
   symsync_crcf_set_lf_bw(object_, bw);
+}
+
+void SymSync::setOutputRate(unsigned r) {
+  symsync_crcf_set_output_rate(object_, r);
+}
+
+std::vector<std::complex<float>> SymSync::execute(std::complex<float> s_in) {
+  std::complex<float> s_out[8];
+  unsigned n_out=0;
+  symsync_crcf_execute(object_, &s_in, 1, &s_out[0], &n_out);
+
+  std::vector<std::complex<float>> result(std::begin(s_out), std::end(s_out));
+  result.resize(n_out);
+  return result;
+
+}
+
+
+Modem::Modem(modulation_scheme scheme) {
+  object_ = modem_create(scheme);
+}
+
+Modem::~Modem() {
+  modem_destroy(object_);
+}
+
+unsigned int Modem::demodulate(std::complex<float> sample) {
+  unsigned symbol_out;
+
+  modem_demodulate(object_, sample, &symbol_out);
+
+  return symbol_out;
+}
+
+float Modem::getPhaseError() {
+  return modem_get_demodulator_phase_error(object_);
 }
 
 } // namespace liquid

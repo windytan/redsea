@@ -2,6 +2,7 @@
 #define LIQUID_WRAPPERS_H_
 
 #include <complex>
+#include <vector>
 
 #include "liquid/liquid.h"
 
@@ -41,6 +42,8 @@ class NCO {
   void mixBlockDown(std::complex<float>* x, std::complex<float>* y,
       int n);
   void step();
+  void setPLLBandwidth(float);
+  void stepPLL(float dphi);
 
   private:
   nco_crcf object_;
@@ -53,9 +56,22 @@ class SymSync {
         float beta, unsigned num_filters);
     ~SymSync();
     void setBandwidth(float);
+    void setOutputRate(unsigned);
+    std::vector<std::complex<float>> execute(std::complex<float> in);
 
   private:
     symsync_crcf object_;
+};
+
+class Modem {
+  public:
+    Modem(modulation_scheme scheme);
+    ~Modem();
+    unsigned int demodulate(std::complex<float> sample);
+    float getPhaseError();
+
+  private:
+    modem object_;
 };
 
 } // namespace liquid
