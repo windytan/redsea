@@ -39,8 +39,8 @@ class Subcarrier {
     bool is_eof_;
 
     liquid::AGC agc_;
-    liquid::NCO nco_if_;
-    liquid::NCO nco_carrier_;
+    liquid::NCO nco_approx_;
+    liquid::NCO nco_exact_;
 
     liquid::SymSync symsync_;
 

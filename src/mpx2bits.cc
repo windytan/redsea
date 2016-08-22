@@ -36,8 +36,8 @@ Subcarrier::Subcarrier() : numsamples_(0), subcarr_freq_(kFc_0),
   fir_lpf_(511, 2200.0f / kFs),
   is_eof_(false),
   agc_(0.001f),
-  nco_if_(kFc_0 * 2 * M_PI / kFs),
-  nco_carrier_(0.0f),//FC_0 * 2 * PI_f / FS),
+  nco_approx_(kFc_0 * 2 * M_PI / kFs),
+  nco_exact_(0.0f),//FC_0 * 2 * PI_f / FS),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f, 32),
   modem_(LIQUID_MODEM_DPSK2),
   prev_sym_(0), sym_clk_(0),
@@ -46,7 +46,7 @@ Subcarrier::Subcarrier() : numsamples_(0), subcarr_freq_(kFc_0),
 
     symsync_.setBandwidth(0.02f);
     symsync_.setOutputRate(1);
-    nco_carrier_.setPLLBandwidth(0.0004f);
+    nco_exact_.setPLLBandwidth(0.0004f);
 
 }
 
@@ -65,15 +65,15 @@ void Subcarrier::demodulateMoreBits() {
 
   for (int i = 0; i < samplesread; i++) {
 
-    std::complex<float> sample_baseband = nco_if_.mixDown(sample[i]);
+    std::complex<float> sample_baseband = nco_approx_.mixDown(sample[i]);
 
     fir_lpf_.push(sample_baseband);
     std::complex<float> sample_lopass_unnorm = fir_lpf_.execute();
 
     std::complex<float> sample_lopass = agc_.execute(sample_lopass_unnorm);
 
-    //std::complex<float> sample_bp = nco_if_.mixUp(sample_lopass);
-    //std::complex<float> sample_pll = nco_carrier_.mixDown(sample_bp);
+    //std::complex<float> sample_bp = nco_approx_.mixUp(sample_lopass);
+    //std::complex<float> sample_pll = nco_exact_.mixDown(sample_bp);
 
     //printf("pe:%.10f,%.10f\n",real(sample_bp), imag(sample_bp));
 
@@ -83,7 +83,7 @@ void Subcarrier::demodulateMoreBits() {
       y = symsync_.execute(sample_lopass);
       for (auto sy : y) {
         unsigned u = modem_.demodulate(sy);
-        //nco_carrier_.stepPLL(modem_.getPhaseError());
+        //nco_exact_.stepPLL(modem_.getPhaseError());
         biphase_ ^= u;
 
         if (sym_clk_ == 1) {
@@ -103,8 +103,8 @@ void Subcarrier::demodulateMoreBits() {
       }
     }
 
-    nco_if_.step();
-    //nco_carrier_.step();
+    nco_approx_.step();
+    //nco_exact_.step();
 
     numsamples_ ++;
 
