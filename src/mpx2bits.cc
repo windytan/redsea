@@ -8,11 +8,8 @@
 #define FS        228000.0f
 #define FC_0      57000.0f
 #define IBUFLEN   4096
-#define OBUFLEN   128
-#define BITBUFLEN 1024
 
 #define PI_f      3.1415926535898f
-#define PI_2_f    1.5707963267949f
 
 namespace redsea {
 
