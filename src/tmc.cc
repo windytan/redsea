@@ -329,7 +329,7 @@ void TMC::systemGroup(uint16_t message) {
       printf(",\"location_table\":\"0x%02x\"", ltn_);
 
     bool afi   = bits(message, 5, 1);
-    bool m     = bits(message, 4, 1);
+    //bool m     = bits(message, 4, 1);
     bool mgs_i = bits(message, 3, 1);
     bool mgs_n = bits(message, 2, 1);
     bool mgs_r = bits(message, 1, 1);
