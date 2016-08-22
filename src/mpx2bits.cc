@@ -83,17 +83,14 @@ void Subcarrier::demodulateMoreBits() {
         biphase_ ^= u;
 
         if (sym_clk_ == 1) {
-
           if (prev_biphase_ == 0 && biphase_ == 1) {
             bit_buffer_.push_back(delta_decoder_.decode(1));
-          }
-          if (prev_biphase_ == 1 && biphase_ == 0) {
+          } else if (prev_biphase_ == 1 && biphase_ == 0) {
             bit_buffer_.push_back(delta_decoder_.decode(0));
+          } else {
+            sym_clk_ = 0;
           }
         }
-
-        if (prev_biphase_ == biphase_)
-          sym_clk_ = 0;
 
         prev_biphase_ = biphase_;
 
