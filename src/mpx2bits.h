@@ -37,10 +37,10 @@ class DeltaDecoder {
     unsigned prev_;
 };
 
-class DPSK {
+class Subcarrier {
   public:
-    DPSK();
-    ~DPSK();
+    Subcarrier();
+    ~Subcarrier();
     int getNextBit();
     bool isEOF() const;
   private:

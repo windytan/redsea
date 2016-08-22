@@ -78,7 +78,7 @@ BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
   expected_offset_(0), pi_(0), has_sync_for_(5), is_in_sync_(false),
   offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
   block_for_offset_({0, 1, 2, 2, 3}), group_data_(4), has_block_(5),
-  block_has_errors_(50), dpsk_(), ascii_bits_(), has_whole_group_(false),
+  block_has_errors_(50), subcarrier_(), ascii_bits_(), has_whole_group_(false),
   error_lookup_(), data_length_(0), input_type_(input_type) {
 
   for (uint32_t e=1; e < (1<<MAX_ERR_LEN); e++) {
@@ -96,7 +96,7 @@ BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
 int BlockStream::getNextBit() {
   int result = 0;
   if (input_type_ == INPUT_MPX) {
-    result = dpsk_.getNextBit();
+    result = subcarrier_.getNextBit();
 
   } else if (input_type_ == INPUT_ASCIIBITS) {
     result = ascii_bits_.getNextBit();
@@ -304,7 +304,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
 bool BlockStream::isEOF() const {
   if (input_type_ == INPUT_MPX)
-    return dpsk_.isEOF();
+    return subcarrier_.isEOF();
   else
     return ascii_bits_.isEOF();
 }

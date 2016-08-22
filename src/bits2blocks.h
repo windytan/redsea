@@ -39,7 +39,7 @@ class BlockStream {
   std::vector<uint16_t> group_data_;
   std::vector<bool> has_block_;
   std::vector<bool> block_has_errors_;
-  DPSK dpsk_;
+  Subcarrier subcarrier_;
   AsciiBits ascii_bits_;
   bool has_whole_group_;
   std::map<uint16_t,uint16_t> error_lookup_;

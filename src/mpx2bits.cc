@@ -79,8 +79,8 @@ unsigned DeltaDecoder::decode(unsigned d) {
   return bit;
 }
 
-DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
-  counter_(0), tot_errs_(2), reading_frame_(0), bit_buffer_(),
+Subcarrier::Subcarrier() : subcarr_freq_(FC_0),
+  bit_buffer_(),
   fir_lpf_(511, 2100.0f / FS),
   is_eof_(false),
   agc_(0.001f),
@@ -98,10 +98,11 @@ DPSK::DPSK() : subcarr_freq_(FC_0), gain_(1.0f),
 
 }
 
-DPSK::~DPSK() {
+Subcarrier::~Subcarrier() {
+
 }
 
-void DPSK::demodulateMoreBits() {
+void Subcarrier::demodulateMoreBits() {
 
   int16_t sample[IBUFLEN];
   int samplesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
@@ -162,7 +163,7 @@ void DPSK::demodulateMoreBits() {
 
 }
 
-int DPSK::getNextBit() {
+int Subcarrier::getNextBit() {
   while (bit_buffer_.size() < 1 && !isEOF())
     demodulateMoreBits();
 
@@ -176,7 +177,7 @@ int DPSK::getNextBit() {
   return bit;
 }
 
-bool DPSK::isEOF() const {
+bool Subcarrier::isEOF() const {
   return is_eof_;
 }
 
