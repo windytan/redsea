@@ -34,7 +34,7 @@ The `-f` parameter sets the station frequency. Note that `rtl_fm` will tune a bi
 sox multiplex.wav -t .s16 -r 228k - | ./src/redsea
 ```
 
-The signal should have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).
+The signal should be FM demodulated and have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).
 
 ### Decoding serial data
 
