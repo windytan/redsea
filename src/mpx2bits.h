@@ -30,7 +30,6 @@ class Subcarrier {
   private:
     void demodulateMoreBits();
     int   numsamples_;
-    float subcarr_freq_;
 
     std::deque<int> bit_buffer_;
 
