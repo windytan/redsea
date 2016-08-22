@@ -27,7 +27,7 @@ unsigned DeltaDecoder::decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier() : subcarr_freq_(FC_0),
+Subcarrier::Subcarrier() : numsamples_(0), subcarr_freq_(FC_0),
   bit_buffer_(),
   fir_lpf_(511, 2100.0f / FS),
   is_eof_(false),
