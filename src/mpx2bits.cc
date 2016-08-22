@@ -12,6 +12,7 @@ namespace {
 const float kFs = 228000.0f;
 const float kFc_0 = 57000.0f;
 const int kInputBufferSize = 4096;
+const int kSamplesPerSymbol = 4;
 
 }
 
@@ -32,12 +33,12 @@ unsigned DeltaDecoder::decode(unsigned d) {
 
 Subcarrier::Subcarrier() : numsamples_(0), subcarr_freq_(kFc_0),
   bit_buffer_(),
-  fir_lpf_(511, 2100.0f / kFs),
+  fir_lpf_(511, 2200.0f / kFs),
   is_eof_(false),
   agc_(0.001f),
   nco_if_(kFc_0 * 2 * M_PI / kFs),
   nco_carrier_(0.0f),//FC_0 * 2 * PI_f / FS),
-  symsync_(LIQUID_FIRFILT_RRC, 2, 5, 0.5f, 32),
+  symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f, 32),
   modem_(LIQUID_MODEM_DPSK2),
   prev_sym_(0), sym_clk_(0),
   biphase_(0), prev_biphase_(0), delta_decoder_()
@@ -64,22 +65,22 @@ void Subcarrier::demodulateMoreBits() {
 
   for (int i = 0; i < samplesread; i++) {
 
-    std::complex<float> sample_down = nco_if_.mixDown(sample[i]);
+    std::complex<float> sample_baseband = nco_if_.mixDown(sample[i]);
 
-    fir_lpf_.push(sample_down);
-    std::complex<float> sample_shaped_unnorm = fir_lpf_.execute();
+    fir_lpf_.push(sample_baseband);
+    std::complex<float> sample_lopass_unnorm = fir_lpf_.execute();
 
-    std::complex<float> sample_shaped = agc_.execute(sample_shaped_unnorm);
+    std::complex<float> sample_lopass = agc_.execute(sample_lopass_unnorm);
 
-    //std::complex<float> sample_bp = nco_if_.mixUp(sample_shaped);
+    //std::complex<float> sample_bp = nco_if_.mixUp(sample_lopass);
     //std::complex<float> sample_pll = nco_carrier_.mixDown(sample_bp);
 
     //printf("pe:%.10f,%.10f\n",real(sample_bp), imag(sample_bp));
 
       //printf("pe:%.10f,%.10f\n",real(sample_pll),imag(sample_pll));
-    if (numsamples_ % 48 == 0) {
+    if (numsamples_ % (96 / kSamplesPerSymbol) == 0) {
       std::vector<std::complex<float>> y;
-      y = symsync_.execute(sample_shaped);
+      y = symsync_.execute(sample_lopass);
       for (auto sy : y) {
         unsigned u = modem_.demodulate(sy);
         //nco_carrier_.stepPLL(modem_.getPhaseError());
