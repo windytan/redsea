@@ -16,55 +16,6 @@
 
 namespace redsea {
 
-namespace {
-
-  int sign(float x) {
-    return (x >= 0);
-  }
-}
-
-float phaseDiff(std::complex<float> a, std::complex<float> b) {
-  float dph = arg(b) - arg(a);
-  if (dph > M_PI)
-    dph -= 2*M_PI;
-  if (dph < -M_PI)
-    dph += 2*M_PI;
-  dph = fabs(dph) - M_PI_2;
-  return dph;
-}
-
-RunningSum::RunningSum(int len) : values_(len), len_(len), i_(0), max_i_(0),
-  last_max_i_(0) {
-}
-
-RunningSum::~RunningSum() {
-}
-
-float RunningSum::pushAndRead(float s) {
-  sum_ += s;
-  sum_ -= values_[i_];
-  values_[i_] = s;
-
-  if (fabs(sum_) > max_sum_) {
-    max_i_ = i_;
-    max_sum_ = fabs(sum_);
-  }
-
-  i_ = (i_ + 1) % len_;
-
-  if (i_ == max_i_) {
-    last_max_i_ = max_i_;
-    max_sum_ = sum_;
-    max_i_ = i_;
-  }
-
-  return sum_;
-}
-
-int RunningSum::lastMaxIndex() const {
-  return last_max_i_;
-}
-
 DeltaDecoder::DeltaDecoder() : prev_(0) {
 
 }

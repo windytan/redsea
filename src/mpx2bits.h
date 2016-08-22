@@ -12,22 +12,6 @@
 
 namespace redsea {
 
-class RunningSum {
-  public:
-    RunningSum(int len);
-    ~RunningSum();
-    float pushAndRead(float);
-    int lastMaxIndex() const;
-  private:
-    std::vector<float> values_;
-    int len_;
-    float sum_;
-    int i_;
-    int max_i_;
-    int last_max_i_;
-    float max_sum_;
-};
-
 class DeltaDecoder {
   public:
     DeltaDecoder();
@@ -45,21 +29,8 @@ class Subcarrier {
     bool isEOF() const;
   private:
     void demodulateMoreBits();
-    void biphase(float acc);
-    void deltaBit(int b);
-    double mixer_phi_;
-    float clock_offset_;
-    float prevclock_;
-    float prev_bb_;
-    float acc_;
     int   numsamples_;
     float subcarr_freq_;
-    float gain_;
-
-    float prev_acc_;
-    unsigned counter_;
-    std::vector<int> tot_errs_;
-    unsigned reading_frame_;
 
     std::deque<int> bit_buffer_;
 
