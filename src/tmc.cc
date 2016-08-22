@@ -368,8 +368,9 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     ltnbe_ = bits(z, 10, 6);
     has_encid_ = true;
 
-    printf(",\"tmc\":{\"service_id\":\"0x%02x\",\"encryption_id\":\"0x%02x\","
-        "\"location_table\":\"0x%02x\"}", sid_, encid_, ltnbe_);
+    printf(",\"tmc\":{\"encryption_info\":{\"service_id\":\"0x%02x\","
+           "\"encryption_id\":\"0x%02x\","
+           "\"location_table\":\"0x%02x\"}}", sid_, encid_, ltnbe_);
 
   // Tuning information
   } else if (t) {
@@ -462,7 +463,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     if (!parts[0].is_received)
       return;
 
-    printf("/* TODO: multi-group message */");
+    printf("/* TODO: multi-group TMC message */");
     return;
 
     is_complete_ = true;
@@ -540,10 +541,10 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
 }
 
 void Message::print() const {
-  printf(",\"tmc_message\":{");
+  printf(",\"tmc\":{\"message\":{");
 
   if (!is_complete_ || events_.empty()) {
-    printf("/* incomplete */}");
+    printf("/* incomplete */}}");
     return;
   }
 
@@ -594,7 +595,7 @@ void Message::print() const {
     printf(",\"until\":\"%s\"", timeString(time_until_).c_str());
 
 
-  printf ("}");
+  printf ("}}");
 
 }
 
