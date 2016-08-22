@@ -5,13 +5,16 @@
 
 #include "liquid_wrappers.h"
 
-#define FS        228000.0f
-#define FC_0      57000.0f
-#define IBUFLEN   4096
-
-#define PI_f      3.1415926535898f
-
 namespace redsea {
+
+namespace {
+
+const float kFs = 228000.0f;
+const float kFc_0 = 57000.0f;
+const int kInputBufferSize = 4096;
+
+}
+
 
 DeltaDecoder::DeltaDecoder() : prev_(0) {
 
@@ -27,17 +30,17 @@ unsigned DeltaDecoder::decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier() : numsamples_(0), subcarr_freq_(FC_0),
+Subcarrier::Subcarrier() : numsamples_(0), subcarr_freq_(kFc_0),
   bit_buffer_(),
-  fir_lpf_(511, 2100.0f / FS),
+  fir_lpf_(511, 2100.0f / kFs),
   is_eof_(false),
   agc_(0.001f),
-  nco_if_(FC_0 * 2 * PI_f / FS),
+  nco_if_(kFc_0 * 2 * M_PI / kFs),
   nco_carrier_(0.0f),//FC_0 * 2 * PI_f / FS),
   symsync_(LIQUID_FIRFILT_RRC, 2, 5, 0.5f, 32),
   modem_(LIQUID_MODEM_DPSK2),
   prev_sym_(0), sym_clk_(0),
-  biphase_(0), prev_biphase_(0)
+  biphase_(0), prev_biphase_(0), delta_decoder_()
   {
 
     symsync_.setBandwidth(0.02f);
@@ -52,9 +55,9 @@ Subcarrier::~Subcarrier() {
 
 void Subcarrier::demodulateMoreBits() {
 
-  int16_t sample[IBUFLEN];
-  int samplesread = fread(sample, sizeof(int16_t), IBUFLEN, stdin);
-  if (samplesread < IBUFLEN) {
+  int16_t sample[kInputBufferSize];
+  int samplesread = fread(sample, sizeof(int16_t), kInputBufferSize, stdin);
+  if (samplesread < kInputBufferSize) {
     is_eof_ = true;
     return;
   }
@@ -100,7 +103,7 @@ void Subcarrier::demodulateMoreBits() {
     }
 
     nco_if_.step();
-    nco_carrier_.step();
+    //nco_carrier_.step();
 
     numsamples_ ++;
 

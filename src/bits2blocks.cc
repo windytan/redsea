@@ -1,16 +1,16 @@
 #include "bits2blocks.h"
 
-#define MASK_5BIT  0x000001F
-#define MASK_10BIT 0x00003FF
-#define MASK_16BIT 0x000FFFF
-#define MASK_26BIT 0x3FFFFFF
-#define MASK_28BIT 0xFFFFFFF
-
-#define MAX_ERR_LEN 3
-
 namespace redsea {
 
 namespace {
+
+const unsigned kBitmask5  = 0x000001F;
+const unsigned kBitmask10 = 0x00003FF;
+const unsigned kBitmask16 = 0x000FFFF;
+const unsigned kBitmask26 = 0x3FFFFFF;
+const unsigned kBitmask28 = 0xFFFFFFF;
+
+const unsigned kMaxErrorLength = 3;
 
 uint32_t rol10(uint32_t word, int k) {
   uint32_t result = word;
@@ -81,9 +81,9 @@ BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
   block_has_errors_(50), subcarrier_(), ascii_bits_(), has_whole_group_(false),
   error_lookup_(), data_length_(0), input_type_(input_type) {
 
-  for (uint32_t e=1; e < (1<<MAX_ERR_LEN); e++) {
+  for (uint32_t e=1; e < (1<<kMaxErrorLength); e++) {
     for (unsigned shift=0; shift < 16; shift++) {
-      uint32_t errvec = ((e << shift) & MASK_16BIT) << 10;
+      uint32_t errvec = ((e << shift) & kBitmask16) << 10;
 
       uint32_t m = calcCheckBits(0x01);
       uint32_t sy = calcSyndrome(((1<<10) + m) ^ errvec);
@@ -161,9 +161,9 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
     }
 
     left_to_read_ = 26;
-    wideblock_ &= MASK_28BIT;
+    wideblock_ &= kBitmask28;
 
-    uint32_t block = (wideblock_ >> 1) & MASK_26BIT;
+    uint32_t block = (wideblock_ >> 1) & kBitmask26;
 
     // Find the offsets for which the calcSyndrome is zero
     bool has_sync_for_any = false;
@@ -218,13 +218,13 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
         // Detect & correct clock slips (Section C.1.2)
         } else if (expected_offset_ == A && pi_ != 0 &&
-            ((wideblock_ >> 12) & MASK_16BIT) == pi_) {
+            ((wideblock_ >> 12) & kBitmask16) == pi_) {
           message = pi_;
           wideblock_ >>= 1;
           has_sync_for_[A] = true;
           //printf(":offset 0: clock slip corrected\n");
         } else if (expected_offset_ == A && pi_ != 0 &&
-            ((wideblock_ >> 10) & MASK_16BIT) == pi_) {
+            ((wideblock_ >> 10) & kBitmask16) == pi_) {
           message = pi_;
           wideblock_ = (wideblock_ << 1) + getNextBit();
           has_sync_for_[A] = true;
