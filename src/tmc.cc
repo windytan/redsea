@@ -462,6 +462,9 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     if (!parts[0].is_received)
       return;
 
+    printf("/* TODO: multi-group message */");
+    return;
+
     is_complete_ = true;
 
     // First group
