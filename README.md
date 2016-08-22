@@ -23,10 +23,10 @@ If you get an error message about the STDCXX_11 macro, try installing `autoconf-
 ### Live decoding with rtl_fm
 
 ```
-rtl_fm -M fm -f 87.9M -l 0 -A std -p 0 -s 228k -F 9 | ./src/redsea
+./rtl-rx.sh -f 87.9M
 ```
 
-The `-f` parameter sets the station frequency. Note that `rtl_fm` will tune a bit off, this is normal behavior.
+The `-f` parameter sets the station frequency. Note that `rtl_fm` will tune a bit off; this is expected behavior.
 
 ### Decoding a pre-recorded signal with SoX
 
