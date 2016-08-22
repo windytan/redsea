@@ -40,11 +40,11 @@ std::vector<std::pair<uint16_t,uint16_t>>
   // Concatenate freeform data from used message length (derived from
   // GSI of second group)
   std::deque<int> freeform_data_bits;
-  for (int i=0; i<(int)parts.size(); i++) {
+  for (int i=1; i<(int)parts.size(); i++) {
     if (!parts[i].is_received)
       break;
 
-    if (i <= 1 || i >= (int)parts.size() - second_gsi) {
+    if (i == 1 || i >= (int)parts.size() - second_gsi) {
       for (int b=0; b<12; b++)
         freeform_data_bits.push_back((parts[i].data[0] >> (11-b)) & 0x1);
       for (int b=0; b<16; b++)
@@ -52,7 +52,7 @@ std::vector<std::pair<uint16_t,uint16_t>>
     }
   }
 
-  // Decode freeform data
+  // Separate freeform data into fields
   //int bits_left = freeform_data_bits.size();
   std::vector<std::pair<uint16_t,uint16_t>> result;
   while (freeform_data_bits.size() > 4) {
@@ -61,6 +61,9 @@ std::vector<std::pair<uint16_t,uint16_t>>
       break;
 
     uint16_t field_data = popBits(freeform_data_bits, field_size.at(label));
+
+    if (label == 0x00 && field_data == 0x00)
+      break;
 
     result.push_back({label, field_data});
   }
@@ -410,25 +413,28 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     // Part of multi-group message
     } else {
 
-      uint16_t ci = bits(x, 0, 3);
-      bool     fg = bits(y, 15, 1);
+      uint16_t continuity_index = bits(x, 0, 3);
+      bool     is_first_group = bits(y, 15, 1);
 
-      if (ci != current_ci_ /* TODO 15-second limit */) {
+      if (continuity_index != current_ci_) {
+        /* Message changed; print previous unfinished message
+         * TODO 15-second limit */
         Message message(true, is_encrypted_, multi_group_buffer_);
         message.print();
         for (auto& g : multi_group_buffer_)
           g.is_received = false;
-        current_ci_ = ci;
+        current_ci_ = continuity_index;
       }
 
       int cur_grp;
 
-      if (fg)
+      if (is_first_group) {
         cur_grp = 0;
-      else if (bits(y, 14, 1))
+      } else if (bits(y, 14, 1)) { // SG
         cur_grp = 1;
-      else
+      } else {
         cur_grp = 4 - bits(y, 12, 2);
+      }
 
       multi_group_buffer_.at(cur_grp) = {true, {y, z}};
 
@@ -444,7 +450,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     location_(0), is_complete_(false), has_length_affected_(false),
     length_affected_(0), has_time_until_(false), time_until_(0),
     has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
-    speed_limit_(0) {
+    speed_limit_(0), directionality_(DIR_SINGLE) {
 
   // single-group
   if (!is_multi) {
@@ -454,6 +460,9 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     extent_    = bits(parts[0].data[1], 11, 3);
     events_.push_back(bits(parts[0].data[1], 0, 11));
     location_  = parts[0].data[2];
+
+    directionality_ = getEvent(events_[0]).directionality;
+
     is_complete_ = true;
 
   // multi-group
@@ -463,9 +472,6 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     if (!parts[0].is_received)
       return;
 
-    printf("/* TODO: multi-group TMC message */");
-    return;
-
     is_complete_ = true;
 
     // First group
@@ -473,6 +479,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     extent_    = bits(parts[0].data[0], 11, 3);
     events_.push_back(bits(parts[0].data[0], 0, 11));
     location_  = parts[0].data[1];
+    directionality_ = getEvent(events_[0]).directionality;
 
     // Subsequent parts
     if (parts[1].is_received) {
@@ -485,6 +492,14 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
         // Duration
         if (label == 0) {
           duration_ = field_data;
+
+        // Control code
+        } else if (label == 1) {
+          if (field_data == 2) {
+            directionality_ ^= 1;
+          } else {
+            printf("/* TODO: TMC control code %d */",field_data);
+          }
 
         // Length of route affected
         } else if (label == 2) {
@@ -529,6 +544,11 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
           time_until_ = field_data;
           has_time_until_ = true;
 
+        // Multi-event message
+        } else if (label == 9) {
+          events_.push_back(field_data);
+
+        // Detailed diversion
         } else if (label == 10) {
           diversion_.push_back(field_data);
 
@@ -538,6 +558,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
       }
     }
   }
+
 }
 
 void Message::print() const {
@@ -556,10 +577,10 @@ void Message::print() const {
   std::vector<std::string> sentences;
   for (size_t i=0; i<events_.size(); i++) {
     std::string desc;
-    if (isEvent(events_[0])) {
-      Event ev = getEvent(events_[0]);
-      if (quantifiers_.count(0) == 1) {
-        desc = getDescWithQuantifier(ev, quantifiers_.at(0));
+    if (isEvent(events_[i])) {
+      Event ev = getEvent(events_[i]);
+      if (quantifiers_.count(i) == 1) {
+        desc = getDescWithQuantifier(ev, quantifiers_.at(i));
       } else {
         desc = ev.description;
       }
@@ -582,10 +603,11 @@ void Message::print() const {
   if (has_speed_limit_)
     printf(",\"speed_limit\":\"%d km/h\"", speed_limit_);
 
-  printf(",\"%slocation\":%d,\"direction\":\"%s\",\"extent\":%d,"
+  printf(",\"%slocation\":%d,\"direction\":\"%s\",\"extent\":\"%s%d\","
          "\"diversion_advised\":\"%s\"",
          (is_encrypted_ ? "encrypted_" : ""), location_,
-         direction_ ? "negative" : "positive",
+         directionality_ == DIR_SINGLE ? "single" : "both",
+         direction_ ? "-" : "+",
          extent_, divertadv_ ? "true" : "false" );
 
 
