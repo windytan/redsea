@@ -51,7 +51,7 @@ Event getEvent(uint16_t code);
 void loadEventData();
 
 struct MessagePart {
-  MessagePart() : is_received(false) {};
+  MessagePart() : is_received(false), data() {};
   MessagePart(bool _is_received, std::vector<uint16_t> _data) :
     is_received(_is_received), data(_data) {};
   bool is_received;

@@ -28,24 +28,27 @@ bool operator<(const GroupType& obj1, const GroupType& obj2) {
   return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab));
 }
 
-Group::Group(std::vector<uint16_t> blockbits) : type(blockbits.size() > 0 ?
-    bits(blockbits.at(1), 11, 5) : TYPE_A), num_blocks(blockbits.size()) {
-  if (num_blocks > 0)
-    block1 = blockbits[0];
-  if (num_blocks > 1) {
-    block2 = blockbits[1];
-  }
-  if (num_blocks > 2)
-    block3 = blockbits[2];
-  if (num_blocks > 3)
-    block4 = blockbits[3];
+Group::Group(std::vector<uint16_t> blockbits) :
+    type(blockbits.size() > 0 ? bits(blockbits.at(1), 11, 5) : TYPE_A),
+    num_blocks(blockbits.size()),
+    block1(num_blocks > 0 ? blockbits[0] : 0x00),
+    block2(num_blocks > 1 ? blockbits[1] : 0x00),
+    block3(num_blocks > 2 ? blockbits[2] : 0x00),
+    block4(num_blocks > 3 ? blockbits[3] : 0x00)
+{
+
 }
 
 Station::Station() : Station(0x0000) {
 
 }
 
-Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64), tmc_() {
+Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64), rt_ab_(0), pty_(0),
+  is_tp_(false), is_ta_(false), is_music_(false), alt_freqs_(),
+  num_alt_freqs_(0), pin_(0), ecc_(0), cc_(0), tmc_id_(0), ews_channel_(0),
+  lang_(0), linkage_la_(0), clock_time_(""), has_country_(false),
+  oda_app_for_group_(), pager_pac_(0), pager_opc_(0), pager_tng_(0),
+  pager_ecc_(0), pager_ccf_(0), pager_interval_(0), tmc_() {
 
 }
 

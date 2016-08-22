@@ -204,7 +204,9 @@ std::string ucfirst(std::string in) {
 
 } // namespace
 
-Event::Event() {
+Event::Event() : description(""), description_with_quantifier(""), nature(0),
+  quantifier_type(0), duration_type(0), directionality(0), urgency(0),
+  update_class(0), allows_quantifier(false) {
 
 }
 
@@ -302,8 +304,9 @@ void loadEventData() {
 
 }
 
-TMC::TMC() : is_initialized_(false), has_encid_(false), multi_group_buffer_(5),
-  ps_(8) {
+TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
+  ltn_(0), sid_(0), encid_(0), ltnbe_(0), current_ci_(0),
+  multi_group_buffer_(5), ps_(8) {
 
 }
 
@@ -434,7 +437,13 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 Message::Message(bool is_multi, bool is_loc_encrypted,
-    std::vector<MessagePart> parts) : is_encrypted_(is_loc_encrypted), events_() {
+    std::vector<MessagePart> parts) : is_encrypted_(is_loc_encrypted),
+    duration_(0), duration_type_(0), divertadv_(false), direction_(0),
+    extent_(0), events_(), supplementary_(), quantifiers_(), diversion_(),
+    location_(0), is_complete_(false), has_length_affected_(false),
+    length_affected_(0), has_time_until_(false), time_until_(0),
+    has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
+    speed_limit_(0) {
 
   // single-group
   if (!is_multi) {
