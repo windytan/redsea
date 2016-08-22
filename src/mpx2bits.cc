@@ -79,7 +79,7 @@ void Subcarrier::demodulateMoreBits() {
       y = symsync_.execute(sample_shaped);
       for (auto sy : y) {
         unsigned u = modem_.demodulate(sy);
-        nco_carrier_.stepPLL(modem_.getPhaseError());
+        //nco_carrier_.stepPLL(modem_.getPhaseError());
         biphase_ ^= u;
 
         if (sym_clk_ == 1) {
