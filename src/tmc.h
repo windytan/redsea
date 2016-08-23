@@ -108,6 +108,7 @@ class Message {
     bool has_speed_limit_;
     uint16_t speed_limit_;
     uint16_t directionality_;
+    uint16_t urgency_;
 };
 
 } // namespace tmc

@@ -460,8 +460,9 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     extent_    = bits(parts[0].data[1], 11, 3);
     events_.push_back(bits(parts[0].data[1], 0, 11));
     location_  = parts[0].data[2];
-
     directionality_ = getEvent(events_[0]).directionality;
+    urgency_   = getEvent(events_[0]).urgency;
+    duration_type_ = getEvent(events_[0]).duration_type;
 
     is_complete_ = true;
 
@@ -480,6 +481,8 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     events_.push_back(bits(parts[0].data[0], 0, 11));
     location_  = parts[0].data[1];
     directionality_ = getEvent(events_[0]).directionality;
+    urgency_   = getEvent(events_[0]).urgency;
+    duration_type_ = getEvent(events_[0]).duration_type;
 
     // Subsequent parts
     if (parts[1].is_received) {
@@ -495,8 +498,23 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
 
         // Control code
         } else if (label == 1) {
-          if (field_data == 2) {
+          if (field_data == 0) {
+            urgency_ = (urgency_ + 1) % 3;
+          } else if (field_data == 1) {
+            if (urgency_ == URGENCY_NONE)
+              urgency_ = URGENCY_X;
+            else
+              urgency_ --;
+          } else if (field_data == 2) {
             directionality_ ^= 1;
+          } else if (field_data == 3) {
+            duration_type_ ^= 1;
+          } else if (field_data == 5) {
+            divertadv_ = true;
+          } else if (field_data == 6) {
+            extent_ += 8;
+          } else if (field_data == 7) {
+            extent_ += 16;
           } else {
             printf("/* TODO: TMC control code %d */",field_data);
           }
