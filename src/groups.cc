@@ -29,7 +29,7 @@ bool operator<(const GroupType& obj1, const GroupType& obj2) {
 }
 
 Group::Group(std::vector<uint16_t> blockbits) :
-    type(blockbits.size() > 0 ? bits(blockbits.at(1), 11, 5) : TYPE_A),
+    type(blockbits.size() > 1 ? bits(blockbits.at(1), 11, 5) : TYPE_A),
     num_blocks(blockbits.size()),
     block1(num_blocks > 0 ? blockbits[0] : 0x00),
     block2(num_blocks > 1 ? blockbits[1] : 0x00),
@@ -54,11 +54,17 @@ Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64), rt_ab_(0), pty_(0),
 
 void Station::update(Group group) {
 
+  printf("{\"pi\":\"0x%04x\"", pi_);
+
+  if (group.num_blocks < 2) {
+    printf("}\n");
+    return;
+  }
+
+  printf(",\"group\":\"%s\"", group.type.toString().c_str());
+
   is_tp_   = bits(group.block2, 10, 1);
   pty_     = bits(group.block2,  5, 5);
-
-  printf("{\"pi\":\"0x%04x\",\"group\":\"%s\"", pi_,
-      group.type.toString().c_str());
 
   printf(",\"tp\":\"%s\"", is_tp_ ? "true" : "false");
   printf(",\"prog_type\":\"%s\"", getPTYname(pty_).c_str());

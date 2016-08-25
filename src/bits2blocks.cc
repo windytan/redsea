@@ -110,7 +110,7 @@ void BlockStream::uncorrectable() {
   data_length_ = 0;
 
   // TODO: return partial group
-  /*if (has_block_[A]) {
+  if (has_block_[A]) {
     has_whole_group_ = true;
     data_length_ = 1;
 
@@ -121,7 +121,7 @@ void BlockStream::uncorrectable() {
         data_length_ = 3;
       }
     }
-  }*/
+  }
 
   block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 

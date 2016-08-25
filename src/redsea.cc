@@ -60,6 +60,10 @@ int main(int argc, char** argv) {
   int group_counter = 0;
   while (!block_stream.isEOF()) {
     auto blockbits = block_stream.getNextGroup();
+
+    if (blockbits.size() == 0)
+      continue;
+
     group_counter ++;
 
     prev_new_pi = new_pi;
@@ -78,6 +82,7 @@ int main(int argc, char** argv) {
       stations[pi].update(group);
     } else {
       stations.insert({pi, redsea::Station(pi)});
+      stations[pi].update(group);
     }
 
     //printShort(stations[pi]);
