@@ -2,7 +2,7 @@
 
 redsea is an experiment at building a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder.
-It works mainly with rtl_fm.
+It works mainly with `rtl_fm`.
 
 [explanatory blog post](http://www.windytan.com/2015/02/receiving-rds-with-rtl-sdr.html)
 
@@ -20,6 +20,13 @@ If you get an error message about the STDCXX_11 macro, try installing `autoconf-
 
 ## Usage
 
+```
+radio_command | ./src/redsea [-b | -x]
+
+-b    Input is ASCII bit stream (011010110...)
+-x    Output is hex groups in the RDS Spy format
+```
+
 ### Live decoding with rtl_fm
 
 ```
@@ -36,21 +43,13 @@ sox multiplex.wav -t .s16 -r 228k - | ./src/redsea
 
 The signal should be FM demodulated and have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).
 
-### Decoding serial data
-
-Raw serial RDS bits can be fed into the program as ASCII `0`s and `1`s using the `-b` option:
-
-```
-./src/redsea -b < bits.txt
-```
-
 ## Requirements
 
 * Linux/OSX
 * C++11 compiler
 * GNU autotools
 * [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
-* rtl_fm (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any other source that can output demodulated FM multiplex signals
+* `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any other source that can output demodulated FM multiplex signals
 
 ## Features
 

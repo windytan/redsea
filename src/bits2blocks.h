@@ -12,7 +12,11 @@ enum {
 };
 
 enum eInputType {
-  INPUT_MPX, INPUT_ASCIIBITS
+  INPUT_MPX, INPUT_ASCIIBITS, INPUT_RDSSPY
+};
+
+enum eOutputType {
+  OUTPUT_HEX, OUTPUT_JSON
 };
 
 class BlockStream {

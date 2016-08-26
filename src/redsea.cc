@@ -41,11 +41,15 @@ int main(int argc, char** argv) {
 
   int option_char;
   int input_type = redsea::INPUT_MPX;
+  int output_type = redsea::OUTPUT_JSON;
 
-  while ((option_char = getopt(argc, argv, "b")) != EOF) {
+  while ((option_char = getopt(argc, argv, "bx")) != EOF) {
     switch (option_char) {
       case 'b':
         input_type = redsea::INPUT_ASCIIBITS;
+        break;
+      case 'x':
+        output_type = redsea::OUTPUT_HEX;
         break;
       case '?':
         break;
@@ -78,11 +82,16 @@ int main(int argc, char** argv) {
 
     redsea::Group group(blockbits);
 
-    if (stations.find(pi) != stations.end()) {
-      stations[pi].update(group);
+    if (output_type == redsea::OUTPUT_HEX) {
+      group.printHex();
     } else {
-      stations.insert({pi, redsea::Station(pi)});
-      stations[pi].update(group);
+
+      if (stations.find(pi) != stations.end()) {
+        stations[pi].update(group);
+      } else {
+        stations.insert({pi, redsea::Station(pi)});
+        stations[pi].update(group);
+      }
     }
 
     //printShort(stations[pi]);

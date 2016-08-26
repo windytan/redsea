@@ -39,6 +39,30 @@ Group::Group(std::vector<uint16_t> blockbits) :
 
 }
 
+void Group::printHex() const {
+  if (num_blocks > 0)
+    printf("%04X ", block1);
+  else
+    printf("---- ");
+
+  if (num_blocks > 1)
+    printf("%04X ", block2);
+  else
+    printf("---- ");
+
+  if (num_blocks > 2)
+    printf("%04X ", block3);
+  else
+    printf("---- ");
+
+  if (num_blocks > 3)
+    printf("%04X ", block4);
+  else
+    printf("----");
+
+  printf("\n");
+}
+
 Station::Station() : Station(0x0000) {
 
 }
@@ -393,7 +417,7 @@ void Station::decodeType8 (Group group) {
 
 }
 
-/* Type 14: Enhanced Other Networks information */
+/* Type 14: Enhanced Other Networks information TODO */
 void Station::decodeType14 (Group group) {
 
 }

@@ -27,11 +27,13 @@ class GroupType {
   uint16_t num;
   uint16_t ab;
 };
+
 bool operator<(const GroupType& obj1, const GroupType& obj2);
 
 class Group {
   public:
   Group(std::vector<uint16_t> blockbits);
+  void printHex() const;
 
   GroupType type;
   int num_blocks;
