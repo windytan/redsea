@@ -43,10 +43,13 @@ int main(int argc, char** argv) {
   int input_type = redsea::INPUT_MPX;
   int output_type = redsea::OUTPUT_JSON;
 
-  while ((option_char = getopt(argc, argv, "bx")) != EOF) {
+  while ((option_char = getopt(argc, argv, "bhx")) != EOF) {
     switch (option_char) {
       case 'b':
         input_type = redsea::INPUT_ASCIIBITS;
+        break;
+      case 'h':
+        input_type = redsea::INPUT_RDSSPY;
         break;
       case 'x':
         output_type = redsea::OUTPUT_HEX;
@@ -62,8 +65,20 @@ int main(int argc, char** argv) {
   uint16_t pi=0, prev_new_pi=0, new_pi=0;
 
   int group_counter = 0;
-  while (!block_stream.isEOF()) {
-    auto blockbits = block_stream.getNextGroup();
+  bool is_eof = false;
+
+  while (!is_eof) {
+
+    std::vector<uint16_t> blockbits;
+
+    if (input_type == redsea::INPUT_MPX ||
+        input_type == redsea::INPUT_ASCIIBITS) {
+      blockbits = block_stream.getNextGroup();
+      is_eof = block_stream.isEOF();
+    } else if (input_type == redsea::INPUT_RDSSPY) {
+      blockbits = redsea::getNextGroupRSpy();
+      is_eof = blockbits.size() == 0;
+    }
 
     if (blockbits.size() == 0)
       continue;

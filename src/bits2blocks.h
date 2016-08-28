@@ -49,6 +49,7 @@ class BlockStream {
   std::map<uint16_t,uint16_t> error_lookup_;
   unsigned data_length_;
   const int input_type_;
+  bool is_eof_;
 
 };
 

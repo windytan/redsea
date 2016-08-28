@@ -24,10 +24,13 @@ If you get an error message about the STDCXX_11 macro, try installing `autoconf-
 radio_command | ./src/redsea [-b | -x]
 
 -b    Input is ASCII bit stream (011010110...)
+-h    Input is hex groups in the RDS Spy format
 -x    Output is hex groups in the RDS Spy format
 ```
 
 ### Live decoding with rtl_fm
+
+There's a convenience shell script called `rtl-rx.sh` that can be modified to include additional arguments to redsea.
 
 ```
 ./rtl-rx.sh -f 87.9M
@@ -38,7 +41,7 @@ The `-f` parameter sets the station frequency. Note that `rtl_fm` will tune a bi
 ### Decoding a pre-recorded signal with SoX
 
 ```
-sox multiplex.wav -t .s16 -r 228k - | ./src/redsea
+sox multiplex.wav -t .s16 -r 228k -c 1 - | ./src/redsea
 ```
 
 The signal should be FM demodulated and have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).

@@ -67,5 +67,7 @@ class AsciiBits {
 
 };
 
+std::vector<uint16_t> getNextGroupRSpy();
+
 } // namespace redsea
 #endif // MPX2BITS_H_
