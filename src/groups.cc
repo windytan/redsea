@@ -4,7 +4,6 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <vector>
 
 #include "data.h"
 #include "rdsstring.h"

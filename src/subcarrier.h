@@ -1,9 +1,6 @@
 #ifndef MPX2BITS_H_
 #define MPX2BITS_H_
 
-#define DBG_OUT
-
-#include <cassert>
 #include <deque>
 #include <complex>
 #include <vector>
@@ -53,21 +50,6 @@ class Subcarrier {
     DeltaDecoder delta_decoder_;
 
 };
-
-class AsciiBits {
-
-  public:
-    AsciiBits();
-    ~AsciiBits();
-    int getNextBit();
-    bool isEOF() const;
-
-  private:
-    bool is_eof_;
-
-};
-
-std::vector<uint16_t> getNextGroupRSpy();
 
 } // namespace redsea
 #endif // MPX2BITS_H_

@@ -16,12 +16,10 @@
  *
  */
 
-#include "redsea.h"
-
 #include <getopt.h>
 #include <iostream>
 
-#include "bits2blocks.h"
+#include "block_sync.h"
 #include "groups.h"
 
 namespace redsea {

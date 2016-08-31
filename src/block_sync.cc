@@ -1,4 +1,4 @@
-#include "bits2blocks.h"
+#include "block_sync.h"
 
 namespace redsea {
 

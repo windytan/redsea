@@ -3,7 +3,8 @@
 
 #include <map>
 
-#include "mpx2bits.h"
+#include "ascii_in.h"
+#include "subcarrier.h"
 
 namespace redsea {
 
