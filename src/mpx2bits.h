@@ -45,7 +45,7 @@ class Subcarrier {
 
     liquid::Modem modem_;
 
-    unsigned prev_sym_;
+    //unsigned prev_sym_;
     unsigned sym_clk_;
     unsigned biphase_;
     unsigned prev_biphase_;

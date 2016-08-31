@@ -34,14 +34,14 @@ unsigned DeltaDecoder::decode(unsigned d) {
 
 Subcarrier::Subcarrier() : numsamples_(0),
   bit_buffer_(),
-  fir_lpf_(511, 2200.0f / kFs),
+  fir_lpf_(511, 2100.0f / kFs),
   is_eof_(false),
   agc_(0.001f),
   nco_approx_(kFc_0 * 2 * M_PI / kFs),
   nco_exact_(0.0f),//FC_0 * 2 * PI_f / FS),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f, 32),
-  modem_(LIQUID_MODEM_DPSK2),
-  prev_sym_(0), sym_clk_(0),
+  modem_(LIQUID_MODEM_PSK2),
+  sym_clk_(0),
   biphase_(0), prev_biphase_(0), delta_decoder_()
   {
 
@@ -73,19 +73,14 @@ void Subcarrier::demodulateMoreBits() {
 
     std::complex<float> sample_lopass = agc_.execute(sample_lopass_unnorm);
 
-    //std::complex<float> sample_bp = nco_approx_.mixUp(sample_lopass);
-    //std::complex<float> sample_pll = nco_exact_.mixDown(sample_bp);
+    sample_lopass = nco_exact_.mixDown(sample_lopass);
 
-    //printf("pe:%.10f,%.10f\n",real(sample_bp), imag(sample_bp));
-
-      //printf("pe:%.10f,%.10f\n",real(sample_pll),imag(sample_pll));
     if (numsamples_ % (96 / kSamplesPerSymbol) == 0) {
       std::vector<std::complex<float>> y;
       y = symsync_.execute(sample_lopass);
       for (auto sy : y) {
-        unsigned u = modem_.demodulate(sy);
-        //nco_exact_.stepPLL(modem_.getPhaseError());
-        biphase_ ^= u;
+        biphase_ = modem_.demodulate(sy);
+        nco_exact_.stepPLL(modem_.getPhaseError());
 
         if (sym_clk_ == 1) {
           if (prev_biphase_ == 0 && biphase_ == 1) {
@@ -105,7 +100,6 @@ void Subcarrier::demodulateMoreBits() {
     }
 
     nco_approx_.step();
-    //nco_exact_.step();
 
     numsamples_ ++;
 
