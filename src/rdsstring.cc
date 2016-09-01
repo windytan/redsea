@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "data.h"
+#include "tables.h"
 
 namespace redsea {
 

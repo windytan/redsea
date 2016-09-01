@@ -5,8 +5,8 @@
 #include <map>
 #include <string>
 
-#include "data.h"
 #include "rdsstring.h"
+#include "tables.h"
 #include "util.h"
 
 namespace redsea {
