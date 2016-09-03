@@ -78,7 +78,7 @@ BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
   expected_offset_(0), pi_(0), has_sync_for_(5), is_in_sync_(false),
   offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
   block_for_offset_({0, 1, 2, 2, 3}), group_data_(4), has_block_(5),
-  block_has_errors_(50), subcarrier_(), ascii_bits_(), has_whole_group_(false),
+  block_has_errors_(50), subcarrier_(), ascii_bits_(), has_new_group_(false),
   error_lookup_(), data_length_(0), input_type_(input_type), is_eof_(false) {
 
   for (uint32_t e=1; e < (1<<kMaxErrorLength); e++) {
@@ -111,9 +111,8 @@ void BlockStream::uncorrectable() {
   //printf(":offset %d: not received\n",expected_offset_);
   data_length_ = 0;
 
-  // TODO: return partial group
   if (has_block_[A]) {
-    has_whole_group_ = true;
+    has_new_group_ = true;
     data_length_ = 1;
 
     if (has_block_[B]) {
@@ -149,10 +148,10 @@ void BlockStream::uncorrectable() {
 
 std::vector<uint16_t> BlockStream::getNextGroup() {
 
-  has_whole_group_ = false;
+  has_new_group_ = false;
   data_length_ = 0;
 
-  while (!(has_whole_group_ || isEOF())) {
+  while (!(has_new_group_ || isEOF())) {
 
     // Compensate for clock slip corrections
     bitcount_ += 26 - left_to_read_;
@@ -281,7 +280,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
         // Complete group received
         if (has_block_[A] && has_block_[B] && (has_block_[C] ||
             has_block_[CI]) && has_block_[D]) {
-          has_whole_group_ = true;
+          has_new_group_ = true;
           data_length_ = 4;
         }
       }
