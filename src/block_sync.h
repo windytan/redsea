@@ -1,5 +1,5 @@
-#ifndef BLOCKSTREAM_H_
-#define BLOCKSTREAM_H_
+#ifndef BLOCK_SYNC_H_
+#define BLOCK_SYNC_H_
 
 #include <map>
 
@@ -8,7 +8,7 @@
 
 namespace redsea {
 
-enum {
+enum eOffset {
   A, B, C, CI, D
 };
 
@@ -55,4 +55,4 @@ class BlockStream {
 };
 
 } // namespace redsea
-#endif // BLOCKSTREAM_H_
+#endif // BLOCK_SYNC_H_
