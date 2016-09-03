@@ -4,24 +4,11 @@ namespace redsea {
 
 namespace {
 
-const unsigned kBitmask5  = 0x000001F;
-const unsigned kBitmask10 = 0x00003FF;
 const unsigned kBitmask16 = 0x000FFFF;
 const unsigned kBitmask26 = 0x3FFFFFF;
 const unsigned kBitmask28 = 0xFFFFFFF;
 
 const unsigned kMaxErrorLength = 3;
-
-uint32_t rol10(uint32_t word, int k) {
-  uint32_t result = word;
-  uint32_t l;
-  for (int i=0; i<k; i++) {
-    l       = (result & 0x200);
-    result  = (result << 1) & 0x3FF;
-    result ^= l;
-  }
-  return result;
-}
 
 uint32_t calcSyndrome(uint32_t vec) {
 
@@ -39,13 +26,16 @@ uint32_t calcSyndrome(uint32_t vec) {
   return synd_reg;
 }
 
-uint32_t calcCheckBits(uint32_t dataWord) {
-  uint32_t generator = 0x1B9;
-  uint32_t result    = 0;
+uint32_t calcCheckBits(uint32_t data_word) {
+  static const std::vector<uint32_t> genmat({
+      0x077, 0x2e7, 0x3af, 0x30b, 0x359, 0x370, 0x1b8, 0x0dc,
+      0x06e, 0x037, 0x2c7, 0x3bf, 0x303, 0x35d, 0x372, 0x1b9
+  });
+  uint32_t result = 0;
 
-  for (unsigned k=0; k<16; k++) {
-    if ((dataWord >> k) & 0x01) {
-      result ^= rol10(generator, k);
+  for (int k=0; k<16; k++) {
+    if ((data_word >> k) & 0x01) {
+      result ^= genmat[15-k];
     }
   }
   return result;
@@ -71,6 +61,22 @@ unsigned nextOffsetFor(unsigned o) {
   return result;
 }
 
+std::map<uint16_t,uint16_t> makeErrorLookupTable() {
+
+  std::map<uint16_t,uint16_t> result;
+
+  for (uint32_t e=1; e < (1<<kMaxErrorLength); e++) {
+    for (unsigned shift=0; shift < 16; shift++) {
+      uint32_t errvec = ((e << shift) & kBitmask16) << 10;
+
+      uint32_t m = calcCheckBits(0x01);
+      uint32_t sy = calcSyndrome(((1<<10) + m) ^ errvec);
+      result[sy] = errvec >> 10;
+    }
+  }
+  return result;
+}
+
 }
 
 BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
@@ -81,15 +87,7 @@ BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
   block_has_errors_(50), subcarrier_(), ascii_bits_(), has_new_group_(false),
   error_lookup_(), data_length_(0), input_type_(input_type), is_eof_(false) {
 
-  for (uint32_t e=1; e < (1<<kMaxErrorLength); e++) {
-    for (unsigned shift=0; shift < 16; shift++) {
-      uint32_t errvec = ((e << shift) & kBitmask16) << 10;
-
-      uint32_t m = calcCheckBits(0x01);
-      uint32_t sy = calcSyndrome(((1<<10) + m) ^ errvec);
-      error_lookup_[sy] = errvec>>10;
-    }
-  }
+  error_lookup_ = makeErrorLookupTable();
 
 }
 
@@ -252,10 +250,11 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
               has_sync_for_[expected_offset_] = true;
             }
 
-            //printf(":offset %d: error corrected using vector %04x for "
-            //  "syndrome %03x\n", expected_offset_, error_lookup_[synd_reg],
-            //  synd_reg);
-
+            /*printf(":offset %d: corrected %04x->%04x using vector %04x for "
+              "syndrome %03x->%03x\n", expected_offset_, block >> 10, message,
+              error_lookup_[synd_reg],
+              synd_reg,calcSyndrome(corrected_block));
+*/
           }
 
         }
