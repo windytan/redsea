@@ -8,7 +8,7 @@ namespace redsea {
 
 std::string getLCDchar(int code) {
   std::string result(" ");
-  const std::vector<std::string> char_map ({
+  static const std::vector<std::string> char_map ({
       " ","!","\\\"","#","¤","%","&","'","(",")","*","+",",","-",".","/",
       "0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?",
       "@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O",
@@ -33,7 +33,7 @@ std::string getLCDchar(int code) {
 
 std::string getPTYname(int pty) {
   assert (pty >= 0 && pty <= 32);
-  const std::vector<std::string> pty_names ({
+  static const std::vector<std::string> pty_names ({
    "No PTY", "News", "Current Affairs", "Information",
    "Sport", "Education", "Drama", "Cultures",
    "Science", "Varied Speech","Pop Music", "Rock Music",
@@ -48,7 +48,7 @@ std::string getPTYname(int pty) {
 }
 
 std::string getCountryString(uint16_t pi, uint16_t ecc) {
-  const std::map<uint16_t,std::vector<std::string>> country_codes ({
+  static const std::map<uint16_t,std::vector<std::string>> country_codes ({
     {0xA0,{"us","us","us","us","us","us","us","us","us","us","us","--","us","us","--"}},
     {0xA1,{"--","--","--","--","--","--","--","--","--","--","ca","ca","ca","ca","gl"}},
     {0xA2,{"ai","ag","ec","fk","bb","bz","ky","cr","cu","ar","br","bm","an","gp","bs"}},
@@ -84,7 +84,7 @@ std::string getCountryString(uint16_t pi, uint16_t ecc) {
 }
 
 std::string getLanguageString(uint16_t code) {
-  std::vector<std::string> languages ({
+  static const std::vector<std::string> languages ({
     "Unknown","Albanian","Breton","Catalan",
     "Croatian","Welsh","Czech","Danish",
     "German","English","Spanish","Esperanto",
@@ -128,7 +128,7 @@ std::string getLanguageString(uint16_t code) {
 }
 
 std::string getAppName(uint16_t aid) {
-  std::map<uint16_t,std::string> oda_apps({
+  static const std::map<uint16_t,std::string> oda_apps({
     { 0x0000, "None" },
     { 0x0093, "Cross referencing DAB within RDS" },
     { 0x0BCB, "Leisure & Practical Info for Drivers" },
@@ -187,7 +187,7 @@ std::string getAppName(uint16_t aid) {
 
   std::string result("(Unknown)");
   if (oda_apps.find(aid) != oda_apps.end()) {
-    result = oda_apps[aid];
+    result = oda_apps.at(aid);
   }
 
   return result;
