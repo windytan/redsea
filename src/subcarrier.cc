@@ -69,15 +69,16 @@ void Subcarrier::demodulateMoreBits() {
     std::complex<float> sample_baseband = nco_approx_.mixDown(sample[i]);
 
     fir_lpf_.push(sample_baseband);
-    std::complex<float> sample_lopass_unnorm = fir_lpf_.execute();
-
-    std::complex<float> sample_lopass = agc_.execute(sample_lopass_unnorm);
-
-    sample_lopass = nco_exact_.mixDown(sample_lopass);
 
     if (numsamples_ % (96 / kSamplesPerSymbol) == 0) {
-      std::vector<std::complex<float>> y;
-      y = symsync_.execute(sample_lopass);
+
+      std::complex<float> sample_lopass_unnorm = fir_lpf_.execute();
+      std::complex<float> sample_lopass = agc_.execute(sample_lopass_unnorm);
+
+      sample_lopass = nco_exact_.mixDown(sample_lopass);
+
+      std::vector<std::complex<float>> y = symsync_.execute(sample_lopass);
+
       for (auto sy : y) {
         biphase_ = modem_.demodulate(sy);
         nco_exact_.stepPLL(modem_.getPhaseError());
