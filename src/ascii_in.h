@@ -1,6 +1,7 @@
 #ifndef ASCII_IN_H_
 #define ASCII_IN_H_
 
+#include <cstdint>
 #include <vector>
 
 namespace redsea {
