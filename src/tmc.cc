@@ -450,7 +450,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
     location_(0), is_complete_(false), has_length_affected_(false),
     length_affected_(0), has_time_until_(false), time_until_(0),
     has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
-    speed_limit_(0), directionality_(DIR_SINGLE) {
+    speed_limit_(0), directionality_(DIR_SINGLE), urgency_(URGENCY_NONE) {
 
   // single-group
   if (!is_multi) {

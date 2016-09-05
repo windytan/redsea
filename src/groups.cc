@@ -28,7 +28,8 @@ bool operator<(const GroupType& obj1, const GroupType& obj2) {
 }
 
 Group::Group(std::vector<uint16_t> blockbits) :
-    type(blockbits.size() > 1 ? bits(blockbits.at(1), 11, 5) : TYPE_A),
+    type(blockbits.size() > 1 ? (bits(blockbits.at(1), 11, 5)
+      ? TYPE_B : TYPE_A) : TYPE_A),
     num_blocks(blockbits.size()),
     block1(num_blocks > 0 ? blockbits[0] : 0x00),
     block2(num_blocks > 1 ? blockbits[1] : 0x00),

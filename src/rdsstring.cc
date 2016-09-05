@@ -15,8 +15,8 @@ std::string rtrim(std::string s) {
 }
 
 RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
-  prev_pos_(-1) {
-  last_complete_string_ = getString();
+  prev_pos_(-1), last_complete_string_(getString()) {
+
 }
 
 void RDSString::setAt(int pos, int chr) {

@@ -47,10 +47,8 @@ std::complex<float> FIRFilter::execute() {
   return result;
 }
 
-NCO::NCO(float freq) {
-  object_ = nco_crcf_create(LIQUID_VCO);
+NCO::NCO(float freq) : object_(nco_crcf_create(LIQUID_VCO)) {
   nco_crcf_set_frequency(object_, freq);
-
 }
 
 NCO::~NCO() {
@@ -116,8 +114,8 @@ std::vector<std::complex<float>> SymSync::execute(std::complex<float> s_in) {
 }
 
 
-Modem::Modem(modulation_scheme scheme) {
-  object_ = modem_create(scheme);
+Modem::Modem(modulation_scheme scheme) : object_(modem_create(scheme)) {
+
 }
 
 Modem::~Modem() {
