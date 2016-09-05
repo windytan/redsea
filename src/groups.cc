@@ -153,9 +153,6 @@ void Station::updateRadioText(int pos, std::vector<int> chars) {
   for (int i=pos; i<pos+(int)chars.size(); i++)
     rt_.setAt(i, chars[i-pos]);
 
-  if (rt_.isComplete())
-    printf(",\"radiotext\":\"%s\"",rt_.getLastCompleteStringTrimmed().c_str());
-
 }
 
 
@@ -327,6 +324,9 @@ void Station::decodeType2 (Group group) {
     updateRadioText(rt_position+2,
         {bits(group.block4, 8, 8), bits(group.block4, 0, 8)});
   }
+
+  if (rt_.isComplete())
+    printf(",\"radiotext\":\"%s\"",rt_.getLastCompleteStringTrimmed().c_str());
 
 }
 
