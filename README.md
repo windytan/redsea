@@ -27,6 +27,9 @@ radio_command | ./src/redsea [-b | -x]
 -x    Output is hex groups in the RDS Spy format
 ```
 
+By default, the input (via stdin) is MPX with 16-bit mono samples at 228 kHz. The output
+format defaults to line delimited JSON.
+
 ### Live decoding with rtl_fm
 
 There's a convenience shell script called `rtl-rx.sh`:
@@ -66,8 +69,6 @@ Redsea decodes the following info from RDS:
 * Clock Time and Date (CT)
 * Program Item Number (PIN)
 * Traffic Message Channel (TMC)
-
-Output format is currently line delimited JSON.
 
 ## Licensing
 
