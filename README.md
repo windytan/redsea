@@ -34,19 +34,21 @@ format defaults to line delimited JSON.
 
 There's a convenience shell script called `rtl-rx.sh`:
 
-```
-./rtl-rx.sh -f 87.9M
-```
+    ./rtl-rx.sh -f 87.9M
 
 Command line options, such as `-f` for frequency, are passed on to `rtl_fm`. (Note that `rtl_fm` will tune a bit off; this is expected behavior.) The script can be modified to include additional parameters to redsea.
 
 ### Decoding a pre-recorded signal with SoX
 
-```
-sox multiplex.wav -t .s16 -r 228k -c 1 - | ./src/redsea
-```
+    sox multiplex.wav -t .s16 -r 228k -c 1 - | ./src/redsea
 
 The signal should be FM demodulated and have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).
+
+### Decoding MPX via sound card
+
+If your sound card supports recording at 192 kHz, and you have `sox` installed, you can also decode the MPX output of an FM tuner or RDS encoder:
+
+    rec -t .s16 -r 228k -c 1 - | ./src/redsea
 
 ## Requirements
 
