@@ -5,8 +5,6 @@ redsea is an experiment at building a lightweight command-line
 It works mainly with `rtl_fm` but can also decode raw ASCII bitstream and
 the hex format used by RDS Spy.
 
-[explanatory blog post](http://www.windytan.com/2015/02/receiving-rds-with-rtl-sdr.html)
-
 ## Compiling
 
 You will need [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) and GNU autotools.
