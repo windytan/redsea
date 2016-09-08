@@ -41,8 +41,8 @@ uint32_t calcCheckBits(uint32_t data_word) {
   return result;
 }
 
-unsigned nextOffsetFor(unsigned o) {
-  unsigned result;
+eOffset nextOffsetFor(eOffset o) {
+  eOffset result = A;
   switch (o) {
     case A:
       result = B;
@@ -81,7 +81,7 @@ std::map<uint16_t,uint16_t> makeErrorLookupTable() {
 
 BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
   left_to_read_(0), wideblock_(0), prevsync_(0), block_counter_(0),
-  expected_offset_(0), pi_(0), has_sync_for_(5), is_in_sync_(false),
+  expected_offset_(A), pi_(0), has_sync_for_(5), is_in_sync_(false),
   offset_word_({0x0FC, 0x198, 0x168, 0x350, 0x1B4}),
   block_for_offset_({0, 1, 2, 2, 3}), group_data_(4), has_block_(5),
   block_has_errors_(50), subcarrier_(), ascii_bits_(), has_new_group_(false),
@@ -139,7 +139,7 @@ void BlockStream::uncorrectable() {
     //printf(":too many errors, sync lost\n");
   }
 
-  for (int o : {A, B, C, CI, D})
+  for (eOffset o : {A, B, C, CI, D})
     has_block_[o] = false;
 
 }
@@ -166,7 +166,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
     // Find the offsets for which the calcSyndrome is zero
     bool has_sync_for_any = false;
-    for (int o : {A, B, C, CI, D}) {
+    for (eOffset o : {A, B, C, CI, D}) {
       has_sync_for_[o] = (calcSyndrome(block ^ offset_word_[o]) == 0x000);
       has_sync_for_any |= has_sync_for_[o];
     }
@@ -175,7 +175,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
     if (!is_in_sync_) {
       if (has_sync_for_any) {
-        for (int o : {A, B, C, CI, D}) {
+        for (eOffset o : {A, B, C, CI, D}) {
           if (has_sync_for_[o]) {
             int dist = bitcount_ - prevbitcount_;
 
@@ -287,7 +287,7 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
       expected_offset_ = nextOffsetFor(expected_offset_);
 
       if (expected_offset_ == A) {
-        for (int o : {A, B, C, CI, D})
+        for (eOffset o : {A, B, C, CI, D})
           has_block_[o] = false;
       }
 

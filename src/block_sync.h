@@ -35,7 +35,7 @@ class BlockStream {
   uint32_t wideblock_;
   unsigned prevsync_;
   unsigned block_counter_;
-  unsigned expected_offset_;
+  eOffset expected_offset_;
   uint16_t pi_;
   std::vector<bool> has_sync_for_;
   bool is_in_sync_;
