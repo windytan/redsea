@@ -42,23 +42,10 @@ uint32_t calcCheckBits(uint32_t data_word) {
 }
 
 eOffset nextOffsetFor(eOffset o) {
-  eOffset result = A;
-  switch (o) {
-    case A:
-      result = B;
-      break;
-    case B:
-      result = C;
-      break;
-    case C:
-    case CI:
-      result = D;
-      break;
-    case D:
-      result = A;
-      break;
-  }
-  return result;
+  static const std::map<eOffset,eOffset> next_offset({
+      {A,B}, {B,C}, {C,D}, {CI,D}, {D,A}
+  });
+  return next_offset.at(o);
 }
 
 std::map<uint16_t,uint16_t> makeErrorLookupTable() {
