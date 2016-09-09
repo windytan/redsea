@@ -27,7 +27,7 @@ uint32_t calcSyndrome(uint32_t vec) {
 }
 
 uint32_t calcCheckBits(uint32_t data_word) {
-  static const std::vector<uint32_t> genmat({
+  static const std::vector<uint32_t> generator_matrix({
       0x077, 0x2e7, 0x3af, 0x30b, 0x359, 0x370, 0x1b8, 0x0dc,
       0x06e, 0x037, 0x2c7, 0x3bf, 0x303, 0x35d, 0x372, 0x1b9
   });
@@ -35,7 +35,7 @@ uint32_t calcCheckBits(uint32_t data_word) {
 
   for (int k=0; k<16; k++) {
     if ((data_word >> k) & 0x01) {
-      result ^= genmat[15-k];
+      result ^= generator_matrix[15-k];
     }
   }
   return result;
