@@ -30,6 +30,15 @@ enum eQuantifierType {
   Q_MHZ, Q_KHZ
 };
 
+struct ServiceKey {
+  ServiceKey() {}
+  ServiceKey(uint8_t _nrot, uint8_t _xorstart, uint8_t _xorval) :
+    nrot(_nrot), xorstart(_xorstart), xorval(_xorval) {}
+  uint8_t nrot;
+  uint8_t xorstart;
+  uint8_t xorval;
+};
+
 class Event {
   public:
     Event();
@@ -76,6 +85,7 @@ class TMC {
     uint16_t ltnbe_;
     uint16_t current_ci_;
     std::vector<MessagePart> multi_group_buffer_;
+    std::map<uint16_t, ServiceKey> service_key_table_;
     RDSString ps_;
 };
 
@@ -85,6 +95,7 @@ class Message {
         std::vector<MessagePart> parts);
     std::string toString() const;
     void print() const;
+    void decrypt(ServiceKey);
 
   private:
     bool is_encrypted_;

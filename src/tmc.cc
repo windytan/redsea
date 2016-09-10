@@ -28,6 +28,12 @@ uint16_t popBits(std::deque<int>& bit_deque, int len) {
   return result;
 }
 
+uint16_t rotl16 (uint16_t value, unsigned int count) {
+  const unsigned int mask = (CHAR_BIT*sizeof(value)-1);
+  count &= mask;
+  return (value<<count) | (value>>( (-count) & mask ));
+}
+
 // label, field_data (ISO 14819-1: 5.5)
 std::vector<std::pair<uint16_t,uint16_t>>
   getFreeformFields(std::vector<MessagePart> parts) {
@@ -406,6 +412,10 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     // Single-group message
     if (f) {
       Message message(false, is_encrypted_, {{true, {x, y, z}}});
+
+      if (is_encrypted_ && service_key_table_.count(encid_) > 0)
+        message.decrypt(service_key_table_[encid_]);
+
       message.print();
       current_ci_ = 0;
 
@@ -636,6 +646,15 @@ void Message::print() const {
 
   printf ("}}");
 
+}
+
+void Message::decrypt(ServiceKey key) {
+
+  if (!is_encrypted_)
+    return;
+
+  location_ = rotl16(location_ ^ (key.xorval << key.xorstart), key.nrot);
+  is_encrypted_ = false;
 }
 
 } // namespace tmc
