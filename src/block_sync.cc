@@ -13,6 +13,8 @@ const unsigned kMaxErrorLength = 3;
 const std::vector<uint16_t> offset_word = {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
 const std::vector<uint16_t> block_for_offset = {0, 1, 2, 2, 3};
 
+// Section B.1.1: '-- calculated by the modulo-two addition of all the rows of
+// the -- matrix for which the corresponding coefficient in the -- vector is 1.'
 uint32_t matrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
 
   uint32_t result = 0;
@@ -38,9 +40,9 @@ uint32_t calcSyndrome(uint32_t vec) {
   return matrixMultiply(vec, parity_check_matrix);
 }
 
-// Section B.1.1: 'The check bits of the code vector are thus readily
-// calculated by the modulo-two addition of all the rows of the generator
-// matrix for which the corresponding coefficient in the message vector is 1.'
+// Section B.1.1: 'The 16 information bits are expressed as a 16 x 1 column
+// matrix and multiplied by the generator matrix to give the information bits
+// and check bits.'
 uint32_t calcCheckBits(uint32_t data_word) {
 
   static const std::vector<uint32_t> generator_matrix({
