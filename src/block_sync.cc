@@ -82,10 +82,8 @@ BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
   left_to_read_(0), wideblock_(0), prevsync_(0), block_counter_(0),
   expected_offset_(A), pi_(0), has_sync_for_(5), is_in_sync_(false),
   group_data_(4), has_block_(5), block_has_errors_(50), subcarrier_(),
-  ascii_bits_(), has_new_group_(false), error_lookup_(), data_length_(0),
-  input_type_(input_type), is_eof_(false) {
-
-  error_lookup_ = makeErrorLookupTable();
+  ascii_bits_(), has_new_group_(false),  error_lookup_(makeErrorLookupTable()),
+  data_length_(0), input_type_(input_type), is_eof_(false) {
 
 }
 
