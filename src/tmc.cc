@@ -17,12 +17,12 @@ namespace {
 std::map<uint16_t,Event> g_event_data;
 std::map<uint16_t,std::string> g_suppl_data;
 
-uint16_t popBits(std::deque<int>& bit_deque, int len) {
+uint16_t popBits(std::deque<int>* bit_deque, int len) {
   uint16_t result = 0x00;
-  if ((int)bit_deque.size() >= len) {
+  if ((int)bit_deque->size() >= len) {
     for (int i=0; i<len; i++) {
-      result = (result << 1) | bit_deque.at(0);
-      bit_deque.pop_front();
+      result = (result << 1) | bit_deque->at(0);
+      bit_deque->pop_front();
     }
   }
   return result;
@@ -62,11 +62,11 @@ std::vector<std::pair<uint16_t,uint16_t>>
   //int bits_left = freeform_data_bits.size();
   std::vector<std::pair<uint16_t,uint16_t>> result;
   while (freeform_data_bits.size() > 4) {
-    uint16_t label = popBits(freeform_data_bits, 4);
+    uint16_t label = popBits(&freeform_data_bits, 4);
     if ((int)freeform_data_bits.size() < field_size.at(label))
       break;
 
-    uint16_t field_data = popBits(freeform_data_bits, field_size.at(label));
+    uint16_t field_data = popBits(&freeform_data_bits, field_size.at(label));
 
     if (label == 0x00 && field_data == 0x00)
       break;
