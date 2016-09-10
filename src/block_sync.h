@@ -29,6 +29,8 @@ class BlockStream {
   private:
   int getNextBit();
   void uncorrectable();
+  uint32_t correctBurstErrors(uint32_t) const;
+
   unsigned bitcount_;
   unsigned prevbitcount_;
   unsigned left_to_read_;
@@ -39,8 +41,6 @@ class BlockStream {
   uint16_t pi_;
   std::vector<bool> has_sync_for_;
   bool is_in_sync_;
-  std::vector<uint16_t> offset_word_;
-  std::vector<int> block_for_offset_;
   std::vector<uint16_t> group_data_;
   std::vector<bool> has_block_;
   std::vector<bool> block_has_errors_;
