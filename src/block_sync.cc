@@ -64,7 +64,7 @@ std::map<uint16_t,uint16_t> makeErrorLookupTable() {
   return result;
 }
 
-}
+} // namespace
 
 BlockStream::BlockStream(int input_type) : bitcount_(0), prevbitcount_(0),
   left_to_read_(0), wideblock_(0), prevsync_(0), block_counter_(0),

@@ -32,7 +32,7 @@ uint16_t popBits(std::deque<int>& bit_deque, int len) {
 std::vector<std::pair<uint16_t,uint16_t>>
   getFreeformFields(std::vector<MessagePart> parts) {
 
-  const std::vector<int> field_size(
+  static const std::vector<int> field_size(
       {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
   uint16_t second_gsi = bits(parts[1].data[0], 12, 2);
@@ -230,11 +230,11 @@ Event getEvent(uint16_t code) {
 
 }
 
-bool isEvent(uint16_t code) {
+bool isValidEventCode(uint16_t code) {
   return g_event_data.count(code) != 0;
 }
 
-bool isSuppl(uint16_t code) {
+bool isValidSupplementaryCode(uint16_t code) {
   return g_suppl_data.count(code) != 0;
 }
 
@@ -314,7 +314,6 @@ TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
 }
 
 void TMC::systemGroup(uint16_t message) {
-
 
   if (bits(message, 14, 1) == 0) {
     printf(",\"tmc\":{\"system_info\":{");
@@ -595,20 +594,20 @@ void Message::print() const {
   std::vector<std::string> sentences;
   for (size_t i=0; i<events_.size(); i++) {
     std::string desc;
-    if (isEvent(events_[i])) {
-      Event ev = getEvent(events_[i]);
+    if (isValidEventCode(events_[i])) {
+      Event event = getEvent(events_[i]);
       if (quantifiers_.count(i) == 1) {
-        desc = getDescWithQuantifier(ev, quantifiers_.at(i));
+        desc = getDescWithQuantifier(event, quantifiers_.at(i));
       } else {
-        desc = ev.description;
+        desc = event.description;
       }
       sentences.push_back(ucfirst(desc));
     }
   }
 
-  for (uint16_t s : supplementary_) {
-    if (isSuppl(s))
-      sentences.push_back(ucfirst(g_suppl_data.find(s)->second));
+  for (uint16_t code : supplementary_) {
+    if (isValidSupplementaryCode(code))
+      sentences.push_back(ucfirst(g_suppl_data.find(code)->second));
   }
 
   printf(",\"description\":\"%s\"",
