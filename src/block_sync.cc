@@ -8,7 +8,7 @@ const unsigned kBitmask16 = 0x000FFFF;
 const unsigned kBitmask26 = 0x3FFFFFF;
 const unsigned kBitmask28 = 0xFFFFFFF;
 
-const unsigned kMaxErrorLength = 3;
+const unsigned kMaxErrorLength = 5;
 
 const std::vector<uint16_t> offset_word = {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
 const std::vector<uint16_t> block_for_offset = {0, 1, 2, 2, 3};
