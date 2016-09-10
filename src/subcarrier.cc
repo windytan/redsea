@@ -32,18 +32,12 @@ unsigned DeltaDecoder::decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier() : numsamples_(0),
-  bit_buffer_(),
-  fir_lpf_(511, 2100.0f / kFs),
-  is_eof_(false),
-  agc_(0.001f),
-  nco_approx_(kFc_0 * 2 * M_PI / kFs),
-  nco_exact_(0.0f),//FC_0 * 2 * PI_f / FS),
+Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
+  fir_lpf_(256, 2100.0f / kFs), is_eof_(false), agc_(0.001f),
+  nco_approx_(kFc_0 * 2 * M_PI / kFs), nco_exact_(0.0f),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f, 32),
-  modem_(LIQUID_MODEM_PSK2),
-  sym_clk_(0),
-  biphase_(0), prev_biphase_(0), delta_decoder_()
-  {
+  modem_(LIQUID_MODEM_PSK2), symbol_clock_(0), prev_biphase_(0),
+  delta_decoder_(), symbol_errors_(0) {
 
     symsync_.setBandwidth(0.02f);
     symsync_.setOutputRate(1);
@@ -72,30 +66,32 @@ void Subcarrier::demodulateMoreBits() {
 
     if (numsamples_ % (96 / kSamplesPerSymbol) == 0) {
 
-      std::complex<float> sample_lopass_unnorm = fir_lpf_.execute();
-      std::complex<float> sample_lopass = agc_.execute(sample_lopass_unnorm);
+      std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
+      nco_exact_.stepPLL(modem_.getPhaseError());
       sample_lopass = nco_exact_.mixDown(sample_lopass);
 
-      std::vector<std::complex<float>> y = symsync_.execute(sample_lopass);
+      std::vector<std::complex<float>> symbols =
+        symsync_.execute(sample_lopass);
 
-      for (auto sy : y) {
-        biphase_ = modem_.demodulate(sy);
-        nco_exact_.stepPLL(modem_.getPhaseError());
+      for (std::complex<float> symbol : symbols) {
+        unsigned biphase = modem_.demodulate(symbol);
 
-        if (sym_clk_ == 1) {
-          if (prev_biphase_ == 0 && biphase_ == 1) {
-            bit_buffer_.push_back(delta_decoder_.decode(1));
-          } else if (prev_biphase_ == 1 && biphase_ == 0) {
-            bit_buffer_.push_back(delta_decoder_.decode(0));
+        if (symbol_clock_ == 1) {
+          bit_buffer_.push_back(delta_decoder_.decode(biphase));
+
+          if (biphase == prev_biphase_) {
+            symbol_errors_ ++;
+            if (symbol_errors_ >= 5)
+              symbol_clock_ = 0;
           } else {
-            sym_clk_ = 0;
+            symbol_errors_ = 0;
           }
         }
 
-        prev_biphase_ = biphase_;
+        prev_biphase_ = biphase;
 
-        sym_clk_ = (sym_clk_ + 1) % 2;
+        symbol_clock_ ^= 1;
 
       }
     }
