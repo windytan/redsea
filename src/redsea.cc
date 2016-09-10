@@ -38,7 +38,7 @@ void printShort(Station station) {
 int main(int argc, char** argv) {
 
   int option_char;
-  int input_type = redsea::INPUT_MPX;
+  redsea::eInputType input_type = redsea::INPUT_MPX;
   int output_type = redsea::OUTPUT_JSON;
 
   while ((option_char = getopt(argc, argv, "bhx")) != EOF) {
