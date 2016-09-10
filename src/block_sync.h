@@ -22,7 +22,7 @@ enum eOutputType {
 
 class BlockStream {
   public:
-  BlockStream(int input_type=INPUT_MPX);
+  BlockStream(eInputType input_type=INPUT_MPX);
   std::vector<uint16_t> getNextGroup();
   bool isEOF() const;
 
@@ -49,7 +49,7 @@ class BlockStream {
   bool has_new_group_;
   std::map<uint16_t,uint16_t> error_lookup_;
   unsigned data_length_;
-  const int input_type_;
+  const eInputType input_type_;
   bool is_eof_;
 
 };
