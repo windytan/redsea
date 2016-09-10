@@ -15,27 +15,37 @@ const std::vector<uint16_t> block_for_offset = {0, 1, 2, 2, 3};
 
 uint32_t calcSyndrome(uint32_t vec) {
 
-  uint32_t synd_reg = 0x000;
-  uint32_t bit,l;
+  static const std::vector<uint16_t> parity_check_matrix({
+      0x200, 0x100, 0x080, 0x040, 0x020, 0x010, 0x008, 0x004,
+      0x002, 0x001, 0x2dc, 0x16e, 0x0b7, 0x287, 0x39f, 0x313,
+      0x355, 0x376, 0x1bb, 0x201, 0x3dc,
+      0x1ee, 0x0f7, 0x2a7, 0x38f, 0x31b });
 
-  for (int k=25; k>=0; k--) {
-    bit       = (vec & (1 << k));
-    l         = (synd_reg & 0x200);      // Store lefmost bit of register
-    synd_reg  = (synd_reg << 1) & 0x3FF; // Rotate register
-    synd_reg ^= (bit ? 0x31B : 0x00);    // Premultiply input by x^325 mod g(x)
-    synd_reg ^= (l   ? 0x1B9 : 0x00);    // Division mod 2 by g(x)
+  uint32_t synd_reg = 0x000;
+
+  // Section B.2.1: 'The calculation of the syndromes -- can easily be done by
+  // multiplying each word with the parity matrix H.'
+  for (int k=0; k<26; k++) {
+    if (vec & (1 << (25-k)))
+      synd_reg ^=  parity_check_matrix.at(k);
   }
 
   return synd_reg;
 }
 
 uint32_t calcCheckBits(uint32_t data_word) {
-  static const std::vector<uint32_t> generator_matrix({
+
+  static const std::vector<uint16_t> generator_matrix({
       0x077, 0x2e7, 0x3af, 0x30b, 0x359, 0x370, 0x1b8, 0x0dc,
       0x06e, 0x037, 0x2c7, 0x3bf, 0x303, 0x35d, 0x372, 0x1b9
   });
+
   uint32_t result = 0;
 
+  // Section B.1.1: 'The check bits of the code vector are thus readily
+  // calculated by the modulo-two addition of all the rows of the generator
+  // matrix for which the corresponding coefficient in the message vector is
+  // "1".'
   for (int k=0; k<16; k++) {
     if ((data_word >> k) & 0x01) {
       result ^= generator_matrix[15-k];
