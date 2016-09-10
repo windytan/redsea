@@ -129,7 +129,6 @@ uint16_t getQuantifierSize(uint16_t code) {
 std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
   std::string q("_");
   std::regex q_re("_");
-  printf("/*q_value = %d, q_type=%d*/",q_value,event.quantifier_type);
 
   if (getQuantifierSize(event.quantifier_type) == 5 && q_value == 0)
     q_value = 32;
@@ -190,12 +189,27 @@ std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
     int whole_tonnes = decitonnes / 10;
     decitonnes = decitonnes % 10;
 
-    q = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes);
+    q = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes) +
+      " tonnes";
+
+  } else if (event.quantifier_type == Q_METRES) {
+    int decimetres;
+    if (q_value <= 100)
+      decimetres = q_value;
+    else
+      decimetres = 100 + (q_value - 100) * 5;
+
+    int whole_metres = decimetres / 10;
+    decimetres = decimetres % 10;
+
+    q = std::to_string(whole_metres) + "." + std::to_string(decimetres) +
+      " metres";
 
   } else if (event.quantifier_type == Q_UPTO_MILLIMETRES) {
     q = "of up to " + std::to_string(q_value) + " millimetres";
 
   } else {
+    printf("/*q_value = %d, q_type=%d*/",q_value,event.quantifier_type);
     q = "TODO";
 
   }
