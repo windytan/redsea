@@ -126,21 +126,21 @@ uint16_t getQuantifierSize(uint16_t code) {
 
 }
 
-std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
+std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
   std::string q("_");
   std::regex q_re("_");
-  printf("/*q_value = %d, q_type=%d*/",q_value,ev.quantifier_type);
+  printf("/*q_value = %d, q_type=%d*/",q_value,event.quantifier_type);
 
-  if (getQuantifierSize(ev.quantifier_type) == 5 && q_value == 0)
+  if (getQuantifierSize(event.quantifier_type) == 5 && q_value == 0)
     q_value = 32;
 
-  if (ev.quantifier_type == Q_SMALL_NUMBER) {
+  if (event.quantifier_type == Q_SMALL_NUMBER) {
     int num = q_value;
     if (num > 28)
       num += (num - 28);
     q = std::to_string(num);
 
-  } else if (ev.quantifier_type == Q_NUMBER) {
+  } else if (event.quantifier_type == Q_NUMBER) {
     int num;
     if (q_value <= 4)
       num = q_value;
@@ -150,16 +150,16 @@ std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
       num = (q_value - 12) * 50;
     q = std::to_string(num);
 
-  } else if (ev.quantifier_type == Q_LESS_THAN_METRES) {
+  } else if (event.quantifier_type == Q_LESS_THAN_METRES) {
     q = "less than " + std::to_string(q_value * 10) + " metres";
 
-  } else if (ev.quantifier_type == Q_PERCENT) {
+  } else if (event.quantifier_type == Q_PERCENT) {
     q = std::to_string(q_value == 32 ? 0 : q_value * 5) + " %";
 
-  } else if (ev.quantifier_type == Q_UPTO_KMH) {
+  } else if (event.quantifier_type == Q_UPTO_KMH) {
     q = "of up to " + std::to_string(q_value * 5) + " km/h";
 
-  } else if (ev.quantifier_type == Q_UPTO_TIME) {
+  } else if (event.quantifier_type == Q_UPTO_TIME) {
 
     if (q_value <= 10)
       q = "of up to " + std::to_string(q_value * 5) + " minutes";
@@ -168,10 +168,10 @@ std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
     else
       q = "of up to " + std::to_string((q_value - 20) * 6) + " hours";
 
-  } else if (ev.quantifier_type == Q_DEG_CELSIUS) {
+  } else if (event.quantifier_type == Q_DEG_CELSIUS) {
     q = std::to_string(q_value - 51) + " degrees Celsius";
 
-  } else if (ev.quantifier_type == Q_TIME) {
+  } else if (event.quantifier_type == Q_TIME) {
     int m = (q_value - 1) * 10;
     int h = m / 60;
     m = m % 60;
@@ -180,7 +180,7 @@ std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
     std::snprintf(t, 6, "%02d:%02d", m, h);
     q = t;
 
-  } else if (ev.quantifier_type == Q_TONNES) {
+  } else if (event.quantifier_type == Q_TONNES) {
     int decitonnes;
     if (q_value <= 100)
       decitonnes = q_value;
@@ -192,7 +192,7 @@ std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
 
     q = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes);
 
-  } else if (ev.quantifier_type == Q_UPTO_MILLIMETRES) {
+  } else if (event.quantifier_type == Q_UPTO_MILLIMETRES) {
     q = "of up to " + std::to_string(q_value) + " millimetres";
 
   } else {
@@ -200,7 +200,7 @@ std::string getDescWithQuantifier(const Event& ev, uint16_t q_value) {
 
   }
 
-  std::string desc = std::regex_replace(ev.description_with_quantifier,
+  std::string desc = std::regex_replace(event.description_with_quantifier,
       q_re, q);
   return desc;
 }
@@ -210,45 +210,6 @@ std::string ucfirst(std::string in) {
     in[0] = std::toupper(in[0]);
   return in;
 }
-
-} // namespace
-
-Event::Event() : description(""), description_with_quantifier(""), nature(0),
-  quantifier_type(0), duration_type(0), directionality(0), urgency(0),
-  update_class(0), allows_quantifier(false) {
-
-}
-
-Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature,
-    uint16_t _qtype, uint16_t _dur, uint16_t _dir, uint16_t _urg,
-    uint16_t _class, bool _allow_q) : description(_desc),
-    description_with_quantifier(_desc_q), nature(_nature),
-    quantifier_type(_qtype), duration_type(_dur), directionality(_dir),
-    urgency(_urg), update_class(_class), allows_quantifier(_allow_q) {
-}
-
-Event getEvent(uint16_t code) {
-
-  if (g_event_data.find(code) != g_event_data.end())
-    return g_event_data.find(code)->second;
-  else
-    return Event();
-
-}
-
-bool isValidEventCode(uint16_t code) {
-  return g_event_data.count(code) != 0;
-}
-
-bool isValidSupplementaryCode(uint16_t code) {
-  return g_suppl_data.count(code) != 0;
-}
-
-std::string getSupplInfoString(uint16_t code) {
-  std::map<uint16_t,std::string> suppl_info_list;
-  return suppl_info_list[code];
-}
-
 
 void loadEventData() {
   std::ifstream in("data/tmc_events.csv");
@@ -310,6 +271,39 @@ void loadEventData() {
   }
 
   in.close();
+
+}
+
+bool isValidEventCode(uint16_t code) {
+  return g_event_data.count(code) != 0;
+}
+
+bool isValidSupplementaryCode(uint16_t code) {
+  return g_suppl_data.count(code) != 0;
+}
+
+} // namespace
+
+Event::Event() : description(""), description_with_quantifier(""), nature(0),
+  quantifier_type(0), duration_type(0), directionality(0), urgency(0),
+  update_class(0), allows_quantifier(false) {
+
+}
+
+Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature,
+    uint16_t _qtype, uint16_t _dur, uint16_t _dir, uint16_t _urg,
+    uint16_t _class, bool _allow_q) : description(_desc),
+    description_with_quantifier(_desc_q), nature(_nature),
+    quantifier_type(_qtype), duration_type(_dur), directionality(_dir),
+    urgency(_urg), update_class(_class), allows_quantifier(_allow_q) {
+}
+
+Event getEvent(uint16_t code) {
+
+  if (g_event_data.find(code) != g_event_data.end())
+    return g_event_data.find(code)->second;
+  else
+    return Event();
 
 }
 

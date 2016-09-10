@@ -57,7 +57,6 @@ class Event {
 };
 
 Event getEvent(uint16_t code);
-void loadEventData();
 
 struct MessagePart {
   MessagePart() : is_received(false), data() {};
