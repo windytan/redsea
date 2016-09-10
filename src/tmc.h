@@ -32,11 +32,11 @@ enum eQuantifierType {
 
 struct ServiceKey {
   ServiceKey() {}
-  ServiceKey(uint8_t _nrot, uint8_t _xorstart, uint8_t _xorval) :
-    nrot(_nrot), xorstart(_xorstart), xorval(_xorval) {}
-  uint8_t nrot;
-  uint8_t xorstart;
+  ServiceKey(uint8_t _xorval, uint8_t _xorstart, uint8_t _nrot) :
+    xorval(_xorval), xorstart(_xorstart), nrot(_nrot) {}
   uint8_t xorval;
+  uint8_t xorstart;
+  uint8_t nrot;
 };
 
 class Event {

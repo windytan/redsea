@@ -274,6 +274,46 @@ void loadEventData() {
 
 }
 
+std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
+
+  std::map<uint16_t, ServiceKey> result;
+
+  std::ifstream in("data/service_key_table.csv");
+
+  if (!in.is_open())
+    return result;
+
+  for (std::string line; std::getline(in, line); ) {
+    if (!in.good())
+      break;
+
+    std::stringstream iss(line);
+    uint16_t encid;
+
+    std::vector<uint8_t> nums(3);
+
+    for (int col=0; col<4; col++) {
+      std::string val;
+      std::getline(iss, val, ',');
+      if (!iss.good())
+        break;
+
+      if (col == 0)
+        encid = std::stoi(val);
+      else
+        nums[col-1] = std::stoi(val);
+    }
+
+    result.insert({encid, {nums[0], nums[1], nums[2]}});
+
+  }
+
+  in.close();
+
+  return result;
+
+}
+
 bool isValidEventCode(uint16_t code) {
   return g_event_data.count(code) != 0;
 }
@@ -309,7 +349,7 @@ Event getEvent(uint16_t code) {
 
 TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
   ltn_(0), sid_(0), encid_(0), ltnbe_(0), current_ci_(0),
-  multi_group_buffer_(5), ps_(8) {
+  multi_group_buffer_(5), service_key_table_(loadServiceKeyTable()), ps_(8) {
 
 }
 
