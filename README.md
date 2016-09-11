@@ -11,17 +11,17 @@ You will need git, [liquid-dsp](https://github.com/jgaeddert/liquid-dsp), and GN
 
 1. Clone the repository:
 
-    $ git clone https://github.com/windytan/redsea.git
-    $ cd redsea
+        $ git clone https://github.com/windytan/redsea.git
+        $ cd redsea
 
 2. Run autotools:
 
-    $ autoreconf --install
+        $ autoreconf --install
 
 3. Compile redsea:
 
-    $ ./configure
-    $ make
+        $ ./configure
+        $ make
 
 If you get an error message about the STDCXX_11 macro, try installing `autoconf-archive`.
 
