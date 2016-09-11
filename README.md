@@ -36,7 +36,7 @@ There's a convenience shell script called `rtl-rx.sh`:
 
     ./rtl-rx.sh -f 87.9M
 
-Command line options, such as `-f` for frequency, are passed on to `rtl_fm`. (Note that `rtl_fm` will tune a bit off; this is expected behavior.) The script can be modified to include additional parameters to redsea, especially `-p` for ppm error in the crystal and `-g` for gain.
+Command line options are passed on to `rtl_fm`. Station frequency (`-f`) is mandatory. It may also be helpful to set `-p` to the ppm error in the crystal and `-g` to a desired gain value. (Note that `rtl_fm` will tune a bit off; this is expected behavior.) The script can be modified to include additional parameters to redsea as well.
 
 ### Decoding a pre-recorded signal with SoX
 
