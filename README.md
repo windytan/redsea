@@ -7,13 +7,21 @@ the hex format used by RDS Spy.
 
 ## Compiling
 
-You will need [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) and GNU autotools.
+You will need git, [liquid-dsp](https://github.com/jgaeddert/liquid-dsp), and GNU autotools.
 
-```
-autoreconf --install
-./configure
-make
-```
+1. Clone the repository:
+
+    $ git clone https://github.com/windytan/redsea.git
+    $ cd redsea
+
+2. Run autotools:
+
+    $ autoreconf --install
+
+3. Compile redsea:
+
+    $ ./configure
+    $ make
 
 If you get an error message about the STDCXX_11 macro, try installing `autoconf-archive`.
 
@@ -34,13 +42,13 @@ format defaults to line delimited JSON.
 
 There's a convenience shell script called `rtl-rx.sh`:
 
-    ./rtl-rx.sh -f 87.9M
+    $ ./rtl-rx.sh -f 87.9M
 
 Command line options are passed on to `rtl_fm`. Station frequency (`-f`) is mandatory. It may also be helpful to set `-p` to the ppm error in the crystal and `-g` to a desired gain value. (Note that `rtl_fm` will tune a bit off; this is expected behavior.) The script can be modified to include additional parameters to redsea as well.
 
 ### Decoding a pre-recorded signal with SoX
 
-    sox multiplex.wav -t .s16 -r 228k -c 1 - | ./src/redsea
+    $ sox multiplex.wav -t .s16 -r 228k -c 1 - | ./src/redsea
 
 The signal should be FM demodulated and have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).
 
@@ -48,7 +56,7 @@ The signal should be FM demodulated and have enough bandwidth to accommodate the
 
 If your sound card supports recording at 192 kHz, and you have `sox` installed, you can also decode the MPX output of an FM tuner or RDS encoder:
 
-    rec -t .s16 -r 228k -c 1 - | ./src/redsea
+    $ rec -t .s16 -r 228k -c 1 - | ./src/redsea
 
 ## Requirements
 
