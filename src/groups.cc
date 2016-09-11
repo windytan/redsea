@@ -174,7 +174,7 @@ void Station::decodeType0 (Group group) {
       addAltFreq(bits(group.block3, 8-i*8, 8));
     }
 
-    if ((int)alt_freqs_.size() == num_alt_freqs_) {
+    if ((int)alt_freqs_.size() == num_alt_freqs_ && num_alt_freqs_ > 0) {
       printf(",\"alt_freqs\":[");
       int i = 0;
       for (auto f : alt_freqs_) {
