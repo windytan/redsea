@@ -82,7 +82,7 @@ void Subcarrier::demodulateMoreBits() {
 
           if (biphase == prev_biphase_) {
             symbol_errors_ ++;
-            if (symbol_errors_ >= 5)
+            if (symbol_errors_ >= 7)
               symbol_clock_ = 0;
           } else {
             symbol_errors_ = 0;
