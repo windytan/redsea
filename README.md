@@ -23,7 +23,7 @@ You will need git, [liquid-dsp](https://github.com/jgaeddert/liquid-dsp), and GN
         $ ./configure
         $ make
 
-If you get an error message about the STDCXX_11 macro, try installing `autoconf-archive`.
+If you get an error message about the STDCXX_11 macro or an unexpected token, try installing `autoconf-archive`.
 
 ## Usage
 

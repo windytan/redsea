@@ -1,5 +1,6 @@
 #include "tmc.h"
 
+#include <climits>
 #include <deque>
 #include <fstream>
 #include <regex>
