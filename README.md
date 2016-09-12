@@ -72,7 +72,8 @@ Redsea decodes the following info from RDS:
 
 * Program Identification code (PI)
 * Program Service name (PS)
-* Radiotext (RT)
+* RadioText (RT)
+* RadioText Plus (RT+)
 * Traffic Program (TP) and Traffic Announcement (TA) flags
 * Program Type (PTY)
 * Alternate Frequencies (AF)
