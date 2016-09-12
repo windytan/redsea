@@ -23,8 +23,8 @@ class GroupType {
 
   std::string toString();
 
-  uint16_t num;
-  uint16_t ab;
+  const uint16_t num;
+  const uint16_t ab;
 };
 
 bool operator<(const GroupType& obj1, const GroupType& obj2);
@@ -57,13 +57,13 @@ class Station {
     void decodeType0(Group);
     void decodeType1(Group);
     void decodeType2(Group);
-    void decodeType3(Group);
-    void decodeType4(Group);
-    void decodeType8(Group);
-    void decodeType14(Group);
+    void decodeType3A(Group);
+    void decodeType4A(Group);
+    void decodeODAgroup(Group);
     void addAltFreq(uint8_t);
     void updatePS(int pos, std::vector<int> chars);
     void updateRadioText(int pos, std::vector<int> chars);
+    void parseRadioTextPlus(Group);
     uint16_t pi_;
     RDSString ps_;
     RDSString rt_;
@@ -84,6 +84,10 @@ class Station {
     std::string clock_time_;
     bool has_country_;
     std::map<GroupType,uint16_t> oda_app_for_group_;
+    bool has_rt_plus_;
+    bool rt_plus_cb_;
+    uint16_t rt_plus_scb_;
+    uint16_t rt_plus_template_num_;
 
     int pager_pac_;
     int pager_opc_;
@@ -94,6 +98,12 @@ class Station {
 
     tmc::TMC tmc_;
 
+};
+
+struct RTPlusTag {
+  uint16_t content_type;
+  uint16_t start;
+  uint16_t length;
 };
 
 } // namespace redsea
