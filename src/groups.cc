@@ -98,7 +98,6 @@ void Station::update(Group group) {
   else if (group.type.num == 3)  { decodeType3(group); }
   else if (group.type.num == 4)  { decodeType4(group); }
   else if (group.type.num == 8)  { decodeType8(group); }
-  else if (group.type.num == 14) { decodeType14(group); }
   else                           { printf("/* TODO */"); }
 
   printf("}\n");
@@ -413,11 +412,6 @@ void Station::decodeType8 (Group group) {
   if (aid == 0xCD46 || aid == 0xCD47) {
     tmc_.userGroup(bits(group.block2, 0, 5), group.block3, group.block4);
   }
-
-}
-
-/* Type 14: Enhanced Other Networks information TODO */
-void Station::decodeType14 (Group group) {
 
 }
 

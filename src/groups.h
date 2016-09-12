@@ -60,7 +60,6 @@ class Station {
     void decodeType3(Group);
     void decodeType4(Group);
     void decodeType8(Group);
-    void decodeType14(Group);
     void addAltFreq(uint8_t);
     void updatePS(int pos, std::vector<int> chars);
     void updateRadioText(int pos, std::vector<int> chars);
