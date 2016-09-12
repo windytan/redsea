@@ -55,7 +55,7 @@ void Group::printHex() const {
     printf("---- ");
 
   if (num_blocks > 3)
-    printf("%04X ", block4);
+    printf("%04X", block4);
   else
     printf("----");
 
