@@ -439,17 +439,17 @@ void Station::parseRadioTextPlus(Group group) {
   tags[0].content_type = (bits(group.block2, 0, 3) << 3) +
                           bits(group.block3, 13, 3);
   tags[0].start  = bits(group.block3, 7, 6);
-  tags[0].length = bits(group.block3, 1, 6);
+  tags[0].length = bits(group.block3, 1, 6) + 1;
 
   tags[1].content_type = (bits(group.block3, 0, 1) << 5) +
                           bits(group.block4, 11, 5);
   tags[1].start  = bits(group.block4, 5, 6);
-  tags[1].length = bits(group.block4, 0, 5);
+  tags[1].length = bits(group.block4, 0, 5) + 1;
 
   std::string rt = rt_.getLastCompleteString();
 
   for (RTPlusTag tag : tags) {
-    if (rt.length() >= tag.start + tag.length && tag.length > 0) {
+    if (rt.length() >= tag.start + tag.length && tag.length > 1) {
       printf(",\"%s\":\"%s\"",
           getRTPlusContentTypeName(tag.content_type).c_str(),
           rt.substr(tag.start, tag.length).c_str());
