@@ -70,8 +70,8 @@ Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64), rt_ab_(0), pty_(0),
   is_tp_(false), is_ta_(false), is_music_(false), alt_freqs_(),
   num_alt_freqs_(0), pin_(0), ecc_(0), cc_(0), tmc_id_(0), ews_channel_(0),
   lang_(0), linkage_la_(0), clock_time_(""), has_country_(false),
-  oda_app_for_group_(), pager_pac_(0), pager_opc_(0), pager_tng_(0),
-  pager_ecc_(0), pager_ccf_(0), pager_interval_(0), tmc_() {
+  oda_app_for_group_(), has_rt_plus_(false), pager_pac_(0), pager_opc_(0),
+  pager_tng_(0), pager_ecc_(0), pager_ccf_(0), pager_interval_(0), tmc_() {
 
 }
 
@@ -92,13 +92,20 @@ void Station::update(Group group) {
   printf(",\"tp\":\"%s\"", is_tp_ ? "true" : "false");
   printf(",\"prog_type\":\"%s\"", getPTYname(pty_).c_str());
 
-  if      (group.type.num == 0)  { decodeType0(group); }
-  else if (group.type.num == 1)  { decodeType1(group); }
-  else if (group.type.num == 2)  { decodeType2(group); }
-  else if (group.type.num == 3)  { decodeType3(group); }
-  else if (group.type.num == 4)  { decodeType4(group); }
-  else if (group.type.num == 8)  { decodeType8(group); }
-  else                           { printf("/* TODO */"); }
+  if      (group.type.num == 0)
+    decodeType0(group);
+  else if (group.type.num == 1)
+    decodeType1(group);
+  else if (group.type.num == 2)
+    decodeType2(group);
+  else if (group.type.num == 3 && group.type.ab == TYPE_A)
+    decodeType3A(group);
+  else if (group.type.num == 4 && group.type.ab == TYPE_A)
+    decodeType4A(group);
+  else if (oda_app_for_group_.count(group.type) > 0)
+    decodeODAgroup(group);
+  else
+    printf(" /* TODO */ ");
 
   printf("}\n");
 }
@@ -154,8 +161,7 @@ void Station::updateRadioText(int pos, std::vector<int> chars) {
 
 }
 
-
-/* Type 0: Basic tuning and switching information */
+/* Group 0: Basic tuning and switching information */
 void Station::decodeType0 (Group group) {
 
   // not implemented: Decoder Identification
@@ -195,7 +201,7 @@ void Station::decodeType0 (Group group) {
 
 }
 
-/* Type 1: Programme Item Number and slow labelling codes */
+/* Group 1: Programme Item Number and slow labelling codes */
 void Station::decodeType1 (Group group) {
 
   if (group.num_blocks < 4)
@@ -297,8 +303,7 @@ void Station::decodeType1 (Group group) {
 
 }
 
-/* 2A: RadioText */
-/* 2B: RadioText */
+/* Group 2: RadioText */
 void Station::decodeType2 (Group group) {
 
   if (group.num_blocks < 3)
@@ -329,9 +334,8 @@ void Station::decodeType2 (Group group) {
 
 }
 
-/* Type 3A: Application idenfitication for Open Data */
-/* Type 3B: Open Data Application TODO */
-void Station::decodeType3 (Group group) {
+/* Group 3A: Application identification for Open Data */
+void Station::decodeType3A (Group group) {
 
   if (group.num_blocks < 4)
     return;
@@ -345,19 +349,25 @@ void Station::decodeType3 (Group group) {
 
   oda_app_for_group_[oda_group] = oda_aid;
 
+  printf(",\"open_data_app\":{\"oda_group\":\"%s\",\"app_name\":\"%s\"",
+      oda_group.toString().c_str(), getAppName(oda_aid).c_str());
+
   if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
+    printf("}");
     tmc_.systemGroup(group.block3);
+  } else if (oda_aid == 0x4BD7) {
+    has_rt_plus_ = true;
+    rt_plus_cb_ = bits(group.block3, 12, 1);
+    rt_plus_scb_ = bits(group.block3, 8, 4);
+    rt_plus_template_num_ = bits(group.block3, 0, 8);
   } else {
-    printf(",\"open_data_app\":{\"group\":\"%s\",\"app_name\":\"%s\","
-        "\"message\":\"0x%02x\"}",
-        oda_group.toString().c_str(), getAppName(oda_aid).c_str(), oda_msg);
+    printf(",\"message\":\"0x%02x\"}", oda_msg);
   }
 
 }
 
-/* 4A: Clock-time and date */
-/* 4B: Open Data Application TODO */
-void Station::decodeType4 (Group group) {
+/* Group 4A: Clock-time and date */
+void Station::decodeType4A (Group group) {
 
   if (group.num_blocks < 3 || group.type.ab == TYPE_B)
     return;
@@ -401,17 +411,52 @@ void Station::decodeType4 (Group group) {
   }
 }
 
-/* Type 8A: Traffic Message Channel */
-/* Type 8B: Open Data Application TODO */
-void Station::decodeType8 (Group group) {
-  if (oda_app_for_group_.find(group.type) == oda_app_for_group_.end())
+/* Open Data Application */
+void Station::decodeODAgroup (Group group) {
+
+  if (oda_app_for_group_.count(group.type) == 0)
     return;
 
   uint16_t aid = oda_app_for_group_[group.type];
 
   if (aid == 0xCD46 || aid == 0xCD47) {
     tmc_.userGroup(bits(group.block2, 0, 5), group.block3, group.block4);
+  } else if (aid == 0x4BD7) {
+    parseRadioTextPlus(group);
   }
+
+}
+
+void Station::parseRadioTextPlus(Group group) {
+  //bool item_toggle  = bits(group.block2, 4, 1);
+  bool item_running = bits(group.block2, 3, 1);
+
+  printf(",\"radiotext_plus\":{\"item_running\":\"%s\"",
+      item_running ? "true" : "false");
+
+  std::vector<RTPlusTag> tags(2);
+
+  tags[0].content_type = (bits(group.block2, 0, 3) << 3) +
+                          bits(group.block3, 13, 3);
+  tags[0].start  = bits(group.block3, 7, 6);
+  tags[0].length = bits(group.block3, 1, 6);
+
+  tags[1].content_type = (bits(group.block3, 0, 1) << 5) +
+                          bits(group.block4, 11, 5);
+  tags[1].start  = bits(group.block4, 5, 6);
+  tags[1].length = bits(group.block4, 0, 5);
+
+  std::string rt = rt_.getLastCompleteString();
+
+  for (RTPlusTag tag : tags) {
+    if (rt.length() >= tag.start + tag.length && tag.length > 0) {
+      printf(",\"%s\":\"%s\"",
+          getRTPlusContentTypeName(tag.content_type).c_str(),
+          rt.substr(tag.start, tag.length).c_str());
+    }
+  }
+
+  printf("}");
 
 }
 

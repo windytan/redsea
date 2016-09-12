@@ -80,12 +80,14 @@ void Subcarrier::demodulateMoreBits() {
         if (symbol_clock_ == 1) {
           bit_buffer_.push_back(delta_decoder_.decode(biphase));
 
-          if (biphase == prev_biphase_) {
-            symbol_errors_ ++;
-            if (symbol_errors_ >= 7)
-              symbol_clock_ = 0;
-          } else {
+          if (biphase ^ prev_biphase_) {
             symbol_errors_ = 0;
+          } else {
+            symbol_errors_ ++;
+            if (symbol_errors_ >= 7) {
+              symbol_clock_ ^= 1;
+              symbol_errors_ = 0;
+            }
           }
         }
 

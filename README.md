@@ -68,16 +68,20 @@ If your sound card supports recording at 192 kHz, and you have `sox` installed, 
 
 ## Features
 
-Redsea decodes the following info from RDS:
+Redsea decodes the following basic info from RDS:
 
 * Program Identification code (PI)
 * Program Service name (PS)
-* Radiotext (RT)
+* RadioText (RT)
 * Traffic Program (TP) and Traffic Announcement (TA) flags
 * Program Type (PTY)
 * Alternate Frequencies (AF)
 * Clock Time and Date (CT)
 * Program Item Number (PIN)
+
+And also these Open Data Applications:
+
+* RadioText Plus (RT+)
 * Traffic Message Channel (TMC)
 
 ## Licensing
