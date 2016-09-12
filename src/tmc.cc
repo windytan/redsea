@@ -628,6 +628,9 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
         } else if (label == 10) {
           diversion_.push_back(field_data);
 
+        // Separator
+        } else if (label == 14) {
+
         } else {
           printf("/* TODO label=%d data=0x%04x */",label,field_data);
         }
