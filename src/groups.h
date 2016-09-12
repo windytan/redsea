@@ -59,6 +59,7 @@ class Station {
     void decodeType2(Group);
     void decodeType3A(Group);
     void decodeType4A(Group);
+    void decodeType6(Group);
     void decodeODAgroup(Group);
     void addAltFreq(uint8_t);
     void updatePS(int pos, std::vector<int> chars);

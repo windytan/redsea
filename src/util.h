@@ -7,7 +7,8 @@
 
 namespace redsea {
 
-uint16_t bits (uint16_t bitstring, int starting_at, int len);
+uint16_t bits (uint16_t word, int starting_at, int len);
+std::string bitstring (uint16_t word, int starting_at, int len);
 
 std::string join(std::vector<std::string> strings, std::string);
 std::string join(std::vector<uint16_t> strings, std::string);

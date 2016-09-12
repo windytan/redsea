@@ -2,9 +2,17 @@
 
 namespace redsea {
 
-// extract len bits from bitstring, starting at starting_at from the right
-uint16_t bits (uint16_t bitstring, int starting_at, int len) {
-  return ((bitstring >> starting_at) & ((1<<len) - 1));
+// extract len bits from word, starting at starting_at from the right
+uint16_t bits (uint16_t word, int starting_at, int len) {
+  return ((word >> starting_at) & ((1<<len) - 1));
+}
+
+std::string bitstring (uint16_t word, int starting_at, int len) {
+  std::string result(len, ' ');
+  for (int n=starting_at; n < starting_at+len; n++) {
+    result[n] = bits(word, n, 1) ? '1' : '0';
+  }
+  return result;
 }
 
 std::string join(std::vector<std::string> strings, std::string d) {
