@@ -363,7 +363,8 @@ void Station::decodeType3A (Group group) {
     rt_plus_scb_ = bits(group.block3, 8, 4);
     rt_plus_template_num_ = bits(group.block3, 0, 8);
   } else {
-    printf(",\"message\":\"0x%02x\"}", oda_msg);
+    printf(" /* TODO: Unimplemented ODA app */ ,\"message\":\"0x%02x\"}",
+        oda_msg);
   }
 
 }
@@ -415,7 +416,8 @@ void Station::decodeType4A (Group group) {
 
 /* Group 6: In-house applications */
 void Station::decodeType6 (Group group) {
-  printf(", \"in_house_data\":[\"0b%s\"", bitstring(group.block2, 0, 5).c_str());
+  printf(", \"in_house_data\":[\"0b%s\"",
+      bitstring(group.block2, 0, 5).c_str());
 
   if (group.type.ab == TYPE_A) {
     if (group.num_blocks > 2) {
