@@ -40,19 +40,6 @@ uint32_t calcSyndrome(uint32_t vec) {
   return matrixMultiply(vec, parity_check_matrix);
 }
 
-// Section B.1.1: 'The 16 information bits are expressed as a 16 x 1 column
-// matrix and multiplied by the generator matrix to give the information bits
-// and check bits.'
-uint32_t calcCheckBits(uint32_t data_word) {
-
-  static const std::vector<uint32_t> generator_matrix({
-      0x077, 0x2e7, 0x3af, 0x30b, 0x359, 0x370, 0x1b8, 0x0dc,
-      0x06e, 0x037, 0x2c7, 0x3bf, 0x303, 0x35d, 0x372, 0x1b9
-  });
-
-  return matrixMultiply(data_word, generator_matrix);
-}
-
 eOffset nextOffsetFor(eOffset o) {
   static const std::map<eOffset,eOffset> next_offset({
       {A,B}, {B,C}, {C,D}, {CI,D}, {D,A}
