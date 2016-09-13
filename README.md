@@ -2,8 +2,9 @@
 
 redsea is an experiment at building a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder.
-It works mainly with `rtl_fm` but can also decode raw ASCII bitstream and
-the hex format used by RDS Spy.
+It works mainly with `rtl_fm` but can also decode raw ASCII bitstream,
+the hex format used by RDS Spy, and MPX input via a sound card. Redsea
+has been successfully compiled on Linux and OSX.
 
 ## Compiling
 
@@ -83,6 +84,13 @@ And also these Open Data Applications:
 
 * RadioText Plus (RT+)
 * Traffic Message Channel (TMC)
+
+## Contributing
+
+Bug reports are welcome. Also, if a station in your area is transmitting
+an interesting Open Data application that should be implemented in redsea,
+I would be happy to see a minute or two's worth of hex data using the `-x`
+switch.
 
 ## Licensing
 
