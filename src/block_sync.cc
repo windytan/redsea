@@ -68,8 +68,7 @@ std::map<uint16_t,uint16_t> makeErrorLookupTable() {
     for (unsigned shift=0; shift < 16; shift++) {
       uint32_t errvec = ((e << shift) & kBitmask16) << 10;
 
-      uint32_t m = calcCheckBits(0x00);
-      uint32_t sy = calcSyndrome(m ^ errvec);
+      uint32_t sy = calcSyndrome(errvec);
       result[sy] = errvec >> 10;
     }
   }
