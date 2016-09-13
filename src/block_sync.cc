@@ -143,6 +143,41 @@ void BlockStream::uncorrectable() {
 
 }
 
+bool BlockStream::checkAndAcquireSync(uint32_t block) {
+
+  // Save the offsets for which the syndrome is zero
+  bool has_sync_for_any = false;
+  for (eOffset o : {A, B, C, CI, D}) {
+    has_sync_for_[o] = (calcSyndrome(block ^ offset_word[o]) == 0x000);
+    has_sync_for_any |= has_sync_for_[o];
+  }
+
+  // If not already in sync, try to find the repeating offset sequence
+  if (!is_in_sync_) {
+    if (has_sync_for_any) {
+      for (eOffset o : {A, B, C, CI, D}) {
+        if (has_sync_for_[o]) {
+          int dist = bitcount_ - prevbitcount_;
+
+          if (dist % 26 == 0 && dist <= 156 &&
+              (block_for_offset[prevsync_] + dist/26) % 4 ==
+              block_for_offset[o]) {
+            is_in_sync_ = true;
+            expected_offset_ = o;
+            //printf(":sync!\n");
+          } else {
+            prevbitcount_ = bitcount_;
+            prevsync_ = o;
+          }
+        }
+      }
+    }
+  }
+
+  return is_in_sync_;
+
+}
+
 std::vector<uint16_t> BlockStream::getNextGroup() {
 
   has_new_group_ = false;
@@ -163,115 +198,82 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
     uint32_t block = (wideblock_ >> 1) & kBitmask26;
 
-    // Find the offsets for which the calcSyndrome is zero
-    bool has_sync_for_any = false;
-    for (eOffset o : {A, B, C, CI, D}) {
-      has_sync_for_[o] = (calcSyndrome(block ^ offset_word[o]) == 0x000);
-      has_sync_for_any |= has_sync_for_[o];
+    if (!checkAndAcquireSync(block))
+      continue;
+
+    block_counter_ ++;
+    uint16_t message = block >> 10;
+
+    if (expected_offset_ == C && !has_sync_for_[C] && has_sync_for_[CI]) {
+      expected_offset_ = CI;
     }
 
-    // Acquire sync
+    if ( !has_sync_for_[expected_offset_]) {
 
-    if (!is_in_sync_) {
-      if (has_sync_for_any) {
-        for (eOffset o : {A, B, C, CI, D}) {
-          if (has_sync_for_[o]) {
-            int dist = bitcount_ - prevbitcount_;
+      // If message is a correct PI, error was probably in check bits
+      if (expected_offset_ == A && message == pi_ && pi_ != 0) {
+        has_sync_for_[A] = true;
+        //printf(":offset 0: ignoring error in check bits\n");
+      } else if (expected_offset_ == C && message == pi_ && pi_ != 0) {
+        has_sync_for_[CI] = true;
+        //printf(":offset 0: ignoring error in check bits\n");
 
-            if (dist % 26 == 0 && dist <= 156 &&
-                (block_for_offset[prevsync_] + dist/26) % 4 ==
-                block_for_offset[o]) {
-              is_in_sync_ = true;
-              expected_offset_ = o;
-              //printf(":sync!\n");
-            } else {
-              prevbitcount_ = bitcount_;
-              prevsync_ = o;
-            }
-          }
+      // Detect & correct clock slips (Section C.1.2)
+      } else if (expected_offset_ == A && pi_ != 0 &&
+          ((wideblock_ >> 12) & kBitmask16) == pi_) {
+        message = pi_;
+        wideblock_ >>= 1;
+        has_sync_for_[A] = true;
+        //printf(":offset 0: clock slip corrected\n");
+      } else if (expected_offset_ == A && pi_ != 0 &&
+          ((wideblock_ >> 10) & kBitmask16) == pi_) {
+        message = pi_;
+        wideblock_ = (wideblock_ << 1) + getNextBit();
+        has_sync_for_[A] = true;
+        left_to_read_ = 25;
+        //printf(":offset 0: clock slip corrected\n");
+
+      // Detect & correct burst errors (Section B.2.2)
+      } else {
+
+        block = correctBurstErrors(block);
+        if (calcSyndrome(block) == 0x000) {
+          message = block >> 10;
+          has_sync_for_[expected_offset_] = true;
         }
-      }
-    }
 
-    // Synchronous decoding
-
-    if (is_in_sync_) {
-
-      block_counter_ ++;
-      uint16_t message = block >> 10;
-
-      if (expected_offset_ == C && !has_sync_for_[C] && has_sync_for_[CI]) {
-        expected_offset_ = CI;
       }
 
+      // Still no sync pulse
       if ( !has_sync_for_[expected_offset_]) {
-
-        // If message is a correct PI, error was probably in check bits
-        if (expected_offset_ == A && message == pi_ && pi_ != 0) {
-          has_sync_for_[A] = true;
-          //printf(":offset 0: ignoring error in check bits\n");
-        } else if (expected_offset_ == C && message == pi_ && pi_ != 0) {
-          has_sync_for_[CI] = true;
-          //printf(":offset 0: ignoring error in check bits\n");
-
-        // Detect & correct clock slips (Section C.1.2)
-        } else if (expected_offset_ == A && pi_ != 0 &&
-            ((wideblock_ >> 12) & kBitmask16) == pi_) {
-          message = pi_;
-          wideblock_ >>= 1;
-          has_sync_for_[A] = true;
-          //printf(":offset 0: clock slip corrected\n");
-        } else if (expected_offset_ == A && pi_ != 0 &&
-            ((wideblock_ >> 10) & kBitmask16) == pi_) {
-          message = pi_;
-          wideblock_ = (wideblock_ << 1) + getNextBit();
-          has_sync_for_[A] = true;
-          left_to_read_ = 25;
-          //printf(":offset 0: clock slip corrected\n");
-
-        // Detect & correct burst errors (Section B.2.2)
-        } else {
-
-          block = correctBurstErrors(block);
-          if (calcSyndrome(block) == 0x000) {
-            message = block >> 10;
-            has_sync_for_[expected_offset_] = true;
-          }
-
-        }
-
-        // Still no sync pulse
-        if ( !has_sync_for_[expected_offset_]) {
-          uncorrectable();
-        }
+        uncorrectable();
       }
+    }
 
-      // Error-free block received
+    // Error-free block received
 
-      if (has_sync_for_[expected_offset_]) {
+    if (has_sync_for_[expected_offset_]) {
 
-        group_data_[block_for_offset[expected_offset_]] = message;
-        has_block_[expected_offset_] = true;
-
-        if (expected_offset_ == A) {
-          pi_ = message;
-        }
-
-        // Complete group received
-        if (has_block_[A] && has_block_[B] && (has_block_[C] ||
-            has_block_[CI]) && has_block_[D]) {
-          has_new_group_ = true;
-          data_length_ = 4;
-        }
-      }
-
-      expected_offset_ = nextOffsetFor(expected_offset_);
+      group_data_[block_for_offset[expected_offset_]] = message;
+      has_block_[expected_offset_] = true;
 
       if (expected_offset_ == A) {
-        for (eOffset o : {A, B, C, CI, D})
-          has_block_[o] = false;
+        pi_ = message;
       }
 
+      // Complete group received
+      if (has_block_[A] && has_block_[B] && (has_block_[C] ||
+          has_block_[CI]) && has_block_[D]) {
+        has_new_group_ = true;
+        data_length_ = 4;
+      }
+    }
+
+    expected_offset_ = nextOffsetFor(expected_offset_);
+
+    if (expected_offset_ == A) {
+      for (eOffset o : {A, B, C, CI, D})
+        has_block_[o] = false;
     }
 
   }

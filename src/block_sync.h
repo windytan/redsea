@@ -29,7 +29,8 @@ class BlockStream {
   private:
   int getNextBit();
   void uncorrectable();
-  uint32_t correctBurstErrors(uint32_t) const;
+  uint32_t correctBurstErrors(uint32_t block) const;
+  bool checkAndAcquireSync(uint32_t block);
 
   unsigned bitcount_;
   unsigned prevbitcount_;
