@@ -47,6 +47,7 @@ eOffset nextOffsetFor(eOffset o) {
   return next_offset.at(o);
 }
 
+// Precompute mapping of syndromes to error vectors
 std::map<uint16_t,uint16_t> makeErrorLookupTable() {
 
   std::map<uint16_t,uint16_t> result;
@@ -104,8 +105,8 @@ uint32_t BlockStream::correctBurstErrors(uint32_t block) const {
 
 }
 
+// When a block can't be decoded, save the beginning of the group if possible
 void BlockStream::uncorrectable() {
-  //printf(":offset %d: not received\n",expected_offset_);
   data_length_ = 0;
 
   if (has_block_[A]) {
@@ -135,7 +136,6 @@ void BlockStream::uncorrectable() {
     for (unsigned i=0; i<block_has_errors_.size(); i++)
       block_has_errors_[i] = false;
     pi_ = 0x0000;
-    //printf(":too many errors, sync lost\n");
   }
 
   for (eOffset o : {A, B, C, CI, D})
