@@ -52,7 +52,7 @@ Subcarrier::~Subcarrier() {
 void Subcarrier::demodulateMoreBits() {
 
   int16_t sample[kInputBufferSize];
-  int samplesread = fread(sample, sizeof(int16_t), kInputBufferSize, stdin);
+  int samplesread = fread(sample, sizeof(sample[0]), kInputBufferSize, stdin);
   if (samplesread < kInputBufferSize) {
     is_eof_ = true;
     return;
