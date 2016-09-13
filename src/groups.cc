@@ -416,23 +416,23 @@ void Station::decodeType4A (Group group) {
 
 /* Group 6: In-house applications */
 void Station::decodeType6 (Group group) {
-  printf(", \"in_house_data\":[\"0b%s\"",
-      bitstring(group.block2, 0, 5).c_str());
+  printf(", \"in_house_data\":[\"0x%03x\"",
+      bits(group.block2, 0, 5));
 
   if (group.type.ab == TYPE_A) {
     if (group.num_blocks > 2) {
-      printf(",\"0b%s\"", bitstring(group.block3, 0, 16).c_str());
+      printf(",\"0x%04x\"", bits(group.block3, 0, 16));
     } else {
       printf(",\"(not received)\"");
     }
     if (group.num_blocks > 3) {
-      printf(",\"0b%s\"", bitstring(group.block4, 0, 16).c_str());
+      printf(",\"0x%04x\"", bits(group.block4, 0, 16));
     } else {
       printf(",\"(not received)\"");
     }
   } else {
     if (group.num_blocks > 3) {
-      printf(",\"0b%s\"", bitstring(group.block4, 0, 16).c_str());
+      printf(",\"0x%04x\"", bits(group.block4, 0, 16));
     } else {
       printf(",\"(not received)\"");
     }
