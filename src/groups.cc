@@ -11,6 +11,18 @@
 
 namespace redsea {
 
+namespace {
+
+  bool isFMFrequency(uint16_t af_code) {
+    return (af_code >= 1 && af_code <= 204);
+  }
+
+  float getFMFrequency(uint16_t af_code) {
+    return 87.5 + af_code / 10.0;
+  }
+
+}
+
 GroupType::GroupType(uint16_t type_code) : num((type_code >> 1) & 0xF),
   ab(type_code & 0x1) {}
 GroupType::GroupType(const GroupType& obj) : num(obj.num), ab(obj.ab) {}
@@ -33,8 +45,7 @@ Group::Group(std::vector<uint16_t> blockbits) :
     block1(num_blocks > 0 ? blockbits[0] : 0x00),
     block2(num_blocks > 1 ? blockbits[1] : 0x00),
     block3(num_blocks > 2 ? blockbits[2] : 0x00),
-    block4(num_blocks > 3 ? blockbits[3] : 0x00)
-{
+    block4(num_blocks > 3 ? blockbits[3] : 0x00) {
 
 }
 
@@ -102,6 +113,8 @@ void Station::update(Group group) {
     decodeType3A(group);
   else if (group.type.num == 4 && group.type.ab == TYPE_A)
     decodeType4A(group);
+  else if (group.type.num == 14 && group.type.ab == TYPE_A)
+    decodeType14A(group);
   else if (oda_app_for_group_.count(group.type) > 0)
     decodeODAgroup(group);
   else if (group.type.num == 6)
@@ -113,8 +126,8 @@ void Station::update(Group group) {
 }
 
 void Station::addAltFreq(uint8_t af_code) {
-  if (af_code >= 1 && af_code <= 204) {
-    alt_freqs_.insert(87.5 + af_code / 10.0);
+  if (isFMFrequency(af_code)) {
+    alt_freqs_.insert(getFMFrequency(af_code));
   } else if (af_code == 205) {
     // filler
   } else if (af_code == 224) {
@@ -163,7 +176,7 @@ void Station::updateRadioText(int pos, std::vector<int> chars) {
 
 }
 
-/* Group 0: Basic tuning and switching information */
+// Group 0: Basic tuning and switching information
 void Station::decodeType0 (Group group) {
 
   // not implemented: Decoder Identification
@@ -203,7 +216,7 @@ void Station::decodeType0 (Group group) {
 
 }
 
-/* Group 1: Programme Item Number and slow labelling codes */
+// Group 1: Programme Item Number and slow labelling codes
 void Station::decodeType1 (Group group) {
 
   if (group.num_blocks < 4)
@@ -305,7 +318,7 @@ void Station::decodeType1 (Group group) {
 
 }
 
-/* Group 2: RadioText */
+// Group 2: RadioText
 void Station::decodeType2 (Group group) {
 
   if (group.num_blocks < 3)
@@ -336,7 +349,7 @@ void Station::decodeType2 (Group group) {
 
 }
 
-/* Group 3A: Application identification for Open Data */
+// Group 3A: Application identification for Open Data
 void Station::decodeType3A (Group group) {
 
   if (group.num_blocks < 4)
@@ -369,7 +382,7 @@ void Station::decodeType3A (Group group) {
 
 }
 
-/* Group 4A: Clock-time and date */
+// Group 4A: Clock-time and date
 void Station::decodeType4A (Group group) {
 
   if (group.num_blocks < 3 || group.type.ab == TYPE_B)
@@ -414,7 +427,7 @@ void Station::decodeType4A (Group group) {
   }
 }
 
-/* Group 6: In-house applications */
+// Group 6: In-house applications
 void Station::decodeType6 (Group group) {
   printf(", \"in_house_data\":[\"0x%03x\"",
       bits(group.block2, 0, 5));
@@ -439,6 +452,63 @@ void Station::decodeType6 (Group group) {
   }
 
   printf("]");
+
+}
+
+// Group 14A: Enhanced Other Networks information
+void Station::decodeType14A (Group group) {
+
+  if (group.num_blocks < 4)
+    return;
+
+  uint16_t pi = group.block4;
+  bool tp = bits(group.block2, 4, 1);
+
+
+  printf(",\"other_network\":{\"pi\":\"0x%04x\",\"tp\":\"%s\"",
+      pi, tp ? "true" : "false");
+
+  uint16_t eon_variant = bits(group.block2, 0, 4);
+
+  if (eon_variant <= 3) {
+
+    if (eon_ps_names_.count(pi) == 0)
+      eon_ps_names_[pi] = RDSString(8);
+
+    eon_ps_names_[pi].setAt(2*eon_variant,   bits(group.block3,8,8));
+    eon_ps_names_[pi].setAt(2*eon_variant+1, bits(group.block3,0,8));
+
+    if (eon_ps_names_[pi].isComplete())
+      printf(",\"ps\":\"%s\"",
+          eon_ps_names_[pi].getLastCompleteString().c_str());
+
+  } else if (eon_variant >= 5 && eon_variant <= 9) {
+
+    uint16_t f_other = bits(group.block3,0,8);
+
+    if (isFMFrequency(f_other)) {
+      printf(",\"frequency\":%.1f", getFMFrequency(f_other));
+    }
+
+  } else if (eon_variant == 13) {
+    uint16_t pty = bits(group.block3, 11, 5);
+    bool ta      = bits(group.block3, 0, 1);
+    printf(",\"prog_type\":\"%s\"", getPTYname(pty).c_str());
+    printf(",\"ta\":\"%s\"", ta ? "true" : "false");
+
+  } else if (eon_variant == 14) {
+
+    uint16_t pin = group.block3;
+
+    if (pin != 0x0000)
+      printf(",\"prog_item_started\":{\"day\":%d,\"time\":\"%02d:%02d\"}",
+          bits(pin, 11, 5), bits(pin, 6, 5), bits(pin, 0, 6) );
+
+  } else {
+    printf(" /* TODO: EON variant %d */", bits(group.block2,0,4));
+  }
+
+  printf("}");
 
 }
 

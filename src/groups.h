@@ -60,6 +60,7 @@ class Station {
     void decodeType3A(Group);
     void decodeType4A(Group);
     void decodeType6(Group);
+    void decodeType14A(Group);
     void decodeODAgroup(Group);
     void addAltFreq(uint8_t);
     void updatePS(int pos, std::vector<int> chars);
@@ -89,6 +90,7 @@ class Station {
     bool rt_plus_cb_;
     uint16_t rt_plus_scb_;
     uint16_t rt_plus_template_num_;
+    std::map<uint16_t,RDSString> eon_ps_names_;
 
     int pager_pac_;
     int pager_opc_;

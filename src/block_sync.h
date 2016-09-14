@@ -9,7 +9,7 @@
 namespace redsea {
 
 enum eOffset {
-  A, B, C, CI, D
+  OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D, OFFSET_INVALID
 };
 
 enum eInputType {
@@ -30,7 +30,7 @@ class BlockStream {
   int getNextBit();
   void uncorrectable();
   uint32_t correctBurstErrors(uint32_t block) const;
-  bool checkAndAcquireSync(uint32_t block);
+  bool acquireSync();
 
   unsigned bitcount_;
   unsigned prevbitcount_;
@@ -39,17 +39,16 @@ class BlockStream {
   unsigned prevsync_;
   unsigned block_counter_;
   eOffset expected_offset_;
+  eOffset received_offset_;
   uint16_t pi_;
-  std::vector<bool> has_sync_for_;
   bool is_in_sync_;
   std::vector<uint16_t> group_data_;
   std::vector<bool> has_block_;
   std::vector<bool> block_has_errors_;
   Subcarrier subcarrier_;
   AsciiBits ascii_bits_;
-  bool has_new_group_;
   std::map<uint16_t,uint16_t> error_lookup_;
-  unsigned data_length_;
+  unsigned num_blocks_received_;
   const eInputType input_type_;
   bool is_eof_;
 
