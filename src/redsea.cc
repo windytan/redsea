@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
   }
 
   redsea::BlockStream block_stream(input_type);
-  std::map<uint16_t, redsea::Station> stations;
+  redsea::Station station(0);
 
   uint16_t pi=0, prev_new_pi=0, new_pi=0;
 
@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
 
     if (new_pi == prev_new_pi) {
       pi = new_pi;
-
+      station = redsea::Station(pi);
     } else if (new_pi != pi) {
       continue;
     }
@@ -98,13 +98,7 @@ int main(int argc, char** argv) {
     if (output_type == redsea::OUTPUT_HEX) {
       group.printHex();
     } else {
-
-      if (stations.find(pi) != stations.end()) {
-        stations[pi].update(group);
-      } else {
-        stations.insert({pi, redsea::Station(pi)});
-        stations[pi].update(group);
-      }
+      station.update(group);
     }
 
     //printShort(stations[pi]);
