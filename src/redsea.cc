@@ -88,7 +88,8 @@ int main(int argc, char** argv) {
 
     if (new_pi == prev_new_pi) {
       pi = new_pi;
-      station = redsea::Station(pi);
+      if (pi != station.getPI())
+        station = redsea::Station(pi);
     } else if (new_pi != pi) {
       continue;
     }
