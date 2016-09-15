@@ -234,6 +234,7 @@ void Station::decodeType1 (Group group) {
       pager_interval_ = bits(group.block2, 0, 2);
     }
     linkage_la_ = bits(group.block3, 15, 1);
+    printf(",\"has_linkage\":\"%s\"", linkage_la_ ? "true" : "false");
 
     int slc_variant = bits(group.block3, 12, 3);
 
@@ -305,13 +306,12 @@ void Station::decodeType1 (Group group) {
       lang_ = bits(group.block3, 0, 8);
       printf(",\"language\":\"%s\"", getLanguageString(lang_).c_str());
 
-    } else if (slc_variant == 6) {
-      // TODO:
-      // broadcaster data
-
     } else if (slc_variant == 7) {
       ews_channel_ = bits(group.block3, 0, 12);
       printf(",\"ews\":\"0x%03x\"", ews_channel_);
+
+    } else {
+      printf(" /* TODO: SLC variant %d */", slc_variant);
     }
 
   }
@@ -489,6 +489,14 @@ void Station::decodeType14A (Group group) {
     if (isFMFrequency(f_other)) {
       printf(",\"frequency\":%.1f", getFMFrequency(f_other));
     }
+
+  } else if (eon_variant == 12) {
+
+    bool has_linkage = bits(group.block3, 15, 1);
+    uint16_t lsn = bits(group.block3, 0, 12);
+    printf(",\"has_linkage\":\"%s\"", has_linkage ? "true" : "false");
+    if (has_linkage && lsn != 0)
+      printf(",\"linkage_set\":\"0x%03x\"", lsn);
 
   } else if (eon_variant == 13) {
     uint16_t pty = bits(group.block3, 11, 5);
