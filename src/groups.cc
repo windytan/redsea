@@ -71,6 +71,8 @@ void Group::printHex() const {
     printf("----");
 
   printf("\n");
+
+  fflush(stdout);
 }
 
 Station::Station() : Station(0x0000) {
@@ -123,6 +125,8 @@ void Station::update(Group group) {
     printf(" /* TODO */ ");
 
   printf("}\n");
+
+  fflush(stdout);
 }
 
 void Station::addAltFreq(uint8_t af_code) {
