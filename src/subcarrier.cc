@@ -10,7 +10,7 @@ namespace redsea {
 
 namespace {
 
-const float kFs = 228000.0f;
+const float kFs = 171000.0f;
 const float kFc_0 = 57000.0f;
 const int kInputBufferSize = 4096;
 const int kSamplesPerSymbol = 4;
@@ -64,7 +64,7 @@ void Subcarrier::demodulateMoreBits() {
 
     fir_lpf_.push(sample_baseband);
 
-    if (numsamples_ % (96 / kSamplesPerSymbol) == 0) {
+    if (numsamples_ % (72 / kSamplesPerSymbol) == 0) {
 
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 

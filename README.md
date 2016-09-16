@@ -43,7 +43,7 @@ radio_command | ./src/redsea [-b | -x]
 -x    Output is hex groups in the RDS Spy format
 ```
 
-By default, the input (via stdin) is MPX with 16-bit mono samples at 228 kHz. The output
+By default, the input (via stdin) is MPX with 16-bit mono samples at 171 kHz. The output
 format defaults to line delimited JSON.
 
 ### Live decoding with rtl_fm
@@ -56,7 +56,7 @@ Command line options are passed on to `rtl_fm`. Station frequency (`-f`) is mand
 
 ### Decoding a pre-recorded signal with SoX
 
-    $ sox multiplex.wav -t .s16 -r 228k -c 1 - | ./src/redsea
+    $ sox multiplex.wav -t .s16 -r 171k -c 1 - | ./src/redsea
 
 The signal should be FM demodulated and have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).
 
@@ -64,7 +64,7 @@ The signal should be FM demodulated and have enough bandwidth to accommodate the
 
 If your sound card supports recording at 192 kHz, and you have `sox` installed, you can also decode the MPX output of an FM tuner or RDS encoder:
 
-    $ rec -t .s16 -r 228k -c 1 - | ./src/redsea
+    $ rec -t .s16 -r 171k -c 1 - | ./src/redsea
 
 ## Requirements
 
