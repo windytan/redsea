@@ -181,7 +181,7 @@ void Station::updateRadioText(int pos, std::vector<int> chars) {
 }
 
 // Group 0: Basic tuning and switching information
-void Station::decodeType0 (Group group) {
+void Station::decodeType0 (const Group& group) {
 
   // not implemented: Decoder Identification
 
@@ -221,7 +221,7 @@ void Station::decodeType0 (Group group) {
 }
 
 // Group 1: Programme Item Number and slow labelling codes
-void Station::decodeType1 (Group group) {
+void Station::decodeType1 (const Group& group) {
 
   if (group.num_blocks < 4)
     return;
@@ -323,7 +323,7 @@ void Station::decodeType1 (Group group) {
 }
 
 // Group 2: RadioText
-void Station::decodeType2 (Group group) {
+void Station::decodeType2 (const Group& group) {
 
   if (group.num_blocks < 3)
     return;
@@ -354,7 +354,7 @@ void Station::decodeType2 (Group group) {
 }
 
 // Group 3A: Application identification for Open Data
-void Station::decodeType3A (Group group) {
+void Station::decodeType3A (const Group& group) {
 
   if (group.num_blocks < 4)
     return;
@@ -387,7 +387,7 @@ void Station::decodeType3A (Group group) {
 }
 
 // Group 4A: Clock-time and date
-void Station::decodeType4A (Group group) {
+void Station::decodeType4A (const Group& group) {
 
   if (group.num_blocks < 3 || group.type.ab == TYPE_B)
     return;
@@ -432,7 +432,7 @@ void Station::decodeType4A (Group group) {
 }
 
 // Group 6: In-house applications
-void Station::decodeType6 (Group group) {
+void Station::decodeType6 (const Group& group) {
   printf(", \"in_house_data\":[\"0x%03x\"",
       bits(group.block2, 0, 5));
 
@@ -460,7 +460,7 @@ void Station::decodeType6 (Group group) {
 }
 
 // Group 14A: Enhanced Other Networks information
-void Station::decodeType14A (Group group) {
+void Station::decodeType14A (const Group& group) {
 
   if (group.num_blocks < 4)
     return;
@@ -525,7 +525,7 @@ void Station::decodeType14A (Group group) {
 }
 
 /* Open Data Application */
-void Station::decodeODAgroup (Group group) {
+void Station::decodeODAgroup (const Group& group) {
 
   if (oda_app_for_group_.count(group.type) == 0)
     return;
@@ -540,7 +540,7 @@ void Station::decodeODAgroup (Group group) {
 
 }
 
-void Station::parseRadioTextPlus(Group group) {
+void Station::parseRadioTextPlus(const Group& group) {
   //bool item_toggle  = bits(group.block2, 4, 1);
   bool item_running = bits(group.block2, 3, 1);
 

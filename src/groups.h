@@ -54,18 +54,18 @@ class Station {
     uint16_t getPI() const;
     std::string getCountryCode() const;
   private:
-    void decodeType0(Group);
-    void decodeType1(Group);
-    void decodeType2(Group);
-    void decodeType3A(Group);
-    void decodeType4A(Group);
-    void decodeType6(Group);
-    void decodeType14A(Group);
-    void decodeODAgroup(Group);
+    void decodeType0(const Group& group);
+    void decodeType1(const Group& group);
+    void decodeType2(const Group& group);
+    void decodeType3A(const Group& group);
+    void decodeType4A(const Group& group);
+    void decodeType6(const Group& group);
+    void decodeType14A(const Group& group);
+    void decodeODAgroup(const Group& group);
     void addAltFreq(uint8_t);
     void updatePS(int pos, std::vector<int> chars);
     void updateRadioText(int pos, std::vector<int> chars);
-    void parseRadioTextPlus(Group);
+    void parseRadioTextPlus(const Group& group);
     uint16_t pi_;
     RDSString ps_;
     RDSString rt_;
