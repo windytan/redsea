@@ -171,7 +171,7 @@ bool BlockStream::acquireSync() {
 
 }
 
-std::vector<uint16_t> BlockStream::getNextGroup() {
+Group BlockStream::getNextGroup() {
 
   num_blocks_received_ = 0;
 
@@ -272,10 +272,10 @@ std::vector<uint16_t> BlockStream::getNextGroup() {
 
   }
 
-  auto result = group_data_;
+  std::vector<uint16_t> result = group_data_;
   result.resize(num_blocks_received_);
 
-  return result;
+  return Group(result);
 
 }
 

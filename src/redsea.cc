@@ -62,29 +62,19 @@ int main(int argc, char** argv) {
 
   uint16_t pi=0, prev_new_pi=0, new_pi=0;
 
-  int group_counter = 0;
   bool is_eof = false;
 
   while (!is_eof) {
 
-    std::vector<uint16_t> blockbits;
+    redsea::Group group = (input_type == redsea::INPUT_RDSSPY ?
+        redsea::getNextGroupRSpy() :
+        block_stream.getNextGroup());
 
-    if (input_type == redsea::INPUT_MPX ||
-        input_type == redsea::INPUT_ASCIIBITS) {
-      blockbits = block_stream.getNextGroup();
-      is_eof = block_stream.isEOF();
-    } else if (input_type == redsea::INPUT_RDSSPY) {
-      blockbits = redsea::getNextGroupRSpy();
-      is_eof = blockbits.size() == 0;
-    }
+    is_eof = group.num_blocks == 0;
 
-    if (blockbits.size() == 0)
-      continue;
-
-    group_counter ++;
-
+    // Repeated PI confirms change
     prev_new_pi = new_pi;
-    new_pi = blockbits[0];
+    new_pi = group.block1;
 
     if (new_pi == prev_new_pi) {
       pi = new_pi;
@@ -94,14 +84,11 @@ int main(int argc, char** argv) {
       continue;
     }
 
-    redsea::Group group(blockbits);
-
     if (output_type == redsea::OUTPUT_HEX) {
       group.printHex();
     } else {
       station.update(group);
     }
 
-    //printShort(stations[pi]);
   }
 }

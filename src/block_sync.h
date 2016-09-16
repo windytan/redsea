@@ -4,6 +4,7 @@
 #include <map>
 
 #include "ascii_in.h"
+#include "groups.h"
 #include "subcarrier.h"
 
 namespace redsea {
@@ -23,7 +24,7 @@ enum eOutputType {
 class BlockStream {
   public:
   BlockStream(eInputType input_type=INPUT_MPX);
-  std::vector<uint16_t> getNextGroup();
+  Group getNextGroup();
   bool isEOF() const;
 
   private:
