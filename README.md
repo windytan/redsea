@@ -66,6 +66,10 @@ If your sound card supports recording at 192 kHz, and you have `sox` installed, 
 
     $ rec -t .s16 -r 171k -c 1 - | ./src/redsea
 
+## Performance tips
+
+Redsea can be run on Raspberry Pi 1 by changing `-A std` to `-A fast` in `rtl-rx.sh`. This changes the arctan approximation in the FM demodulator to a fast integer approximation.
+
 ## Requirements
 
 * Linux/OSX
