@@ -1,6 +1,7 @@
 #include "ascii_in.h"
 
 #include <iostream>
+#include <stdexcept>
 
 namespace redsea {
 
