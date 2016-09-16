@@ -10,7 +10,7 @@ has been successfully compiled on Linux and OSX.
 
 You will need git, [liquid-dsp](https://github.com/jgaeddert/liquid-dsp), and GNU autotools.
 
-1. Clone the repository:
+1. Clone the repository (unless you downloaded a release zip file):
 
         $ git clone https://github.com/windytan/redsea.git
         $ cd redsea
