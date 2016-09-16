@@ -22,7 +22,23 @@
 #include "block_sync.h"
 #include "groups.h"
 
+const std::string kRedseaVersion("0.7.0");
+
 namespace redsea {
+
+void printUsage() {
+  printf("radio_command | ./src/redsea [-b | -h] [-x] [-v]\n"
+         "\n"
+         "-b    Input is ASCII bit stream (011010110...)\n"
+         "-h    Input is hex groups in the RDS Spy format\n"
+         "-x    Output is hex groups in the RDS Spy format\n"
+         "-v    Print version\n"
+         );
+}
+
+void printVersion() {
+  printf("redsea v%s by Oona Raisanen\n", kRedseaVersion.c_str());
+}
 
 void printShort(Station station) {
     printf("%s 0x%04x %s\n", station.getPS().c_str(), station.getPI(),
@@ -41,7 +57,7 @@ int main(int argc, char** argv) {
   redsea::eInputType input_type = redsea::INPUT_MPX;
   int output_type = redsea::OUTPUT_JSON;
 
-  while ((option_char = getopt(argc, argv, "bhx")) != EOF) {
+  while ((option_char = getopt(argc, argv, "bhxv")) != EOF) {
     switch (option_char) {
       case 'b':
         input_type = redsea::INPUT_ASCIIBITS;
@@ -52,7 +68,14 @@ int main(int argc, char** argv) {
       case 'x':
         output_type = redsea::OUTPUT_HEX;
         break;
+      case 'v':
+        redsea::printVersion();
+        return 0;
+        break;
       case '?':
+      default:
+        redsea::printUsage();
+        return 0;
         break;
     }
   }
