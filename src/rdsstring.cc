@@ -36,11 +36,18 @@ void RDSString::setAt(int pos, int chr) {
 
   is_char_sequential_[pos] = true;
 
-  if (isComplete())
+  if (isComplete()) {
     last_complete_string_ = getString();
+    last_complete_chars_ = chars_;
+  }
 
   prev_pos_ = pos;
 
+}
+
+std::string RDSString::charAt(int pos) const {
+  return (pos < (int)last_complete_chars_.size() ?
+      getLCDchar(last_complete_chars_[pos]) : " ");
 }
 
 size_t RDSString::lengthReceived() const {

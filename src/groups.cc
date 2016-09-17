@@ -560,13 +560,14 @@ void Station::parseRadioTextPlus(const Group& group) {
   tags[1].start  = bits(group.block4, 5, 6);
   tags[1].length = bits(group.block4, 0, 5) + 1;
 
-  std::string rt = rt_.getLastCompleteString();
-
   for (RTPlusTag tag : tags) {
-    if (rt.length() >= tag.start + tag.length && tag.length > 1) {
+    if (tag.length > 1) {
+      std::string text;
+      for (int i=tag.start; i<tag.start+tag.length; i++)
+        text += rt_.charAt(i);
       printf(",\"%s\":\"%s\"",
           getRTPlusContentTypeName(tag.content_type).c_str(),
-          rt.substr(tag.start, tag.length).c_str());
+          text.c_str());//rt.substr(tag.start, tag.length).c_str());
     }
   }
 

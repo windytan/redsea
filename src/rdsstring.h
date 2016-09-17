@@ -10,6 +10,7 @@ class RDSString {
   public:
   RDSString(int len=8);
   void setAt(int, int);
+  std::string charAt(int) const;
   size_t lengthReceived() const;
   size_t lengthExpected() const;
   std::string getString() const;
@@ -21,6 +22,7 @@ class RDSString {
 
   private:
   std::vector<int> chars_;
+  std::vector<int> last_complete_chars_;
   std::vector<bool> is_char_sequential_;
   int prev_pos_;
   std::string last_complete_string_;
