@@ -2,13 +2,14 @@
 
 redsea is an experiment at building a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder.
-It works mainly with `rtl_fm` but can also decode raw ASCII bitstream,
+It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/)
+USB radio stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream,
 the hex format used by RDS Spy, and MPX input via a sound card. Redsea
 has been successfully compiled on Linux and OSX.
 
 ## Compiling
 
-You will need git, [liquid-dsp](https://github.com/jgaeddert/liquid-dsp), and GNU autotools.
+You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) library, and GNU autotools.
 
 1. Clone the repository (unless you downloaded a release zip file):
 
@@ -44,7 +45,7 @@ radio_command | ./src/redsea [-b | -x]
 ```
 
 By default, the input (via stdin) is MPX with 16-bit mono samples at 171 kHz. The output
-format defaults to [newline-delimited JSON](http://jsonlines.org/).
+format defaults to newline-delimited JSON.
 
 ### Live decoding with rtl_fm
 
