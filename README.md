@@ -44,7 +44,7 @@ radio_command | ./src/redsea [-b | -x]
 ```
 
 By default, the input (via stdin) is MPX with 16-bit mono samples at 171 kHz. The output
-format defaults to line delimited JSON.
+format defaults to [newline-delimited JSON](http://jsonlines.org/).
 
 ### Live decoding with rtl_fm
 
