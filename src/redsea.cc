@@ -22,7 +22,7 @@
 #include "block_sync.h"
 #include "groups.h"
 
-const std::string kRedseaVersion("0.7.0");
+const std::string kRedseaVersion("0.7.1");
 
 namespace redsea {
 

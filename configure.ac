@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([redsea], [0.7.0], [oona@kapsi.fi])
+AC_INIT([redsea], [0.7.1], [oona@kapsi.fi])
 AM_INIT_AUTOMAKE([1.10 -Wall -Werror foreign])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
