@@ -372,7 +372,6 @@ void Station::decodeType3A (const Group& group) {
       oda_group.toString().c_str(), getAppName(oda_aid).c_str());
 
   if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
-    printf("}");
     tmc_.systemGroup(group.block3);
   } else if (oda_aid == 0x4BD7) {
     has_rt_plus_ = true;
@@ -380,9 +379,11 @@ void Station::decodeType3A (const Group& group) {
     rt_plus_scb_ = bits(group.block3, 8, 4);
     rt_plus_template_num_ = bits(group.block3, 0, 8);
   } else {
-    printf(" /* TODO: Unimplemented ODA app */ ,\"message\":\"0x%02x\"}",
+    printf(" /* TODO: Unimplemented ODA app */ ,\"message\":\"0x%02x\"",
         oda_msg);
   }
+
+  printf("}");
 
 }
 
