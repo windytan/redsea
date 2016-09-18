@@ -18,12 +18,28 @@ std::string rtrim(std::string s) {
 
 }
 
+LCDchar::LCDchar() : code_(0) {
+
+}
+
+LCDchar::LCDchar(uint8_t _code) : code_(_code) {
+
+}
+
+uint8_t LCDchar::getCode() const {
+  return code_;
+}
+
+std::string LCDchar::toString() const {
+  return getLCDchar(code_);
+}
+
 RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
   prev_pos_(-1), last_complete_string_(getString()) {
 
 }
 
-void RDSString::setAt(int pos, int chr) {
+void RDSString::setAt(int pos, LCDchar chr) {
   if (pos < 0 || pos >= (int)chars_.size())
     return;
 
@@ -47,7 +63,7 @@ void RDSString::setAt(int pos, int chr) {
 
 std::string RDSString::charAt(int pos) const {
   return (pos < (int)last_complete_chars_.size() ?
-      getLCDchar(last_complete_chars_[pos]) : " ");
+      last_complete_chars_[pos].toString() : " ");
 }
 
 size_t RDSString::lengthReceived() const {
@@ -67,7 +83,7 @@ size_t RDSString::lengthExpected() const {
   size_t result = chars_.size();
 
   for (size_t i=0; i<chars_.size(); i++) {
-    if (chars_[i] == 0x0D) {
+    if (chars_[i].getCode() == 0x0D) {
       result = i;
       break;
     }
@@ -79,15 +95,15 @@ size_t RDSString::lengthExpected() const {
 std::string RDSString::getString() const {
 
   std::string result;
-  for (int chr : getChars()) {
-    result += getLCDchar(chr);
+  for (LCDchar chr : getChars()) {
+    result += chr.toString();
   }
 
   return result;
 }
 
-std::vector<int> RDSString::getChars() const {
-  std::vector<int> result;
+std::vector<LCDchar> RDSString::getChars() const {
+  std::vector<LCDchar> result;
   size_t len = lengthExpected();
   for (size_t i=0; i<len; i++) {
     result.push_back(is_char_sequential_[i] ? chars_[i] : 32);
@@ -109,7 +125,7 @@ std::string RDSString::getLastCompleteString(int start, int len) const {
   std::string result;
   for (int i=start; i<start+len; i++) {
     result += (i < (int)last_complete_chars_.size() ?
-        getLCDchar(last_complete_chars_[i]) : " ");
+        last_complete_chars_[i].toString() : " ");
   }
 
   return result;

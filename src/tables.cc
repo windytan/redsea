@@ -6,7 +6,7 @@
 
 namespace redsea {
 
-std::string getLCDchar(int code) {
+std::string getLCDchar(uint8_t code) {
   std::string result(" ");
   static const std::vector<std::string> char_map ({
       " ","!","\\\"","#","¤","%","&","'","(",")","*","+",",","-",".","/",
