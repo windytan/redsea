@@ -227,10 +227,15 @@ std::string ucfirst(std::string in) {
 }
 
 void loadEventData() {
-  std::ifstream in("data/tmc_events.csv");
+  std::string events_file("data/tmc_events.csv");
+  std::string suppl_file("data/tmc_suppl.csv");
 
-  if (!in.is_open())
+  std::ifstream in(events_file);
+
+  if (!in.is_open()) {
+    fprintf(stderr, "couldn't open %s\n", events_file.c_str());
     return;
+  }
 
   for (std::string line; std::getline(in, line); ) {
     if (!in.good())
@@ -263,10 +268,12 @@ void loadEventData() {
 
   in.close();
 
-  in.open("data/tmc_suppl.csv");
+  in.open(suppl_file);
 
-  if (!in.is_open())
+  if (!in.is_open()) {
+    fprintf(stderr, "couldn't open %s\n", suppl_file.c_str());
     return;
+  }
 
   for (std::string line; std::getline(in, line); ) {
     if (!in.good())
@@ -641,12 +648,11 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
 }
 
 void Message::print() const {
-  printf(",\"tmc\":{\"message\":{");
 
-  if (!is_complete_ || events_.empty()) {
-    printf("/* incomplete */}}");
+  if (!is_complete_ || events_.empty())
     return;
-  }
+
+  printf(",\"tmc\":{\"message\":{");
 
   printf("\"event_codes\":[%s]", join(events_, ",").c_str());
 
