@@ -50,6 +50,10 @@ Group::Group(std::vector<uint16_t> blockbits) :
 }
 
 void Group::printHex() const {
+
+  if (num_blocks == 0)
+    return;
+
   if (num_blocks > 0)
     printf("%04X ", block1);
   else
