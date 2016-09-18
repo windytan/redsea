@@ -210,7 +210,8 @@ std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
     q = "of up to " + std::to_string(q_value) + " millimetres";
 
   } else {
-    printf("/*q_value = %d, q_type=%d*/",q_value,event.quantifier_type);
+    printf(",\"debug\":\"q_value = %d, q_type=%d\"",
+        q_value, event.quantifier_type);
     q = "TODO";
 
   }
@@ -454,7 +455,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
             ps_.getLastCompleteString().c_str());
 
     } else {
-      printf(",\"tmc\":{/* TODO: tuning info variant %d */}", variant);
+      printf(",\"tmc\":{\"debug\":\"TODO: tuning info variant %d\"}", variant);
     }
 
   // User message
@@ -581,7 +582,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
           } else if (field_data == 7) {
             extent_ += 16;
           } else {
-            printf("/* TODO: TMC control code %d */",field_data);
+            printf(",\"debug\":\"TODO: TMC control code %d\"",field_data);
           }
 
         // Length of route affected
@@ -601,7 +602,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
               getQuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
             quantifiers_.insert({events_.size()-1, field_data});
           } else {
-            printf("/* ignoring invalid quantifier */");
+            printf(",\"debug\":\"invalid quantifier\"");
           }
 
         // 8-bit quantifier
@@ -611,7 +612,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
               getQuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
             quantifiers_.insert({events_.size()-1, field_data});
           } else {
-            printf("/* ignoring invalid quantifier */");
+            printf(",\"debug\":\"invalid quantifier\"");
           }
 
         // Supplementary info
@@ -639,7 +640,7 @@ Message::Message(bool is_multi, bool is_loc_encrypted,
         } else if (label == 14) {
 
         } else {
-          printf("/* TODO label=%d data=0x%04x */",label,field_data);
+          printf(",\"debug\":\"TODO label=%d data=0x%04x\"",label,field_data);
         }
       }
     }

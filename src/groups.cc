@@ -126,7 +126,7 @@ void Station::update(Group group) {
   else if (group.type.num == 6)
     decodeType6(group);
   else
-    printf(" /* TODO */ ");
+    printf(",\"debug\":\"TODO %s\"", group.type.toString().c_str());
 
   printf("}\n");
 
@@ -319,7 +319,7 @@ void Station::decodeType1 (const Group& group) {
       printf(",\"ews\":\"0x%03x\"", ews_channel_);
 
     } else {
-      printf(" /* TODO: SLC variant %d */", slc_variant);
+      printf(",\"debug\":\"TODO: SLC variant %d\"", slc_variant);
     }
 
   }
@@ -383,7 +383,7 @@ void Station::decodeType3A (const Group& group) {
     rt_plus_scb_ = bits(group.block3, 8, 4);
     rt_plus_template_num_ = bits(group.block3, 0, 8);
   } else {
-    printf(" /* TODO: Unimplemented ODA app */ ,\"message\":\"0x%02x\"",
+    printf(",\"debug\":\"TODO: Unimplemented ODA app\",\"message\":\"0x%02x\"",
         oda_msg);
   }
 
@@ -430,7 +430,7 @@ void Station::decodeType4A (const Group& group) {
       clock_time_ = buff;
       printf(",\"clock_time\":\"%s\"", clock_time_.c_str());
     } else {
-      printf("/* invalid date/time */");
+      printf(",\"debug\":\"invalid date/time\"");
     }
 
   }
@@ -522,7 +522,7 @@ void Station::decodeType14A (const Group& group) {
           bits(pin, 11, 5), bits(pin, 6, 5), bits(pin, 0, 6) );
 
   } else {
-    printf(" /* TODO: EON variant %d */", bits(group.block2,0,4));
+    printf(",\"debug\":\"TODO: EON variant %d\"", bits(group.block2,0,4));
   }
 
   printf("}");
