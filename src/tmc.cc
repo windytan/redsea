@@ -679,8 +679,9 @@ void Message::print() const {
       sentences.push_back(ucfirst(g_suppl_data.find(code)->second));
   }
 
-  printf(",\"description\":\"%s\"",
-      std::string(join(sentences, ". ") + ".").c_str());
+  if (!sentences.empty())
+    printf(",\"description\":\"%s\"",
+        std::string(join(sentences, ". ") + ".").c_str());
 
   if (!diversion_.empty()) {
     printf(",\"diversion_route\":[%s]", join(diversion_, ",").c_str());
