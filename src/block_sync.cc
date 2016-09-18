@@ -55,16 +55,16 @@ eOffset nextOffsetFor(eOffset o) {
 }
 
 // Precompute mapping of syndromes to error vectors
-std::map<uint16_t,uint16_t> makeErrorLookupTable() {
+std::map<uint16_t,uint32_t> makeErrorLookupTable() {
 
-  std::map<uint16_t,uint16_t> result;
+  std::map<uint16_t,uint32_t> result;
 
   for (uint32_t e=1; e < (1<<kMaxErrorLength); e++) {
-    for (unsigned shift=0; shift < 16; shift++) {
-      uint32_t errvec = ((e << shift) & kBitmask16) << 10;
+    for (unsigned shift=0; shift < 26; shift++) {
+      uint32_t errvec = ((e << shift) & kBitmask26);
 
       uint32_t sy = calcSyndrome(errvec);
-      result[sy] = errvec >> 10;
+      result[sy] = errvec;
     }
   }
   return result;
@@ -106,7 +106,7 @@ uint32_t BlockStream::correctBurstErrors(uint32_t block) const {
 
   if (error_lookup_.find(synd_reg) != error_lookup_.end()) {
     corrected_block = (block ^ offset_words[expected_offset_])
-      ^ (error_lookup_.at(synd_reg) << 10);
+      ^ (error_lookup_.at(synd_reg));
   }
 
   return corrected_block;

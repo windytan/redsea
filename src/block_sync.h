@@ -48,7 +48,7 @@ class BlockStream {
   std::vector<bool> block_has_errors_;
   Subcarrier subcarrier_;
   AsciiBits ascii_bits_;
-  std::map<uint16_t,uint16_t> error_lookup_;
+  std::map<uint16_t,uint32_t> error_lookup_;
   unsigned num_blocks_received_;
   const eInputType input_type_;
   bool is_eof_;
