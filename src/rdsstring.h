@@ -9,14 +9,18 @@ namespace redsea {
 class RDSString {
   public:
   RDSString(int len=8);
-  void setAt(int, int);
-  std::string charAt(int) const;
+  void setAt(int pos, int chr);
+  std::string charAt(int pos) const;
   size_t lengthReceived() const;
   size_t lengthExpected() const;
+  std::vector<int> getChars() const;
   std::string getString() const;
   std::string getTrimmedString() const;
   std::string getLastCompleteString() const;
+  std::string getLastCompleteString(int start, int len) const;
   std::string getLastCompleteStringTrimmed() const;
+  std::string getLastCompleteStringTrimmed(int start, int len) const;
+  bool hasChars(int start, int len) const;
   bool isComplete() const;
   void clear();
 

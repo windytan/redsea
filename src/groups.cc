@@ -83,8 +83,9 @@ Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64), rt_ab_(0), pty_(0),
   is_tp_(false), is_ta_(false), is_music_(false), alt_freqs_(),
   num_alt_freqs_(0), pin_(0), ecc_(0), cc_(0), tmc_id_(0), ews_channel_(0),
   lang_(0), linkage_la_(0), clock_time_(""), has_country_(false),
-  oda_app_for_group_(), has_rt_plus_(false), pager_pac_(0), pager_opc_(0),
-  pager_tng_(0), pager_ecc_(0), pager_ccf_(0), pager_interval_(0), tmc_() {
+  oda_app_for_group_(), has_rt_plus_(false), rt_plus_toggle_(false),
+  rt_plus_item_running_(false), pager_pac_(0), pager_opc_(0), pager_tng_(0),
+  pager_ecc_(0), pager_ccf_(0), pager_interval_(0), tmc_() {
 
 }
 
@@ -542,8 +543,14 @@ void Station::decodeODAgroup (const Group& group) {
 }
 
 void Station::parseRadioTextPlus(const Group& group) {
-  //bool item_toggle  = bits(group.block2, 4, 1);
+  bool item_toggle  = bits(group.block2, 4, 1);
   bool item_running = bits(group.block2, 3, 1);
+
+  if (item_toggle != rt_plus_toggle_ || item_running != rt_plus_item_running_) {
+    rt_.clear();
+    rt_plus_toggle_ = item_toggle;
+    rt_plus_item_running_ = item_running;
+  }
 
   printf(",\"radiotext_plus\":{\"item_running\":\"%s\"",
       item_running ? "true" : "false");
@@ -561,13 +568,15 @@ void Station::parseRadioTextPlus(const Group& group) {
   tags[1].length = bits(group.block4, 0, 5) + 1;
 
   for (RTPlusTag tag : tags) {
-    if (tag.length > 1) {
-      std::string text;
-      for (int i=tag.start; i<tag.start+tag.length; i++)
-        text += rt_.charAt(i);
+    std::string text =
+      rt_.getLastCompleteStringTrimmed(tag.start, tag.length);
+
+    if (rt_.hasChars(tag.start, tag.length) && text.length() > 0 &&
+        tag.content_type != 0) {
+
       printf(",\"%s\":\"%s\"",
           getRTPlusContentTypeName(tag.content_type).c_str(),
-          text.c_str());//rt.substr(tag.start, tag.length).c_str());
+          text.c_str());
     }
   }
 

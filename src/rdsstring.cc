@@ -27,18 +27,18 @@ void RDSString::setAt(int pos, int chr) {
   if (pos < 0 || pos >= (int)chars_.size())
     return;
 
-  chars_[pos] = chr;
+  chars_.at(pos) = chr;
 
   if (pos != prev_pos_ + 1) {
     for (size_t i=0; i<is_char_sequential_.size(); i++)
       is_char_sequential_[i] = false;
   }
 
-  is_char_sequential_[pos] = true;
+  is_char_sequential_.at(pos) = true;
 
   if (isComplete()) {
     last_complete_string_ = getString();
-    last_complete_chars_ = chars_;
+    last_complete_chars_ = getChars();
   }
 
   prev_pos_ = pos;
@@ -77,14 +77,23 @@ size_t RDSString::lengthExpected() const {
 }
 
 std::string RDSString::getString() const {
+
   std::string result;
-  size_t len = lengthExpected();
-  for (size_t i=0; i<len; i++) {
-    result += (is_char_sequential_[i] ? getLCDchar(chars_[i]) : " ");
+  for (int chr : getChars()) {
+    result += getLCDchar(chr);
   }
 
   return result;
+}
 
+std::vector<int> RDSString::getChars() const {
+  std::vector<int> result;
+  size_t len = lengthExpected();
+  for (size_t i=0; i<len; i++) {
+    result.push_back(is_char_sequential_[i] ? chars_[i] : 32);
+  }
+
+  return result;
 }
 
 std::string RDSString::getTrimmedString() const {
@@ -95,8 +104,27 @@ std::string RDSString::getLastCompleteString() const {
   return last_complete_string_;
 }
 
+std::string RDSString::getLastCompleteString(int start, int len) const {
+
+  std::string result;
+  for (int i=start; i<start+len; i++) {
+    result += (i < (int)last_complete_chars_.size() ?
+        getLCDchar(last_complete_chars_[i]) : " ");
+  }
+
+  return result;
+}
+
 std::string RDSString::getLastCompleteStringTrimmed() const {
   return rtrim(last_complete_string_);
+}
+
+std::string RDSString::getLastCompleteStringTrimmed(int start, int len) const {
+  return rtrim(getLastCompleteString(start, len));
+}
+
+bool RDSString::hasChars(int start, int len) const {
+  return start+len <= (int)last_complete_chars_.size();
 }
 
 bool RDSString::isComplete() const {
@@ -108,6 +136,7 @@ void RDSString::clear() {
     is_char_sequential_[i] = false;
   }
   last_complete_string_ = getString();
+  last_complete_chars_.clear();
 }
 
 } // namespace redsea

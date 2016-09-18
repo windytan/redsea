@@ -90,6 +90,8 @@ class Station {
     bool rt_plus_cb_;
     uint16_t rt_plus_scb_;
     uint16_t rt_plus_template_num_;
+    bool rt_plus_toggle_;
+    bool rt_plus_item_running_;
     std::map<uint16_t,RDSString> eon_ps_names_;
 
     int pager_pac_;
