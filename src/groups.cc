@@ -91,6 +91,9 @@ Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64), rt_ab_(0), pty_(0),
 
 void Station::update(Group group) {
 
+  if (group.num_blocks == 0)
+    return;
+
   printf("{\"pi\":\"0x%04x\"", pi_);
 
   if (group.num_blocks < 2) {
