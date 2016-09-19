@@ -403,7 +403,7 @@ void Station::decodeType4A (const Group& group) {
     return;
 
   int mjd = (bits(group.block2, 0, 2) << 15) + bits(group.block3, 1, 15);
-  double lto;
+  double lto = 0.0;
 
   if (group.num_blocks == 4) {
     lto = (bits(group.block4, 5, 1) ? -1 : 1) * bits(group.block4, 0, 5) / 2.0;
