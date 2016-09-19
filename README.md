@@ -42,6 +42,8 @@ radio_command | ./src/redsea [-b | -x]
 -b    Input is ASCII bit stream (011010110...)
 -h    Input is hex groups in the RDS Spy format
 -x    Output is hex groups in the RDS Spy format
+-u    Use RBDS (North American) program types
+-v    Print version
 ```
 
 By default, the input (via stdin) is MPX with 16-bit mono samples at 171 kHz. The output

@@ -46,7 +46,7 @@ class Group {
 class Station {
   public:
     Station();
-    Station(uint16_t pi);
+    Station(uint16_t pi, bool _is_rbds);
     void update(Group);
     bool hasPS() const;
     std::string getPS() const;
@@ -67,6 +67,7 @@ class Station {
     void updateRadioText(int pos, std::vector<int> chars);
     void parseRadioTextPlus(const Group& group);
     uint16_t pi_;
+    bool is_rbds_;
     RDSString ps_;
     RDSString rt_;
     int rt_ab_;

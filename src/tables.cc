@@ -31,7 +31,7 @@ std::string getLCDchar(uint8_t code) {
   return result;
 }
 
-std::string getPTYname(int pty) {
+std::string getPTYname(int pty, bool is_rbds) {
   assert (pty >= 0 && pty <= 32);
   static const std::vector<std::string> pty_names ({
    "No PTY", "News", "Current Affairs", "Information",
@@ -43,7 +43,18 @@ std::string getPTYname(int pty) {
    "Jazz Music", "Country Music", "National Music", "Oldies Music",
    "Folk Music", "Documentary", "Alarm Test", "Alarm - Alarm !"
   });
-  return pty_names[pty];
+  static const std::vector<std::string> pty_names_rbds ({
+   "No PTY", "News", "Information", "Sports",
+   "Talk", "Rock", "Classic Rock", "Adult Hits",
+   "Soft Rock", "Top 40","Country", "Oldies",
+   "Soft","Nostalgia","Jazz","Classical",
+   "Rhythm and Blues", "Soft Rhythm and Blues", "Language", "Religious Music",
+   "Religious Talk", "Personality", "Public", "College",
+   "", "", "", "",
+   "", "Weather", "Emergency Test", "Emergency"
+  });
+
+  return is_rbds ? pty_names_rbds[pty] : pty_names[pty];
 
 }
 

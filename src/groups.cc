@@ -79,17 +79,18 @@ void Group::printHex() const {
   fflush(stdout);
 }
 
-Station::Station() : Station(0x0000) {
+Station::Station() : Station(0x0000, false) {
 
 }
 
-Station::Station(uint16_t _pi) : pi_(_pi), ps_(8), rt_(64), rt_ab_(0), pty_(0),
-  is_tp_(false), is_ta_(false), is_music_(false), alt_freqs_(),
-  num_alt_freqs_(0), pin_(0), ecc_(0), cc_(0), tmc_id_(0), ews_channel_(0),
-  lang_(0), linkage_la_(0), clock_time_(""), has_country_(false),
-  oda_app_for_group_(), has_rt_plus_(false), rt_plus_toggle_(false),
-  rt_plus_item_running_(false), pager_pac_(0), pager_opc_(0), pager_tng_(0),
-  pager_ecc_(0), pager_ccf_(0), pager_interval_(0), tmc_() {
+Station::Station(uint16_t _pi, bool _is_rbds) : pi_(_pi), is_rbds_(_is_rbds),
+  ps_(8), rt_(64), rt_ab_(0), pty_(0), is_tp_(false), is_ta_(false),
+  is_music_(false), alt_freqs_(), num_alt_freqs_(0), pin_(0), ecc_(0), cc_(0),
+  tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
+  has_country_(false), oda_app_for_group_(), has_rt_plus_(false),
+  rt_plus_toggle_(false), rt_plus_item_running_(false), pager_pac_(0),
+  pager_opc_(0), pager_tng_(0), pager_ecc_(0), pager_ccf_(0),
+  pager_interval_(0), tmc_() {
 
 }
 
@@ -111,7 +112,7 @@ void Station::update(Group group) {
   pty_     = bits(group.block2,  5, 5);
 
   printf(",\"tp\":\"%s\"", is_tp_ ? "true" : "false");
-  printf(",\"prog_type\":\"%s\"", getPTYname(pty_).c_str());
+  printf(",\"prog_type\":\"%s\"", getPTYname(pty_, is_rbds_).c_str());
 
   if      (group.type.num == 0)
     decodeType0(group);
@@ -514,7 +515,7 @@ void Station::decodeType14A (const Group& group) {
   } else if (eon_variant == 13) {
     uint16_t pty = bits(group.block3, 11, 5);
     bool ta      = bits(group.block3, 0, 1);
-    printf(",\"prog_type\":\"%s\"", getPTYname(pty).c_str());
+    printf(",\"prog_type\":\"%s\"", getPTYname(pty, is_rbds_).c_str());
     printf(",\"ta\":\"%s\"", ta ? "true" : "false");
 
   } else if (eon_variant == 14) {

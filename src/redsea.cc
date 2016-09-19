@@ -32,6 +32,7 @@ void printUsage() {
          "-b    Input is ASCII bit stream (011010110...)\n"
          "-h    Input is hex groups in the RDS Spy format\n"
          "-x    Output is hex groups in the RDS Spy format\n"
+         "-u    Use RBDS (North American) program types\n"
          "-v    Print version\n"
          );
 }
@@ -56,8 +57,9 @@ int main(int argc, char** argv) {
   int option_char;
   redsea::eInputType input_type = redsea::INPUT_MPX;
   int output_type = redsea::OUTPUT_JSON;
+  bool is_rbds = false;
 
-  while ((option_char = getopt(argc, argv, "bhxv")) != EOF) {
+  while ((option_char = getopt(argc, argv, "bhxvu")) != EOF) {
     switch (option_char) {
       case 'b':
         input_type = redsea::INPUT_ASCIIBITS;
@@ -67,6 +69,9 @@ int main(int argc, char** argv) {
         break;
       case 'x':
         output_type = redsea::OUTPUT_HEX;
+        break;
+      case 'u':
+        is_rbds = true;
         break;
       case 'v':
         redsea::printVersion();
@@ -81,7 +86,7 @@ int main(int argc, char** argv) {
   }
 
   redsea::BlockStream block_stream(input_type);
-  redsea::Station station(0);
+  redsea::Station station(0, is_rbds);
 
   uint16_t pi=0, prev_new_pi=0, new_pi=0;
 
@@ -102,7 +107,7 @@ int main(int argc, char** argv) {
     if (new_pi == prev_new_pi) {
       pi = new_pi;
       if (pi != station.getPI())
-        station = redsea::Station(pi);
+        station = redsea::Station(pi, is_rbds);
     } else if (new_pi != pi) {
       continue;
     }
