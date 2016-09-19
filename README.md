@@ -4,7 +4,7 @@ redsea is an experiment at building a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder.
 It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio
 stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream, the hex
-format used by RDS Spy, and MPX input via a sound card.
+format used by RDS Spy, and multiplex signals (MPX).
 
 RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`).
@@ -70,9 +70,9 @@ Command line options to this script are passed on to `rtl_fm`. Station frequency
 crystal. Gain is set to 40 dB by default. The script can be modified to include
 additional parameters to redsea as well.
 
-Decoding works on Raspberry Pi 1 by changing `-A std` to `-A fast`. This changes
-the arctan calculation in the FM demodulator to a fast integer approximation, so
-that more cycles will be left to redsea.
+For Raspberry Pi 1 it's necessary to change `-A std` to `-A fast`. This
+changes the arctan calculation in the FM demodulator to a fast integer
+approximation, so that more cycles will be left to redsea.
 
 Note that `rtl_fm` will tune a bit off; this is expected behavior and is done to
 avoid the DC spike.
