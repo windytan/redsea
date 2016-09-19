@@ -231,11 +231,7 @@ std::string ucfirst(std::string in) {
 
 void loadEventData() {
 
-  std::istringstream in_events(tmc_data_events);
-
-  for (std::string line; std::getline(in_events, line); ) {
-    if (!in_events.good())
-      break;
+  for (std::string line : tmc_data_events) {
 
     std::stringstream iss(line);
     uint16_t code;
@@ -262,11 +258,7 @@ void loadEventData() {
 
   }
 
-  std::istringstream in_suppl(tmc_data_suppl);
-
-  for (std::string line; std::getline(in_suppl, line); ) {
-    if (!in_suppl.good())
-      break;
+  for (std::string line : tmc_data_suppl) {
 
     std::stringstream iss(line);
     uint16_t code;
