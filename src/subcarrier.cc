@@ -34,7 +34,7 @@ unsigned DeltaDecoder::decode(unsigned d) {
 }
 
 Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
-  fir_lpf_(256, 2100.0f / kFs), is_eof_(false), agc_(0.001f),
+  fir_lpf_(256, 2100.0f / kFs), is_eof_(false), agc_(0.01f),
   nco_approx_(kFc_0 * 2 * M_PI / kFs), nco_exact_(0.0f),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f, 32),
   modem_(LIQUID_MODEM_PSK2), symbol_clock_(0), prev_biphase_(0),
