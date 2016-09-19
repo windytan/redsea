@@ -37,7 +37,7 @@ To update with the newest changes and recompile:
 ## Usage
 
 ```
-radio_command | ./src/redsea [-b | -x]
+radio_command | ./src/redsea [OPTIONS]
 
 -b    Input is ASCII bit stream (011010110...)
 -h    Input is hex groups in the RDS Spy format

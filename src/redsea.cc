@@ -27,7 +27,7 @@ const std::string kRedseaVersion("0.7.2");
 namespace redsea {
 
 void printUsage() {
-  printf("radio_command | ./src/redsea [-b | -h] [-x] [-v]\n"
+  printf("radio_command | ./src/redsea [OPTIONS]\n"
          "\n"
          "-b    Input is ASCII bit stream (011010110...)\n"
          "-h    Input is hex groups in the RDS Spy format\n"
