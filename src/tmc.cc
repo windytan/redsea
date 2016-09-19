@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 
+#include "tmc_data.h"
 #include "util.h"
 
 namespace redsea {
@@ -228,18 +229,11 @@ std::string ucfirst(std::string in) {
 }
 
 void loadEventData() {
-  std::string events_file("data/tmc_events.csv");
-  std::string suppl_file("data/tmc_suppl.csv");
 
-  std::ifstream in(events_file);
+  std::istringstream in_events(tmc_data_events);
 
-  if (!in.is_open()) {
-    fprintf(stderr, "couldn't open %s\n", events_file.c_str());
-    return;
-  }
-
-  for (std::string line; std::getline(in, line); ) {
-    if (!in.good())
+  for (std::string line; std::getline(in_events, line); ) {
+    if (!in_events.good())
       break;
 
     std::stringstream iss(line);
@@ -267,17 +261,10 @@ void loadEventData() {
 
   }
 
-  in.close();
+  std::istringstream in_suppl(tmc_data_suppl);
 
-  in.open(suppl_file);
-
-  if (!in.is_open()) {
-    fprintf(stderr, "couldn't open %s\n", suppl_file.c_str());
-    return;
-  }
-
-  for (std::string line; std::getline(in, line); ) {
-    if (!in.good())
+  for (std::string line; std::getline(in_suppl, line); ) {
+    if (!in_suppl.good())
       break;
 
     std::stringstream iss(line);
@@ -293,15 +280,13 @@ void loadEventData() {
 
   }
 
-  in.close();
-
 }
 
 std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
 
   std::map<uint16_t, ServiceKey> result;
 
-  std::ifstream in("data/service_key_table.csv");
+  std::ifstream in("service_key_table.csv");
 
   if (!in.is_open())
     return result;
