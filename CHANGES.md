@@ -1,5 +1,13 @@
 # redsea changelog
 
+## 0.7.3 (xxxx-xx-xx)
+
+* Fix high error rate in the beginning of reception by increasing AGC bandwidth
+* Fix spelling of program type names (no title case etc)
+* Add option `-u` to use North American (RBDS) program type names
+* Print alternate frequencies as numbers instead of strings
+* Print TMC location table number as a number instead of hex string
+
 ## 0.7.2 (2016-09-18)
 
 * Apply burst error correction to check bits as well
