@@ -10,11 +10,11 @@ namespace redsea {
 
 namespace {
 
-const float kFs = 171000.0f;
-const float kFc_0 = 57000.0f;
-const float kBitsPerSecond = 1187.5;
-const int kInputBufferSize = 4096;
-const int kSamplesPerSymbol = 4;
+const float kFs               = 171000.0f;
+const float kFc_0             = 57000.0f;
+const float kBitsPerSecond    = 1187.5;
+const int   kInputBufferSize  = 4096;
+const int   kSamplesPerSymbol = 4;
 
 }
 
@@ -52,8 +52,9 @@ Subcarrier::~Subcarrier() {
 
 void Subcarrier::demodulateMoreBits() {
 
-  int16_t sample[kInputBufferSize];
-  int samplesread = fread(sample, sizeof(sample[0]), kInputBufferSize, stdin);
+  int16_t inbuffer[kInputBufferSize];
+  int samplesread = fread(inbuffer, sizeof(inbuffer[0]), kInputBufferSize,
+      stdin);
   if (samplesread < kInputBufferSize) {
     is_eof_ = true;
     return;
@@ -61,9 +62,9 @@ void Subcarrier::demodulateMoreBits() {
 
   const int decimate = kFs / kBitsPerSecond / 2 / kSamplesPerSymbol;
 
-  for (int i = 0; i < samplesread; i++) {
+  for (int16_t sample : inbuffer) {
 
-    std::complex<float> sample_baseband = nco_approx_.mixDown(sample[i]);
+    std::complex<float> sample_baseband = nco_approx_.mixDown(sample);
 
     fir_lpf_.push(sample_baseband);
 
