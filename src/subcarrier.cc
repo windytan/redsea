@@ -12,6 +12,7 @@ namespace {
 
 const float kFs = 171000.0f;
 const float kFc_0 = 57000.0f;
+const float kBitsPerSecond = 1187.5;
 const int kInputBufferSize = 4096;
 const int kSamplesPerSymbol = 4;
 
@@ -58,13 +59,15 @@ void Subcarrier::demodulateMoreBits() {
     return;
   }
 
+  const int decimate = kFs / kBitsPerSecond / 2 / kSamplesPerSymbol;
+
   for (int i = 0; i < samplesread; i++) {
 
     std::complex<float> sample_baseband = nco_approx_.mixDown(sample[i]);
 
     fir_lpf_.push(sample_baseband);
 
-    if (numsamples_ % (72 / kSamplesPerSymbol) == 0) {
+    if (numsamples_ % decimate == 0) {
 
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
