@@ -27,7 +27,7 @@ GroupType::GroupType(uint16_t type_code) : num((type_code >> 1) & 0xF),
   ab(type_code & 0x1) {}
 GroupType::GroupType(const GroupType& obj) : num(obj.num), ab(obj.ab) {}
 
-std::string GroupType::toString() {
+std::string GroupType::toString() const {
   return std::string(std::to_string(num) + (ab == TYPE_A ? "A" : "B"));
 }
 
@@ -94,7 +94,7 @@ Station::Station(uint16_t _pi, bool _is_rbds) : pi_(_pi), is_rbds_(_is_rbds),
 
 }
 
-void Station::update(Group group) {
+void Station::update(const Group& group) {
 
   if (group.num_blocks == 0)
     return;

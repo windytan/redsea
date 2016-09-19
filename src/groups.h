@@ -21,7 +21,7 @@ class GroupType {
 
   bool operator==(const GroupType& other);
 
-  std::string toString();
+  std::string toString() const;
 
   const uint16_t num;
   const uint16_t ab;
@@ -47,7 +47,7 @@ class Station {
   public:
     Station();
     Station(uint16_t pi, bool _is_rbds);
-    void update(Group);
+    void update(const Group& group);
     bool hasPS() const;
     std::string getPS() const;
     std::string getRT() const;
