@@ -4,8 +4,12 @@ redsea is an experiment at building a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder.
 It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/)
 USB radio stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream,
-the hex format used by RDS Spy, and MPX input via a sound card. Redsea
-has been successfully compiled on Linux and OSX.
+the hex format used by RDS Spy, and MPX input via a sound card.
+
+RDS groups are printed to the terminal as line-delimited JSON objects
+or, optionally, hex blocks (`-x`).
+
+Redsea has been successfully compiled on Linux and OSX.
 
 ## Compiling
 
