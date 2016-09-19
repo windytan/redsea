@@ -107,8 +107,9 @@ std::string timeString(uint16_t field_data) {
   } else {
     int mo = (field_data-232) / 2;
     bool end_mid = (field_data-232) % 2;
-    std::vector<std::string> month_names({"Jan","Feb","Mar","Apr","May",
-        "Jun","Jul","Aug","Sep","Oct","Nov","Dec"});
+    std::vector<std::string> month_names({
+        "January","February","March","April","May",
+        "June","July","August","September","October","November","December"});
     if (mo < 12) {
       time_string = (end_mid ? "end of " : "mid-") + month_names.at(mo);
     }
