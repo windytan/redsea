@@ -2,18 +2,19 @@
 
 redsea is an experiment at building a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder.
-It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/)
-USB radio stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream,
-the hex format used by RDS Spy, and MPX input via a sound card.
+It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio
+stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream, the hex
+format used by RDS Spy, and MPX input via a sound card.
 
 RDS groups are printed to the terminal as line-delimited JSON objects
-or, optionally, hex blocks (`-x`).
+or, optionally, undecoded hex blocks (`-x`).
 
 Redsea has been successfully compiled on Linux and OSX.
 
 ## Compiling
 
-You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) library, and GNU autotools.
+You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
+library, and GNU autotools.
 
 1. Clone the repository (unless you downloaded a release zip file):
 
@@ -29,7 +30,8 @@ You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) lib
         $ ./configure
         $ make
 
-If you get an error message about the STDCXX_11 macro or an unexpected token, try installing `autoconf-archive`.
+If you get an error message about the STDCXX_11 macro or an unexpected token,
+try installing `autoconf-archive`.
 
 To update with the newest changes and recompile:
 
@@ -50,32 +52,44 @@ radio_command | ./src/redsea [OPTIONS]
 -v    Print version
 ```
 
-By default, the input (via stdin) is MPX with 16-bit mono samples at 171 kHz. The output
-format defaults to newline-delimited JSON.
+By default, the input (via stdin) is MPX with 16-bit mono samples at 171 kHz.
+The output format defaults to newline-delimited JSON.
 
 ### Live decoding with rtl_fm
 
-There's a convenience shell script called `rtl-rx.sh`:
+The full command is:
+
+    $ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M | ./src/redsea
+
+There's a shorthand shell script called `rtl-rx.sh`:
 
     $ ./rtl-rx.sh -f 87.9M
 
-Command line options are passed on to `rtl_fm`. Station frequency (`-f`) is mandatory. It may also be helpful to set `-p` to the ppm error in the crystal. (Note that `rtl_fm` will tune a bit off; this is expected behavior.) Gain is set to 40 dB by default. The script can be modified to include additional parameters to redsea as well.
+Command line options to this script are passed on to `rtl_fm`. Station frequency
+(`-f`) is mandatory. It may also be helpful to set `-p` to the ppm error in the
+crystal. Gain is set to 40 dB by default. The script can be modified to include
+additional parameters to redsea as well.
+
+Decoding works on Raspberry Pi 1 by changing `-A std` to `-A fast`. This changes
+the arctan calculation in the FM demodulator to a fast integer approximation, so
+that more cycles will be left to redsea.
+
+Note that `rtl_fm` will tune a bit off; this is expected behavior and is done to
+avoid the DC spike.
 
 ### Decoding a pre-recorded signal with SoX
 
     $ sox multiplex.wav -t .s16 -r 171k -c 1 - | ./src/redsea
 
-The signal should be FM demodulated and have enough bandwidth to accommodate the RDS subcarrier (> 60 kHz).
+The signal should be FM demodulated and have enough bandwidth to accommodate the
+RDS subcarrier (> 60 kHz).
 
 ### Decoding MPX via sound card
 
-If your sound card supports recording at 192 kHz, and you have `sox` installed, you can also decode the MPX output of an FM tuner or RDS encoder:
+If your sound card supports recording at 192 kHz, and you have `sox` installed,
+you can also decode the MPX output of an FM tuner or RDS encoder:
 
     $ rec -t .s16 -r 171k -c 1 - | ./src/redsea
-
-## Performance tips
-
-Redsea can be run on Raspberry Pi 1 by changing `-A std` to `-A fast` in `rtl-rx.sh`. This changes the arctan calculation in the FM demodulator to a fast integer approximation, so that more cycles will be left to redsea.
 
 ## Requirements
 
@@ -83,7 +97,8 @@ Redsea can be run on Raspberry Pi 1 by changing `-A std` to `-A fast` in `rtl-rx
 * C++11 compiler
 * GNU autotools
 * [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
-* `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any other source that can output demodulated FM multiplex signals
+* `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
+   other source that can output demodulated FM multiplex signals
 
 ## Features
 
