@@ -211,7 +211,7 @@ void Station::decodeType0 (const Group& group) {
       printf(",\"alt_freqs\":[");
       int i = 0;
       for (auto f : alt_freqs_) {
-        printf("\"%.1f\"", f);
+        printf("%.1f", f);
         if (i < (int)alt_freqs_.size() - 1)
           printf(",");
         i++;
