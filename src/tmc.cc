@@ -350,7 +350,8 @@ Event getEvent(uint16_t code) {
 
 TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
   ltn_(0), sid_(0), encid_(0), ltnbe_(0), current_ci_(0),
-  multi_group_buffer_(5), service_key_table_(loadServiceKeyTable()), ps_(8) {
+  multi_group_buffer_(5), service_key_table_(loadServiceKeyTable()), ps_(8),
+  message_(false) {
 
 }
 
@@ -446,7 +447,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
 
     // Single-group message
     if (f) {
-      Message message(false, is_encrypted_, {{true, {x, y, z}}});
+      Message message(is_encrypted_);
+      message.pushSingle(x, y, z);
 
       if (is_encrypted_ && service_key_table_.count(encid_) > 0)
         message.decrypt(service_key_table_[encid_]);
@@ -458,172 +460,202 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     } else {
 
       uint16_t continuity_index = bits(x, 0, 3);
-      bool     is_first_group = bits(y, 15, 1);
 
       if (continuity_index != current_ci_) {
         /* Message changed; print previous unfinished message
          * TODO 15-second limit */
-        Message message(true, is_encrypted_, multi_group_buffer_);
-        message.print();
-        for (auto& g : multi_group_buffer_)
-          g.is_received = false;
+        message_.print();
+        printf("\nci:\n");
+        message_ = Message(is_encrypted_);
         current_ci_ = continuity_index;
       }
 
-      int cur_grp;
-
-      if (is_first_group) {
-        cur_grp = 0;
-      } else if (bits(y, 14, 1)) { // SG
-        cur_grp = 1;
-      } else {
-        cur_grp = 4 - bits(y, 12, 2);
-      }
-
-      multi_group_buffer_.at(cur_grp) = {true, {y, z}};
+      message_.pushMulti(x, y, z);
+      if (message_.isComplete())
+        message_.print();
 
     }
   }
 
 }
 
-Message::Message(bool is_multi, bool is_loc_encrypted,
-    std::vector<MessagePart> parts) : is_encrypted_(is_loc_encrypted),
+Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
     duration_(0), duration_type_(0), divertadv_(false), direction_(0),
     extent_(0), events_(), supplementary_(), quantifiers_(), diversion_(),
     location_(0), is_complete_(false), has_length_affected_(false),
     length_affected_(0), has_time_until_(false), time_until_(0),
     has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
-    speed_limit_(0), directionality_(DIR_SINGLE), urgency_(URGENCY_NONE) {
+    speed_limit_(0), directionality_(DIR_SINGLE), urgency_(URGENCY_NONE),
+    parts_(5) {
 
-  // single-group
-  if (!is_multi) {
-    duration_  = bits(parts[0].data[0], 0, 3);
-    divertadv_ = bits(parts[0].data[1], 15, 1);
-    direction_ = bits(parts[0].data[1], 14, 1);
-    extent_    = bits(parts[0].data[1], 11, 3);
-    events_.push_back(bits(parts[0].data[1], 0, 11));
-    location_  = parts[0].data[2];
-    directionality_ = getEvent(events_[0]).directionality;
-    urgency_   = getEvent(events_[0]).urgency;
-    duration_type_ = getEvent(events_[0]).duration_type;
+}
 
-    is_complete_ = true;
+bool Message::isComplete() const {
+  return is_complete_;
+}
 
-  // multi-group
-  } else {
+void Message::pushSingle(uint16_t x, uint16_t y, uint16_t z) {
+  duration_  = bits(x, 0, 3);
+  divertadv_ = bits(y, 15, 1);
+  direction_ = bits(y, 14, 1);
+  extent_    = bits(y, 11, 3);
+  events_.push_back(bits(y, 0, 11));
+  location_  = z;
+  directionality_ = getEvent(events_[0]).directionality;
+  urgency_   = getEvent(events_[0]).urgency;
+  duration_type_ = getEvent(events_[0]).duration_type;
 
-    // Need at least the first group
-    if (!parts[0].is_received)
-      return;
+  is_complete_ = true;
+}
 
-    is_complete_ = true;
+void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
 
-    // First group
-    direction_ = bits(parts[0].data[0], 14, 1);
-    extent_    = bits(parts[0].data[0], 11, 3);
-    events_.push_back(bits(parts[0].data[0], 0, 11));
-    location_  = parts[0].data[1];
-    directionality_ = getEvent(events_[0]).directionality;
-    urgency_   = getEvent(events_[0]).urgency;
-    duration_type_ = getEvent(events_[0]).duration_type;
+    bool is_first_group = bits(y, 15, 1);
+    int cur_grp;
+    int gsi = -1;
 
-    // Subsequent parts
-    if (parts[1].is_received) {
-      auto freeform = getFreeformFields(parts);
+    if (is_first_group) {
+      cur_grp = 0;
+    } else if (bits(y, 14, 1)) { // SG
+      gsi = bits(y, 12, 2);
+      cur_grp = 1;
+    } else {
+      gsi = bits(y, 12, 2);
+      cur_grp = 4 - gsi;
+    }
 
-      for (std::pair<uint16_t,uint16_t> p : freeform) {
-        uint16_t label = p.first;
-        uint16_t field_data = p.second;
+    bool is_last_group = (gsi == 0);
 
-        // Duration
-        if (label == 0) {
-          duration_ = field_data;
+    parts_.at(cur_grp) = {true, {y, z}};
+
+    if (is_last_group) {
+      decodeMulti();
+      clear();
+    }
+
+}
+
+void Message::decodeMulti() {
+
+  // Need at least the first group
+  if (!parts_[0].is_received)
+    return;
+
+  is_complete_ = true;
+
+  // First group
+  direction_ = bits(parts_[0].data[0], 14, 1);
+  extent_    = bits(parts_[0].data[0], 11, 3);
+  events_.push_back(bits(parts_[0].data[0], 0, 11));
+  location_  = parts_[0].data[1];
+  directionality_ = getEvent(events_[0]).directionality;
+  urgency_   = getEvent(events_[0]).urgency;
+  duration_type_ = getEvent(events_[0]).duration_type;
+
+  // Subsequent parts
+  if (parts_[1].is_received) {
+    auto freeform = getFreeformFields(parts_);
+
+    for (std::pair<uint16_t,uint16_t> p : freeform) {
+      uint16_t label = p.first;
+      uint16_t field_data = p.second;
+
+      // Duration
+      if (label == 0) {
+        duration_ = field_data;
 
         // Control code
-        } else if (label == 1) {
-          if (field_data == 0) {
-            urgency_ = (urgency_ + 1) % 3;
-          } else if (field_data == 1) {
-            if (urgency_ == URGENCY_NONE)
-              urgency_ = URGENCY_X;
-            else
-              urgency_ --;
-          } else if (field_data == 2) {
-            directionality_ ^= 1;
-          } else if (field_data == 3) {
-            duration_type_ ^= 1;
-          } else if (field_data == 5) {
-            divertadv_ = true;
-          } else if (field_data == 6) {
-            extent_ += 8;
-          } else if (field_data == 7) {
-            extent_ += 16;
-          } else {
-            printf(",\"debug\":\"TODO: TMC control code %d\"",field_data);
-          }
+      } else if (label == 1) {
+        if (field_data == 0) {
+          urgency_ = (urgency_ + 1) % 3;
+        } else if (field_data == 1) {
+          if (urgency_ == URGENCY_NONE)
+            urgency_ = URGENCY_X;
+          else
+            urgency_ --;
+        } else if (field_data == 2) {
+          directionality_ ^= 1;
+        } else if (field_data == 3) {
+          duration_type_ ^= 1;
+        } else if (field_data == 5) {
+          divertadv_ = true;
+        } else if (field_data == 6) {
+          extent_ += 8;
+        } else if (field_data == 7) {
+          extent_ += 16;
+        } else {
+          printf(",\"debug\":\"TODO: TMC control code %d\"",field_data);
+        }
 
         // Length of route affected
-        } else if (label == 2) {
-          length_affected_ = field_data;
-          has_length_affected_ = true;
+      } else if (label == 2) {
+        length_affected_ = field_data;
+        has_length_affected_ = true;
 
         // speed limit advice
-        } else if (label == 3) {
-          speed_limit_ = field_data * 5;
-          has_speed_limit_ = true;
+      } else if (label == 3) {
+        speed_limit_ = field_data * 5;
+        has_speed_limit_ = true;
 
         // 5-bit quantifier
-        } else if (label == 4) {
-          if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
-              getEvent(events_.back()).allows_quantifier &&
-              getQuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
-            quantifiers_.insert({events_.size()-1, field_data});
-          } else {
-            printf(",\"debug\":\"invalid quantifier\"");
-          }
+      } else if (label == 4) {
+        if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
+            getEvent(events_.back()).allows_quantifier &&
+            getQuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
+          quantifiers_.insert({events_.size()-1, field_data});
+        } else {
+          printf(",\"debug\":\"invalid quantifier\"");
+        }
 
         // 8-bit quantifier
-        } else if (label == 5) {
-          if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
-              getEvent(events_.back()).allows_quantifier &&
-              getQuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
-            quantifiers_.insert({events_.size()-1, field_data});
-          } else {
-            printf(",\"debug\":\"invalid quantifier\"");
-          }
+      } else if (label == 5) {
+        if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
+            getEvent(events_.back()).allows_quantifier &&
+            getQuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
+          quantifiers_.insert({events_.size()-1, field_data});
+        } else {
+          printf(",\"debug\":\"invalid quantifier\"");
+        }
 
         // Supplementary info
-        } else if (label == 6) {
-          supplementary_.push_back(field_data);
+      } else if (label == 6) {
+        supplementary_.push_back(field_data);
 
         // Start / stop time
-        } else if (label == 7) {
-          time_starts_ = field_data;
-          has_time_starts_ = true;
+      } else if (label == 7) {
+        time_starts_ = field_data;
+        has_time_starts_ = true;
 
-        } else if (label == 8) {
-          time_until_ = field_data;
-          has_time_until_ = true;
+      } else if (label == 8) {
+        time_until_ = field_data;
+        has_time_until_ = true;
 
         // Multi-event message
-        } else if (label == 9) {
-          events_.push_back(field_data);
+      } else if (label == 9) {
+        events_.push_back(field_data);
 
         // Detailed diversion
-        } else if (label == 10) {
-          diversion_.push_back(field_data);
+      } else if (label == 10) {
+        diversion_.push_back(field_data);
 
         // Separator
-        } else if (label == 14) {
+      } else if (label == 14) {
 
-        } else {
-          printf(",\"debug\":\"TODO label=%d data=0x%04x\"",label,field_data);
-        }
+      } else {
+        printf(",\"debug\":\"TODO label=%d data=0x%04x\"",label,field_data);
       }
     }
   }
+}
 
+void Message::clear() {
+  for (MessagePart& part : parts_)
+    part.is_received = false;
+
+  events_.clear();
+  supplementary_.clear();
+  diversion_.clear();
+  quantifiers_.clear();
 }
 
 void Message::print() const {
