@@ -349,9 +349,8 @@ Event getEvent(uint16_t code) {
 }
 
 TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
-  ltn_(0), sid_(0), encid_(0), ltnbe_(0), current_ci_(0),
-  multi_group_buffer_(5), service_key_table_(loadServiceKeyTable()), ps_(8),
-  message_(false) {
+  ltn_(0), sid_(0), encid_(0), ltnbe_(0), message_(),
+  service_key_table_(loadServiceKeyTable()), ps_(8) {
 
 }
 
@@ -454,25 +453,24 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
         message.decrypt(service_key_table_[encid_]);
 
       message.print();
-      current_ci_ = 0;
 
     // Part of multi-group message
     } else {
 
       uint16_t continuity_index = bits(x, 0, 3);
 
-      if (continuity_index != current_ci_) {
+      if (continuity_index != message_.getContinuityIndex()) {
         /* Message changed; print previous unfinished message
          * TODO 15-second limit */
         message_.print();
-        printf("\nci:\n");
         message_ = Message(is_encrypted_);
-        current_ci_ = continuity_index;
       }
 
       message_.pushMulti(x, y, z);
-      if (message_.isComplete())
+      if (message_.isComplete()) {
         message_.print();
+        message_ = Message(is_encrypted_);
+      }
 
     }
   }
@@ -486,12 +484,16 @@ Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
     length_affected_(0), has_time_until_(false), time_until_(0),
     has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
     speed_limit_(0), directionality_(DIR_SINGLE), urgency_(URGENCY_NONE),
-    parts_(5) {
+    continuity_index_(0), parts_(5) {
 
 }
 
 bool Message::isComplete() const {
   return is_complete_;
+}
+
+uint16_t Message::getContinuityIndex() const {
+  return continuity_index_;
 }
 
 void Message::pushSingle(uint16_t x, uint16_t y, uint16_t z) {
@@ -510,28 +512,33 @@ void Message::pushSingle(uint16_t x, uint16_t y, uint16_t z) {
 
 void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
 
-    bool is_first_group = bits(y, 15, 1);
-    int cur_grp;
-    int gsi = -1;
+  uint16_t new_ci = bits(x, 0, 3);
+  if (continuity_index_ != new_ci && continuity_index_ != 0) {
+    printf(",\"debug\":\"ERR: wrong continuity index!\"");
+  }
+  continuity_index_ = new_ci;
+  bool is_first_group = bits(y, 15, 1);
+  int cur_grp;
+  int gsi = -1;
 
-    if (is_first_group) {
-      cur_grp = 0;
-    } else if (bits(y, 14, 1)) { // SG
-      gsi = bits(y, 12, 2);
-      cur_grp = 1;
-    } else {
-      gsi = bits(y, 12, 2);
-      cur_grp = 4 - gsi;
-    }
+  if (is_first_group) {
+    cur_grp = 0;
+  } else if (bits(y, 14, 1)) { // SG
+    gsi = bits(y, 12, 2);
+    cur_grp = 1;
+  } else {
+    gsi = bits(y, 12, 2);
+    cur_grp = 4 - gsi;
+  }
 
-    bool is_last_group = (gsi == 0);
+  bool is_last_group = (gsi == 0);
 
-    parts_.at(cur_grp) = {true, {y, z}};
+  parts_.at(cur_grp) = {true, {y, z}};
 
-    if (is_last_group) {
-      decodeMulti();
-      clear();
-    }
+  if (is_last_group) {
+    decodeMulti();
+    clear();
+  }
 
 }
 
@@ -652,10 +659,7 @@ void Message::clear() {
   for (MessagePart& part : parts_)
     part.is_received = false;
 
-  events_.clear();
-  supplementary_.clear();
-  diversion_.clear();
-  quantifiers_.clear();
+  continuity_index_ = 0;
 }
 
 void Message::print() const {
