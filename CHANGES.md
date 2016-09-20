@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.7.3 (xxxx-xx-xx)
+## 0.7.3 (2016-09-20)
 
 * Compile all TMC text data in to the executable - no external files (#26)
 * Add compile-time flag to disable TMC support, as the above can take some time
