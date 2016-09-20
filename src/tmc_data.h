@@ -7,7 +7,6 @@
 namespace redsea {
 namespace tmc {
 
-//static const char* tmc_data_events =
 static const std::vector<std::string> tmc_data_events = {
   "1;traffic problem;;0;0;0;0;1;1",
   "2;queuing traffic. Danger of stationary traffic;queuing traffic with average speeds _. Danger of stationary traffic;0;4;0;0;1;1",
