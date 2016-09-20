@@ -30,7 +30,7 @@ library, and GNU autotools.
         $ ./configure
         $ make
 
-To update with the newest changes and recompile:
+To later update with the newest changes and recompile:
 
         $ git pull
         $ make clean
@@ -57,8 +57,8 @@ radio_command | ./src/redsea [OPTIONS]
 -v    Print version
 ```
 
-By default, the input (via stdin) is MPX with 16-bit mono samples at 171 kHz.
-The output format defaults to newline-delimited JSON.
+By default, the input (via stdin) is demodulated FM multiplex (MPX) with 16-bit
+mono samples at 171 kHz. The output format defaults to newline-delimited JSON.
 
 ### Live decoding with rtl_fm
 

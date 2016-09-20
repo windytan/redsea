@@ -3,7 +3,7 @@
 ## 0.7.3 (xxxx-xx-xx)
 
 * Compile all TMC text data in to the executable - no external files (#26)
-* As the above can take some time, TMC support can optionally be disabled
+* Add compile-time flag to disable TMC support, as the above can take some time
 * Add option `-u` to use North American (RBDS) program type names
 * Fix TMC message not showing until the next one is received (#21)
 * Fix spelling of program type names (no title case or 16-character limit)
