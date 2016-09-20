@@ -2,9 +2,10 @@
 
 ## 0.7.3 (xxxx-xx-xx)
 
-* Compile all TMC text data in to the executable - no external files
+* Compile all TMC text data in to the executable - no external files (#26)
 * Add option `-u` to use North American (RBDS) program type names
-* Fix spelling of program type names (no title case etc)
+* Fix TMC message not showing until the next one is received (#21)
+* Fix spelling of program type names (no title case or 16-character limit)
 * Fix high error rate in the beginning of reception by increasing AGC bandwidth
 * Print alternate frequencies as numbers instead of strings
 * Print TMC location table number as a number instead of hex string
