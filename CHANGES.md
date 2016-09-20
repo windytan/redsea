@@ -3,6 +3,7 @@
 ## 0.7.3 (xxxx-xx-xx)
 
 * Compile all TMC text data in to the executable - no external files (#26)
+* As the above can take some time, TMC support can optionally be disabled
 * Add option `-u` to use North American (RBDS) program type names
 * Fix TMC message not showing until the next one is received (#21)
 * Fix spelling of program type names (no title case or 16-character limit)
@@ -13,8 +14,10 @@
 ## 0.7.2 (2016-09-18)
 
 * Apply burst error correction to check bits as well
-* Fix off-by-one errors in RadioText+ caused by RT characters being converted to UTF-8, thanks flux242
-* Fix most cases of RadioText+ fields containing segments from a previous RT message
+* Fix off-by-one errors in RadioText+ caused by RT characters being converted to
+  UTF-8, thanks flux242
+* Fix most cases of RadioText+ fields containing segments from a previous RT
+  message
 * Fix bogus {"pi":"0x0000"} printout at EOF
 * Don't print empty or incomplete TMC messages
 * Use "debug" JSON object instead of C-style comments for debug information

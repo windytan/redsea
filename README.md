@@ -30,15 +30,20 @@ library, and GNU autotools.
         $ ./configure
         $ make
 
-If you get an error message about the STDCXX_11 macro or an unexpected token,
-try installing `autoconf-archive`.
-
 To update with the newest changes and recompile:
 
         $ git pull
         $ make clean
         $ autoreconf --install
         $ make
+
+If you get an error message about the STDCXX_11 macro or an unexpected token,
+try installing `autoconf-archive`.
+
+For a slower machine it can take some time to compile the TMC support. This can
+be disabled:
+
+        $ make RFLAGS="-DNO_TMC"
 
 ## Usage
 

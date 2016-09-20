@@ -1,3 +1,5 @@
+#ifndef NO_TMC
+
 #include "tmc.h"
 
 #include <climits>
@@ -733,3 +735,5 @@ void Message::decrypt(ServiceKey key) {
 
 } // namespace tmc
 } // namespace redsea
+
+#endif // NO_TMC
