@@ -113,6 +113,7 @@ Redsea decodes the following basic info from RDS:
 * Program Service name (PS)
 * RadioText (RT)
 * Traffic Program (TP) and Traffic Announcement (TA) flags
+* Music/Speech (M/S) flag
 * Program Type (PTY)
 * Alternate Frequencies (AF)
 * Clock Time and Date (CT)
