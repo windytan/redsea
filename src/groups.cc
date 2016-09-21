@@ -90,7 +90,11 @@ Station::Station(uint16_t _pi, bool _is_rbds) : pi_(_pi), is_rbds_(_is_rbds),
   has_country_(false), oda_app_for_group_(), has_rt_plus_(false),
   rt_plus_toggle_(false), rt_plus_item_running_(false), pager_pac_(0),
   pager_opc_(0), pager_tng_(0), pager_ecc_(0), pager_ccf_(0),
-  pager_interval_(0), tmc_() {
+  pager_interval_(0)
+#ifndef NO_TMC
+                    , tmc_()
+#endif
+{
 
 }
 
@@ -384,7 +388,11 @@ void Station::decodeType3A (const Group& group) {
       oda_group.toString().c_str(), getAppName(oda_aid).c_str());
 
   if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
+#ifndef NO_TMC
     tmc_.systemGroup(group.block3);
+#else
+    printf(",\"debug\":\"redsea compiled without TMC support\"");
+#endif
   } else if (oda_aid == 0x4BD7) {
     has_rt_plus_ = true;
     rt_plus_cb_ = bits(group.block3, 12, 1);
@@ -557,7 +565,9 @@ void Station::decodeODAgroup (const Group& group) {
   uint16_t aid = oda_app_for_group_[group.type];
 
   if (aid == 0xCD46 || aid == 0xCD47) {
+#ifndef NO_TMC
     tmc_.userGroup(bits(group.block2, 0, 5), group.block3, group.block4);
+#endif
   } else if (aid == 0x4BD7) {
     parseRadioTextPlus(group);
   }

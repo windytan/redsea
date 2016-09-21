@@ -68,7 +68,7 @@ struct MessagePart {
 
 class Message {
   public:
-    Message(bool is_loc_encrypted);
+    Message(bool is_loc_encrypted=false);
     void pushMulti(uint16_t x, uint16_t y, uint16_t z);
     void pushSingle(uint16_t x, uint16_t y, uint16_t z);
     std::string toString() const;
@@ -76,6 +76,7 @@ class Message {
     void decrypt(ServiceKey);
     bool isComplete() const;
     void clear();
+    uint16_t getContinuityIndex() const;
 
   private:
     void decodeMulti();
@@ -101,6 +102,7 @@ class Message {
     uint16_t speed_limit_;
     uint16_t directionality_;
     uint16_t urgency_;
+    uint16_t continuity_index_;
     std::vector<MessagePart> parts_;
 };
 
@@ -118,9 +120,7 @@ class TMC {
     uint16_t sid_;
     uint16_t encid_;
     uint16_t ltnbe_;
-    uint16_t current_ci_;
     Message message_;
-    std::vector<MessagePart> multi_group_buffer_;
     std::map<uint16_t, ServiceKey> service_key_table_;
     RDSString ps_;
 };
