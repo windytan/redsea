@@ -421,9 +421,9 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     ltnbe_ = bits(z, 10, 6);
     has_encid_ = true;
 
-    printf(",\"tmc\":{\"encryption_info\":{\"service_id\":\"0x%02x\","
-           "\"encryption_id\":\"0x%02x\","
-           "\"location_table\":\"0x%02x\"}}", sid_, encid_, ltnbe_);
+    printf(",\"tmc\":{\"encryption_info\":{\"service_id\":%d,"
+           "\"encryption_id\":%d,\"location_table\":%d}}",
+           sid_, encid_, ltnbe_);
 
   // Tuning information
   } else if (t) {
