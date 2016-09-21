@@ -451,7 +451,7 @@ void Station::decodeType4A (const Group& group) {
 
 // Group 6: In-house applications
 void Station::decodeType6 (const Group& group) {
-  printf(", \"in_house_data\":[\"0x%03x\"",
+  printf(",\"in_house_data\":[\"0x%03x\"",
       bits(group.block2, 0, 5));
 
   if (group.type.ab == TYPE_A) {
