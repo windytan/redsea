@@ -1,6 +1,11 @@
 # redsea changelog
 
-## 0.7.3 (xxxx-xx-xx)
+## 0.7.4 (xxxx-xx-xx)
+
+* Add support for 15B groups (Fast basic tuning and switching information)
+* Add "speech/music" flag printout
+
+## 0.7.3 (2016-09-20)
 
 * Compile all TMC text data in to the executable - no external files
 * Add option `-u` to use North American (RBDS) program type names

@@ -126,6 +126,8 @@ void Station::update(const Group& group) {
     decodeType4A(group);
   else if (group.type.num == 14 && group.type.ab == TYPE_A)
     decodeType14A(group);
+  else if (group.type.num == 15 && group.type.ab == TYPE_B)
+    decodeType15B(group);
   else if (oda_app_for_group_.count(group.type) > 0)
     decodeODAgroup(group);
   else if (group.type.num == 6)
@@ -198,6 +200,7 @@ void Station::decodeType0 (const Group& group) {
   is_music_ = bits(group.block2, 3, 1);
 
   printf(",\"ta\":\"%s\"", is_ta_ ? "true" : "false");
+  printf(",\"is_music\":\"%s\"", is_music_ ? "true" : "false");
 
   if (group.num_blocks < 3)
     return;
@@ -399,7 +402,7 @@ void Station::decodeType3A (const Group& group) {
 // Group 4A: Clock-time and date
 void Station::decodeType4A (const Group& group) {
 
-  if (group.num_blocks < 3 || group.type.ab == TYPE_B)
+  if (group.num_blocks < 3)
     return;
 
   int mjd = (bits(group.block2, 0, 2) << 15) + bits(group.block3, 1, 15);
@@ -531,6 +534,17 @@ void Station::decodeType14A (const Group& group) {
   }
 
   printf("}");
+
+}
+
+/* Group 15B: Fast basic tuning and switching information */
+void Station::decodeType15B (const Group& group) {
+
+  is_ta_    = bits(group.block2, 4, 1);
+  is_music_ = bits(group.block2, 3, 1);
+
+  printf(",\"ta\":\"%s\"", is_ta_ ? "true" : "false");
+  printf(",\"is_music\":\"%s\"", is_music_ ? "true" : "false");
 
 }
 
