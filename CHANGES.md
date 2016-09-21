@@ -3,7 +3,8 @@
 ## 0.7.4 (xxxx-xx-xx)
 
 * Add support for 15B groups (Fast basic tuning and switching information)
-* Add "speech/music" flag printout
+* Add support for "speech/music" flag
+* Add support for TMC Other Network info
 
 ## 0.7.3 (2016-09-20)
 
