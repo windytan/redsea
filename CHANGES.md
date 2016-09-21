@@ -5,6 +5,8 @@
 * Add support for 15B groups (Fast basic tuning and switching information)
 * Add support for "speech/music" flag
 * Add support for TMC Other Network info
+* Change format of all location table and service ID numbers from hex strings to
+  numbers
 
 ## 0.7.3 (2016-09-20)
 
@@ -14,8 +16,8 @@
 * Fix TMC message not showing until the next one is received (#21)
 * Fix spelling of program type names (no title case or 16-character limit)
 * Fix high error rate in the beginning of reception by increasing AGC bandwidth
-* Print alternate frequencies as numbers instead of strings
-* Print TMC location table number as a number instead of hex string
+* Change format of alternate frequencies from string to numbers
+* Change format of TMC location table number from hex string to number
 
 ## 0.7.2 (2016-09-18)
 
