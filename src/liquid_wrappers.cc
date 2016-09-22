@@ -84,6 +84,10 @@ void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
+float NCO::getFrequency() {
+  return nco_crcf_get_frequency(object_);
+}
+
 SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
     float beta, unsigned num_filters) :
   object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)) {

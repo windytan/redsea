@@ -44,6 +44,7 @@ class NCO {
   void step();
   void setPLLBandwidth(float);
   void stepPLL(float dphi);
+  float getFrequency();
 
   private:
   nco_crcf object_;
