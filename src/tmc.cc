@@ -389,7 +389,7 @@ void TMC::systemGroup(uint16_t message) {
     ltn_ = bits(message, 6, 6);
     is_encrypted_ = (ltn_ == 0);
 
-    printf("\"is_encrypted\":\"%s\"", is_encrypted_ ? "true" : "false");
+    printf("\"is_encrypted\":%s", boolStr(is_encrypted_));
 
     if (!is_encrypted_)
       printf(",\"location_table\":%d", ltn_);
@@ -398,7 +398,7 @@ void TMC::systemGroup(uint16_t message) {
     //bool m     = bits(message, 4, 1);
     bool mgs   = bits(message, 0, 4);
 
-    printf(",\"is_on_alt_freqs\":\"%s\"", afi ? "true" : "false");
+    printf(",\"is_on_alt_freqs\":%s", boolStr(afi));
 
     printf(",\"scope\":[%s]", getScopeString(mgs).c_str());
 
@@ -726,12 +726,11 @@ void Message::print() const {
     printf(",\"speed_limit\":\"%d km/h\"", speed_limit_);
 
   printf(",\"%slocation\":%d,\"direction\":\"%s\",\"extent\":\"%s%d\","
-         "\"diversion_advised\":\"%s\"",
+         "\"diversion_advised\":%s",
          (is_encrypted_ ? "encrypted_" : ""), location_,
          directionality_ == DIR_SINGLE ? "single" : "both",
          direction_ ? "-" : "+",
-         extent_, divertadv_ ? "true" : "false" );
-
+         extent_, boolStr(divertadv_));
 
   if (has_time_starts_)
     printf(",\"starts\":\"%s\"", timeString(time_starts_).c_str());

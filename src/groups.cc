@@ -115,7 +115,7 @@ void Station::update(const Group& group) {
   is_tp_   = bits(group.block2, 10, 1);
   pty_     = bits(group.block2,  5, 5);
 
-  printf(",\"tp\":\"%s\"", is_tp_ ? "true" : "false");
+  printf(",\"tp\":%s", boolStr(is_tp_));
   printf(",\"prog_type\":\"%s\"", getPTYname(pty_, is_rbds_).c_str());
 
   if      (group.type.num == 0)
@@ -203,8 +203,8 @@ void Station::decodeType0 (const Group& group) {
   is_ta_    = bits(group.block2, 4, 1);
   is_music_ = bits(group.block2, 3, 1);
 
-  printf(",\"ta\":\"%s\"", is_ta_ ? "true" : "false");
-  printf(",\"is_music\":\"%s\"", is_music_ ? "true" : "false");
+  printf(",\"ta\":%s", boolStr(is_ta_));
+  printf(",\"is_music\":%s", boolStr(is_music_));
 
   if (group.num_blocks < 3)
     return;
@@ -254,7 +254,7 @@ void Station::decodeType1 (const Group& group) {
       pager_interval_ = bits(group.block2, 0, 2);
     }
     linkage_la_ = bits(group.block3, 15, 1);
-    printf(",\"has_linkage\":\"%s\"", linkage_la_ ? "true" : "false");
+    printf(",\"has_linkage:%s", boolStr(linkage_la_));
 
     int slc_variant = bits(group.block3, 12, 3);
 
@@ -490,8 +490,8 @@ void Station::decodeType14A (const Group& group) {
   bool tp = bits(group.block2, 4, 1);
 
 
-  printf(",\"other_network\":{\"pi\":\"0x%04x\",\"tp\":\"%s\"",
-      pi, tp ? "true" : "false");
+  printf(",\"other_network\":{\"pi\":\"0x%04x\",\"tp\":%s",
+      pi, boolStr(tp));
 
   uint16_t eon_variant = bits(group.block2, 0, 4);
 
@@ -519,7 +519,7 @@ void Station::decodeType14A (const Group& group) {
 
     bool has_linkage = bits(group.block3, 15, 1);
     uint16_t lsn = bits(group.block3, 0, 12);
-    printf(",\"has_linkage\":\"%s\"", has_linkage ? "true" : "false");
+    printf(",\"has_linkage\":%s", boolStr(has_linkage));
     if (has_linkage && lsn != 0)
       printf(",\"linkage_set\":\"0x%03x\"", lsn);
 
@@ -527,7 +527,7 @@ void Station::decodeType14A (const Group& group) {
     uint16_t pty = bits(group.block3, 11, 5);
     bool ta      = bits(group.block3, 0, 1);
     printf(",\"prog_type\":\"%s\"", getPTYname(pty, is_rbds_).c_str());
-    printf(",\"ta\":\"%s\"", ta ? "true" : "false");
+    printf(",\"ta\":%s", boolStr(ta));
 
   } else if (eon_variant == 14) {
 
@@ -584,8 +584,8 @@ void Station::parseRadioTextPlus(const Group& group) {
     rt_plus_item_running_ = item_running;
   }
 
-  printf(",\"radiotext_plus\":{\"item_running\":\"%s\"",
-      item_running ? "true" : "false");
+  printf(",\"radiotext_plus\":{\"item_running\":%s",
+      boolStr(item_running));
 
   std::vector<RTPlusTag> tags(2);
 
