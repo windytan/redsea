@@ -5,8 +5,9 @@
 * Add support for 15B groups (Fast basic tuning and switching information)
 * Add support for "speech/music" flag
 * Add support for TMC Other Network info
-* Change format of all location table and service ID numbers from hex strings to
-  numbers
+* Change JSON booleans from strings ("true") to plain booleans (true)
+* Change JSON format of all TMC location table and service ID numbers from hex
+  strings ("0x1F") to plain numbers (31)
 
 ## 0.7.3 (2016-09-20)
 
