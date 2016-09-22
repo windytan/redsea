@@ -127,7 +127,7 @@ And also these Open Data Applications:
 
 ## Contributing
 
-Bug reports are welcome. Also, if a station in your area is transmitting
+[Bug reports](https://github.com/windytan/redsea/issues) are welcome. Also, if a station in your area is transmitting
 an interesting Open Data application that should be implemented in redsea,
 I would be happy to see a minute or two's worth of hex data using the `-x`
 switch.
