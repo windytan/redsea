@@ -47,7 +47,7 @@ class Subcarrier {
 
     DeltaDecoder delta_decoder_;
 
-    unsigned symbol_errors_;
+    unsigned num_symbol_errors_;
 
 };
 

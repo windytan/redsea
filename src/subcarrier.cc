@@ -38,7 +38,7 @@ Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
   nco_approx_(kFc_0 * 2 * M_PI / kFs), nco_exact_(0.0f),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f, 32),
   modem_(LIQUID_MODEM_PSK2), symbol_clock_(0), prev_biphase_(0),
-  delta_decoder_(), symbol_errors_(0) {
+  delta_decoder_(), num_symbol_errors_(0) {
 
     symsync_.setBandwidth(0.02f);
     symsync_.setOutputRate(1);
@@ -85,12 +85,12 @@ void Subcarrier::demodulateMoreBits() {
           bit_buffer_.push_back(delta_decoder_.decode(biphase));
 
           if (biphase ^ prev_biphase_) {
-            symbol_errors_ = 0;
+            num_symbol_errors_ = 0;
           } else {
-            symbol_errors_ ++;
-            if (symbol_errors_ >= 7) {
+            num_symbol_errors_ ++;
+            if (num_symbol_errors_ >= 7) {
               symbol_clock_ ^= 1;
-              symbol_errors_ = 0;
+              num_symbol_errors_ = 0;
             }
           }
         }
@@ -107,7 +107,6 @@ void Subcarrier::demodulateMoreBits() {
     numsamples_ ++;
 
   }
-
 }
 
 int Subcarrier::getNextBit() {
