@@ -21,12 +21,9 @@ library, and GNU autotools.
         $ git clone https://github.com/windytan/redsea.git
         $ cd redsea
 
-2. Run autotools:
+2. Compile redsea:
 
         $ autoreconf --install
-
-3. Compile redsea:
-
         $ ./configure
         $ make
 
@@ -35,6 +32,7 @@ To later update with the newest changes and recompile:
         $ git pull
         $ make clean
         $ autoreconf --install
+        $ ./configure
         $ make
 
 If you get an error message about the STDCXX_11 macro or an unexpected token,
@@ -44,6 +42,12 @@ For a slower machine it can take some time to compile the TMC support. This can
 be disabled:
 
         $ make RFLAGS="-DNO_TMC"
+
+If you only need the decode hex or binary input and don't need demodulation,
+you can compile redsea without liquid-dsp:
+
+        $ ./configure --without-liquid
+        $ make
 
 ## Usage
 

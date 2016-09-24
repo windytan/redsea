@@ -1,6 +1,8 @@
 #ifndef LIQUID_WRAPPERS_H_
 #define LIQUID_WRAPPERS_H_
 
+#ifdef HAVE_LIQUID
+
 #include <complex>
 #include <vector>
 
@@ -77,5 +79,7 @@ class Modem {
 };
 
 } // namespace liquid
+
+#endif // HAVE_LIQUID
 
 #endif // LIQUID_WRAPPERS_H_

@@ -1,5 +1,7 @@
 #include "subcarrier.h"
 
+#ifdef HAVE_LIQUID
+
 #include <complex>
 #include <deque>
 #include <iostream>
@@ -161,3 +163,5 @@ float Subcarrier::getT() const {
 #endif
 
 } // namespace redsea
+
+#endif // HAVE_LIQUID

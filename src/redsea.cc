@@ -19,6 +19,7 @@
 #include <getopt.h>
 #include <iostream>
 
+#include "config.h"
 #include "block_sync.h"
 #include "groups.h"
 
@@ -88,6 +89,13 @@ int main(int argc, char** argv) {
         break;
     }
   }
+
+#ifndef HAVE_LIQUID
+  if (input_type == redsea::INPUT_MPX) {
+    printf("can't demodulate MPX: redsea was compiled without liquid-dsp\n");
+    return 0;
+  }
+#endif
 
   redsea::BlockStream block_stream(input_type);
   redsea::Station station(0, is_rbds);

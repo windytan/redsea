@@ -76,7 +76,11 @@ BlockStream::BlockStream(eInputType input_type) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), wideblock_(0), prevsync_(0),
   block_counter_(0), expected_offset_(OFFSET_A),
   received_offset_(OFFSET_INVALID), pi_(0), is_in_sync_(false), group_data_(4),
-  has_block_(5), block_has_errors_(50), subcarrier_(), ascii_bits_(),
+  has_block_(5), block_has_errors_(50),
+#ifdef HAVE_LIQUID
+  subcarrier_(),
+#endif
+  ascii_bits_(),
   error_lookup_(makeErrorLookupTable()), num_blocks_received_(0),
   input_type_(input_type), is_eof_(false) {
 
@@ -84,11 +88,13 @@ BlockStream::BlockStream(eInputType input_type) : bitcount_(0),
 
 int BlockStream::getNextBit() {
   int result = 0;
+#ifdef HAVE_LIQUID
   if (input_type_ == INPUT_MPX) {
     result = subcarrier_.getNextBit();
     is_eof_ = subcarrier_.isEOF();
-
-  } else if (input_type_ == INPUT_ASCIIBITS) {
+  } else
+#endif
+  if (input_type_ == INPUT_ASCIIBITS) {
     result = ascii_bits_.getNextBit();
     is_eof_ = ascii_bits_.isEOF();
   }

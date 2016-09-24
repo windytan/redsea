@@ -49,7 +49,9 @@ class BlockStream {
   std::vector<uint16_t> group_data_;
   std::vector<bool> has_block_;
   std::vector<bool> block_has_errors_;
+#ifdef HAVE_LIQUID
   Subcarrier subcarrier_;
+#endif
   AsciiBits ascii_bits_;
   std::map<uint16_t,uint32_t> error_lookup_;
   unsigned num_blocks_received_;

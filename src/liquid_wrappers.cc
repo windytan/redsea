@@ -1,3 +1,5 @@
+#ifdef HAVE_LIQUID
+
 #include "liquid_wrappers.h"
 
 #include <cassert>
@@ -144,3 +146,5 @@ float Modem::getPhaseError() {
 }
 
 } // namespace liquid
+
+#endif
