@@ -1,13 +1,14 @@
 #ifndef MPX2BITS_H_
 #define MPX2BITS_H_
 
-#ifdef HAVE_LIQUID
-
 #include <deque>
 #include <complex>
 #include <vector>
 
+#include "config.h"
 #include "liquid_wrappers.h"
+
+#ifdef HAVE_LIQUID
 
 namespace redsea {
 

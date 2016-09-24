@@ -4,6 +4,7 @@
 #include <map>
 
 #include "ascii_in.h"
+#include "config.h"
 #include "groups.h"
 #include "subcarrier.h"
 

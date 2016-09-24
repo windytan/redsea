@@ -1,6 +1,7 @@
-#ifdef HAVE_LIQUID
-
 #include "liquid_wrappers.h"
+
+#include "config.h"
+#ifdef HAVE_LIQUID
 
 #include <cassert>
 #include <complex>

@@ -42,13 +42,13 @@ unsigned DeltaDecoder::decode(unsigned d) {
 }
 
 Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
-  fir_lpf_(256, kLowpassCutoff_Hz / kFs_Hz), is_eof_(false),
+  fir_lpf_(256, kLowpassCutoff_Hz / kFs_Hz),
   agc_(kAGCBandwidth_Hz / kFs_Hz, kAGCInitialGain),
   nco_approx_(kFc_0_Hz * 2 * M_PI / kFs_Hz),
   nco_exact_(0.0f),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
            kSymsyncBeta, 32),
-  modem_(LIQUID_MODEM_PSK2), symbol_clock_(0), prev_biphase_(0),
+  modem_(LIQUID_MODEM_PSK2), is_eof_(false), symbol_clock_(0), prev_biphase_(0),
   delta_decoder_(), num_symbol_errors_(0) {
 
     symsync_.setBandwidth(kSymsyncBandwidth_Hz / kFs_Hz);

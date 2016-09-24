@@ -40,9 +40,9 @@ void printUsage() {
 
 void printVersion() {
 #ifdef DEBUG
-  printf("redsea v%s-debug by Oona Raisanen\n", kRedseaVersion.c_str());
+  printf("%s-debug by Oona Raisanen\n", PACKAGE_STRING);
 #else
-  printf("redsea v%s by Oona Raisanen\n", kRedseaVersion.c_str());
+  printf("%s by Oona Raisanen\n", PACKAGE_STRING);
 #endif
 }
 

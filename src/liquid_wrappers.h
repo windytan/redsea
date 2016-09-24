@@ -1,6 +1,7 @@
 #ifndef LIQUID_WRAPPERS_H_
 #define LIQUID_WRAPPERS_H_
 
+#include "config.h"
 #ifdef HAVE_LIQUID
 
 #include <complex>
