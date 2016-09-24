@@ -254,7 +254,7 @@ void Station::decodeType1 (const Group& group) {
       pager_interval_ = bits(group.block2, 0, 2);
     }
     linkage_la_ = bits(group.block3, 15, 1);
-    printf(",\"has_linkage:%s", boolStr(linkage_la_));
+    printf(",\"has_linkage\":%s", boolStr(linkage_la_));
 
     int slc_variant = bits(group.block3, 12, 3);
 
