@@ -113,6 +113,7 @@ void Subcarrier::demodulateMoreBits() {
 
         symbol_clock_ ^= 1;
 
+        nco_exact_.stepPLL(modem_.getPhaseError());
       }
 #ifdef DEBUG
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
@@ -126,6 +127,7 @@ void Subcarrier::demodulateMoreBits() {
 #endif
     }
 
+    nco_exact_.step();
     nco_approx_.step();
 
     numsamples_ ++;
