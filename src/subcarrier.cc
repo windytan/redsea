@@ -12,18 +12,18 @@ namespace {
 
 const float kFs_Hz               = 171000.0f;
 const float kFc_0_Hz             = 57000.0f;
-const float kBitsPerSecond       = 1187.5;
+const float kBitsPerSecond       = 1187.5f;
 const int   kInputBufferSize     = 4096;
 const int   kSamplesPerSymbol    = 3;
 const float kAGCBandwidth_Hz     = 900.0f;
 const float kAGCInitialGain      = 0.0077f;
 const float kLowpassCutoff_Hz    = 2100.0f;
-const float kSymsyncBandwidth_Hz = 3200.0f;
+const float kSymsyncBandwidth_Hz = 3700.0f;
 const int   kSymsyncDelay        = 2;
+const float kSymsyncBeta         = 0.5f;
 const float kPLLBandwidth_Hz     = 1.0f;
 
 }
-
 
 DeltaDecoder::DeltaDecoder() : prev_(0) {
 
@@ -44,7 +44,8 @@ Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
   agc_(kAGCBandwidth_Hz / kFs_Hz, kAGCInitialGain),
   nco_approx_(kFc_0_Hz * 2 * M_PI / kFs_Hz),
   nco_exact_(0.0f),
-  symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay, 0.5f,32),
+  symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
+           kSymsyncBeta, 32),
   modem_(LIQUID_MODEM_PSK2), symbol_clock_(0), prev_biphase_(0),
   delta_decoder_(), num_symbol_errors_(0) {
 
