@@ -10,15 +10,17 @@ namespace redsea {
 
 namespace {
 
-const float kFs               = 171000.0f;
-const float kFc_0             = 57000.0f;
-const float kBitsPerSecond    = 1187.5;
-const int   kInputBufferSize  = 4096;
-const int   kSamplesPerSymbol = 4;
-const float kAGCBandwidth     = 0.01f;
-const float kAGCInitialGain   = 0.0077f;
-const float kSymsyncBandwidth = 0.02f;
-const float kPLLBandwidth     = 1e-4f;
+const float kFs_Hz               = 171000.0f;
+const float kFc_0_Hz             = 57000.0f;
+const float kBitsPerSecond       = 1187.5;
+const int   kInputBufferSize     = 4096;
+const int   kSamplesPerSymbol    = 3;
+const float kAGCBandwidth_Hz     = 900.0f;
+const float kAGCInitialGain      = 0.0077f;
+const float kLowpassCutoff_Hz    = 2100.0f;
+const float kSymsyncBandwidth_Hz = 3200.0f;
+const int   kSymsyncDelay        = 2;
+const float kPLLBandwidth_Hz     = 1.0f;
 
 }
 
@@ -38,15 +40,17 @@ unsigned DeltaDecoder::decode(unsigned d) {
 }
 
 Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
-  fir_lpf_(256, 2100.0f / kFs), is_eof_(false),
-  agc_(kAGCBandwidth, kAGCInitialGain), nco_approx_(kFc_0 * 2 * M_PI / kFs),
-  nco_exact_(0.0f), symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f,32),
+  fir_lpf_(256, kLowpassCutoff_Hz / kFs_Hz), is_eof_(false),
+  agc_(kAGCBandwidth_Hz / kFs_Hz, kAGCInitialGain),
+  nco_approx_(kFc_0_Hz * 2 * M_PI / kFs_Hz),
+  nco_exact_(0.0f),
+  symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay, 0.5f,32),
   modem_(LIQUID_MODEM_PSK2), symbol_clock_(0), prev_biphase_(0),
   delta_decoder_(), num_symbol_errors_(0) {
 
-    symsync_.setBandwidth(kSymsyncBandwidth);
+    symsync_.setBandwidth(kSymsyncBandwidth_Hz / kFs_Hz);
     symsync_.setOutputRate(1);
-    nco_exact_.setPLLBandwidth(kPLLBandwidth);
+    nco_exact_.setPLLBandwidth(kPLLBandwidth_Hz / kFs_Hz);
 
 }
 
@@ -64,7 +68,7 @@ void Subcarrier::demodulateMoreBits() {
     return;
   }
 
-  const int decimate = kFs / kBitsPerSecond / 2 / kSamplesPerSymbol;
+  const int decimate = kFs_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol;
 
   for (int16_t sample : inbuffer) {
 
