@@ -43,7 +43,7 @@ be disabled:
 
         $ make RFLAGS="-DNO_TMC"
 
-If you only need the decode hex or binary input and don't need demodulation,
+If you only need to decode hex or binary input and don't need demodulation,
 you can compile redsea without liquid-dsp:
 
         $ ./configure --without-liquid
