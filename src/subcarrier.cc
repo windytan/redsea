@@ -15,6 +15,10 @@ const float kFc_0             = 57000.0f;
 const float kBitsPerSecond    = 1187.5;
 const int   kInputBufferSize  = 4096;
 const int   kSamplesPerSymbol = 4;
+const float kAGCBandwidth     = 0.01f;
+const float kAGCInitialGain   = 0.0077f;
+const float kSymsyncBandwidth = 0.02f;
+const float kPLLBandwidth     = 1e-4f;
 
 }
 
@@ -34,15 +38,15 @@ unsigned DeltaDecoder::decode(unsigned d) {
 }
 
 Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
-  fir_lpf_(256, 2100.0f / kFs), is_eof_(false), agc_(0.01f),
-  nco_approx_(kFc_0 * 2 * M_PI / kFs), nco_exact_(0.0f),
-  symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f, 32),
+  fir_lpf_(256, 2100.0f / kFs), is_eof_(false),
+  agc_(kAGCBandwidth, kAGCInitialGain), nco_approx_(kFc_0 * 2 * M_PI / kFs),
+  nco_exact_(0.0f), symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, 5, 0.5f,32),
   modem_(LIQUID_MODEM_PSK2), symbol_clock_(0), prev_biphase_(0),
   delta_decoder_(), num_symbol_errors_(0) {
 
-    symsync_.setBandwidth(0.02f);
+    symsync_.setBandwidth(kSymsyncBandwidth);
     symsync_.setOutputRate(1);
-    nco_exact_.setPLLBandwidth(0.0004f);
+    nco_exact_.setPLLBandwidth(kPLLBandwidth);
 
 }
 
