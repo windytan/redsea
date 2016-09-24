@@ -38,7 +38,11 @@ void printUsage() {
 }
 
 void printVersion() {
+#ifdef DEBUG
+  printf("redsea v%s-debug by Oona Raisanen\n", kRedseaVersion.c_str());
+#else
   printf("redsea v%s by Oona Raisanen\n", kRedseaVersion.c_str());
+#endif
 }
 
 void printShort(Station station) {
