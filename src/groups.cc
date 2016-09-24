@@ -399,8 +399,8 @@ void Station::decodeType3A (const Group& group) {
     rt_plus_scb_ = bits(group.block3, 8, 4);
     rt_plus_template_num_ = bits(group.block3, 0, 8);
   } else {
-    printf(",\"debug\":\"TODO: Unimplemented ODA app\",\"message\":\"0x%02x\"",
-        oda_msg);
+    printf(",\"debug\":\"TODO: Unimplemented ODA app 0x%04x\","
+           "\"message\":\"0x%02x\"", oda_aid, oda_msg);
   }
 
   printf("}");
