@@ -10,9 +10,16 @@ AC_CONFIG_FILES([
 
 AC_ARG_WITH([liquid],
             [AS_HELP_STRING([--without-liquid],
-              [disable support for demodulation using liquid-dsp])],
-            [],
-            [with_liquid=yes])
+              [disable support for demodulation using liquid-dsp])])
+
+AC_ARG_ENABLE([tmc],
+            [AS_HELP_STRING([--disable-tmc],
+              [disable support for Traffic Message Channel (TMC)])])
+
+AS_IF([test "x$enable_tmc" != xno],
+  [AC_DEFINE([ENABLE_TMC], [1],
+             [Define to compile TMC])
+  ])
 
 LIQUID=
 AS_IF([test "x$with_liquid" != xno],

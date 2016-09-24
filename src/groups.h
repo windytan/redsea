@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 
+#include "config.h"
 #include "rdsstring.h"
 #include "tmc.h"
 
@@ -103,7 +104,7 @@ class Station {
     int pager_ccf_;
     int pager_interval_;
 
-#ifndef NO_TMC
+#ifdef ENABLE_TMC
     tmc::TMC tmc_;
 #endif
 

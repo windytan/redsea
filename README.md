@@ -39,9 +39,10 @@ If you get an error message about the STDCXX_11 macro or an unexpected token,
 try installing `autoconf-archive`.
 
 For a slower machine it can take some time to compile the TMC support. This can
-be disabled:
+be disabled.
 
-        $ make RFLAGS="-DNO_TMC"
+        $ ./configure --disable-tmc
+        $ make
 
 If you only need to decode hex or binary input and don't need demodulation,
 you can compile redsea without liquid-dsp:

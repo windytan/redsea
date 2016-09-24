@@ -1,6 +1,7 @@
-#ifndef NO_TMC
-
 #include "tmc.h"
+
+#include "config.h"
+#ifdef ENABLE_TMC
 
 #include <climits>
 #include <deque>
@@ -754,4 +755,4 @@ void Message::decrypt(ServiceKey key) {
 } // namespace tmc
 } // namespace redsea
 
-#endif // NO_TMC
+#endif // ENABLE_TMC

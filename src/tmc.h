@@ -1,6 +1,9 @@
 #ifndef TMC_H_
 #define TMC_H_
 
+#include "config.h"
+#ifdef ENABLE_TMC
+
 #include <map>
 #include <vector>
 
@@ -127,4 +130,6 @@ class TMC {
 
 } // namespace tmc
 } // namespace redsea
+
+#endif // ENABLE_TMC
 #endif // TMC_H_
