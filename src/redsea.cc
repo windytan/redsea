@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
     prev_new_pi = new_pi;
     new_pi = group.block1;
 
-    if (new_pi == prev_new_pi) {
+    if (new_pi == prev_new_pi || input_type == redsea::INPUT_RDSSPY) {
       pi = new_pi;
       if (pi != station.getPI())
         station = redsea::Station(pi, is_rbds);
