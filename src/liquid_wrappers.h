@@ -11,9 +11,10 @@ namespace liquid {
 class AGC {
 
   public:
-  AGC(float bw);
+  AGC(float bw, float initial_gain);
   ~AGC();
   std::complex<float> execute(std::complex<float> s);
+  float getGain();
 
   private:
   agc_crcf object_;

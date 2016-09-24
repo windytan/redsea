@@ -7,9 +7,10 @@
 
 namespace liquid {
 
-AGC::AGC(float bw) {
+AGC::AGC(float bw, float initial_gain) {
   object_ = agc_crcf_create();
   agc_crcf_set_bandwidth(object_, bw);
+  agc_crcf_set_gain(object_, initial_gain);
 }
 
 AGC::~AGC() {
@@ -20,6 +21,10 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   std::complex<float> result;
   agc_crcf_execute(object_, s, &result);
   return result;
+}
+
+float AGC::getGain() {
+  return agc_crcf_get_gain(object_);
 }
 
 FIRFilter::FIRFilter(int len, float fc, float As, float mu) {
