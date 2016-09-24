@@ -283,4 +283,10 @@ bool BlockStream::isEOF() const {
   return is_eof_;
 }
 
+#ifdef DEBUG
+float BlockStream::getT() const {
+  return subcarrier_.getT();
+}
+#endif
+
 } // namespace redsea

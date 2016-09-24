@@ -24,6 +24,10 @@ class Subcarrier {
     ~Subcarrier();
     int getNextBit();
     bool isEOF() const;
+#ifdef DEBUG
+    float getT() const;
+#endif
+
   private:
     void demodulateMoreBits();
     int   numsamples_;

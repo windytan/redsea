@@ -112,6 +112,10 @@ int main(int argc, char** argv) {
       continue;
     }
 
+#ifdef DEBUG
+    printf("b:%f,", block_stream.getT());
+#endif
+
     if (output_type == redsea::OUTPUT_HEX) {
       group.printHex();
     } else {

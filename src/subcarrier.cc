@@ -76,13 +76,19 @@ void Subcarrier::demodulateMoreBits() {
 
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
-      nco_exact_.stepPLL(modem_.getPhaseError());
       sample_lopass = nco_exact_.mixDown(sample_lopass);
 
       std::vector<std::complex<float>> symbols =
         symsync_.execute(sample_lopass);
 
       for (std::complex<float> symbol : symbols) {
+#ifdef DEBUG
+        printf("sy:%f,%f,%f\n",
+            numsamples_ / kFs_Hz,
+            symbol.real(),
+            symbol.imag());
+#endif
+
         unsigned biphase = modem_.demodulate(symbol);
 
         if (symbol_clock_ == 1) {
@@ -104,6 +110,16 @@ void Subcarrier::demodulateMoreBits() {
         symbol_clock_ ^= 1;
 
       }
+#ifdef DEBUG
+      printf("f:%f,%f,%f,%f,%f,%f,%f\n",
+          numsamples_ / kFs_Hz,
+          (float)sample,
+          nco_exact_.getFrequency() * kFs_Hz / (2 * M_PI),
+          modem_.getPhaseError(),
+          agc_.getGain(),
+          sample_lopass.real(),
+          sample_lopass.imag());
+#endif
     }
 
     nco_approx_.step();
@@ -130,5 +146,11 @@ int Subcarrier::getNextBit() {
 bool Subcarrier::isEOF() const {
   return is_eof_;
 }
+
+#ifdef DEBUG
+float Subcarrier::getT() const {
+  return numsamples_ / kFs_Hz;
+}
+#endif
 
 } // namespace redsea

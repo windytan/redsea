@@ -26,6 +26,9 @@ class BlockStream {
   BlockStream(eInputType input_type=INPUT_MPX);
   Group getNextGroup();
   bool isEOF() const;
+#ifdef DEBUG
+  float getT() const;
+#endif
 
   private:
   int getNextBit();
