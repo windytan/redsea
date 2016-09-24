@@ -8,6 +8,7 @@
 * Change JSON booleans from strings ("true") to plain booleans (true)
 * Change JSON format of all TMC location table and service ID numbers from hex
   strings ("0x1F") to plain numbers (31)
+* Fix PLL implementation, now actually locks onto a frequency
 
 ## 0.7.3 (2016-09-20)
 
