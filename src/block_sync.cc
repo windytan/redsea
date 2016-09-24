@@ -199,11 +199,14 @@ Group BlockStream::getNextGroup() {
 
     block_counter_ ++;
     uint16_t message = block >> 10;
+    bool was_valid_word = true;
 
     if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_CI)
       expected_offset_ = OFFSET_CI;
 
     if ( received_offset_ != expected_offset_) {
+
+      was_valid_word = false;
 
       // If message is a correct PI, error was probably in check bits
       if (expected_offset_ == OFFSET_A && message == pi_ && pi_ != 0) {
@@ -250,7 +253,7 @@ Group BlockStream::getNextGroup() {
       group_data_[block_number_for_offset[expected_offset_]] = message;
       has_block_[expected_offset_] = true;
 
-      if (expected_offset_ == OFFSET_A) {
+      if (expected_offset_ == OFFSET_A && was_valid_word) {
         pi_ = message;
       }
 
