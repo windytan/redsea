@@ -95,6 +95,7 @@ void Subcarrier::demodulateMoreBits() {
 #endif
 
         unsigned biphase = modem_.demodulate(symbol);
+        nco_exact_.stepPLL(modem_.getPhaseError());
 
         if (symbol_clock_ == 1) {
           bit_buffer_.push_back(delta_decoder_.decode(biphase));
@@ -114,7 +115,6 @@ void Subcarrier::demodulateMoreBits() {
 
         symbol_clock_ ^= 1;
 
-        nco_exact_.stepPLL(modem_.getPhaseError());
       }
 #ifdef DEBUG
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
