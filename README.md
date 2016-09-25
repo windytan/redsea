@@ -35,9 +35,6 @@ To later update with the newest changes and recompile:
         $ ./configure
         $ make
 
-If you get an error message about the STDCXX_11 macro or an unexpected token,
-try installing `autoconf-archive`.
-
 For a slower machine it can take some time to compile the TMC support. This can
 be disabled.
 
