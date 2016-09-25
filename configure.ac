@@ -35,6 +35,6 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AC_LANG([C++])
 #AX_CXX_COMPILE_STDCXX_11(,[mandatory])
-CXXFLAGS='-Wall -std=c++11'
+CXXFLAGS='-Wall -std=gnu++11'
 
 AC_OUTPUT
