@@ -9,7 +9,8 @@ format used by RDS Spy, and multiplex signals (MPX).
 RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`).
 
-Redsea has been successfully compiled on Linux and OSX.
+Redsea has been successfully compiled on Linux (Ubuntu 14.04, Raspbian Jessie)
+and OSX (10.10).
 
 ## Compiling
 
