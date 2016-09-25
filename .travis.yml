@@ -4,4 +4,11 @@ compiler:
   - clang
   - gcc
 
-script: AUTOM4TE=/usr/local/bin/autom4te ./autogen.sh && ./configure --without-liquid && make
+sudo: required
+
+before-install:
+  - sudo add-apt-repository ppa:dns/gnu -y
+  - sudo apt-get update -qq
+  - sudo apt-get install --only-upgrade autoconf -y
+
+script: ./autogen.sh && ./configure --without-liquid && make
