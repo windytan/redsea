@@ -1,4 +1,4 @@
-AC_PREREQ([2.68])
+AC_PREREQ([2.69])
 AC_INIT([redsea], [0.7.3], [oona@kapsi.fi], [redsea],
         [https://github.com/windytan/redsea])
 AM_INIT_AUTOMAKE([1.10 -Wall -Werror foreign])
@@ -35,6 +35,6 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AC_LANG([C++])
 #AX_CXX_COMPILE_STDCXX_11(,[mandatory])
-CXXFLAGS='-Wall -std=gnu++11'
+#CXXFLAGS='-Wall -std=gnu++11'
 
 AC_OUTPUT
