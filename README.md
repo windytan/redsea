@@ -23,7 +23,7 @@ library, and GNU autotools.
 
 2. Compile redsea:
 
-        $ autoreconf --install
+        $ ./autogen.sh
         $ ./configure
         $ make
 
@@ -31,7 +31,7 @@ To later update with the newest changes and recompile:
 
         $ git pull
         $ make clean
-        $ autoreconf --install
+        $ ./autogen.sh
         $ ./configure
         $ make
 
@@ -132,10 +132,10 @@ And also these Open Data Applications:
 
 ## Contributing
 
-[Bug reports](https://github.com/windytan/redsea/issues) are welcome. Also, if a station in your area is transmitting
-an interesting Open Data application that should be implemented in redsea,
-I would be happy to see a minute or two's worth of hex data using the `-x`
-switch.
+[Bug reports](https://github.com/windytan/redsea/issues) are welcome. Also, if a
+station in your area is transmitting an interesting Open Data application that
+should be implemented in redsea, I would be happy to see a minute or two's worth
+of hex data using the `-x` switch.
 
 ## Licensing
 

@@ -8,6 +8,7 @@
 * Add support for TMC Other Network info
 * Add `./configure` option `--without-liquid` to compile without liquid-dsp and
   demodulation support
+* Add `./autogen.sh` to generate `./configure`
 * Change TMC disable flag to a `./configure` option as well, `--disable-tmc`
 * Change JSON booleans from strings ("true") to plain booleans (true)
 * Change JSON format of all TMC location table and service ID numbers from hex
