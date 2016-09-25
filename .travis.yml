@@ -6,7 +6,7 @@ compiler:
 
 sudo: required
 
-before-install:
+before-script:
   - sudo add-apt-repository ppa:dns/gnu -y
   - sudo apt-get update -qq
   - sudo apt-get install --only-upgrade autoconf -y
