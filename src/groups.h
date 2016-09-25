@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 
+#include "config.h"
 #include "rdsstring.h"
 #include "tmc.h"
 
@@ -61,6 +62,7 @@ class Station {
     void decodeType4A(const Group& group);
     void decodeType6(const Group& group);
     void decodeType14A(const Group& group);
+    void decodeType15B(const Group& group);
     void decodeODAgroup(const Group& group);
     void addAltFreq(uint8_t);
     void updatePS(int pos, std::vector<int> chars);
@@ -102,7 +104,7 @@ class Station {
     int pager_ccf_;
     int pager_interval_;
 
-#ifndef NO_TMC
+#ifdef ENABLE_TMC
     tmc::TMC tmc_;
 #endif
 

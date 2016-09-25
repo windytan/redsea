@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 
+#include "config.h"
 #include "rdsstring.h"
 #include "tables.h"
 #include "util.h"
@@ -91,7 +92,7 @@ Station::Station(uint16_t _pi, bool _is_rbds) : pi_(_pi), is_rbds_(_is_rbds),
   rt_plus_toggle_(false), rt_plus_item_running_(false), pager_pac_(0),
   pager_opc_(0), pager_tng_(0), pager_ecc_(0), pager_ccf_(0),
   pager_interval_(0)
-#ifndef NO_TMC
+#ifdef ENABLE_TMC
                     , tmc_()
 #endif
 {
@@ -115,7 +116,7 @@ void Station::update(const Group& group) {
   is_tp_   = bits(group.block2, 10, 1);
   pty_     = bits(group.block2,  5, 5);
 
-  printf(",\"tp\":\"%s\"", is_tp_ ? "true" : "false");
+  printf(",\"tp\":%s", boolStr(is_tp_));
   printf(",\"prog_type\":\"%s\"", getPTYname(pty_, is_rbds_).c_str());
 
   if      (group.type.num == 0)
@@ -130,6 +131,8 @@ void Station::update(const Group& group) {
     decodeType4A(group);
   else if (group.type.num == 14 && group.type.ab == TYPE_A)
     decodeType14A(group);
+  else if (group.type.num == 15 && group.type.ab == TYPE_B)
+    decodeType15B(group);
   else if (oda_app_for_group_.count(group.type) > 0)
     decodeODAgroup(group);
   else if (group.type.num == 6)
@@ -201,7 +204,8 @@ void Station::decodeType0 (const Group& group) {
   is_ta_    = bits(group.block2, 4, 1);
   is_music_ = bits(group.block2, 3, 1);
 
-  printf(",\"ta\":\"%s\"", is_ta_ ? "true" : "false");
+  printf(",\"ta\":%s", boolStr(is_ta_));
+  printf(",\"is_music\":%s", boolStr(is_music_));
 
   if (group.num_blocks < 3)
     return;
@@ -251,7 +255,7 @@ void Station::decodeType1 (const Group& group) {
       pager_interval_ = bits(group.block2, 0, 2);
     }
     linkage_la_ = bits(group.block3, 15, 1);
-    printf(",\"has_linkage\":\"%s\"", linkage_la_ ? "true" : "false");
+    printf(",\"has_linkage\":%s", boolStr(linkage_la_));
 
     int slc_variant = bits(group.block3, 12, 3);
 
@@ -385,7 +389,7 @@ void Station::decodeType3A (const Group& group) {
       oda_group.toString().c_str(), getAppName(oda_aid).c_str());
 
   if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
-#ifndef NO_TMC
+#ifdef ENABLE_TMC
     tmc_.systemGroup(group.block3);
 #else
     printf(",\"debug\":\"redsea compiled without TMC support\"");
@@ -396,8 +400,8 @@ void Station::decodeType3A (const Group& group) {
     rt_plus_scb_ = bits(group.block3, 8, 4);
     rt_plus_template_num_ = bits(group.block3, 0, 8);
   } else {
-    printf(",\"debug\":\"TODO: Unimplemented ODA app\",\"message\":\"0x%02x\"",
-        oda_msg);
+    printf(",\"debug\":\"TODO: Unimplemented ODA app 0x%04x\","
+           "\"message\":\"0x%02x\"", oda_aid, oda_msg);
   }
 
   printf("}");
@@ -407,7 +411,7 @@ void Station::decodeType3A (const Group& group) {
 // Group 4A: Clock-time and date
 void Station::decodeType4A (const Group& group) {
 
-  if (group.num_blocks < 3 || group.type.ab == TYPE_B)
+  if (group.num_blocks < 3)
     return;
 
   int mjd = (bits(group.block2, 0, 2) << 15) + bits(group.block3, 1, 15);
@@ -487,8 +491,8 @@ void Station::decodeType14A (const Group& group) {
   bool tp = bits(group.block2, 4, 1);
 
 
-  printf(",\"other_network\":{\"pi\":\"0x%04x\",\"tp\":\"%s\"",
-      pi, tp ? "true" : "false");
+  printf(",\"other_network\":{\"pi\":\"0x%04x\",\"tp\":%s",
+      pi, boolStr(tp));
 
   uint16_t eon_variant = bits(group.block2, 0, 4);
 
@@ -516,7 +520,7 @@ void Station::decodeType14A (const Group& group) {
 
     bool has_linkage = bits(group.block3, 15, 1);
     uint16_t lsn = bits(group.block3, 0, 12);
-    printf(",\"has_linkage\":\"%s\"", has_linkage ? "true" : "false");
+    printf(",\"has_linkage\":%s", boolStr(has_linkage));
     if (has_linkage && lsn != 0)
       printf(",\"linkage_set\":\"0x%03x\"", lsn);
 
@@ -524,7 +528,7 @@ void Station::decodeType14A (const Group& group) {
     uint16_t pty = bits(group.block3, 11, 5);
     bool ta      = bits(group.block3, 0, 1);
     printf(",\"prog_type\":\"%s\"", getPTYname(pty, is_rbds_).c_str());
-    printf(",\"ta\":\"%s\"", ta ? "true" : "false");
+    printf(",\"ta\":%s", boolStr(ta));
 
   } else if (eon_variant == 14) {
 
@@ -542,6 +546,17 @@ void Station::decodeType14A (const Group& group) {
 
 }
 
+/* Group 15B: Fast basic tuning and switching information */
+void Station::decodeType15B (const Group& group) {
+
+  is_ta_    = bits(group.block2, 4, 1);
+  is_music_ = bits(group.block2, 3, 1);
+
+  printf(",\"ta\":\"%s\"", is_ta_ ? "true" : "false");
+  printf(",\"is_music\":\"%s\"", is_music_ ? "true" : "false");
+
+}
+
 /* Open Data Application */
 void Station::decodeODAgroup (const Group& group) {
 
@@ -551,7 +566,7 @@ void Station::decodeODAgroup (const Group& group) {
   uint16_t aid = oda_app_for_group_[group.type];
 
   if (aid == 0xCD46 || aid == 0xCD47) {
-#ifndef NO_TMC
+#ifdef ENABLE_TMC
     tmc_.userGroup(bits(group.block2, 0, 5), group.block3, group.block4);
 #endif
   } else if (aid == 0x4BD7) {
@@ -570,8 +585,8 @@ void Station::parseRadioTextPlus(const Group& group) {
     rt_plus_item_running_ = item_running;
   }
 
-  printf(",\"radiotext_plus\":{\"item_running\":\"%s\"",
-      item_running ? "true" : "false");
+  printf(",\"radiotext_plus\":{\"item_running\":%s",
+      boolStr(item_running));
 
   std::vector<RTPlusTag> tags(2);
 

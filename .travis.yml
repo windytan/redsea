@@ -1,0 +1,11 @@
+language: cpp
+
+sudo: required
+
+dist: trusty
+
+compiler:
+  - clang
+  - gcc
+
+script: ./autogen.sh && ./configure --without-liquid && make

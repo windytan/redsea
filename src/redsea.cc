@@ -19,6 +19,7 @@
 #include <getopt.h>
 #include <iostream>
 
+#include "config.h"
 #include "block_sync.h"
 #include "groups.h"
 
@@ -38,7 +39,11 @@ void printUsage() {
 }
 
 void printVersion() {
-  printf("redsea v%s by Oona Raisanen\n", kRedseaVersion.c_str());
+#ifdef DEBUG
+  printf("%s-debug by Oona Raisanen\n", PACKAGE_STRING);
+#else
+  printf("%s by Oona Raisanen\n", PACKAGE_STRING);
+#endif
 }
 
 void printShort(Station station) {
@@ -85,6 +90,13 @@ int main(int argc, char** argv) {
     }
   }
 
+#ifndef HAVE_LIQUID
+  if (input_type == redsea::INPUT_MPX) {
+    printf("can't demodulate MPX: redsea was compiled without liquid-dsp\n");
+    return 0;
+  }
+#endif
+
   redsea::BlockStream block_stream(input_type);
   redsea::Station station(0, is_rbds);
 
@@ -104,13 +116,17 @@ int main(int argc, char** argv) {
     prev_new_pi = new_pi;
     new_pi = group.block1;
 
-    if (new_pi == prev_new_pi) {
+    if (new_pi == prev_new_pi || input_type == redsea::INPUT_RDSSPY) {
       pi = new_pi;
       if (pi != station.getPI())
         station = redsea::Station(pi, is_rbds);
     } else if (new_pi != pi) {
       continue;
     }
+
+#ifdef DEBUG
+    printf("b:%f,", block_stream.getT());
+#endif
 
     if (output_type == redsea::OUTPUT_HEX) {
       group.printHex();

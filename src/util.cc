@@ -27,4 +27,8 @@ std::string join(std::vector<std::uint16_t> nums, std::string d) {
   return result;
 }
 
+const char* boolStr(bool b) {
+  return b ? "true" : "false";
+}
+
 } // namespace redsea

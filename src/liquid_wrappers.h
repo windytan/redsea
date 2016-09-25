@@ -1,6 +1,9 @@
 #ifndef LIQUID_WRAPPERS_H_
 #define LIQUID_WRAPPERS_H_
 
+#include "config.h"
+#ifdef HAVE_LIQUID
+
 #include <complex>
 #include <vector>
 
@@ -11,9 +14,10 @@ namespace liquid {
 class AGC {
 
   public:
-  AGC(float bw);
+  AGC(float bw, float initial_gain);
   ~AGC();
   std::complex<float> execute(std::complex<float> s);
+  float getGain();
 
   private:
   agc_crcf object_;
@@ -44,6 +48,7 @@ class NCO {
   void step();
   void setPLLBandwidth(float);
   void stepPLL(float dphi);
+  float getFrequency();
 
   private:
   nco_crcf object_;
@@ -75,5 +80,7 @@ class Modem {
 };
 
 } // namespace liquid
+
+#endif // HAVE_LIQUID
 
 #endif // LIQUID_WRAPPERS_H_

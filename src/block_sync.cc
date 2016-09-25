@@ -76,7 +76,11 @@ BlockStream::BlockStream(eInputType input_type) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), wideblock_(0), prevsync_(0),
   block_counter_(0), expected_offset_(OFFSET_A),
   received_offset_(OFFSET_INVALID), pi_(0), is_in_sync_(false), group_data_(4),
-  has_block_(5), block_has_errors_(50), subcarrier_(), ascii_bits_(),
+  has_block_(5), block_has_errors_(50),
+#ifdef HAVE_LIQUID
+  subcarrier_(),
+#endif
+  ascii_bits_(),
   error_lookup_(makeErrorLookupTable()), num_blocks_received_(0),
   input_type_(input_type), is_eof_(false) {
 
@@ -84,11 +88,13 @@ BlockStream::BlockStream(eInputType input_type) : bitcount_(0),
 
 int BlockStream::getNextBit() {
   int result = 0;
+#ifdef HAVE_LIQUID
   if (input_type_ == INPUT_MPX) {
     result = subcarrier_.getNextBit();
     is_eof_ = subcarrier_.isEOF();
-
-  } else if (input_type_ == INPUT_ASCIIBITS) {
+  } else
+#endif
+  if (input_type_ == INPUT_ASCIIBITS) {
     result = ascii_bits_.getNextBit();
     is_eof_ = ascii_bits_.isEOF();
   }
@@ -199,11 +205,14 @@ Group BlockStream::getNextGroup() {
 
     block_counter_ ++;
     uint16_t message = block >> 10;
+    bool was_valid_word = true;
 
     if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_CI)
       expected_offset_ = OFFSET_CI;
 
     if ( received_offset_ != expected_offset_) {
+
+      was_valid_word = false;
 
       // If message is a correct PI, error was probably in check bits
       if (expected_offset_ == OFFSET_A && message == pi_ && pi_ != 0) {
@@ -250,7 +259,7 @@ Group BlockStream::getNextGroup() {
       group_data_[block_number_for_offset[expected_offset_]] = message;
       has_block_[expected_offset_] = true;
 
-      if (expected_offset_ == OFFSET_A) {
+      if (expected_offset_ == OFFSET_A && was_valid_word) {
         pi_ = message;
       }
 
@@ -282,5 +291,11 @@ Group BlockStream::getNextGroup() {
 bool BlockStream::isEOF() const {
   return is_eof_;
 }
+
+#ifdef DEBUG
+float BlockStream::getT() const {
+  return subcarrier_.getT();
+}
+#endif
 
 } // namespace redsea
