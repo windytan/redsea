@@ -4,4 +4,4 @@ compiler:
   - clang
   - gcc
 
-script: ./autogen.sh && ./configure --without-liquid && make
+script: AUTOM4TE=/usr/local/bin/autom4te ./autogen.sh && ./configure --without-liquid && make
