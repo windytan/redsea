@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.7.4 (xxxx-xx-xx)
+## 0.7.4 (2016-09-25)
 
 * Add partial support for 15B groups (Fast basic tuning and switching
   information)
