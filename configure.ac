@@ -34,7 +34,7 @@ AS_IF([test "x$with_liquid" != xno],
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_LANG([C++])
-AX_CXX_COMPILE_STDCXX_11(,[mandatory])
+#AX_CXX_COMPILE_STDCXX_11(,[mandatory])
 CXXFLAGS='-Wall -std=c++11'
 
 AC_OUTPUT
