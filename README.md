@@ -9,7 +9,8 @@ format used by RDS Spy, and multiplex signals (MPX).
 RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`).
 
-Redsea has been successfully compiled on Linux and OSX.
+Redsea has been successfully compiled on Linux (Ubuntu 14.04, Raspbian Jessie)
+and OSX (10.10).
 
 ## Compiling
 
@@ -21,12 +22,9 @@ library, and GNU autotools.
         $ git clone https://github.com/windytan/redsea.git
         $ cd redsea
 
-2. Run autotools:
+2. Compile redsea:
 
-        $ autoreconf --install
-
-3. Compile redsea:
-
+        $ ./autogen.sh
         $ ./configure
         $ make
 
@@ -34,16 +32,21 @@ To later update with the newest changes and recompile:
 
         $ git pull
         $ make clean
-        $ autoreconf --install
+        $ ./autogen.sh
+        $ ./configure
         $ make
 
-If you get an error message about the STDCXX_11 macro or an unexpected token,
-try installing `autoconf-archive`.
-
 For a slower machine it can take some time to compile the TMC support. This can
-be disabled:
+be disabled.
 
-        $ make RFLAGS="-DNO_TMC"
+        $ ./configure --disable-tmc
+        $ make
+
+If you only need to decode hex or binary input and don't need demodulation,
+you can compile redsea without liquid-dsp:
+
+        $ ./configure --without-liquid
+        $ make
 
 ## Usage
 
@@ -113,6 +116,7 @@ Redsea decodes the following basic info from RDS:
 * Program Service name (PS)
 * RadioText (RT)
 * Traffic Program (TP) and Traffic Announcement (TA) flags
+* Music/Speech (M/S) flag
 * Program Type (PTY)
 * Alternate Frequencies (AF)
 * Clock Time and Date (CT)
@@ -126,25 +130,13 @@ And also these Open Data Applications:
 
 ## Contributing
 
-Bug reports are welcome. Also, if a station in your area is transmitting
-an interesting Open Data application that should be implemented in redsea,
-I would be happy to see a minute or two's worth of hex data using the `-x`
-switch.
+[Bug reports](https://github.com/windytan/redsea/issues) are welcome. Also, if a
+station in your area is transmitting an interesting Open Data application that
+should be implemented in redsea, I would be happy to see a minute or two's worth
+of hex data using the `-x` switch.
 
 ## Licensing
 
-```
-Copyright (c) Oona Räisänen OH2EIQ (windyoona@gmail.com)
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-```
+Redsea is released under the MIT license, which means it is copyrighted to Oona
+Räisänen yet you're free to use it provided that the copyright information is
+not removed. See LICENSE.

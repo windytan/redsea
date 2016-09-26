@@ -1,6 +1,7 @@
-#ifndef NO_TMC
-
 #include "tmc.h"
+
+#include "config.h"
+#ifdef ENABLE_TMC
 
 #include <climits>
 #include <deque>
@@ -118,6 +119,27 @@ std::string timeString(uint16_t field_data) {
   }
 
   return time_string;
+}
+
+std::string getScopeString(uint16_t mgs) {
+
+  bool mgs_i = bits(mgs, 3, 1);
+  bool mgs_n = bits(mgs, 2, 1);
+  bool mgs_r = bits(mgs, 1, 1);
+  bool mgs_u = bits(mgs, 0, 1);
+
+  std::vector<std::string> scope;
+  if (mgs_i)
+    scope.push_back("\"inter-road\"");
+  if (mgs_n)
+    scope.push_back("\"national\"");
+  if (mgs_r)
+    scope.push_back("\"regional\"");
+  if (mgs_u)
+    scope.push_back("\"urban\"");
+
+  return join(scope, ",");
+
 }
 
 uint16_t getQuantifierSize(uint16_t code) {
@@ -368,31 +390,18 @@ void TMC::systemGroup(uint16_t message) {
     ltn_ = bits(message, 6, 6);
     is_encrypted_ = (ltn_ == 0);
 
-    printf("\"is_encrypted\":\"%s\"", is_encrypted_ ? "true" : "false");
+    printf("\"is_encrypted\":%s", boolStr(is_encrypted_));
 
     if (!is_encrypted_)
       printf(",\"location_table\":%d", ltn_);
 
     bool afi   = bits(message, 5, 1);
     //bool m     = bits(message, 4, 1);
-    bool mgs_i = bits(message, 3, 1);
-    bool mgs_n = bits(message, 2, 1);
-    bool mgs_r = bits(message, 1, 1);
-    bool mgs_u = bits(message, 0, 1);
+    bool mgs   = bits(message, 0, 4);
 
-    printf(",\"is_on_alt_freqs\":\"%s\"", afi ? "true" : "false");
+    printf(",\"is_on_alt_freqs\":%s", boolStr(afi));
 
-    std::vector<std::string> scope;
-    if (mgs_i)
-      scope.push_back("\"inter-road\"");
-    if (mgs_n)
-      scope.push_back("\"national\"");
-    if (mgs_r)
-      scope.push_back("\"regional\"");
-    if (mgs_u)
-      scope.push_back("\"urban\"");
-
-    printf(",\"scope\":[%s]", join(scope, ",").c_str());
+    printf(",\"scope\":[%s]", getScopeString(mgs).c_str());
 
     printf("}}");
   }
@@ -413,9 +422,9 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     ltnbe_ = bits(z, 10, 6);
     has_encid_ = true;
 
-    printf(",\"tmc\":{\"encryption_info\":{\"service_id\":\"0x%02x\","
-           "\"encryption_id\":\"0x%02x\","
-           "\"location_table\":\"0x%02x\"}}", sid_, encid_, ltnbe_);
+    printf(",\"tmc\":{\"encryption_info\":{\"service_id\":%d,"
+           "\"encryption_id\":%d,\"location_table\":%d}}",
+           sid_, encid_, ltnbe_);
 
   // Tuning information
   } else if (t) {
@@ -433,6 +442,17 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       if (ps_.isComplete())
         printf(",\"tmc\":{\"service_provider\":\"%s\"}",
             ps_.getLastCompleteString().c_str());
+
+    } else if (variant == 9) {
+
+      uint16_t on_pi = z;
+      uint16_t on_sid = bits(y, 0, 6);
+      uint16_t on_mgs = bits(y, 6, 4);
+      uint16_t on_ltn = bits(y, 10, 6);
+
+      printf(",\"tmc\":{\"other_network\":{\"pi\":\"0x%04x\",\"service_id\":"
+             "%d,\"location_table\":%d,\"scope\":[%s]\"}}", on_pi,
+             on_sid, on_ltn, getScopeString(on_mgs).c_str());
 
     } else {
       printf(",\"tmc\":{\"debug\":\"TODO: tuning info variant %d\"}", variant);
@@ -707,12 +727,11 @@ void Message::print() const {
     printf(",\"speed_limit\":\"%d km/h\"", speed_limit_);
 
   printf(",\"%slocation\":%d,\"direction\":\"%s\",\"extent\":\"%s%d\","
-         "\"diversion_advised\":\"%s\"",
+         "\"diversion_advised\":%s",
          (is_encrypted_ ? "encrypted_" : ""), location_,
          directionality_ == DIR_SINGLE ? "single" : "both",
          direction_ ? "-" : "+",
-         extent_, divertadv_ ? "true" : "false" );
-
+         extent_, boolStr(divertadv_));
 
   if (has_time_starts_)
     printf(",\"starts\":\"%s\"", timeString(time_starts_).c_str());
@@ -736,4 +755,4 @@ void Message::decrypt(ServiceKey key) {
 } // namespace tmc
 } // namespace redsea
 
-#endif // NO_TMC
+#endif // ENABLE_TMC

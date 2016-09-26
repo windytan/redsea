@@ -1,5 +1,20 @@
 # redsea changelog
 
+## 0.7.4 (2016-09-25)
+
+* Add partial support for 15B groups (Fast basic tuning and switching
+  information)
+* Add support for "speech/music" flag
+* Add support for TMC Other Network info
+* Add `./configure` option `--without-liquid` to compile without liquid-dsp and
+  demodulation support
+* Add `./autogen.sh` to generate `./configure`
+* Change TMC disable flag to a `./configure` option as well, `--disable-tmc`
+* Change JSON booleans from strings ("true") to plain booleans (true)
+* Change JSON format of all TMC location table and service ID numbers from hex
+  strings ("0x1F") to plain numbers (31)
+* Fix PLL implementation, now actually locks onto a frequency
+
 ## 0.7.3 (2016-09-20)
 
 * Compile all TMC text data in to the executable - no external files (#26)
@@ -8,8 +23,8 @@
 * Fix TMC message not showing until the next one is received (#21)
 * Fix spelling of program type names (no title case or 16-character limit)
 * Fix high error rate in the beginning of reception by increasing AGC bandwidth
-* Print alternate frequencies as numbers instead of strings
-* Print TMC location table number as a number instead of hex string
+* Change format of alternate frequencies from string to numbers
+* Change format of TMC location table number from hex string to number
 
 ## 0.7.2 (2016-09-18)
 

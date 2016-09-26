@@ -1,5 +1,8 @@
 #include "liquid_wrappers.h"
 
+#include "config.h"
+#ifdef HAVE_LIQUID
+
 #include <cassert>
 #include <complex>
 
@@ -7,9 +10,10 @@
 
 namespace liquid {
 
-AGC::AGC(float bw) {
+AGC::AGC(float bw, float initial_gain) {
   object_ = agc_crcf_create();
   agc_crcf_set_bandwidth(object_, bw);
+  agc_crcf_set_gain(object_, initial_gain);
 }
 
 AGC::~AGC() {
@@ -20,6 +24,10 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   std::complex<float> result;
   agc_crcf_execute(object_, s, &result);
   return result;
+}
+
+float AGC::getGain() {
+  return agc_crcf_get_gain(object_);
 }
 
 FIRFilter::FIRFilter(int len, float fc, float As, float mu) {
@@ -84,6 +92,10 @@ void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
+float NCO::getFrequency() {
+  return nco_crcf_get_frequency(object_);
+}
+
 SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
     float beta, unsigned num_filters) :
   object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)) {
@@ -135,3 +147,5 @@ float Modem::getPhaseError() {
 }
 
 } // namespace liquid
+
+#endif

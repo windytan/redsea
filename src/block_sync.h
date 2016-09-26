@@ -4,6 +4,7 @@
 #include <map>
 
 #include "ascii_in.h"
+#include "config.h"
 #include "groups.h"
 #include "subcarrier.h"
 
@@ -26,6 +27,9 @@ class BlockStream {
   BlockStream(eInputType input_type=INPUT_MPX);
   Group getNextGroup();
   bool isEOF() const;
+#ifdef DEBUG
+  float getT() const;
+#endif
 
   private:
   int getNextBit();
@@ -46,7 +50,9 @@ class BlockStream {
   std::vector<uint16_t> group_data_;
   std::vector<bool> has_block_;
   std::vector<bool> block_has_errors_;
+#ifdef HAVE_LIQUID
   Subcarrier subcarrier_;
+#endif
   AsciiBits ascii_bits_;
   std::map<uint16_t,uint32_t> error_lookup_;
   unsigned num_blocks_received_;
