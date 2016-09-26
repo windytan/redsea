@@ -31,9 +31,9 @@ library, and GNU autotools.
 To later update with the newest changes and recompile:
 
         $ git pull
-        $ make clean
         $ ./autogen.sh
         $ ./configure
+        $ make clean
         $ make
 
 For a slower machine it can take some time to compile the TMC support. This can
