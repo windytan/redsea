@@ -451,7 +451,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       uint16_t on_ltn = bits(y, 10, 6);
 
       printf(",\"tmc\":{\"other_network\":{\"pi\":\"0x%04x\",\"service_id\":"
-             "%d,\"location_table\":%d,\"scope\":[%s]\"}}", on_pi,
+             "%d,\"location_table\":%d,\"scope\":[%s]}}", on_pi,
              on_sid, on_ltn, getScopeString(on_mgs).c_str());
 
     } else {

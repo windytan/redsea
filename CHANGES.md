@@ -4,6 +4,7 @@
 
 * Don't correct bit errors longer than 2 bits
 * Fix incorrect formatting of negative local time offset
+* Fix incorrect JSON formatting in TMC Other Network output
 * Don't print PIN with invalid clock time
 
 ## 0.7.4 (2016-09-25)
