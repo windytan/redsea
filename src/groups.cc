@@ -447,10 +447,11 @@ void Station::decodeType4A (const Group& group) {
     int mn = bits(group.block4, 6, 6) + ltom;
 
     if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31 && hr >= 0 && hr <= 23 &&
-        mn >= 0 && mn <= 59) {
+        mn >= 0 && mn <= 59 && abs((int)lto) <= 13) {
       char buff[100];
       snprintf(buff, sizeof(buff),
-          "%04d-%02d-%02dT%02d:%02d:00%+03d:%02d",yr,mo,dy,hr,mn,int(lto),ltom);
+          "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
+          yr,mo,dy,hr,mn,lto > 0 ? "+":"-",abs(int(lto)),abs(ltom));
       clock_time_ = buff;
       printf(",\"clock_time\":\"%s\"", clock_time_.c_str());
     } else {
