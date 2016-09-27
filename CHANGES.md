@@ -2,7 +2,9 @@
 
 ## 0.7.5 (xxxx-xx-xx)
 
-* Don't correct errors longer than 2 bits
+* Don't correct bit errors longer than 2 bits
+* Fix incorrect formatting of negative local time offset
+* Don't print PIN with invalid clock time
 
 ## 0.7.4 (2016-09-25)
 
