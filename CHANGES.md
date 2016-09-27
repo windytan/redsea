@@ -1,5 +1,9 @@
 # redsea changelog
 
+## 0.7.5 (xxxx-xx-xx)
+
+* Don't correct errors longer than 2 bits
+
 ## 0.7.4 (2016-09-25)
 
 * Add partial support for 15B groups (Fast basic tuning and switching

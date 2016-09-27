@@ -8,7 +8,10 @@ const unsigned kBitmask16 = 0x000FFFF;
 const unsigned kBitmask26 = 0x3FFFFFF;
 const unsigned kBitmask28 = 0xFFFFFFF;
 
-const unsigned kMaxErrorLength = 5;
+// "...the error-correction system should be enabled, but should be restricted
+// by attempting to correct bursts of errors spanning one or two bits."
+// Kopitz & Marks 1999: "RDS: The Radio Data System", p. 224
+const unsigned kMaxErrorLength = 2;
 
 const std::vector<uint16_t> offset_words =
   {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
