@@ -19,11 +19,11 @@ const int   kInputBufferSize     = 4096;
 const int   kSamplesPerSymbol    = 3;
 const float kAGCBandwidth_Hz     = 900.0f;
 const float kAGCInitialGain      = 0.0077f;
-const float kLowpassCutoff_Hz    = 2100.0f;
+const float kLowpassCutoff_Hz    = 3100.0f;
 const float kSymsyncBandwidth_Hz = 3700.0f;
 const int   kSymsyncDelay        = 2;
-const float kSymsyncBeta         = 0.5f;
-const float kPLLBandwidth_Hz     = 1.0f;
+const float kSymsyncBeta         = 0.92f;
+const float kPLLBandwidth_Hz     = 0.2f;
 
 }
 

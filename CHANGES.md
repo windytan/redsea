@@ -2,6 +2,7 @@
 
 ## 0.7.5 (xxxx-xx-xx)
 
+* Adjust filter parameters to get a slightly better signal in noisy conditions
 * Don't correct bit errors longer than 2 bits
 * Fix incorrect formatting of negative local time offset
 * Fix incorrect JSON formatting in TMC Other Network output
