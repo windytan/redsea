@@ -4,7 +4,7 @@
 
 * Adjust filter parameters to get a slightly better signal in noisy conditions
 * Don't correct bit errors longer than 2 bits
-* Fix incorrect formatting of negative local time offset
+* Fix incorrect formatting of negative local time offset with half-hours
 * Fix incorrect JSON formatting in TMC Other Network output
 * Fix potential JSON error by escaping the backslash character in PS, RT
 * Don't print PIN with invalid clock time
