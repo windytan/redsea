@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.7.5 (xxxx-xx-xx)
+## 0.7.5 (2016-09-30)
 
 * Adjust filter parameters to get a slightly better signal in noisy conditions
 * Don't correct bit errors longer than 2 bits
