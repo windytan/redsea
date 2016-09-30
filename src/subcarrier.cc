@@ -19,11 +19,11 @@ const int   kInputBufferSize     = 4096;
 const int   kSamplesPerSymbol    = 3;
 const float kAGCBandwidth_Hz     = 900.0f;
 const float kAGCInitialGain      = 0.0077f;
-const float kLowpassCutoff_Hz    = 3100.0f;
-const float kSymsyncBandwidth_Hz = 3700.0f;
+const float kLowpassCutoff_Hz    = 2600.0f;
+const float kSymsyncBandwidth_Hz = 2400.0f;
 const int   kSymsyncDelay        = 2;
-const float kSymsyncBeta         = 0.92f;
-const float kPLLBandwidth_Hz     = 0.2f;
+const float kSymsyncBeta         = 0.8f;
+const float kPLLBandwidth_Hz     = 0.8f;
 
 }
 
@@ -97,7 +97,7 @@ void Subcarrier::demodulateMoreBits() {
 #endif
 
         unsigned biphase = modem_.demodulate(symbol);
-        nco_exact_.stepPLL(modem_.getPhaseError());
+        nco_exact_.stepPLL(modem_.getPhaseError() * 6.f);// factor is a quickfix
 
         if (symbol_clock_ == 1) {
           bit_buffer_.push_back(delta_decoder_.decode(biphase));
