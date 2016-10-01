@@ -133,7 +133,7 @@ void Subcarrier::demodulateMoreBits() {
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
           numsamples_ / kFs_Hz,
           (float)sample,
-          nco_exact_.getFrequency() * kFs_Hz / (2 * M_PI),
+          step2hertz(nco_exact_.getFrequency()),
           modem_.getPhaseError(),
           agc_.getGain(),
           sample_lopass.real(),
