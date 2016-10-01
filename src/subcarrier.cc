@@ -17,13 +17,23 @@ const float kFc_0_Hz             = 57000.0f;
 const float kBitsPerSecond       = 1187.5f;
 const int   kInputBufferSize     = 4096;
 const int   kSamplesPerSymbol    = 3;
-const float kAGCBandwidth_Hz     = 900.0f;
+const float kAGCBandwidth_Hz     = 500.0f;
 const float kAGCInitialGain      = 0.0077f;
 const float kLowpassCutoff_Hz    = 2600.0f;
 const float kSymsyncBandwidth_Hz = 2400.0f;
 const int   kSymsyncDelay        = 2;
 const float kSymsyncBeta         = 0.8f;
-const float kPLLBandwidth_Hz     = 0.8f;
+const float kPLLBandwidth_Hz     = 0.3f;
+
+float hertz2step(float Hz) {
+  return Hz * 2.0f * M_PI / kFs_Hz;
+}
+
+#ifdef DEBUG
+float step2hertz(float step) {
+  return step * kFs_Hz / (2.0f * M_PI);
+}
+#endif
 
 }
 
