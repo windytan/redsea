@@ -110,18 +110,20 @@ int main(int argc, char** argv) {
         redsea::getNextGroupRSpy() :
         block_stream.getNextGroup());
 
-    is_eof = group.num_blocks == 0;
+    is_eof = (std::cin.eof() || block_stream.isEOF());
 
-    // Repeated PI confirms change
-    prev_new_pi = new_pi;
-    new_pi = group.block1;
+    if (group.hasPi) {
+      // Repeated PI confirms change
+      prev_new_pi = new_pi;
+      new_pi = group.block[redsea::OFFSET_A];
 
-    if (new_pi == prev_new_pi || input_type == redsea::INPUT_RDSSPY) {
-      pi = new_pi;
-      if (pi != station.getPI())
-        station = redsea::Station(pi, is_rbds);
-    } else if (new_pi != pi) {
-      continue;
+      if (new_pi == prev_new_pi || input_type == redsea::INPUT_RDSSPY) {
+        pi = new_pi;
+        if (pi != station.getPI())
+          station = redsea::Station(pi, is_rbds);
+      } else if (new_pi != pi) {
+        continue;
+      }
     }
 
 #ifdef DEBUG

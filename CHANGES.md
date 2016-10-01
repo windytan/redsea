@@ -1,5 +1,12 @@
 # redsea changelog
 
+## 0.7.6 (xxxx-xx-xx)
+
+* Fix losing sync a bit too often
+* Print all received hex blocks even if the beginning of the group was missed
+* Add support for partially received 15B groups
+* Try to decode the group even if PI was missed once
+
 ## 0.7.5 (2016-09-30)
 
 * Adjust filter parameters to get a slightly better signal in noisy conditions

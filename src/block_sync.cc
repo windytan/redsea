@@ -1,5 +1,7 @@
 #include "block_sync.h"
 
+#include "util.h"
+
 namespace redsea {
 
 namespace {
@@ -78,13 +80,13 @@ std::map<uint16_t,uint32_t> makeErrorLookupTable() {
 BlockStream::BlockStream(eInputType input_type) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), wideblock_(0), prevsync_(0),
   block_counter_(0), expected_offset_(OFFSET_A),
-  received_offset_(OFFSET_INVALID), pi_(0), is_in_sync_(false), group_data_(4),
-  has_block_(5), block_has_errors_(50),
+  received_offset_(OFFSET_INVALID), pi_(0), is_in_sync_(false),
+  block_has_errors_(50),
 #ifdef HAVE_LIQUID
   subcarrier_(),
 #endif
   ascii_bits_(),
-  error_lookup_(makeErrorLookupTable()), num_blocks_received_(0),
+  error_lookup_(makeErrorLookupTable()),
   input_type_(input_type), is_eof_(false) {
 
 }
@@ -122,17 +124,8 @@ uint32_t BlockStream::correctBurstErrors(uint32_t block) const {
 
 }
 
-// When a block can't be decoded, save the beginning of the group if possible
+// A block can't be decoded
 void BlockStream::uncorrectable() {
-  num_blocks_received_ = 0;
-
-  for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI}) {
-    if (has_block_[o]) {
-      num_blocks_received_ = block_number_for_offset[o] + 1;
-    } else {
-      break;
-    }
-  }
 
   block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 
@@ -149,9 +142,6 @@ void BlockStream::uncorrectable() {
       block_has_errors_[i] = false;
     pi_ = 0x0000;
   }
-
-  for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D})
-    has_block_[o] = false;
 
 }
 
@@ -182,9 +172,9 @@ bool BlockStream::acquireSync() {
 
 Group BlockStream::getNextGroup() {
 
-  num_blocks_received_ = 0;
+  Group group;
 
-  while (num_blocks_received_ == 0 && !isEOF()) {
+  while (!isEOF()) {
 
     // Compensate for clock slip corrections
     bitcount_ += 26 - left_to_read_;
@@ -213,32 +203,26 @@ Group BlockStream::getNextGroup() {
     if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_CI)
       expected_offset_ = OFFSET_CI;
 
+    block_has_errors_[block_counter_ % block_has_errors_.size()] = false;
+
     if ( received_offset_ != expected_offset_) {
+
+      block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 
       was_valid_word = false;
 
-      // If message is a correct PI, error was probably in check bits
-      if (expected_offset_ == OFFSET_A && message == pi_ && pi_ != 0) {
-        received_offset_ = OFFSET_A;
-        //printf(":offset 0: ignoring error in check bits\n");
-      } else if (expected_offset_ == OFFSET_C && message == pi_ && pi_ != 0) {
-        received_offset_ = OFFSET_CI;
-        //printf(":offset 0: ignoring error in check bits\n");
-
       // Detect & correct clock slips (Section C.1.2)
-      } else if (expected_offset_ == OFFSET_A && pi_ != 0 &&
+      if (expected_offset_ == OFFSET_A && pi_ != 0 &&
           ((wideblock_ >> 12) & kBitmask16) == pi_) {
         message = pi_;
         wideblock_ >>= 1;
         received_offset_ = OFFSET_A;
-        //printf(":offset 0: clock slip corrected\n");
       } else if (expected_offset_ == OFFSET_A && pi_ != 0 &&
           ((wideblock_ >> 10) & kBitmask16) == pi_) {
         message = pi_;
         wideblock_ = (wideblock_ << 1) + getNextBit();
         received_offset_ = OFFSET_A;
         left_to_read_ = 25;
-        //printf(":offset 0: clock slip corrected\n");
 
       } else {
 
@@ -259,35 +243,38 @@ Group BlockStream::getNextGroup() {
 
     if (received_offset_ == expected_offset_) {
 
-      group_data_[block_number_for_offset[expected_offset_]] = message;
-      has_block_[expected_offset_] = true;
+      group.block[expected_offset_] = message;
+      group.hasOffset[expected_offset_] = true;
 
-      if (expected_offset_ == OFFSET_A && was_valid_word) {
-        pi_ = message;
+      if (expected_offset_ == OFFSET_A || expected_offset_ == OFFSET_CI) {
+        group.pi = message;
+        group.hasPi = true;
+        if (was_valid_word)
+          pi_ = message;
       }
 
-      // Complete group received
-      if (has_block_[OFFSET_A] && has_block_[OFFSET_B] &&
-         (has_block_[OFFSET_C] || has_block_[OFFSET_CI]) &&
-          has_block_[OFFSET_D]) {
-        num_blocks_received_ = 4;
-      }
     }
 
     expected_offset_ = nextOffsetFor(expected_offset_);
 
-    // End-of-group reset
     if (expected_offset_ == OFFSET_A) {
-      for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D})
-        has_block_[o] = false;
+      break;
     }
 
   }
 
-  std::vector<uint16_t> result = group_data_;
-  result.resize(num_blocks_received_);
+  if (group.hasOffset[OFFSET_B]) {
+    group.type = GroupType(bits(group.block[OFFSET_B], 11, 5));
+    group.hasType = true;
+  } else if (group.hasOffset[OFFSET_CI] && group.hasOffset[OFFSET_D]) {
+    GroupType potential(bits(group.block[OFFSET_D], 11, 5));
+    if (potential.num == 15 && potential.ab == VERSION_B) {
+      group.type = potential;
+      group.hasType = true;
+    }
+  }
 
-  return Group(result);
+  return group;
 
 }
 

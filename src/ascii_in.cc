@@ -3,6 +3,9 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "groups.h"
+#include "util.h"
+
 namespace redsea {
 
 AsciiBits::AsciiBits() : is_eof_(false) {
@@ -31,8 +34,8 @@ bool AsciiBits::isEOF() const {
   return is_eof_;
 }
 
-std::vector<uint16_t> getNextGroupRSpy() {
-  std::vector<uint16_t> result;
+Group getNextGroupRSpy() {
+  Group group;
 
   bool finished = false;
 
@@ -44,8 +47,10 @@ std::vector<uint16_t> getNextGroupRSpy() {
 
     for (int nblok=0; nblok<4; nblok++) {
       uint16_t bval=0;
-      int nyb=0;
+      bool block_still_valid = true;
+      group.hasOffset[nblok == 3 ? OFFSET_D : nblok] = true;
 
+      int nyb = 0;
       while (nyb < 4) {
 
         if (line.length() < 1) {
@@ -59,28 +64,27 @@ std::vector<uint16_t> getNextGroupRSpy() {
           try {
             int nval = std::stoi(std::string(single), nullptr, 16);
             bval = (bval << 4) + nval;
-            nyb++;
           } catch (std::invalid_argument) {
-            finished = true;
-            break;
+            block_still_valid = false;
+            group.hasOffset[nblok == 3 ? OFFSET_D : nblok] = false;
           }
+          nyb++;
         }
         line = line.substr(1);
       }
 
-      if (finished)
-        break;
-
-      result.push_back(bval);
+      group.block[nblok == 3 ? OFFSET_D : nblok] = bval;
 
       if (nblok==3)
         finished = true;
     }
   }
 
-  return result;
+  group.type = (group.hasOffset[OFFSET_B] ?
+      bits(group.block[OFFSET_B], 11, 5) : 0);
+
+  return group;
 
 }
-
 
 } // namespace redsea

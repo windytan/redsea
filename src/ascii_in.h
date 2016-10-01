@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "groups.h"
+
 namespace redsea {
 
 class AsciiBits {
@@ -19,7 +21,7 @@ class AsciiBits {
 
 };
 
-std::vector<uint16_t> getNextGroupRSpy();
+Group getNextGroupRSpy();
 
 } // namespace redsea
 #endif // ASCII_IN_H_

@@ -11,8 +11,12 @@
 
 namespace redsea {
 
-enum {
-  TYPE_A, TYPE_B
+enum eGroupTypeVersion {
+  VERSION_A, VERSION_B
+};
+
+enum eOffset {
+  OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D, OFFSET_INVALID
 };
 
 class GroupType {
@@ -24,23 +28,23 @@ class GroupType {
 
   std::string toString() const;
 
-  const uint16_t num;
-  const uint16_t ab;
+  uint16_t num;
+  eGroupTypeVersion ab;
 };
 
 bool operator<(const GroupType& obj1, const GroupType& obj2);
 
 class Group {
   public:
-  Group(std::vector<uint16_t> blockbits);
+  Group();
   void printHex() const;
 
   GroupType type;
-  int num_blocks;
-  uint16_t block1;
-  uint16_t block2;
-  uint16_t block3;
-  uint16_t block4;
+  bool hasType;
+  uint16_t pi;
+  bool hasPi;
+  std::vector<bool> hasOffset;
+  std::vector<uint16_t> block;
 
 };
 
@@ -55,6 +59,7 @@ class Station {
     uint16_t getPI() const;
     std::string getCountryCode() const;
   private:
+    void decodeBasics(const Group& group);
     void decodeType0(const Group& group);
     void decodeType1(const Group& group);
     void decodeType2(const Group& group);
@@ -96,6 +101,7 @@ class Station {
     bool rt_plus_toggle_;
     bool rt_plus_item_running_;
     std::map<uint16_t,RDSString> eon_ps_names_;
+    bool last_block_had_pi_;
 
     int pager_pac_;
     int pager_opc_;
