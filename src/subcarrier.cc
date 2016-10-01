@@ -108,7 +108,7 @@ void Subcarrier::demodulateMoreBits() {
 #endif
 
         unsigned biphase = modem_.demodulate(symbol);
-        nco_exact_.stepPLL(modem_.getPhaseError() * 6.f);// factor is a quickfix
+        nco_exact_.stepPLL(modem_.getPhaseError() * 9.f);// factor is a quickfix
 
         if (symbol_clock_ == 1) {
           bit_buffer_.push_back(delta_decoder_.decode(biphase));
