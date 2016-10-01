@@ -99,6 +99,24 @@ you can also decode the MPX output of an FM tuner or RDS encoder:
 
     $ rec -t .s16 -r 171k -c 1 - | ./src/redsea
 
+### Tips for output formatting
+
+The JSON output can be tidied and/or colored using `jq`:
+
+    $ ./rtl-rx.sh -f 87.9M | jq
+
+It can also be used to extract only certain fields, for instance the program
+type:
+
+    $ ./rtl-rx.sh -f 87.9M | jq '.prog_type'
+
+The output can be timestamped using `ts`, found in `moreutils`:
+
+    $ ./rtl-rx.sh -f 87.9M | ts
+
+This timestamp can be formatted using `strftime` style format strings, see `man
+ts`.
+
 ## Requirements
 
 * Linux/OSX
