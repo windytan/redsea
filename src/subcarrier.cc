@@ -54,8 +54,8 @@ unsigned DeltaDecoder::decode(unsigned d) {
 Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
   fir_lpf_(256, kLowpassCutoff_Hz / kFs_Hz),
   agc_(kAGCBandwidth_Hz / kFs_Hz, kAGCInitialGain),
-  nco_approx_(kFc_0_Hz * 2 * M_PI / kFs_Hz),
-  nco_exact_(0.0f),
+  nco_approx_(hertz2step(kFc_0_Hz)),
+  nco_exact_(hertz2step(kFc_0_Hz)),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
            kSymsyncBeta, 32),
   modem_(LIQUID_MODEM_PSK2), is_eof_(false), symbol_clock_(0), prev_biphase_(0),
@@ -93,6 +93,7 @@ void Subcarrier::demodulateMoreBits() {
 
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
+      // PLL-controlled 57 kHz mixdown, aliasing is intentional
       sample_lopass = nco_exact_.mixDown(sample_lopass);
 
       std::vector<std::complex<float>> symbols =
