@@ -47,11 +47,12 @@ class Subcarrier {
     bool is_eof_;
 
     unsigned symbol_clock_;
-    unsigned prev_biphase_;
 
     DeltaDecoder delta_decoder_;
 
     unsigned num_symbol_errors_;
+
+    std::complex<float> prev_sym_;
 
 };
 

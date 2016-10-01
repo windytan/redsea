@@ -2,6 +2,8 @@
 
 ## 0.7.6 (xxxx-xx-xx)
 
+* Better algorithm for biphase symbol decoding, improves performance with noisy
+  signals
 * Fix losing sync a bit too often
 * Print all received hex blocks even if the beginning of the group was missed
 * Add support for partially received 15B groups

@@ -58,7 +58,7 @@ Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
   nco_exact_(hertz2step(kFc_0_Hz)),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
            kSymsyncBeta, 32),
-  modem_(LIQUID_MODEM_PSK2), is_eof_(false), symbol_clock_(0), prev_biphase_(0),
+  modem_(LIQUID_MODEM_PSK2), is_eof_(false), symbol_clock_(0),
   delta_decoder_(), num_symbol_errors_(0) {
 
     symsync_.setBandwidth(kSymsyncBandwidth_Hz / kFs_Hz);
@@ -107,14 +107,23 @@ void Subcarrier::demodulateMoreBits() {
             symbol.imag());
 #endif
 
-        unsigned biphase = modem_.demodulate(symbol);
+        modem_.demodulate(symbol);
         nco_exact_.stepPLL(modem_.getPhaseError() * 9.f);// factor is a quickfix
 
-        if (symbol_clock_ == 1) {
-          bit_buffer_.push_back(delta_decoder_.decode(biphase));
+        std::complex<float> biphase = (symbol - prev_sym_);
 
-          if (biphase ^ prev_biphase_) {
+        if (symbol_clock_ == 1) {
+          bit_buffer_.push_back(delta_decoder_.decode(biphase.real() >= 0));
+#ifdef DEBUG
+        printf("bi:%f,%f,%f\n",
+            numsamples_ / kFs_Hz,
+            biphase.real(),
+            biphase.imag());
+#endif
+
+          if (biphase.real() < -1.0f || biphase.real() > 1.0f) {
             num_symbol_errors_ = 0;
+
           } else {
             num_symbol_errors_ ++;
             if (num_symbol_errors_ >= 7) {
@@ -124,7 +133,8 @@ void Subcarrier::demodulateMoreBits() {
           }
         }
 
-        prev_biphase_ = biphase;
+        //prev_biphase_ = biphase;
+        prev_sym_ = symbol;
 
         symbol_clock_ ^= 1;
 
