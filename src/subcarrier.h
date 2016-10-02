@@ -19,7 +19,7 @@ class BiphaseDecoder {
     std::pair<bool,std::complex<float>> push(std::complex<float> psk_symbol);
   private:
     std::complex<float> prev_psk_symbol_;
-    std::vector<int> clock_history_;
+    std::vector<float> clock_history_;
     unsigned clock_;
     unsigned clock_polarity_;
 };

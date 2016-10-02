@@ -53,12 +53,12 @@ std::pair<bool, std::complex<float>> BiphaseDecoder::push(
   std::complex<float> biphase = (psk_symbol - prev_psk_symbol_);
   bool is_clock = (clock_ % 2 == clock_polarity_);
 
-  clock_history_[clock_] = (biphase.real() < -1.f || biphase.real() > 1.f);
+  clock_history_[clock_] = biphase.real() < 0.f ? -biphase.real() : biphase.real();
 
   if (++clock_ == clock_history_.size()) {
 
-    int a=0;
-    int b=0;
+    float a=0;
+    float b=0;
 
     for (int i=0; i<(int)clock_history_.size();i++) {
       if (i%2==0)
