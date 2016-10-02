@@ -24,6 +24,7 @@ const float kSymsyncBandwidth_Hz = 2400.0f;
 const int   kSymsyncDelay        = 2;
 const float kSymsyncBeta         = 0.8f;
 const float kPLLBandwidth_Hz     = 0.3f;
+const float kPLLMultiplier       = 9.0f;
 
 float hertz2step(float Hz) {
   return Hz * 2.0f * M_PI / kFs_Hz;
@@ -153,7 +154,7 @@ void Subcarrier::demodulateMoreBits() {
 
         // Modem is only used for phase tracking
         modem_.demodulate(symbol);
-        nco_exact_.stepPLL(modem_.getPhaseError() * 9.f);// factor is a quickfix
+        nco_exact_.stepPLL(modem_.getPhaseError() * kPLLMultiplier);
 
         bool is_clock;
         std::complex<float> biphase;
