@@ -115,7 +115,7 @@ The output can be timestamped using `ts`, found in `moreutils`:
     $ ./rtl-rx.sh -f 87.9M | ts
 
 This timestamp can be formatted using `strftime` style format strings, see `man
-ts`.
+ts` and `man strftime`.
 
 ## Requirements
 
