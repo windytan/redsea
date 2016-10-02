@@ -177,6 +177,8 @@ void Station::updatePS(int pos, std::vector<int> chars) {
 
   if (ps_.isComplete())
     printf(",\"ps\":\"%s\"",ps_.getLastCompleteString().c_str());
+  else
+    printf(",\"partial_ps\":\"%s\"",ps_.getString().c_str());
 
 }
 
@@ -393,6 +395,8 @@ void Station::decodeType2 (const Group& group) {
 
   if (rt_.isComplete())
     printf(",\"radiotext\":\"%s\"",rt_.getLastCompleteStringTrimmed().c_str());
+  else if (rt_.getTrimmedString().length() > 0)
+    printf(",\"partial_radiotext\":\"%s\"",rt_.getTrimmedString().c_str());
 
 }
 

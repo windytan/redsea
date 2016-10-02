@@ -1,12 +1,14 @@
 # redsea changelog
 
-## 0.7.6 (xxxx-xx-xx)
+## 0.7.6 (2016-10-02)
 
+* Add `partial_radiotext` and `partial_ps` fields that show RadioText and PS
+  before they're fully received
+* Add support for partially received 15B groups
 * Better algorithm for biphase symbol decoding, improves performance with noisy
   signals
-* Fix losing sync a bit too often
+* Fix unnecessary sync drops
 * Print all received hex blocks even if the beginning of the group was missed
-* Add support for partially received 15B groups
 * Try to decode the group even if PI was missed once
 
 ## 0.7.5 (2016-09-30)
