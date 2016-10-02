@@ -47,7 +47,9 @@ BiphaseDecoder::~BiphaseDecoder() {
 
 }
 
-// ret: is_clock, symbol
+// Return {is_clock, symbol}
+//   is_clock: true if symbol valid
+//   symbol:   binary symbol in constellation {-1,0} => 0, {1,0} => 1
 std::pair<bool, std::complex<float>> BiphaseDecoder::push(
     std::complex<float> psk_symbol) {
 
@@ -55,8 +57,9 @@ std::pair<bool, std::complex<float>> BiphaseDecoder::push(
   bool is_clock = (clock_ % 2 == clock_polarity_);
 
   clock_history_[clock_] =
-    biphase.real() < 0.f ? -biphase.real() : biphase.real();
+    biphase.real() < 0.f ? -biphase.real() : biphase.real(); // aka. fabs()
 
+  // Periodically evaluate validity of the chosen biphase clock polarity
   if (++clock_ == clock_history_.size()) {
 
     float a=0;
@@ -67,7 +70,7 @@ std::pair<bool, std::complex<float>> BiphaseDecoder::push(
         a += clock_history_[i];
       else
         b += clock_history_[i];
-      clock_history_[i] = 0;
+      clock_history_[i] = 0.f;
     }
 
     if      (a>b) clock_polarity_ = 0;
@@ -116,6 +119,8 @@ Subcarrier::~Subcarrier() {
 
 }
 
+/** MPX to bits
+ */
 void Subcarrier::demodulateMoreBits() {
 
   int16_t inbuffer[kInputBufferSize];
@@ -130,6 +135,7 @@ void Subcarrier::demodulateMoreBits() {
 
   for (int16_t sample : inbuffer) {
 
+    // Mix RDS to baseband for filtering purposes
     std::complex<float> sample_baseband = nco_approx_.mixDown(sample);
 
     fir_lpf_.push(sample_baseband);
@@ -138,7 +144,8 @@ void Subcarrier::demodulateMoreBits() {
 
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
-      // PLL-controlled 57 kHz mixdown, aliasing is intentional
+      // PLL-controlled 57 kHz mixdown - aliasing is intentional so we don't
+      // have to mix it back up first
       sample_lopass = nco_exact_.mixDown(sample_lopass);
 
       std::vector<std::complex<float>> symbols =
@@ -152,7 +159,7 @@ void Subcarrier::demodulateMoreBits() {
             symbol.imag());
 #endif
 
-        // Modem is only used for phase tracking
+        // Modem here is only used to track PLL phase error
         modem_.demodulate(symbol);
         nco_exact_.stepPLL(modem_.getPhaseError() * kPLLMultiplier);
 
@@ -160,6 +167,7 @@ void Subcarrier::demodulateMoreBits() {
         std::complex<float> biphase;
         std::tie(is_clock,biphase) = biphase_decoder_.push(symbol);
 
+        // One biphase symbol received for every 2 PSK symbols
         if (is_clock) {
           bit_buffer_.push_back(delta_decoder_.decode(
                 biphase.real() >= 0));
