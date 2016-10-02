@@ -37,6 +37,49 @@ float step2hertz(float step) {
 
 }
 
+BiphaseDecoder::BiphaseDecoder() : prev_psk_symbol_(0.0f),
+  clock_history_(48), clock_(0), clock_polarity_(0) {
+
+}
+
+BiphaseDecoder::~BiphaseDecoder() {
+
+}
+
+// ret: is_clock, symbol
+std::pair<bool, std::complex<float>> BiphaseDecoder::push(
+    std::complex<float> psk_symbol) {
+
+  std::complex<float> biphase = (psk_symbol - prev_psk_symbol_);
+  bool is_clock = (clock_ % 2 == clock_polarity_);
+
+  clock_history_[clock_] = (biphase.real() < -1.f || biphase.real() > 1.f);
+
+  if (++clock_ == clock_history_.size()) {
+
+    int a=0;
+    int b=0;
+
+    for (int i=0; i<(int)clock_history_.size();i++) {
+      if (i%2==0)
+        a += clock_history_[i];
+      else
+        b += clock_history_[i];
+      clock_history_[i] = 0;
+    }
+
+    if      (a>b) clock_polarity_ = 0;
+    else if (b>a) clock_polarity_ = 1;
+
+    clock_ = 0;
+
+  }
+
+  prev_psk_symbol_ = psk_symbol;
+
+  return {is_clock, biphase};
+}
+
 DeltaDecoder::DeltaDecoder() : prev_(0) {
 
 }
@@ -58,8 +101,8 @@ Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
   nco_exact_(hertz2step(kFc_0_Hz)),
   symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
            kSymsyncBeta, 32),
-  modem_(LIQUID_MODEM_PSK2), is_eof_(false), symbol_clock_(0),
-  delta_decoder_(), num_symbol_errors_(0) {
+  modem_(LIQUID_MODEM_PSK2), is_eof_(false),
+  delta_decoder_() {
 
     symsync_.setBandwidth(kSymsyncBandwidth_Hz / kFs_Hz);
     symsync_.setOutputRate(1);
@@ -107,36 +150,24 @@ void Subcarrier::demodulateMoreBits() {
             symbol.imag());
 #endif
 
+        // Modem is only used for phase tracking
         modem_.demodulate(symbol);
         nco_exact_.stepPLL(modem_.getPhaseError() * 9.f);// factor is a quickfix
 
-        std::complex<float> biphase = (symbol - prev_sym_);
+        bool is_clock;
+        std::complex<float> biphase;
+        std::tie(is_clock,biphase) = biphase_decoder_.push(symbol);
 
-        if (symbol_clock_ == 1) {
-          bit_buffer_.push_back(delta_decoder_.decode(biphase.real() >= 0));
+        if (is_clock) {
+          bit_buffer_.push_back(delta_decoder_.decode(
+                biphase.real() >= 0));
 #ifdef DEBUG
-        printf("bi:%f,%f,%f\n",
-            numsamples_ / kFs_Hz,
-            biphase.real(),
-            biphase.imag());
+          printf("bi:%f,%f,%f\n",
+              numsamples_ / kFs_Hz,
+              biphase.real(),
+              biphase.imag());
 #endif
-
-          if (biphase.real() < -1.0f || biphase.real() > 1.0f) {
-            num_symbol_errors_ = 0;
-
-          } else {
-            num_symbol_errors_ ++;
-            if (num_symbol_errors_ >= 7) {
-              symbol_clock_ ^= 1;
-              num_symbol_errors_ = 0;
-            }
-          }
         }
-
-        //prev_biphase_ = biphase;
-        prev_sym_ = symbol;
-
-        symbol_clock_ ^= 1;
 
       }
 #ifdef DEBUG

@@ -12,6 +12,18 @@
 
 namespace redsea {
 
+class BiphaseDecoder {
+  public:
+    BiphaseDecoder();
+    ~BiphaseDecoder();
+    std::pair<bool,std::complex<float>> push(std::complex<float> psk_symbol);
+  private:
+    std::complex<float> prev_psk_symbol_;
+    std::vector<int> clock_history_;
+    unsigned clock_;
+    unsigned clock_polarity_;
+};
+
 class DeltaDecoder {
   public:
     DeltaDecoder();
@@ -46,11 +58,8 @@ class Subcarrier {
 
     bool is_eof_;
 
-    unsigned symbol_clock_;
-
     DeltaDecoder delta_decoder_;
-
-    unsigned num_symbol_errors_;
+    BiphaseDecoder biphase_decoder_;
 
     std::complex<float> prev_sym_;
 
