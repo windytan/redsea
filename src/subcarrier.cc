@@ -5,6 +5,7 @@
 #include <complex>
 #include <deque>
 #include <iostream>
+#include <tuple>
 
 #include "liquid_wrappers.h"
 
