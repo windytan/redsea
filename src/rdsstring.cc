@@ -9,11 +9,7 @@ namespace redsea {
 namespace {
 
 std::string rtrim(std::string s) {
-  int last_non_space = 0;
-  for (size_t i=0; i<s.length(); i++)
-    if (s.at(i) != ' ')
-      last_non_space = i+1;
-  return s.substr(0,last_non_space);
+  return s.erase(s.find_last_not_of(' ')+1);
 }
 
 }
