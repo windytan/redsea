@@ -1,7 +1,7 @@
 # redsea
 
 redsea is an experiment at building a lightweight command-line
-[RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder.
+[RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/OSX.
 It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio
 stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream, the hex
 format used by RDS Spy, and multiplex signals (MPX).
@@ -49,19 +49,6 @@ you can compile redsea without liquid-dsp:
         $ make
 
 ## Usage
-
-```
-radio_command | ./src/redsea [OPTIONS]
-
--b    Input is ASCII bit stream (011010110...)
--h    Input is hex groups in the RDS Spy format
--x    Output is hex groups in the RDS Spy format
--u    Use RBDS (North American) program types
--v    Print version
-```
-
-By default, the input (via stdin) is demodulated FM multiplex (MPX) with 16-bit
-mono samples at 171 kHz. The output format defaults to newline-delimited JSON.
 
 ### Live decoding with rtl_fm
 
@@ -116,6 +103,21 @@ The output can be timestamped using `ts`, found in `moreutils`:
 
 This timestamp can be formatted using `strftime` style format strings, see `man
 ts` and `man strftime`.
+
+### Full usage
+
+```
+radio_command | ./src/redsea [OPTIONS]
+
+-b    Input is ASCII bit stream (011010110...)
+-h    Input is hex groups in the RDS Spy format
+-x    Output is hex groups in the RDS Spy format
+-u    Use RBDS (North American) program types
+-v    Print version
+```
+
+By default, the input (via stdin) is demodulated FM multiplex (MPX) with 16-bit
+mono samples at 171 kHz. The output format defaults to newline-delimited JSON.
 
 ## Requirements
 
