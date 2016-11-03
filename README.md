@@ -12,6 +12,8 @@ or, optionally, undecoded hex blocks (`-x`).
 Redsea has been successfully compiled on Linux (Ubuntu 14.04, Raspbian Jessie)
 and OSX (10.10).
 
+[![Build Status](https://travis-ci.org/windytan/redsea.svg?branch=master)](https://travis-ci.org/windytan/redsea)
+
 ## Compiling
 
 You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
