@@ -15,7 +15,8 @@ and OSX (10.10).
 ## Compiling
 
 You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
-library, and GNU autotools.
+library, and GNU autotools. On OSX/macOS you will also need XCode command-line
+tools (`xcode-select --install`).
 
 1. Clone the repository (unless you downloaded a release zip file):
 
