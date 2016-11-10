@@ -314,6 +314,7 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
 
     std::stringstream iss(line);
     uint16_t encid;
+    bool line_has_key = false;
 
     std::vector<uint8_t> nums(3);
 
@@ -324,13 +325,21 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
       std::string val;
       std::getline(iss, val, ',');
 
-      if (col == 0)
-        encid = std::stoi(val);
-      else
-        nums[col-1] = std::stoi(val);
+      try {
+        if (col == 0)
+          encid = std::stoi(val);
+        else
+          nums[col-1] = std::stoi(val);
+      } catch (const std::exception& e) {
+        break;
+      }
+
+      if (col == 3)
+        line_has_key = true;
     }
 
-    result.insert({encid, {nums[0], nums[1], nums[2]}});
+    if (line_has_key)
+      result.insert({encid, {nums[0], nums[1], nums[2]}});
 
   }
 
