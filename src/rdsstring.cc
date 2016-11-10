@@ -1,6 +1,6 @@
 #include "rdsstring.h"
 
-#include <algorithm>
+#include <string>
 
 #include "tables.h"
 
