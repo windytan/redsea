@@ -318,10 +318,11 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
     std::vector<uint8_t> nums(3);
 
     for (int col=0; col<4; col++) {
-      std::string val;
-      std::getline(iss, val, ',');
       if (!iss.good())
         break;
+
+      std::string val;
+      std::getline(iss, val, ',');
 
       if (col == 0)
         encid = std::stoi(val);
@@ -490,6 +491,10 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
 
       message_.pushMulti(x, y, z);
       if (message_.isComplete()) {
+
+        if (is_encrypted_ && service_key_table_.count(encid_) > 0)
+          message_.decrypt(service_key_table_[encid_]);
+
         message_.print();
         message_ = Message(is_encrypted_);
       }
