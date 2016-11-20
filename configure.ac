@@ -1,7 +1,7 @@
 AC_PREREQ([2.69])
 AC_INIT([redsea], [0.7.6], [oona@kapsi.fi], [redsea],
         [https://github.com/windytan/redsea])
-AM_INIT_AUTOMAKE([1.10 -Wall -Werror foreign])
+AM_INIT_AUTOMAKE([1.10 -Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
  Makefile

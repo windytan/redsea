@@ -1,4 +1,4 @@
-#include "tmc.h"
+#include "src/tmc/tmc.h"
 
 #include "config.h"
 #ifdef ENABLE_TMC
@@ -11,8 +11,8 @@
 #include <string>
 #include <utility>
 
-#include "tmc_data.h"
-#include "util.h"
+#include "src/tmc/event_list.h"
+#include "src/util.h"
 
 namespace redsea {
 

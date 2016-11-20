@@ -1,5 +1,5 @@
-#ifndef TMC_DATA_H_
-#define TMC_DATA_H_
+#ifndef TMC_EVENT_LIST_H_
+#define TMC_EVENT_LIST_H_
 
 #include <string>
 #include <vector>
@@ -1796,6 +1796,6 @@ static const std::vector<std::string> tmc_data_suppl = {
   "253;regular service",
   "255;Traffic queue length decreasing"};
 
-} // namespace tmc
-} // namespace redsea
-#endif // TMC_DATA_H_
+}  // namespace tmc
+}  // namespace redsea
+#endif  // TMC_EVENT_LIST_H_

@@ -1,4 +1,4 @@
-#include "subcarrier.h"
+#include "src/subcarrier.h"
 
 #ifdef HAVE_LIQUID
 
@@ -7,7 +7,7 @@
 #include <iostream>
 #include <tuple>
 
-#include "liquid_wrappers.h"
+#include "src/liquid_wrappers.h"
 
 namespace redsea {
 

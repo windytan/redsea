@@ -1,4 +1,4 @@
-#include "liquid_wrappers.h"
+#include "src/liquid_wrappers.h"
 
 #include "config.h"
 #ifdef HAVE_LIQUID

@@ -1,4 +1,4 @@
-#include "tables.h"
+#include "src/tables.h"
 
 #include <cassert>
 #include <map>

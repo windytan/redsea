@@ -1,10 +1,10 @@
-#include "ascii_in.h"
+#include "src/ascii_in.h"
 
 #include <iostream>
 #include <stdexcept>
 
-#include "groups.h"
-#include "util.h"
+#include "src/groups.h"
+#include "src/util.h"
 
 namespace redsea {
 

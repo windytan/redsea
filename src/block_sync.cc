@@ -1,6 +1,8 @@
-#include "block_sync.h"
+#include "src/block_sync.h"
 
-#include "util.h"
+#include <vector>
+
+#include "src/util.h"
 
 namespace redsea {
 

@@ -20,8 +20,8 @@
 #include <iostream>
 
 #include "config.h"
-#include "block_sync.h"
-#include "groups.h"
+#include "src/block_sync.h"
+#include "src/groups.h"
 
 const std::string kRedseaVersion("0.7.3");
 

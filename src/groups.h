@@ -6,8 +6,8 @@
 #include <string>
 
 #include "config.h"
-#include "rdsstring.h"
-#include "tmc.h"
+#include "src/rdsstring.h"
+#include "src/tmc/tmc.h"
 
 namespace redsea {
 

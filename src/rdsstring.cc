@@ -1,8 +1,8 @@
-#include "rdsstring.h"
+#include "src/rdsstring.h"
 
 #include <string>
 
-#include "tables.h"
+#include "src/tables.h"
 
 namespace redsea {
 

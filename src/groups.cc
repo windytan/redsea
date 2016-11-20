@@ -1,14 +1,16 @@
-#include "groups.h"
+#include "src/groups.h"
 
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "config.h"
-#include "rdsstring.h"
-#include "tables.h"
-#include "util.h"
+#include "src/rdsstring.h"
+#include "src/tables.h"
+#include "src/util.h"
 
 namespace redsea {
 

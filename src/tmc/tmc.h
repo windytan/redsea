@@ -1,5 +1,5 @@
-#ifndef TMC_H_
-#define TMC_H_
+#ifndef TMC_TMC_H_
+#define TMC_TMC_H_
 
 #include "config.h"
 #ifdef ENABLE_TMC
@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "rdsstring.h"
+#include "src/rdsstring.h"
 
 namespace redsea {
 namespace tmc {
