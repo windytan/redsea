@@ -441,12 +441,12 @@ void Station::decodeType4A (const Group& group) {
   if (group.hasOffset[OFFSET_D]) {
     lto = (bits(group.block[OFFSET_D], 5, 1) ? -1 : 1) *
            bits(group.block[OFFSET_D], 0, 5) / 2.0;
-    mjd = int(mjd + lto / 24.0);
+    mjd = mjd + lto / 24.0;
   }
 
-  int yr = int((mjd - 15078.2) / 365.25);
-  int mo = int((mjd - 14956.1 - int(yr * 365.25)) / 30.6001);
-  int dy = mjd - 14956 - int(yr * 365.25) - int(mo * 30.6001);
+  int yr = (mjd - 15078.2) / 365.25;
+  int mo = (mjd - 14956.1 - std::trunc(yr * 365.25)) / 30.6001;
+  int dy = mjd - 14956 - std::trunc(yr * 365.25) - std::trunc(mo * 30.6001);
   if (mo == 14 || mo == 15) {
     yr += 1;
     mo -= 12;
@@ -455,18 +455,19 @@ void Station::decodeType4A (const Group& group) {
   mo -= 1;
 
   if (group.hasOffset[OFFSET_D]) {
-    int ltom = (lto - int(lto)) * 60;
+    int ltom = (lto - std::trunc(lto)) * 60;
 
     int hr = int((bits(group.block[OFFSET_C], 0, 1) << 4) +
         bits(group.block[OFFSET_D], 12, 14) + lto) % 24;
     int mn = bits(group.block[OFFSET_D], 6, 6) + ltom;
 
     if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31 && hr >= 0 && hr <= 23 &&
-        mn >= 0 && mn <= 59 && abs((int)lto) <= 13) {
+        mn >= 0 && mn <= 59 && fabs(std::trunc(lto)) <= 13.0) {
       char buff[100];
       snprintf(buff, sizeof(buff),
-          "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
-          yr,mo,dy,hr,mn,lto > 0 ? "+":"-",abs(int(lto)),abs(ltom));
+          "%04d-%02d-%02dT%02d:%02d:00%s%02.0f:%02d",
+          yr, mo, dy, hr, mn, lto > 0 ? "+" : "-", fabs(std::trunc(lto)),
+          abs(ltom));
       clock_time_ = buff;
       printf(",\"clock_time\":\"%s\"", clock_time_.c_str());
     } else {
