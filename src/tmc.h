@@ -5,6 +5,7 @@
 #ifdef ENABLE_TMC
 
 #include <map>
+#include <string>
 #include <vector>
 
 #include "rdsstring.h"
@@ -43,93 +44,92 @@ struct ServiceKey {
 };
 
 class Event {
-  public:
-    Event();
-    Event(std::string, std::string, uint16_t, uint16_t, uint16_t, uint16_t,
-        uint16_t, uint16_t, bool);
-    std::string description;
-    std::string description_with_quantifier;
-    uint16_t nature;
-    uint16_t quantifier_type;
-    uint16_t duration_type;
-    uint16_t directionality;
-    uint16_t urgency;
-    uint16_t update_class;
-    bool allows_quantifier;
-
+ public:
+  Event();
+  Event(std::string, std::string, uint16_t, uint16_t, uint16_t, uint16_t,
+      uint16_t, uint16_t, bool);
+  std::string description;
+  std::string description_with_quantifier;
+  uint16_t nature;
+  uint16_t quantifier_type;
+  uint16_t duration_type;
+  uint16_t directionality;
+  uint16_t urgency;
+  uint16_t update_class;
+  bool allows_quantifier;
 };
 
 Event getEvent(uint16_t code);
 
 struct MessagePart {
-  MessagePart() : is_received(false), data() {};
+  MessagePart() : is_received(false), data() {}
   MessagePart(bool _is_received, std::vector<uint16_t> _data) :
-    is_received(_is_received), data(_data) {};
+    is_received(_is_received), data(_data) {}
   bool is_received;
   std::vector<uint16_t> data;
 };
 
 class Message {
-  public:
-    Message(bool is_loc_encrypted=false);
-    void pushMulti(uint16_t x, uint16_t y, uint16_t z);
-    void pushSingle(uint16_t x, uint16_t y, uint16_t z);
-    std::string toString() const;
-    void print() const;
-    void decrypt(ServiceKey);
-    bool isComplete() const;
-    void clear();
-    uint16_t getContinuityIndex() const;
+ public:
+  explicit Message(bool is_loc_encrypted = false);
+  void pushMulti(uint16_t x, uint16_t y, uint16_t z);
+  void pushSingle(uint16_t x, uint16_t y, uint16_t z);
+  std::string toString() const;
+  void print() const;
+  void decrypt(ServiceKey);
+  bool isComplete() const;
+  void clear();
+  uint16_t getContinuityIndex() const;
 
-  private:
-    void decodeMulti();
-    bool is_encrypted_;
-    uint16_t duration_;
-    uint16_t duration_type_;
-    bool divertadv_;
-    uint16_t direction_;
-    uint16_t extent_;
-    std::vector<uint16_t> events_;
-    std::vector<uint16_t> supplementary_;
-    std::map<uint16_t, uint16_t> quantifiers_;
-    std::vector<uint16_t> diversion_;
-    uint16_t location_;
-    bool is_complete_;
-    bool has_length_affected_;
-    uint16_t length_affected_;
-    bool has_time_until_;
-    uint16_t time_until_;
-    bool has_time_starts_;
-    uint16_t time_starts_;
-    bool has_speed_limit_;
-    uint16_t speed_limit_;
-    uint16_t directionality_;
-    uint16_t urgency_;
-    uint16_t continuity_index_;
-    std::vector<MessagePart> parts_;
+ private:
+  void decodeMulti();
+  bool is_encrypted_;
+  uint16_t duration_;
+  uint16_t duration_type_;
+  bool divertadv_;
+  uint16_t direction_;
+  uint16_t extent_;
+  std::vector<uint16_t> events_;
+  std::vector<uint16_t> supplementary_;
+  std::map<uint16_t, uint16_t> quantifiers_;
+  std::vector<uint16_t> diversion_;
+  uint16_t location_;
+  bool is_complete_;
+  bool has_length_affected_;
+  uint16_t length_affected_;
+  bool has_time_until_;
+  uint16_t time_until_;
+  bool has_time_starts_;
+  uint16_t time_starts_;
+  bool has_speed_limit_;
+  uint16_t speed_limit_;
+  uint16_t directionality_;
+  uint16_t urgency_;
+  uint16_t continuity_index_;
+  std::vector<MessagePart> parts_;
 };
 
 class TMC {
-  public:
-    TMC();
-    void systemGroup(uint16_t message);
-    void userGroup(uint16_t x, uint16_t y, uint16_t z);
+ public:
+  TMC();
+  void systemGroup(uint16_t message);
+  void userGroup(uint16_t x, uint16_t y, uint16_t z);
 
-  private:
-    bool is_initialized_;
-    bool is_encrypted_;
-    bool has_encid_;
-    uint16_t ltn_;
-    uint16_t sid_;
-    uint16_t encid_;
-    uint16_t ltnbe_;
-    Message message_;
-    std::map<uint16_t, ServiceKey> service_key_table_;
-    RDSString ps_;
+ private:
+  bool is_initialized_;
+  bool is_encrypted_;
+  bool has_encid_;
+  uint16_t ltn_;
+  uint16_t sid_;
+  uint16_t encid_;
+  uint16_t ltnbe_;
+  Message message_;
+  std::map<uint16_t, ServiceKey> service_key_table_;
+  RDSString ps_;
 };
 
-} // namespace tmc
-} // namespace redsea
+}  // namespace tmc
+}  // namespace redsea
 
-#endif // ENABLE_TMC
-#endif // TMC_H_
+#endif  // ENABLE_TMC
+#endif  // TMC_H_

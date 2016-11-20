@@ -9,6 +9,7 @@
 #include <regex>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include "tmc_data.h"
 #include "util.h"
@@ -19,13 +20,13 @@ namespace tmc {
 
 namespace {
 
-std::map<uint16_t,Event> g_event_data;
-std::map<uint16_t,std::string> g_suppl_data;
+std::map<uint16_t, Event> g_event_data;
+std::map<uint16_t, std::string> g_suppl_data;
 
 uint16_t popBits(std::deque<int>* bit_deque, int len) {
   uint16_t result = 0x00;
-  if ((int)bit_deque->size() >= len) {
-    for (int i=0; i<len; i++) {
+  if (static_cast<int>(bit_deque->size()) >= len) {
+    for (int i=0; i < len; i++) {
       result = (result << 1) | bit_deque->at(0);
       bit_deque->pop_front();
     }
@@ -33,16 +34,15 @@ uint16_t popBits(std::deque<int>* bit_deque, int len) {
   return result;
 }
 
-uint16_t rotl16 (uint16_t value, unsigned int count) {
+uint16_t rotl16(uint16_t value, unsigned int count) {
   const unsigned int mask = (CHAR_BIT*sizeof(value)-1);
   count &= mask;
-  return (value<<count) | (value>>( (-count) & mask ));
+  return (value << count) | (value >> ( (-count) & mask ));
 }
 
 // label, field_data (ISO 14819-1: 5.5)
-std::vector<std::pair<uint16_t,uint16_t>>
-  getFreeformFields(std::vector<MessagePart> parts) {
-
+std::vector<std::pair<uint16_t, uint16_t>>
+    getFreeformFields(std::vector<MessagePart> parts) {
   static const std::vector<int> field_size(
       {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
@@ -51,24 +51,23 @@ std::vector<std::pair<uint16_t,uint16_t>>
   // Concatenate freeform data from used message length (derived from
   // GSI of second group)
   std::deque<int> freeform_data_bits;
-  for (int i=1; i<(int)parts.size(); i++) {
+  for (size_t i=1; i < parts.size(); i++) {
     if (!parts[i].is_received)
       break;
 
-    if (i == 1 || i >= (int)parts.size() - second_gsi) {
-      for (int b=0; b<12; b++)
+    if (i == 1 || i >= parts.size() - second_gsi) {
+      for (int b=0; b < 12; b++)
         freeform_data_bits.push_back((parts[i].data[0] >> (11-b)) & 0x1);
-      for (int b=0; b<16; b++)
+      for (int b=0; b < 16; b++)
         freeform_data_bits.push_back((parts[i].data[1] >> (15-b)) & 0x1);
     }
   }
 
   // Separate freeform data into fields
-  //int bits_left = freeform_data_bits.size();
-  std::vector<std::pair<uint16_t,uint16_t>> result;
+  std::vector<std::pair<uint16_t, uint16_t>> result;
   while (freeform_data_bits.size() > 4) {
     uint16_t label = popBits(&freeform_data_bits, 4);
-    if ((int)freeform_data_bits.size() < field_size.at(label))
+    if (static_cast<int>(freeform_data_bits.size()) < field_size.at(label))
       break;
 
     uint16_t field_data = popBits(&freeform_data_bits, field_size.at(label));
@@ -87,7 +86,7 @@ std::string timeString(uint16_t field_data) {
 
   if (field_data <= 95) {
     char t[6];
-    std::snprintf(t, 6, "%02d:%02d", field_data/4, 15*(field_data % 4));
+    std::snprintf(t, sizeof(t), "%02d:%02d", field_data/4, 15*(field_data % 4));
     time_string = t;
 
   } else if (field_data <= 200) {
@@ -95,24 +94,25 @@ std::string timeString(uint16_t field_data) {
     int hour = (field_data - 96) % 24;
     char t[25];
     if (days == 0)
-      std::snprintf(t, 25, "at %02d:00", hour);
+      std::snprintf(t, sizeof(t), "at %02d:00", hour);
     else if (days == 1)
-      std::snprintf(t, 25, "after 1 day at %02d:00", hour);
+      std::snprintf(t, sizeof(t), "after 1 day at %02d:00", hour);
     else
-      std::snprintf(t, 25, "after %d days at %02d:00", days, hour);
+      std::snprintf(t, sizeof(t), "after %d days at %02d:00", days, hour);
     time_string = t;
 
   } else if (field_data <= 231) {
     char t[20];
-    std::snprintf(t, 20, "day %d of the month", field_data-200);
+    std::snprintf(t, sizeof(t), "day %d of the month", field_data-200);
     time_string = t;
 
   } else {
     int mo = (field_data-232) / 2;
     bool end_mid = (field_data-232) % 2;
     std::vector<std::string> month_names({
-        "January","February","March","April","May",
-        "June","July","August","September","October","November","December"});
+        "January", "February", "March", "April", "May",
+        "June", "July", "August", "September", "October", "November",
+        "December"});
     if (mo < 12) {
       time_string = (end_mid ? "end of " : "mid-") + month_names.at(mo);
     }
@@ -122,7 +122,6 @@ std::string timeString(uint16_t field_data) {
 }
 
 std::string getScopeString(uint16_t mgs) {
-
   bool mgs_i = bits(mgs, 3, 1);
   bool mgs_n = bits(mgs, 2, 1);
   bool mgs_r = bits(mgs, 1, 1);
@@ -139,18 +138,15 @@ std::string getScopeString(uint16_t mgs) {
     scope.push_back("\"urban\"");
 
   return join(scope, ",");
-
 }
 
 uint16_t getQuantifierSize(uint16_t code) {
-
   if (code <= 5)
     return 5;
   else if (code <= 12)
     return 8;
   else
     return 0;
-
 }
 
 std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
@@ -160,86 +156,97 @@ std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
   if (getQuantifierSize(event.quantifier_type) == 5 && q_value == 0)
     q_value = 32;
 
-  if (event.quantifier_type == Q_SMALL_NUMBER) {
-    int num = q_value;
-    if (num > 28)
-      num += (num - 28);
-    q = std::to_string(num);
+  switch (event.quantifier_type) {
+    case Q_SMALL_NUMBER: {
+      int num = q_value;
+      if (num > 28)
+        num += (num - 28);
+      q = std::to_string(num);
+      break;
+    }
+    case Q_NUMBER: {
+      int num;
+      if (q_value <= 4)
+        num = q_value;
+      else if (q_value <= 14)
+        num = (q_value - 4) * 10;
+      else
+        num = (q_value - 12) * 50;
+      q = std::to_string(num);
+      break;
+    }
+    case Q_LESS_THAN_METRES: {
+      q = "less than " + std::to_string(q_value * 10) + " metres";
+      break;
+    }
+    case Q_PERCENT: {
+      q = std::to_string(q_value == 32 ? 0 : q_value * 5) + " %";
+      break;
+    }
+    case Q_UPTO_KMH: {
+      q = "of up to " + std::to_string(q_value * 5) + " km/h";
+      break;
+    }
+    case Q_UPTO_TIME: {
+      if (q_value <= 10)
+        q = "of up to " + std::to_string(q_value * 5) + " minutes";
+      else if (q_value <= 22)
+        q = "of up to " + std::to_string(q_value - 10) + " hours";
+      else
+        q = "of up to " + std::to_string((q_value - 20) * 6) + " hours";
+      break;
+    }
+    case Q_DEG_CELSIUS: {
+      q = std::to_string(q_value - 51) + " degrees Celsius";
+      break;
+    }
+    case Q_TIME: {
+      int m = (q_value - 1) * 10;
+      int h = m / 60;
+      m = m % 60;
 
-  } else if (event.quantifier_type == Q_NUMBER) {
-    int num;
-    if (q_value <= 4)
-      num = q_value;
-    else if (q_value <= 14)
-      num = (q_value - 4) * 10;
-    else
-      num = (q_value - 12) * 50;
-    q = std::to_string(num);
+      char t[6];
+      std::snprintf(t, sizeof(t), "%02d:%02d", m, h);
+      q = t;
+      break;
+    }
+    case Q_TONNES: {
+      int decitonnes;
+      if (q_value <= 100)
+        decitonnes = q_value;
+      else
+        decitonnes = 100 + (q_value - 100) * 5;
 
-  } else if (event.quantifier_type == Q_LESS_THAN_METRES) {
-    q = "less than " + std::to_string(q_value * 10) + " metres";
+      int whole_tonnes = decitonnes / 10;
+      decitonnes = decitonnes % 10;
 
-  } else if (event.quantifier_type == Q_PERCENT) {
-    q = std::to_string(q_value == 32 ? 0 : q_value * 5) + " %";
+      q = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes) +
+        " tonnes";
+      break;
+    }
+    case Q_METRES: {
+      int decimetres;
+      if (q_value <= 100)
+        decimetres = q_value;
+      else
+        decimetres = 100 + (q_value - 100) * 5;
 
-  } else if (event.quantifier_type == Q_UPTO_KMH) {
-    q = "of up to " + std::to_string(q_value * 5) + " km/h";
+      int whole_metres = decimetres / 10;
+      decimetres = decimetres % 10;
 
-  } else if (event.quantifier_type == Q_UPTO_TIME) {
-
-    if (q_value <= 10)
-      q = "of up to " + std::to_string(q_value * 5) + " minutes";
-    else if (q_value <= 22)
-      q = "of up to " + std::to_string(q_value - 10) + " hours";
-    else
-      q = "of up to " + std::to_string((q_value - 20) * 6) + " hours";
-
-  } else if (event.quantifier_type == Q_DEG_CELSIUS) {
-    q = std::to_string(q_value - 51) + " degrees Celsius";
-
-  } else if (event.quantifier_type == Q_TIME) {
-    int m = (q_value - 1) * 10;
-    int h = m / 60;
-    m = m % 60;
-
-    char t[6];
-    std::snprintf(t, 6, "%02d:%02d", m, h);
-    q = t;
-
-  } else if (event.quantifier_type == Q_TONNES) {
-    int decitonnes;
-    if (q_value <= 100)
-      decitonnes = q_value;
-    else
-      decitonnes = 100 + (q_value - 100) * 5;
-
-    int whole_tonnes = decitonnes / 10;
-    decitonnes = decitonnes % 10;
-
-    q = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes) +
-      " tonnes";
-
-  } else if (event.quantifier_type == Q_METRES) {
-    int decimetres;
-    if (q_value <= 100)
-      decimetres = q_value;
-    else
-      decimetres = 100 + (q_value - 100) * 5;
-
-    int whole_metres = decimetres / 10;
-    decimetres = decimetres % 10;
-
-    q = std::to_string(whole_metres) + "." + std::to_string(decimetres) +
-      " metres";
-
-  } else if (event.quantifier_type == Q_UPTO_MILLIMETRES) {
-    q = "of up to " + std::to_string(q_value) + " millimetres";
-
-  } else {
-    printf(",\"debug\":\"q_value = %d, q_type=%d\"",
-        q_value, event.quantifier_type);
-    q = "TODO";
-
+      q = std::to_string(whole_metres) + "." + std::to_string(decimetres) +
+        " metres";
+      break;
+    }
+    case Q_UPTO_MILLIMETRES: {
+      q = "of up to " + std::to_string(q_value) + " millimetres";
+      break;
+    }
+    default: {
+      printf(",\"debug\":\"q_value = %d, q_type=%d\"",
+          q_value, event.quantifier_type);
+      q = "TODO";
+    }
   }
 
   std::string desc = std::regex_replace(event.description_with_quantifier,
@@ -254,15 +261,13 @@ std::string ucfirst(std::string in) {
 }
 
 void loadEventData() {
-
   for (std::string line : tmc_data_events) {
-
     std::stringstream iss(line);
     uint16_t code;
     std::vector<std::string> strings(2);
     std::vector<uint16_t> nums(6);
 
-    for (int col=0; col<9; col++) {
+    for (int col=0; col < 9; col++) {
       std::string val;
       std::getline(iss, val, ';');
       if (!iss.good())
@@ -283,10 +288,9 @@ void loadEventData() {
   }
 
   for (std::string line : tmc_data_suppl) {
-
     std::stringstream iss(line);
     uint16_t code;
-    std::string code_str,desc;
+    std::string code_str, desc;
 
     std::getline(iss, code_str, ';');
     std::getline(iss, desc, ';');
@@ -294,13 +298,10 @@ void loadEventData() {
     code = std::stoi(code_str);
 
     g_suppl_data.insert({code, desc});
-
   }
-
 }
 
 std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
-
   std::map<uint16_t, ServiceKey> result;
 
   std::ifstream in("service_key_table.csv");
@@ -318,7 +319,7 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
 
     std::vector<uint8_t> nums(3);
 
-    for (int col=0; col<4; col++) {
+    for (int col=0; col < 4; col++) {
       if (!iss.good())
         break;
 
@@ -346,7 +347,6 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
   in.close();
 
   return result;
-
 }
 
 bool isValidEventCode(uint16_t code) {
@@ -374,12 +374,10 @@ Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature,
 }
 
 Event getEvent(uint16_t code) {
-
   if (g_event_data.find(code) != g_event_data.end())
     return g_event_data.find(code)->second;
   else
     return Event();
-
 }
 
 TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
@@ -389,7 +387,6 @@ TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
 }
 
 void TMC::systemGroup(uint16_t message) {
-
   if (bits(message, 14, 1) == 0) {
     printf(",\"tmc\":{\"system_info\":{");
 
@@ -415,7 +412,6 @@ void TMC::systemGroup(uint16_t message) {
 
     printf("}}");
   }
-
 }
 
 void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
@@ -507,10 +503,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
         message_.print();
         message_ = Message(is_encrypted_);
       }
-
     }
   }
-
 }
 
 Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
@@ -559,7 +553,7 @@ void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
 
   if (is_first_group) {
     cur_grp = 0;
-  } else if (bits(y, 14, 1)) { // SG
+  } else if (bits(y, 14, 1)) {  // SG
     gsi = bits(y, 12, 2);
     cur_grp = 1;
   } else {
@@ -575,11 +569,9 @@ void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
     decodeMulti();
     clear();
   }
-
 }
 
 void Message::decodeMulti() {
-
   // Need at least the first group
   if (!parts_[0].is_received)
     return;
@@ -599,7 +591,7 @@ void Message::decodeMulti() {
   if (parts_[1].is_received) {
     auto freeform = getFreeformFields(parts_);
 
-    for (std::pair<uint16_t,uint16_t> p : freeform) {
+    for (std::pair<uint16_t, uint16_t> p : freeform) {
       uint16_t label = p.first;
       uint16_t field_data = p.second;
 
@@ -615,7 +607,7 @@ void Message::decodeMulti() {
           if (urgency_ == URGENCY_NONE)
             urgency_ = URGENCY_X;
           else
-            urgency_ --;
+            urgency_--;
         } else if (field_data == 2) {
           directionality_ ^= 1;
         } else if (field_data == 3) {
@@ -627,7 +619,7 @@ void Message::decodeMulti() {
         } else if (field_data == 7) {
           extent_ += 16;
         } else {
-          printf(",\"debug\":\"TODO: TMC control code %d\"",field_data);
+          printf(",\"debug\":\"TODO: TMC control code %d\"", field_data);
         }
 
         // Length of route affected
@@ -685,7 +677,7 @@ void Message::decodeMulti() {
       } else if (label == 14) {
 
       } else {
-        printf(",\"debug\":\"TODO label=%d data=0x%04x\"",label,field_data);
+        printf(",\"debug\":\"TODO label=%d data=0x%04x\"", label, field_data);
       }
     }
   }
@@ -711,7 +703,7 @@ void Message::print() const {
     printf(",\"supplementary_codes\":[%s]", join(supplementary_, ",").c_str());
 
   std::vector<std::string> sentences;
-  for (size_t i=0; i<events_.size(); i++) {
+  for (size_t i=0; i < events_.size(); i++) {
     std::string desc;
     if (isValidEventCode(events_[i])) {
       Event event = getEvent(events_[i]);
@@ -753,8 +745,7 @@ void Message::print() const {
     printf(",\"until\":\"%s\"", timeString(time_until_).c_str());
 
 
-  printf ("}}");
-
+  printf("}}");
 }
 
 void Message::decrypt(ServiceKey key) {
@@ -766,7 +757,7 @@ void Message::decrypt(ServiceKey key) {
   is_encrypted_ = false;
 }
 
-} // namespace tmc
-} // namespace redsea
+}  // namespace tmc
+}  // namespace redsea
 
-#endif // ENABLE_TMC
+#endif  // ENABLE_TMC
