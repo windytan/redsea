@@ -63,19 +63,19 @@ std::pair<bool, std::complex<float>> BiphaseDecoder::push(
   // Periodically evaluate validity of the chosen biphase clock polarity
   if (++clock_ == clock_history_.size()) {
 
-    float a=0;
-    float b=0;
+    float a = 0;
+    float b = 0;
 
-    for (int i=0; i<(int)clock_history_.size();i++) {
-      if (i%2==0)
+    for (size_t i = 0; i < clock_history_.size(); i++) {
+      if (i % 2 == 0)
         a += clock_history_[i];
       else
         b += clock_history_[i];
       clock_history_[i] = 0.f;
     }
 
-    if      (a>b) clock_polarity_ = 0;
-    else if (b>a) clock_polarity_ = 1;
+    if      (a > b) clock_polarity_ = 0;
+    else if (b > a) clock_polarity_ = 1;
 
     clock_ = 0;
 

@@ -31,7 +31,7 @@ uint32_t matrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
 
   uint32_t result = 0;
 
-  for (int k=0; k<(int)matrix.size(); k++)
+  for (size_t k=0; k < matrix.size(); k++)
     if ((vec >> k) & 0x01)
       result ^= matrix[matrix.size() - 1 - k];
 
@@ -54,9 +54,9 @@ uint32_t calcSyndrome(uint32_t vec) {
 
 eOffset nextOffsetFor(eOffset o) {
   static const std::map<eOffset,eOffset> next_offset({
-      {OFFSET_A,OFFSET_B}, {OFFSET_B,OFFSET_C},
-      {OFFSET_C,OFFSET_D}, {OFFSET_CI,OFFSET_D},
-      {OFFSET_D,OFFSET_A}
+      {OFFSET_A, OFFSET_B}, {OFFSET_B, OFFSET_C},
+      {OFFSET_C, OFFSET_D}, {OFFSET_CI, OFFSET_D},
+      {OFFSET_D, OFFSET_A}
   });
   return next_offset.at(o);
 }
@@ -66,7 +66,7 @@ std::map<uint16_t,uint32_t> makeErrorLookupTable() {
 
   std::map<uint16_t,uint32_t> result;
 
-  for (uint32_t e=1; e < (1<<kMaxErrorLength); e++) {
+  for (uint32_t e=1; e < (1 << kMaxErrorLength); e++) {
     for (unsigned shift=0; shift < 26; shift++) {
       uint32_t errvec = ((e << shift) & kBitmask26);
 
@@ -99,7 +99,7 @@ int BlockStream::getNextBit() {
   if (input_type_ == INPUT_MPX) {
     result = subcarrier_.getNextBit();
     is_eof_ = subcarrier_.isEOF();
-  } else
+  }
 #endif
   if (input_type_ == INPUT_ASCIIBITS) {
     result = ascii_bits_.getNextBit();
@@ -134,13 +134,13 @@ void BlockStream::uncorrectable() {
   unsigned num_erroneous_blocks = 0;
   for (bool e : block_has_errors_) {
     if (e)
-      num_erroneous_blocks ++;
+      num_erroneous_blocks++;
   }
 
   // Sync is lost when >45 out of last 50 blocks are erroneous (Section C.1.2)
   if (is_in_sync_ && num_erroneous_blocks > 45) {
     is_in_sync_ = false;
-    for (unsigned i=0; i<block_has_errors_.size(); i++)
+    for (size_t i=0; i < block_has_errors_.size(); i++)
       block_has_errors_[i] = false;
     pi_ = 0x0000;
   }
@@ -161,7 +161,6 @@ bool BlockStream::acquireSync() {
         block_number_for_offset[received_offset_]) {
       is_in_sync_ = true;
       expected_offset_ = received_offset_;
-      //printf(":sync!\n");
     } else {
       prevbitcount_ = bitcount_;
       prevsync_ = received_offset_;
@@ -182,7 +181,7 @@ Group BlockStream::getNextGroup() {
     bitcount_ += 26 - left_to_read_;
 
     // Read from radio
-    for (int i=0; i < (is_in_sync_ ? (int)left_to_read_ : 1); i++,bitcount_++) {
+    for (int i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++) {
       wideblock_ = (wideblock_ << 1) + getNextBit();
     }
 
@@ -198,7 +197,7 @@ Group BlockStream::getNextGroup() {
     if (!acquireSync())
       continue;
 
-    block_counter_ ++;
+    block_counter_++;
     uint16_t message = block >> 10;
     bool was_valid_word = true;
 
@@ -207,7 +206,7 @@ Group BlockStream::getNextGroup() {
 
     block_has_errors_[block_counter_ % block_has_errors_.size()] = false;
 
-    if ( received_offset_ != expected_offset_) {
+    if (received_offset_ != expected_offset_) {
 
       block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 

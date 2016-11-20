@@ -24,7 +24,7 @@ namespace {
     return 87.5 + af_code / 10.0;
   }
 
-}
+}  // namespace
 
 GroupType::GroupType(uint16_t type_code) : num((type_code >> 1) & 0xF),
   ab((type_code & 0x1) == 0 ? VERSION_A : VERSION_B) {}
@@ -44,7 +44,6 @@ bool operator<(const GroupType& obj1, const GroupType& obj2) {
 
 Group::Group() : hasType(false), hasPi(false),
   hasOffset({false,false,false,false,false}), block(5) {
-
 }
 
 void Group::printHex() const {
@@ -75,7 +74,6 @@ void Group::printHex() const {
 }
 
 Station::Station() : Station(0x0000, false) {
-
 }
 
 Station::Station(uint16_t _pi, bool _is_rbds) : pi_(_pi), is_rbds_(_is_rbds),
@@ -173,22 +171,18 @@ std::string Station::getCountryCode() const {
 }
 
 void Station::updatePS(int pos, std::vector<int> chars) {
-
-  for (int i=pos; i<pos+(int)chars.size(); i++)
+  for (size_t i=pos; i < pos+chars.size(); i++)
     ps_.setAt(i, chars[i-pos]);
 
   if (ps_.isComplete())
     printf(",\"ps\":\"%s\"",ps_.getLastCompleteString().c_str());
   else
     printf(",\"partial_ps\":\"%s\"",ps_.getString().c_str());
-
 }
 
 void Station::updateRadioText(int pos, std::vector<int> chars) {
-
-  for (int i=pos; i<pos+(int)chars.size(); i++)
+  for (size_t i=pos; i < pos+chars.size(); i++)
     rt_.setAt(i, chars[i-pos]);
-
 }
 
 void Station::decodeBasics (const Group& group) {
@@ -213,9 +207,7 @@ void Station::decodeBasics (const Group& group) {
 
     printf(",\"tp\":%s", boolStr(is_tp_));
     printf(",\"prog_type\":\"%s\"", getPTYname(pty_, is_rbds_).c_str());
-
   }
-
 }
 
 // Group 0: Basic tuning and switching information
@@ -237,12 +229,13 @@ void Station::decodeType0 (const Group& group) {
       addAltFreq(bits(group.block[OFFSET_C], 8-i*8, 8));
     }
 
-    if ((int)alt_freqs_.size() == num_alt_freqs_ && num_alt_freqs_ > 0) {
+    if (static_cast<int>(alt_freqs_.size()) == num_alt_freqs_ &&
+        num_alt_freqs_ > 0) {
       printf(",\"alt_freqs\":[");
       int i = 0;
       for (auto f : alt_freqs_) {
         printf("%.1f", f);
-        if (i < (int)alt_freqs_.size() - 1)
+        if (i < static_cast<int>(alt_freqs_.size()) - 1)
           printf(",");
         i++;
       }
@@ -256,7 +249,6 @@ void Station::decodeType0 (const Group& group) {
 
   updatePS(bits(group.block[OFFSET_B], 0, 2) * 2,
       { bits(group.block[OFFSET_D], 8, 8), bits(group.block[OFFSET_D], 0, 8) });
-
 }
 
 // Group 1: Programme Item Number and slow labelling codes
@@ -363,9 +355,7 @@ void Station::decodeType1 (const Group& group) {
     } else {
       printf(",\"debug\":\"TODO: SLC variant %d\"", slc_variant);
     }
-
   }
-
 }
 
 // Group 2: RadioText
@@ -399,7 +389,6 @@ void Station::decodeType2 (const Group& group) {
     printf(",\"radiotext\":\"%s\"",rt_.getLastCompleteStringTrimmed().c_str());
   else if (rt_.getTrimmedString().length() > 0)
     printf(",\"partial_radiotext\":\"%s\"",rt_.getTrimmedString().c_str());
-
 }
 
 // Group 3A: Application identification for Open Data
@@ -437,7 +426,6 @@ void Station::decodeType3A (const Group& group) {
   }
 
   printf("}");
-
 }
 
 // Group 4A: Clock-time and date
@@ -484,7 +472,6 @@ void Station::decodeType4A (const Group& group) {
     } else {
       printf(",\"debug\":\"invalid date/time\"");
     }
-
   }
 }
 
@@ -511,9 +498,7 @@ void Station::decodeType6 (const Group& group) {
       printf(",\"(not received)\"");
     }
   }
-
   printf("]");
-
 }
 
 // Group 14A: Enhanced Other Networks information
@@ -536,8 +521,8 @@ void Station::decodeType14A (const Group& group) {
     if (eon_ps_names_.count(pi) == 0)
       eon_ps_names_[pi] = RDSString(8);
 
-    eon_ps_names_[pi].setAt(2*eon_variant,   bits(group.block[OFFSET_C],8,8));
-    eon_ps_names_[pi].setAt(2*eon_variant+1, bits(group.block[OFFSET_C],0,8));
+    eon_ps_names_[pi].setAt(2*eon_variant,   bits(group.block[OFFSET_C], 8, 8));
+    eon_ps_names_[pi].setAt(2*eon_variant+1, bits(group.block[OFFSET_C], 0, 8));
 
     if (eon_ps_names_[pi].isComplete())
       printf(",\"ps\":\"%s\"",
@@ -545,7 +530,7 @@ void Station::decodeType14A (const Group& group) {
 
   } else if (eon_variant >= 5 && eon_variant <= 9) {
 
-    uint16_t f_other = bits(group.block[OFFSET_C],0,8);
+    uint16_t f_other = bits(group.block[OFFSET_C], 0, 8);
 
     if (isFMFrequency(f_other)) {
       printf(",\"frequency\":%.1f", getFMFrequency(f_other));
@@ -575,26 +560,24 @@ void Station::decodeType14A (const Group& group) {
 
   } else {
     printf(",\"debug\":\"TODO: EON variant %d\"",
-        bits(group.block[OFFSET_B],0,4));
+        bits(group.block[OFFSET_B], 0, 4));
   }
 
   printf("}");
-
 }
 
 /* Group 15B: Fast basic tuning and switching information */
-void Station::decodeType15B (const Group& group) {
+void Station::decodeType15B(const Group& group) {
 
   is_ta_    = bits(group.block[OFFSET_B], 4, 1);
   is_music_ = bits(group.block[OFFSET_B], 3, 1);
 
   printf(",\"ta\":\"%s\"", is_ta_ ? "true" : "false");
   printf(",\"is_music\":\"%s\"", is_music_ ? "true" : "false");
-
 }
 
 /* Open Data Application */
-void Station::decodeODAgroup (const Group& group) {
+void Station::decodeODAgroup(const Group& group) {
 
   if (oda_app_for_group_.count(group.type) == 0)
     return;
@@ -609,7 +592,6 @@ void Station::decodeODAgroup (const Group& group) {
   } else if (aid == 0x4BD7) {
     parseRadioTextPlus(group);
   }
-
 }
 
 void Station::parseRadioTextPlus(const Group& group) {
@@ -651,7 +633,6 @@ void Station::parseRadioTextPlus(const Group& group) {
   }
 
   printf("}");
-
 }
 
 } // namespace redsea

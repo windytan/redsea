@@ -35,7 +35,7 @@ class BlockStream {
 
   unsigned bitcount_;
   unsigned prevbitcount_;
-  unsigned left_to_read_;
+  int left_to_read_;
   uint32_t wideblock_;
   unsigned prevsync_;
   unsigned block_counter_;
