@@ -1,5 +1,11 @@
 # redsea changelog
 
+## 0.8.0 (2016-11-23)
+
+* Add option `-e` to echo stdin to stdout and print the decoded output to stderr
+* Use jsoncpp for JSON serialization (note that this changes the order of keys
+  in the JSON objects - they are unordered collections by nature)
+
 ## 0.7.6 (2016-10-02)
 
 * Add `partial_radiotext` and `partial_ps` fields that show RadioText and PS
