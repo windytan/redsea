@@ -12,6 +12,8 @@
 #include <string>
 #include <utility>
 
+#include <json/json.h>
+
 #include "src/tmc/event_list.h"
 #include "src/util.h"
 
@@ -122,7 +124,7 @@ std::string timeString(uint16_t field_data) {
   return time_string;
 }
 
-std::string getScopeString(uint16_t mgs) {
+std::vector<std::string> getScopeStrings(uint16_t mgs) {
   bool mgs_i = bits(mgs, 3, 1);
   bool mgs_n = bits(mgs, 2, 1);
   bool mgs_r = bits(mgs, 1, 1);
@@ -130,15 +132,15 @@ std::string getScopeString(uint16_t mgs) {
 
   std::vector<std::string> scope;
   if (mgs_i)
-    scope.push_back("\"inter-road\"");
+    scope.push_back("inter-road");
   if (mgs_n)
-    scope.push_back("\"national\"");
+    scope.push_back("national");
   if (mgs_r)
-    scope.push_back("\"regional\"");
+    scope.push_back("regional");
   if (mgs_u)
-    scope.push_back("\"urban\"");
+    scope.push_back("urban");
 
-  return join(scope, ",");
+  return scope;
 }
 
 uint16_t getQuantifierSize(uint16_t code) {
@@ -383,14 +385,12 @@ Event getEvent(uint16_t code) {
 
 TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
   ltn_(0), sid_(0), encid_(0), ltnbe_(0), message_(),
-  service_key_table_(loadServiceKeyTable()), ps_(8), stream_(&std::cout) {
+  service_key_table_(loadServiceKeyTable()), ps_(8) {
 
 }
 
-void TMC::systemGroup(uint16_t message) {
+void TMC::systemGroup(uint16_t message, Json::Value* jsroot) {
   if (bits(message, 14, 1) == 0) {
-    *stream_ << ",\"tmc\":{\"system_info\":{";
-
     if (g_event_data.empty())
       loadEventData();
 
@@ -398,24 +398,23 @@ void TMC::systemGroup(uint16_t message) {
     ltn_ = bits(message, 6, 6);
     is_encrypted_ = (ltn_ == 0);
 
-    *stream_ << jsonVal("is_encrypted", is_encrypted_);
+    (*jsroot)["tmc"]["system_info"]["is_encrypted"] = is_encrypted_;
 
     if (!is_encrypted_)
-      *stream_ << jsonVal("location_table", ltn_);
+      (*jsroot)["tmc"]["system_info"]["location_table"] = ltn_;
 
     bool afi   = bits(message, 5, 1);
     //bool m     = bits(message, 4, 1);
     bool mgs   = bits(message, 0, 4);
 
-    *stream_ << jsonVal("is_on_alt_freqs", afi);
+    (*jsroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
 
-    *stream_ << ",\"scope\":[" + getScopeString(mgs) + "]";
-
-    *stream_ << "}}";
+    for (std::string s : getScopeStrings(mgs))
+      (*jsroot)["tmc"]["system_info"]["scope"].append(s);
   }
 }
 
-void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
+void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
   if (!is_initialized_)
     return;
@@ -429,9 +428,9 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     ltnbe_ = bits(z, 10, 6);
     has_encid_ = true;
 
-    *stream_ << jsonObject("tmc", jsonObject("encryption_info",
-        jsonVal("service_id", sid_) + jsonVal("encryption_id", encid_) +
-        jsonVal("location_table", ltnbe_)));
+    (*jsroot)["tmc"]["encryption_info"]["service_id"] = sid_;
+    (*jsroot)["tmc"]["encryption_info"]["encryption_id"] = encid_;
+    (*jsroot)["tmc"]["encryption_info"]["location_table"] = ltnbe_;
 
   // Tuning information
   } else if (t) {
@@ -447,8 +446,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       ps_.setAt(pos+3, bits(z, 0, 8));
 
       if (ps_.isComplete())
-        *stream_ << ",\"tmc\":{\"" <<
-            jsonVal("service_provider", ps_.getLastCompleteString());
+        (*jsroot)["tmc"]["service_provider"] = ps_.getLastCompleteString();
 
     } else if (variant == 9) {
 
@@ -457,18 +455,16 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       uint16_t on_mgs = bits(y, 6, 4);
       uint16_t on_ltn = bits(y, 10, 6);
 
-      *stream_ << jsonObject("tmc", jsonObject("other_network",
-          jsonVal("pi", on_pi, 4) +
-          jsonVal("location_table", on_ltn) + jsonArray("scope",
-          getScopeString(on_mgs))));
+      (*jsroot)["tmc"]["other_network"]["pi"] = on_pi;
+      (*jsroot)["tmc"]["other_network"]["service_id"] = on_sid;
+      (*jsroot)["tmc"]["other_network"]["location_table"] = on_ltn;
 
-      printf(",\"tmc\":{\"other_network\":{\"pi\":\"0x%04x\",\"service_id\":"
-             "%d,\"location_table\":%d,\"scope\":[%s]}}", on_pi,
-             on_sid, on_ltn, getScopeString(on_mgs).c_str());
+      for (std::string s : getScopeStrings(on_mgs))
+        (*jsroot)["tmc"]["other_network"]["scope"].append(s);
 
     } else {
-      *stream_ << ",\"tmc\":{" << jsonVal("debug",
-          "TODO: tuning info variant " + std::to_string(variant));
+      (*jsroot)["debug"].append("TODO: TMC tuning info variant " +
+          std::to_string(variant));
     }
 
   // User message
@@ -487,7 +483,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       if (is_encrypted_ && service_key_table_.count(encid_) > 0)
         message.decrypt(service_key_table_[encid_]);
 
-      message.print(stream_);
+      message.print(jsroot);
 
     // Part of multi-group message
     } else {
@@ -497,7 +493,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       if (continuity_index != message_.getContinuityIndex()) {
         /* Message changed; print previous unfinished message
          * TODO 15-second limit */
-        message_.print(stream_);
+        message_.print(jsroot);
         message_ = Message(is_encrypted_);
       }
 
@@ -507,7 +503,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
         if (is_encrypted_ && service_key_table_.count(encid_) > 0)
           message_.decrypt(service_key_table_[encid_]);
 
-        message_.print(stream_);
+        message_.print(jsroot);
         message_ = Message(is_encrypted_);
       }
     }
@@ -698,17 +694,17 @@ void Message::clear() {
   continuity_index_ = 0;
 }
 
-void Message::print(std::ostream* stream) const {
+void Message::print(Json::Value* jsroot) const {
 
   if (!is_complete_ || events_.empty())
     return;
 
-  *stream << ",\"tmc\":{\"message\":{";
-
-  *stream << jsonArray("event_codes", join(events_, ","));
+  for (auto code : events_)
+    (*jsroot)["tmc"]["message"]["event_codes"].append(code);
 
   if (supplementary_.size() > 0)
-    *stream << jsonArray("supplementary_codes", join(supplementary_, ","));
+    for (auto code : supplementary_)
+      (*jsroot)["tmc"]["message"]["supplementary_codes"].append(code);
 
   std::vector<std::string> sentences;
   for (size_t i=0; i < events_.size(); i++) {
@@ -730,26 +726,31 @@ void Message::print(std::ostream* stream) const {
   }
 
   if (!sentences.empty())
-    *stream << jsonVal("description", join(sentences, ". ") + ".");
+    (*jsroot)["tmc"]["message"]["description"] = join(sentences, ". ") + ".";
 
   if (!diversion_.empty())
-    *stream << jsonArray("diversion_route", join(diversion_, ","));
+    for (auto code : diversion_)
+      (*jsroot)["tmc"]["message"]["diversion_route"].append(code);
 
   if (has_speed_limit_)
-    *stream << jsonVal("speed_limit", std::to_string(speed_limit_) + " km/h");
+    (*jsroot)["tmc"]["message"]["speed_limit"] =
+        std::to_string(speed_limit_) + " km/h";
 
-  *stream
-      << jsonVal(is_encrypted_ ? "encrypted_location" : "location", location_)
-      << jsonVal("direction", directionality_ == DIR_SINGLE ? "single" : "both")
-      << jsonVal("extent", (direction_ ? "-" : "+") + std::to_string(extent_))
-      << jsonVal("diversion_advised", divertadv_);
+  if (is_encrypted_)
+    (*jsroot)["tmc"]["message"]["encrypted_location"] = location_;
+  else
+    (*jsroot)["tmc"]["message"]["location"] = location_;
+
+  (*jsroot)["tmc"]["message"]["direction"] =
+      directionality_ == DIR_SINGLE ? "single" : "both";
+
+  (*jsroot)["tmc"]["message"]["extent"] = (direction_ ? "-" : "+") +
+      std::to_string(extent_);
 
   if (has_time_starts_)
-    *stream << jsonVal("starts", timeString(time_starts_));
+    (*jsroot)["tmc"]["message"]["starts"] = timeString(time_starts_);
   if (has_time_until_)
-    *stream << jsonVal("until", timeString(time_until_));
-
-  *stream << "}}";
+    (*jsroot)["tmc"]["message"]["until"] = timeString(time_until_);
 }
 
 void Message::decrypt(ServiceKey key) {

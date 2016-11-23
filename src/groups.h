@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 
@@ -55,7 +56,7 @@ class Station {
   public:
     Station();
     Station(uint16_t pi, bool _is_rbds);
-    void updateAndPrint(const Group& group);
+    void updateAndPrint(const Group& group, std::ostream* stream);
     bool hasPS() const;
     std::string getPS() const;
     std::string getRT() const;
@@ -113,10 +114,9 @@ class Station {
     int pager_ccf_;
     int pager_interval_;
 
-    Json::FastWriter writer_;
-    Json::Value jroot_;
-
-    std::ostream* stream_;
+    Json::StreamWriterBuilder writer_builder_;
+    std::unique_ptr<Json::StreamWriter> writer_;
+    Json::Value json_;
 
 #ifdef ENABLE_TMC
     tmc::TMC tmc_;

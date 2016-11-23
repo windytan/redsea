@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include <json/json.h>
+
 #include "src/rdsstring.h"
 
 namespace redsea {
@@ -76,7 +78,7 @@ class Message {
   void pushMulti(uint16_t x, uint16_t y, uint16_t z);
   void pushSingle(uint16_t x, uint16_t y, uint16_t z);
   std::string toString() const;
-  void print(std::ostream* stream) const;
+  void print(Json::Value* jsroot) const;
   void decrypt(ServiceKey);
   bool isComplete() const;
   void clear();
@@ -113,8 +115,8 @@ class Message {
 class TMC {
  public:
   TMC();
-  void systemGroup(uint16_t message);
-  void userGroup(uint16_t x, uint16_t y, uint16_t z);
+  void systemGroup(uint16_t message, Json::Value*);
+  void userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value*);
 
  private:
   bool is_initialized_;
@@ -127,7 +129,6 @@ class TMC {
   Message message_;
   std::map<uint16_t, ServiceKey> service_key_table_;
   RDSString ps_;
-  std::ostream* stream_;
 };
 
 }  // namespace tmc
