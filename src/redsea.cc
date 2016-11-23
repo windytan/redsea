@@ -95,6 +95,9 @@ int main(int argc, char** argv) {
 
   bool is_eof = false;
 
+  std::cout.setf(std::ios_base::unitbuf);
+  std::cerr.setf(std::ios_base::unitbuf);
+
   while (!is_eof) {
     redsea::Group group = (input_type == redsea::INPUT_RDSSPY ?
         redsea::getNextGroupRSpy() :
