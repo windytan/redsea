@@ -20,7 +20,7 @@ enum eOutputType {
 
 class BlockStream {
   public:
-  BlockStream(eInputType input_type=INPUT_MPX);
+  BlockStream(eInputType input_type=INPUT_MPX, bool has_echo=false);
   Group getNextGroup();
   bool isEOF() const;
 #ifdef DEBUG
@@ -51,7 +51,6 @@ class BlockStream {
   std::map<uint16_t,uint32_t> error_lookup_;
   const eInputType input_type_;
   bool is_eof_;
-
 };
 
 } // namespace redsea

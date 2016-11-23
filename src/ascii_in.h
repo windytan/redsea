@@ -11,13 +11,14 @@ namespace redsea {
 class AsciiBits {
 
   public:
-    AsciiBits();
+    AsciiBits(bool has_echo=false);
     ~AsciiBits();
     int getNextBit();
     bool isEOF() const;
 
   private:
     bool is_eof_;
+    bool echo_stdout_;
 
 };
 

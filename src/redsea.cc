@@ -63,11 +63,15 @@ int main(int argc, char** argv) {
   redsea::eInputType input_type = redsea::INPUT_MPX;
   int output_type = redsea::OUTPUT_JSON;
   bool is_rbds = false;
+  bool has_echo = false;
 
-  while ((option_char = getopt(argc, argv, "bhxvu")) != EOF) {
+  while ((option_char = getopt(argc, argv, "behxvu")) != EOF) {
     switch (option_char) {
       case 'b':
         input_type = redsea::INPUT_ASCIIBITS;
+        break;
+      case 'e':
+        has_echo = true;
         break;
       case 'h':
         input_type = redsea::INPUT_RDSSPY;
@@ -97,7 +101,7 @@ int main(int argc, char** argv) {
   }
 #endif
 
-  redsea::BlockStream block_stream(input_type);
+  redsea::BlockStream block_stream(input_type, has_echo);
   redsea::Station station(0, is_rbds);
 
   uint16_t pi=0, prev_new_pi=0, new_pi=0;
@@ -105,7 +109,6 @@ int main(int argc, char** argv) {
   bool is_eof = false;
 
   while (!is_eof) {
-
     redsea::Group group = (input_type == redsea::INPUT_RDSSPY ?
         redsea::getNextGroupRSpy() :
         block_stream.getNextGroup());
@@ -131,10 +134,9 @@ int main(int argc, char** argv) {
 #endif
 
     if (output_type == redsea::OUTPUT_HEX) {
-      group.printHex(&std::cout);
+      group.printHex(has_echo ? &std::cerr : &std::cout);
     } else {
-      station.updateAndPrint(group);
+      station.updateAndPrint(group, has_echo ? &std::cerr : &std::cout);
     }
-
   }
 }

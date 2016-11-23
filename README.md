@@ -116,7 +116,8 @@ radio_command | ./src/redsea [OPTIONS]
 -h    Input is hex groups in the RDS Spy format
 -x    Output is hex groups in the RDS Spy format
 -u    Use RBDS (North American) program types
--v    Print version
+-e    Echo the input signal to stdout; decoded groups are printed to stderr
+-v    Version information
 ```
 
 By default, the input (via stdin) is demodulated FM multiplex (MPX) with 16-bit

@@ -87,11 +87,9 @@ std::pair<bool, std::complex<float>> BiphaseDecoder::push(
 }
 
 DeltaDecoder::DeltaDecoder() : prev_(0) {
-
 }
 
 DeltaDecoder::~DeltaDecoder() {
-
 }
 
 unsigned DeltaDecoder::decode(unsigned d) {
@@ -100,24 +98,23 @@ unsigned DeltaDecoder::decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier() : numsamples_(0), bit_buffer_(),
-  fir_lpf_(256, kLowpassCutoff_Hz / kFs_Hz),
-  agc_(kAGCBandwidth_Hz / kFs_Hz, kAGCInitialGain),
-  nco_approx_(hertz2step(kFc_0_Hz)),
-  nco_exact_(hertz2step(kFc_0_Hz)),
-  symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
-           kSymsyncBeta, 32),
-  modem_(LIQUID_MODEM_PSK2), is_eof_(false),
-  delta_decoder_() {
+Subcarrier::Subcarrier(bool has_echo) : numsamples_(0),
+    echo_stdout_(has_echo), bit_buffer_(),
+    fir_lpf_(256, kLowpassCutoff_Hz / kFs_Hz),
+    agc_(kAGCBandwidth_Hz / kFs_Hz, kAGCInitialGain),
+    nco_approx_(hertz2step(kFc_0_Hz)),
+    nco_exact_(hertz2step(kFc_0_Hz)),
+    symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
+             kSymsyncBeta, 32),
+    modem_(LIQUID_MODEM_PSK2), is_eof_(false),
+    delta_decoder_() {
 
-    symsync_.setBandwidth(kSymsyncBandwidth_Hz / kFs_Hz);
-    symsync_.setOutputRate(1);
-    nco_exact_.setPLLBandwidth(kPLLBandwidth_Hz / kFs_Hz);
-
+  symsync_.setBandwidth(kSymsyncBandwidth_Hz / kFs_Hz);
+  symsync_.setOutputRate(1);
+  nco_exact_.setPLLBandwidth(kPLLBandwidth_Hz / kFs_Hz);
 }
 
 Subcarrier::~Subcarrier() {
-
 }
 
 /** MPX to bits
@@ -127,6 +124,10 @@ void Subcarrier::demodulateMoreBits() {
   int16_t inbuffer[kInputBufferSize];
   int samplesread = fread(inbuffer, sizeof(inbuffer[0]), kInputBufferSize,
       stdin);
+
+  if (echo_stdout_)
+    fwrite(inbuffer, sizeof(inbuffer[0]), samplesread, stdout);
+
   if (samplesread < kInputBufferSize) {
     is_eof_ = true;
     return;
@@ -197,7 +198,6 @@ void Subcarrier::demodulateMoreBits() {
     nco_approx_.step();
 
     numsamples_ ++;
-
   }
 }
 
