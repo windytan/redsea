@@ -19,9 +19,9 @@ const unsigned kMaxErrorLength = 2;
 
 const std::vector<uint16_t> offset_words =
     {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
-const std::map<uint16_t,eOffset> offset_syndromes =
-    {{0x3D8,OFFSET_A},  {0x3D4,OFFSET_B}, {0x25C,OFFSET_C},
-     {0x3CC,OFFSET_CI}, {0x258,OFFSET_D}};
+const std::map<uint16_t, eOffset> offset_syndromes =
+    {{0x3D8, OFFSET_A},  {0x3D4, OFFSET_B}, {0x25C, OFFSET_C},
+     {0x3CC, OFFSET_CI}, {0x258, OFFSET_D}};
 const std::vector<uint16_t> block_number_for_offset =
     {0, 1, 2, 2, 3};
 
@@ -51,7 +51,7 @@ uint32_t calcSyndrome(uint32_t vec) {
 }
 
 eOffset nextOffsetFor(eOffset o) {
-  static const std::map<eOffset,eOffset> next_offset({
+  static const std::map<eOffset, eOffset> next_offset({
       {OFFSET_A, OFFSET_B}, {OFFSET_B, OFFSET_C},
       {OFFSET_C, OFFSET_D}, {OFFSET_CI, OFFSET_D},
       {OFFSET_D, OFFSET_A}
@@ -60,8 +60,8 @@ eOffset nextOffsetFor(eOffset o) {
 }
 
 // Precompute mapping of syndromes to error vectors
-std::map<uint16_t,uint32_t> makeErrorLookupTable() {
-  std::map<uint16_t,uint32_t> result;
+std::map<uint16_t, uint32_t> makeErrorLookupTable() {
+  std::map<uint16_t, uint32_t> result;
 
   for (uint32_t e=1; e < (1 << kMaxErrorLength); e++) {
     for (unsigned shift=0; shift < 26; shift++) {
@@ -87,7 +87,6 @@ BlockStream::BlockStream(eInputType input_type, bool has_echo) : bitcount_(0),
   ascii_bits_(has_echo),
   error_lookup_(makeErrorLookupTable()),
   input_type_(input_type), is_eof_(false) {
-
 }
 
 int BlockStream::getNextBit() {
@@ -119,7 +118,6 @@ uint32_t BlockStream::correctBurstErrors(uint32_t block) const {
   }
 
   return corrected_block;
-
 }
 
 // A block can't be decoded
@@ -167,7 +165,6 @@ Group BlockStream::getNextGroup() {
   Group group;
 
   while (!isEOF()) {
-
     // Compensate for clock slip corrections
     bitcount_ += 26 - left_to_read_;
 
@@ -198,7 +195,6 @@ Group BlockStream::getNextGroup() {
     block_has_errors_[block_counter_ % block_has_errors_.size()] = false;
 
     if (received_offset_ != expected_offset_) {
-
       block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 
       was_valid_word = false;
@@ -217,7 +213,6 @@ Group BlockStream::getNextGroup() {
         left_to_read_ = 25;
 
       } else {
-
         block = correctBurstErrors(block);
         if (calcSyndrome(block) == 0x000) {
           message = block >> 10;
@@ -233,7 +228,6 @@ Group BlockStream::getNextGroup() {
     // Error-free block received
 
     if (received_offset_ == expected_offset_) {
-
       group.block[expected_offset_] = message;
       group.hasOffset[expected_offset_] = true;
 

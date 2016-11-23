@@ -15,11 +15,9 @@ std::string rtrim(std::string s) {
 }
 
 LCDchar::LCDchar() : code_(0) {
-
 }
 
 LCDchar::LCDchar(uint8_t _code) : code_(_code) {
-
 }
 
 uint8_t LCDchar::getCode() const {
@@ -32,17 +30,16 @@ std::string LCDchar::toString() const {
 
 RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
   prev_pos_(-1), last_complete_string_(getString()) {
-
 }
 
 void RDSString::setAt(int pos, LCDchar chr) {
-  if (pos < 0 || pos >= (int)chars_.size())
+  if (pos < 0 || pos >= static_cast<int>(chars_.size()))
     return;
 
   chars_.at(pos) = chr;
 
   if (pos != prev_pos_ + 1) {
-    for (size_t i=0; i<is_char_sequential_.size(); i++)
+    for (size_t i=0; i < is_char_sequential_.size(); i++)
       is_char_sequential_[i] = false;
   }
 
@@ -54,18 +51,16 @@ void RDSString::setAt(int pos, LCDchar chr) {
   }
 
   prev_pos_ = pos;
-
 }
 
 std::string RDSString::charAt(int pos) const {
-  return (pos < (int)last_complete_chars_.size() ?
+  return (pos < static_cast<int>(last_complete_chars_.size()) ?
       last_complete_chars_[pos].toString() : " ");
 }
 
 size_t RDSString::lengthReceived() const {
-
   size_t result = 0;
-  for (size_t i=0; i<is_char_sequential_.size(); i++) {
+  for (size_t i=0; i < is_char_sequential_.size(); i++) {
     if (!is_char_sequential_[i])
       break;
     result = i+1;
@@ -75,10 +70,9 @@ size_t RDSString::lengthReceived() const {
 }
 
 size_t RDSString::lengthExpected() const {
-
   size_t result = chars_.size();
 
-  for (size_t i=0; i<chars_.size(); i++) {
+  for (size_t i=0; i < chars_.size(); i++) {
     if (chars_[i].getCode() == 0x0D) {
       result = i;
       break;
@@ -89,7 +83,6 @@ size_t RDSString::lengthExpected() const {
 }
 
 std::string RDSString::getString() const {
-
   std::string result;
   for (LCDchar chr : getChars()) {
     result += chr.toString();
@@ -101,7 +94,7 @@ std::string RDSString::getString() const {
 std::vector<LCDchar> RDSString::getChars() const {
   std::vector<LCDchar> result;
   size_t len = lengthExpected();
-  for (size_t i=0; i<len; i++) {
+  for (size_t i=0; i < len; i++) {
     result.push_back(is_char_sequential_[i] ? chars_[i] : 32);
   }
 
@@ -117,10 +110,9 @@ std::string RDSString::getLastCompleteString() const {
 }
 
 std::string RDSString::getLastCompleteString(int start, int len) const {
-
   std::string result;
-  for (int i=start; i<start+len; i++) {
-    result += (i < (int)last_complete_chars_.size() ?
+  for (int i=start; i < start+len; i++) {
+    result += (i < static_cast<int>(last_complete_chars_.size()) ?
         last_complete_chars_[i].toString() : " ");
   }
 
@@ -136,7 +128,7 @@ std::string RDSString::getLastCompleteStringTrimmed(int start, int len) const {
 }
 
 bool RDSString::hasChars(int start, int len) const {
-  return start+len <= (int)last_complete_chars_.size();
+  return start+len <= static_cast<int>(last_complete_chars_.size());
 }
 
 bool RDSString::isComplete() const {
@@ -144,11 +136,11 @@ bool RDSString::isComplete() const {
 }
 
 void RDSString::clear() {
-  for (size_t i=0; i<chars_.size(); i++) {
+  for (size_t i=0; i < chars_.size(); i++) {
     is_char_sequential_[i] = false;
   }
   last_complete_string_ = getString();
   last_complete_chars_.clear();
 }
 
-} // namespace redsea
+}  // namespace redsea

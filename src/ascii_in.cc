@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
 #include "src/groups.h"
 #include "src/util.h"
@@ -9,11 +10,9 @@
 namespace redsea {
 
 AsciiBits::AsciiBits(bool has_echo) : is_eof_(false), echo_stdout_(has_echo) {
-
 }
 
 AsciiBits::~AsciiBits() {
-
 }
 
 int AsciiBits::getNextBit() {
@@ -30,7 +29,6 @@ int AsciiBits::getNextBit() {
   }
 
   return (result == '1');
-
 }
 
 bool AsciiBits::isEOF() const {
@@ -42,26 +40,25 @@ Group getNextGroupRSpy() {
 
   bool finished = false;
 
-  while (! (finished || std::cin.eof())) {
+  while (!(finished || std::cin.eof())) {
     std::string line;
     std::getline(std::cin, line);
     if (line.length() < 16)
       continue;
 
-    for (int nblok=0; nblok<4; nblok++) {
-      uint16_t bval=0;
+    for (int nblok=0; nblok < 4; nblok++) {
+      uint16_t bval = 0;
       bool block_still_valid = true;
       group.hasOffset[nblok == 3 ? OFFSET_D : nblok] = true;
 
       int nyb = 0;
       while (nyb < 4) {
-
         if (line.length() < 1) {
           finished = true;
           break;
         }
 
-        std::string single = line.substr(0,1);
+        std::string single = line.substr(0, 1);
 
         if (single.compare(" ") != 0) {
           try {
@@ -78,7 +75,7 @@ Group getNextGroupRSpy() {
 
       group.block[nblok == 3 ? OFFSET_D : nblok] = bval;
 
-      if (nblok==3)
+      if (nblok == 3)
         finished = true;
     }
   }
@@ -87,7 +84,6 @@ Group getNextGroupRSpy() {
       bits(group.block[OFFSET_B], 11, 5) : 0);
 
   return group;
-
 }
 
-} // namespace redsea
+}  // namespace redsea

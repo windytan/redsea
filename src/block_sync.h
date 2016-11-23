@@ -2,11 +2,12 @@
 #define BLOCK_SYNC_H_
 
 #include <map>
+#include <vector>
 
-#include "ascii_in.h"
+#include "src/ascii_in.h"
 #include "config.h"
-#include "groups.h"
-#include "subcarrier.h"
+#include "src/groups.h"
+#include "src/subcarrier.h"
 
 namespace redsea {
 
@@ -19,15 +20,15 @@ enum eOutputType {
 };
 
 class BlockStream {
-  public:
-  BlockStream(eInputType input_type=INPUT_MPX, bool has_echo=false);
+ public:
+  BlockStream(eInputType input_type = INPUT_MPX, bool has_echo = false);
   Group getNextGroup();
   bool isEOF() const;
 #ifdef DEBUG
   float getT() const;
 #endif
 
-  private:
+ private:
   int getNextBit();
   void uncorrectable();
   uint32_t correctBurstErrors(uint32_t block) const;
@@ -48,7 +49,7 @@ class BlockStream {
   Subcarrier subcarrier_;
 #endif
   AsciiBits ascii_bits_;
-  std::map<uint16_t,uint32_t> error_lookup_;
+  std::map<uint16_t, uint32_t> error_lookup_;
   const eInputType input_type_;
   bool is_eof_;
 };

@@ -37,15 +37,13 @@ float step2hertz(float step) {
 }
 #endif
 
-}
+}  // namespace
 
 BiphaseDecoder::BiphaseDecoder() : prev_psk_symbol_(0.0f),
   clock_history_(48), clock_(0), clock_polarity_(0) {
-
 }
 
 BiphaseDecoder::~BiphaseDecoder() {
-
 }
 
 // Return {is_clock, symbol}
@@ -120,7 +118,6 @@ Subcarrier::~Subcarrier() {
 /** MPX to bits
  */
 void Subcarrier::demodulateMoreBits() {
-
   int16_t inbuffer[kInputBufferSize];
   int samplesread = fread(inbuffer, sizeof(inbuffer[0]), kInputBufferSize,
       stdin);
@@ -143,7 +140,6 @@ void Subcarrier::demodulateMoreBits() {
     fir_lpf_.push(sample_baseband);
 
     if (numsamples_ % decimate == 0) {
-
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
       // PLL-controlled 57 kHz mixdown - aliasing is intentional so we don't
@@ -225,6 +221,6 @@ float Subcarrier::getT() const {
 }
 #endif
 
-} // namespace redsea
+}  // namespace redsea
 
 #endif // HAVE_LIQUID

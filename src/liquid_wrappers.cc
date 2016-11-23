@@ -31,14 +31,12 @@ float AGC::getGain() {
 }
 
 FIRFilter::FIRFilter(int len, float fc, float As, float mu) {
-
-  assert (fc >= 0.0f && fc <= 0.5f);
-  assert (As > 0.0f);
-  assert (mu >= -0.5f && mu <= 0.5f);
+  assert(fc >= 0.0f && fc <= 0.5f);
+  assert(As > 0.0f);
+  assert(mu >= -0.5f && mu <= 0.5f);
 
   object_ = firfilt_crcf_create_kaiser(len, fc, As, mu);
   firfilt_crcf_set_scale(object_, 2.0f * fc);
-
 }
 
 FIRFilter::~FIRFilter() {
@@ -99,7 +97,6 @@ float NCO::getFrequency() {
 SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
     float beta, unsigned num_filters) :
   object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)) {
-
 }
 
 SymSync::~SymSync() {
@@ -116,18 +113,15 @@ void SymSync::setOutputRate(unsigned r) {
 
 std::vector<std::complex<float>> SymSync::execute(std::complex<float> s_in) {
   std::complex<float> s_out[8];
-  unsigned n_out=0;
+  unsigned n_out = 0;
   symsync_crcf_execute(object_, &s_in, 1, &s_out[0], &n_out);
 
   std::vector<std::complex<float>> result(std::begin(s_out), std::end(s_out));
   result.resize(n_out);
   return result;
-
 }
 
-
 Modem::Modem(modulation_scheme scheme) : object_(modem_create(scheme)) {
-
 }
 
 Modem::~Modem() {
@@ -146,6 +140,6 @@ float Modem::getPhaseError() {
   return modem_get_demodulator_phase_error(object_);
 }
 
-} // namespace liquid
+}  // namespace liquid
 
 #endif

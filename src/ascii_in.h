@@ -4,25 +4,23 @@
 #include <cstdint>
 #include <vector>
 
-#include "groups.h"
+#include "src/groups.h"
 
 namespace redsea {
 
 class AsciiBits {
+ public:
+  AsciiBits(bool has_echo=false);
+  ~AsciiBits();
+  int getNextBit();
+  bool isEOF() const;
 
-  public:
-    AsciiBits(bool has_echo=false);
-    ~AsciiBits();
-    int getNextBit();
-    bool isEOF() const;
-
-  private:
-    bool is_eof_;
-    bool echo_stdout_;
-
+ private:
+  bool is_eof_;
+  bool echo_stdout_;
 };
 
 Group getNextGroupRSpy();
 
-} // namespace redsea
+}  // namespace redsea
 #endif // ASCII_IN_H_

@@ -23,8 +23,6 @@
 #include "src/block_sync.h"
 #include "src/groups.h"
 
-const std::string kRedseaVersion("0.7.3");
-
 namespace redsea {
 
 void printUsage() {
@@ -34,8 +32,7 @@ void printUsage() {
          "-h    Input is hex groups in the RDS Spy format\n"
          "-x    Output is hex groups in the RDS Spy format\n"
          "-u    Use RBDS (North American) program types\n"
-         "-v    Print version\n"
-         );
+         "-v    Print version\n");
 }
 
 void printVersion() {
@@ -46,19 +43,9 @@ void printVersion() {
 #endif
 }
 
-void printShort(Station station) {
-    printf("%s 0x%04x %s\n", station.getPS().c_str(), station.getPI(),
-        station.getRT().c_str());
-
-  //printf("%04x %2d%s TP:%d PTY:%d\n", station.pi, group.type,
-  //    group.type_ab == 1 ? "B" : "A",
-  //    group.tp, group.pty);
-}
-
-} // namespace redsea
+}  // namespace redsea
 
 int main(int argc, char** argv) {
-
   int option_char;
   redsea::eInputType input_type = redsea::INPUT_MPX;
   int output_type = redsea::OUTPUT_JSON;
@@ -104,7 +91,7 @@ int main(int argc, char** argv) {
   redsea::BlockStream block_stream(input_type, has_echo);
   redsea::Station station(0, is_rbds);
 
-  uint16_t pi=0, prev_new_pi=0, new_pi=0;
+  uint16_t pi = 0, prev_new_pi = 0, new_pi = 0;
 
   bool is_eof = false;
 
