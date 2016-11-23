@@ -455,7 +455,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
       uint16_t on_mgs = bits(y, 6, 4);
       uint16_t on_ltn = bits(y, 10, 6);
 
-      (*jsroot)["tmc"]["other_network"]["pi"] = on_pi;
+      (*jsroot)["tmc"]["other_network"]["pi"] = hexString(on_pi, 4);
       (*jsroot)["tmc"]["other_network"]["service_id"] = on_sid;
       (*jsroot)["tmc"]["other_network"]["location_table"] = on_ltn;
 

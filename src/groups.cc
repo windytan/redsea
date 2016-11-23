@@ -117,7 +117,7 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
   }
 
   json_.clear();
-  json_["pi"] = group.pi;
+  json_["pi"] = "0x" + hexString(group.pi, 4);
 
   decodeBasics(group);
 
@@ -507,7 +507,7 @@ void Station::decodeType14A (const Group& group) {
   uint16_t pi = group.block[OFFSET_D];
   bool tp = bits(group.block[OFFSET_B], 4, 1);
 
-  json_["other_network"]["pi"] = pi;
+  json_["other_network"]["pi"] = "0x" + hexString(pi, 4);
   json_["other_network"]["tp"] = tp;
 
   uint16_t eon_variant = bits(group.block[OFFSET_B], 0, 4);

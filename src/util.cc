@@ -30,4 +30,17 @@ std::string join(std::vector<std::uint16_t> nums, std::string d) {
   return result;
 }
 
+std::string hexString(int value, int numnybbles) {
+
+  std::stringstream ss;
+
+  ss.fill('0');
+  ss.setf(std::ios_base::uppercase);
+
+  ss << std::hex << std::setw(numnybbles) << value;
+
+  return ss.str();
+
+}
+
 } // namespace redsea
