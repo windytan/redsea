@@ -18,17 +18,16 @@ const unsigned kBitmask28 = 0xFFFFFFF;
 const unsigned kMaxErrorLength = 2;
 
 const std::vector<uint16_t> offset_words =
-  {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
+    {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
 const std::map<uint16_t,eOffset> offset_syndromes =
-  {{0x3D8,OFFSET_A},  {0x3D4,OFFSET_B}, {0x25C,OFFSET_C},
-   {0x3CC,OFFSET_CI}, {0x258,OFFSET_D}};
+    {{0x3D8,OFFSET_A},  {0x3D4,OFFSET_B}, {0x25C,OFFSET_C},
+     {0x3CC,OFFSET_CI}, {0x258,OFFSET_D}};
 const std::vector<uint16_t> block_number_for_offset =
-  {0, 1, 2, 2, 3};
+    {0, 1, 2, 2, 3};
 
 // Section B.1.1: '-- calculated by the modulo-two addition of all the rows of
 // the -- matrix for which the corresponding coefficient in the -- vector is 1.'
 uint32_t matrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
-
   uint32_t result = 0;
 
   for (size_t k=0; k < matrix.size(); k++)
@@ -41,7 +40,6 @@ uint32_t matrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
 // Section B.2.1: 'The calculation of the syndromes -- can easily be done by
 // multiplying each word with the parity matrix H.'
 uint32_t calcSyndrome(uint32_t vec) {
-
   static const std::vector<uint32_t> parity_check_matrix({
       0x200, 0x100, 0x080, 0x040, 0x020, 0x010, 0x008, 0x004,
       0x002, 0x001, 0x2dc, 0x16e, 0x0b7, 0x287, 0x39f, 0x313,
@@ -63,7 +61,6 @@ eOffset nextOffsetFor(eOffset o) {
 
 // Precompute mapping of syndromes to error vectors
 std::map<uint16_t,uint32_t> makeErrorLookupTable() {
-
   std::map<uint16_t,uint32_t> result;
 
   for (uint32_t e=1; e < (1 << kMaxErrorLength); e++) {
@@ -77,7 +74,7 @@ std::map<uint16_t,uint32_t> makeErrorLookupTable() {
   return result;
 }
 
-} // namespace
+}  // namespace
 
 BlockStream::BlockStream(eInputType input_type, bool has_echo) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), wideblock_(0), prevsync_(0),
@@ -111,7 +108,6 @@ int BlockStream::getNextBit() {
 
 // Section B.2.2
 uint32_t BlockStream::correctBurstErrors(uint32_t block) const {
-
   uint16_t synd_reg =
     calcSyndrome(block ^ offset_words[expected_offset_]);
 
@@ -128,7 +124,6 @@ uint32_t BlockStream::correctBurstErrors(uint32_t block) const {
 
 // A block can't be decoded
 void BlockStream::uncorrectable() {
-
   block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 
   unsigned num_erroneous_blocks = 0;
@@ -144,11 +139,9 @@ void BlockStream::uncorrectable() {
       block_has_errors_[i] = false;
     pi_ = 0x0000;
   }
-
 }
 
 bool BlockStream::acquireSync() {
-
   if (is_in_sync_)
     return true;
 
@@ -168,11 +161,9 @@ bool BlockStream::acquireSync() {
   }
 
   return is_in_sync_;
-
 }
 
 Group BlockStream::getNextGroup() {
-
   Group group;
 
   while (!isEOF()) {
@@ -232,7 +223,6 @@ Group BlockStream::getNextGroup() {
           message = block >> 10;
           received_offset_ = expected_offset_;
         }
-
       }
 
       // Still no valid syndrome
@@ -253,7 +243,6 @@ Group BlockStream::getNextGroup() {
         if (was_valid_word)
           pi_ = message;
       }
-
     }
 
     expected_offset_ = nextOffsetFor(expected_offset_);
@@ -261,7 +250,6 @@ Group BlockStream::getNextGroup() {
     if (expected_offset_ == OFFSET_A) {
       break;
     }
-
   }
 
   if (group.hasOffset[OFFSET_B]) {
@@ -276,7 +264,6 @@ Group BlockStream::getNextGroup() {
   }
 
   return group;
-
 }
 
 bool BlockStream::isEOF() const {
@@ -289,4 +276,4 @@ float BlockStream::getT() const {
 }
 #endif
 
-} // namespace redsea
+}  // namespace redsea
