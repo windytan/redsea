@@ -131,9 +131,9 @@ int main(int argc, char** argv) {
 #endif
 
     if (output_type == redsea::OUTPUT_HEX) {
-      group.printHex();
+      group.printHex(&std::cout);
     } else {
-      station.update(group);
+      station.updateAndPrint(group);
     }
 
   }

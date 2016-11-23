@@ -4,6 +4,7 @@
 #include "config.h"
 #ifdef ENABLE_TMC
 
+#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
@@ -75,7 +76,7 @@ class Message {
   void pushMulti(uint16_t x, uint16_t y, uint16_t z);
   void pushSingle(uint16_t x, uint16_t y, uint16_t z);
   std::string toString() const;
-  void print() const;
+  void print(std::ostream* stream) const;
   void decrypt(ServiceKey);
   bool isComplete() const;
   void clear();
@@ -126,6 +127,7 @@ class TMC {
   Message message_;
   std::map<uint16_t, ServiceKey> service_key_table_;
   RDSString ps_;
+  std::ostream* stream_;
 };
 
 }  // namespace tmc

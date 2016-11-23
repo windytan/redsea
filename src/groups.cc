@@ -2,10 +2,13 @@
 
 #include <cassert>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
+
+#include <json/json.h>
 
 #include "config.h"
 #include "src/rdsstring.h"
@@ -16,13 +19,17 @@ namespace redsea {
 
 namespace {
 
-  bool isFMFrequency(uint16_t af_code) {
-    return (af_code >= 1 && af_code <= 204);
-  }
+bool isFMFrequency(uint16_t af_code) {
+  return (af_code >= 1 && af_code <= 204);
+}
 
-  float getFMFrequency(uint16_t af_code) {
-    return 87.5 + af_code / 10.0;
-  }
+float getFMFrequency(uint16_t af_code) {
+  return 87.5 + af_code / 10.0;
+}
+
+std::string hoursMinutesString(int hr, int mn) {
+
+}
 
 }  // namespace
 
@@ -46,29 +53,32 @@ Group::Group() : hasType(false), hasPi(false),
   hasOffset({false,false,false,false,false}), block(5) {
 }
 
-void Group::printHex() const {
+void Group::printHex(std::ostream* stream) const {
+
+  stream->fill('0');
+  stream->setf(std::ios_base::uppercase);
 
   if (hasOffset[OFFSET_A])
-    printf("%04X ", block[OFFSET_A]);
+    *stream << std::hex << std::setw(4) << block[OFFSET_A] << " ";
   else
-    printf("---- ");
+    *stream << "---- ";
 
   if (hasOffset[OFFSET_B])
-    printf("%04X ", block[OFFSET_B]);
+    *stream << std::hex << std::setw(4) << block[OFFSET_B] << " ";
   else
-    printf("---- ");
+    *stream << "---- ";
 
   if (hasOffset[OFFSET_C] || hasOffset[OFFSET_CI])
-    printf("%04X ", block[OFFSET_C]);
+    *stream << std::hex << std::setw(4) << block[OFFSET_C] << " ";
   else
-    printf("---- ");
+    *stream << "---- ";
 
   if (hasOffset[OFFSET_D])
-    printf("%04X", block[OFFSET_D]);
+    *stream << std::hex << std::setw(4) << block[OFFSET_D];
   else
-    printf("----");
+    *stream << "----";
 
-  printf("\n");
+  std::cout << std::endl;
 
   fflush(stdout);
 }
@@ -83,7 +93,8 @@ Station::Station(uint16_t _pi, bool _is_rbds) : pi_(_pi), is_rbds_(_is_rbds),
   has_country_(false), oda_app_for_group_(), has_rt_plus_(false),
   rt_plus_toggle_(false), rt_plus_item_running_(false),
   last_block_had_pi_(false), pager_pac_(0), pager_opc_(0), pager_tng_(0),
-  pager_ecc_(0), pager_ccf_(0), pager_interval_(0)
+  pager_ecc_(0), pager_ccf_(0), pager_interval_(0), writer_(), jroot_(),
+  stream_(&std::cerr)
 #ifdef ENABLE_TMC
                     , tmc_()
 #endif
@@ -91,7 +102,7 @@ Station::Station(uint16_t _pi, bool _is_rbds) : pi_(_pi), is_rbds_(_is_rbds),
 
 }
 
-void Station::update(const Group& group) {
+void Station::updateAndPrint(const Group& group) {
 
   // Allow 1 group with missed PI
   if (group.hasPi) {
@@ -102,12 +113,13 @@ void Station::update(const Group& group) {
     last_block_had_pi_ = false;
   }
 
-  printf("{\"pi\":\"0x%04x\"", group.pi);
+  jroot_.clear();
+
+  jroot_["pi"] = group.pi;
 
   decodeBasics(group);
 
   if (group.hasType) {
-
     if      (group.type.num == 0)
       decodeType0(group);
     else if (group.type.num == 1)
@@ -127,11 +139,10 @@ void Station::update(const Group& group) {
     else if (group.type.num == 6)
       decodeType6(group);
     else
-      printf(",\"debug\":\"TODO %s\"", group.type.toString().c_str());
-
+      *stream_ << jsonVal("debug", "TODO " + group.type.toString());
   }
 
-  printf("}\n");
+  *stream_ << writer_.write(jroot_) << std::endl;
 
   fflush(stdout);
 }
@@ -175,9 +186,9 @@ void Station::updatePS(int pos, std::vector<int> chars) {
     ps_.setAt(i, chars[i-pos]);
 
   if (ps_.isComplete())
-    printf(",\"ps\":\"%s\"",ps_.getLastCompleteString().c_str());
+    jroot_["ps"] = ps_.getLastCompleteStringTrimmed();
   else
-    printf(",\"partial_ps\":\"%s\"",ps_.getString().c_str());
+    jroot_["partial_ps"] = ps_.getString();
 }
 
 void Station::updateRadioText(int pos, std::vector<int> chars) {
@@ -189,24 +200,24 @@ void Station::decodeBasics (const Group& group) {
 
   if (group.hasOffset[OFFSET_B]) {
 
-    printf(",\"group\":\"%s\"", group.type.toString().c_str());
+    jroot_["group"] = group.type.toString();
 
     is_tp_   = bits(group.block[OFFSET_B], 10, 1);
     pty_     = bits(group.block[OFFSET_B],  5, 5);
 
-    printf(",\"tp\":%s", boolStr(is_tp_));
-    printf(",\"prog_type\":\"%s\"", getPTYname(pty_, is_rbds_).c_str());
+    jroot_["tp"] = is_tp_;
+    jroot_["prog_type"] = getPTYname(pty_, is_rbds_);
 
   } else if (group.type.num == 15 && group.type.ab == VERSION_B &&
       group.hasOffset[OFFSET_D]) {
 
-    printf(",\"group\":\"%s\"", group.type.toString().c_str());
+    jroot_["group"] = group.type.toString();
 
     is_tp_   = bits(group.block[OFFSET_D], 10, 1);
     pty_     = bits(group.block[OFFSET_D],  5, 5);
 
-    printf(",\"tp\":%s", boolStr(is_tp_));
-    printf(",\"prog_type\":\"%s\"", getPTYname(pty_, is_rbds_).c_str());
+    jroot_["tp"] = is_tp_;
+    jroot_["prog_type"] = getPTYname(pty_, is_rbds_);
   }
 }
 
@@ -218,8 +229,8 @@ void Station::decodeType0 (const Group& group) {
   is_ta_    = bits(group.block[OFFSET_B], 4, 1);
   is_music_ = bits(group.block[OFFSET_B], 3, 1);
 
-  printf(",\"ta\":%s", boolStr(is_ta_));
-  printf(",\"is_music\":%s", boolStr(is_music_));
+  jroot_["is_ta"] = is_ta_;
+  jroot_["is_music"] = is_music_;
 
   if (!group.hasOffset[OFFSET_C])
     return;
@@ -231,15 +242,15 @@ void Station::decodeType0 (const Group& group) {
 
     if (static_cast<int>(alt_freqs_.size()) == num_alt_freqs_ &&
         num_alt_freqs_ > 0) {
-      printf(",\"alt_freqs\":[");
+      *stream_ << ",\"alt_freqs\":[";
       int i = 0;
       for (auto f : alt_freqs_) {
-        printf("%.1f", f);
+        *stream_ << std::fixed << std::setprecision(1) << f;
         if (i < static_cast<int>(alt_freqs_.size()) - 1)
-          printf(",");
+          *stream_ << ",";
         i++;
       }
-      printf("]");
+      *stream_ << "]";
       alt_freqs_.clear();
     }
   }
@@ -263,11 +274,12 @@ void Station::decodeType1 (const Group& group) {
     uint16_t dy = bits(pin_, 11, 5);
     uint16_t hr = bits(pin_, 6, 5);
     uint16_t mn = bits(pin_, 0, 6);
-    if (dy >= 1 && hr <= 24 && mn <= 59)
-      printf(",\"prog_item_started\":{\"day\":%d,\"time\":\"%02d:%02d\"}",
-          dy, hr, mn);
-    else
-      printf(",\"debug\":\"invalid PIN\"");
+    if (dy >= 1 && hr <= 24 && mn <= 59) {
+      jroot_["prog_item_started"]["day"] = dy;
+      jroot_["prog_item_started"]["time"] = hoursMinutesString(hr, mn);
+    } else {
+      *stream_ << jsonVal("debug", "invalid PIN");
+    }
   }
 
   if (group.type.ab == VERSION_A) {
@@ -276,7 +288,7 @@ void Station::decodeType1 (const Group& group) {
       pager_interval_ = bits(group.block[OFFSET_B], 0, 2);
     }
     linkage_la_ = bits(group.block[OFFSET_C], 15, 1);
-    printf(",\"has_linkage\":%s", boolStr(linkage_la_));
+    *stream_ << jsonVal("has_linkage", linkage_la_);
 
     int slc_variant = bits(group.block[OFFSET_C], 12, 3);
 
@@ -311,12 +323,12 @@ void Station::decodeType1 (const Group& group) {
       if (ecc_ != 0x00) {
         has_country_ = true;
 
-        printf(",\"country\":\"%s\"", getCountryString(pi_, ecc_).c_str());
+        jroot_["country"] = getCountryString(pi_, ecc_);
       }
 
     } else if (slc_variant == 1) {
       tmc_id_ = bits(group.block[OFFSET_C], 0, 12);
-      printf(",\"tmc_id\":\"0x%03x\"", tmc_id_);
+      jroot_["tmc_id"] = tmc_id_;
 
     } else if (slc_variant == 2) {
       if (pager_tng_ != 0) {
@@ -346,14 +358,15 @@ void Station::decodeType1 (const Group& group) {
 
     } else if (slc_variant == 3) {
       lang_ = bits(group.block[OFFSET_C], 0, 8);
-      printf(",\"language\":\"%s\"", getLanguageString(lang_).c_str());
+      jroot_["language"] = getLanguageString(lang_);
 
     } else if (slc_variant == 7) {
       ews_channel_ = bits(group.block[OFFSET_C], 0, 12);
-      printf(",\"ews\":\"0x%03x\"", ews_channel_);
+      jroot_["ews"] = ews_channel_;
 
     } else {
-      printf(",\"debug\":\"TODO: SLC variant %d\"", slc_variant);
+      *stream_ << jsonVal("debug", "TODO: SLC variant " +
+          std::to_string(slc_variant));
     }
   }
 }
@@ -386,9 +399,9 @@ void Station::decodeType2 (const Group& group) {
   }
 
   if (rt_.isComplete())
-    printf(",\"radiotext\":\"%s\"",rt_.getLastCompleteStringTrimmed().c_str());
+    *stream_ << jsonVal("radiotext", rt_.getLastCompleteStringTrimmed());
   else if (rt_.getTrimmedString().length() > 0)
-    printf(",\"partial_radiotext\":\"%s\"",rt_.getTrimmedString().c_str());
+    *stream_ << jsonVal("partial_radiotext", rt_.getTrimmedString());
 }
 
 // Group 3A: Application identification for Open Data
@@ -406,14 +419,14 @@ void Station::decodeType3A (const Group& group) {
 
   oda_app_for_group_[oda_group] = oda_aid;
 
-  printf(",\"open_data_app\":{\"oda_group\":\"%s\",\"app_name\":\"%s\"",
-      oda_group.toString().c_str(), getAppName(oda_aid).c_str());
+  jroot_["open_data_app"]["oda_group"] = oda_group.toString();
+  jroot_["open_data_app"]["app_name"] = getAppName(oda_aid);
 
   if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
 #ifdef ENABLE_TMC
     tmc_.systemGroup(group.block[OFFSET_C]);
 #else
-    printf(",\"debug\":\"redsea compiled without TMC support\"");
+    jroot_["debug"] = "complied without TMC support";
 #endif
   } else if (oda_aid == 0x4BD7) {
     has_rt_plus_ = true;
@@ -421,11 +434,12 @@ void Station::decodeType3A (const Group& group) {
     rt_plus_scb_ = bits(group.block[OFFSET_C], 8, 4);
     rt_plus_template_num_ = bits(group.block[OFFSET_C], 0, 8);
   } else {
-    printf(",\"debug\":\"TODO: Unimplemented ODA app 0x%04x\","
-           "\"message\":\"0x%02x\"", oda_aid, oda_msg);
+    *stream_ << jsonVal("debug", "TODO: Unimplemented ODA app " +
+                       std::to_string(oda_aid)) <<
+        jsonVal("message", oda_msg);
   }
 
-  printf("}");
+  *stream_ << "}";
 }
 
 // Group 4A: Clock-time and date
@@ -469,16 +483,18 @@ void Station::decodeType4A (const Group& group) {
           yr, mo, dy, hr, mn, lto > 0 ? "+" : "-", fabs(std::trunc(lto)),
           abs(ltom));
       clock_time_ = buff;
-      printf(",\"clock_time\":\"%s\"", clock_time_.c_str());
+      *stream_ << jsonVal("clock_time", clock_time_);
     } else {
-      printf(",\"debug\":\"invalid date/time\"");
+      *stream_ << jsonVal("debug", "invalid date/time");
     }
   }
 }
 
 // Group 6: In-house applications
 void Station::decodeType6 (const Group& group) {
-  printf(",\"in_house_data\":[\"0x%03x\"",
+  *stream_ << ",\"in_house_data\":[]";//\"";
+/*
+  0x%03x\"",
       bits(group.block[OFFSET_B], 0, 5));
 
   if (group.type.ab == VERSION_A) {
@@ -499,7 +515,7 @@ void Station::decodeType6 (const Group& group) {
       printf(",\"(not received)\"");
     }
   }
-  printf("]");
+  printf("]");*/
 }
 
 // Group 14A: Enhanced Other Networks information
@@ -511,9 +527,8 @@ void Station::decodeType14A (const Group& group) {
   uint16_t pi = group.block[OFFSET_D];
   bool tp = bits(group.block[OFFSET_B], 4, 1);
 
-
-  printf(",\"other_network\":{\"pi\":\"0x%04x\",\"tp\":%s",
-      pi, boolStr(tp));
+  *stream_ << ",\"other_network\":{" << jsonVal("pi", pi);
+  *stream_ << jsonVal("tp", tp);
 
   uint16_t eon_variant = bits(group.block[OFFSET_B], 0, 4);
 
@@ -526,45 +541,44 @@ void Station::decodeType14A (const Group& group) {
     eon_ps_names_[pi].setAt(2*eon_variant+1, bits(group.block[OFFSET_C], 0, 8));
 
     if (eon_ps_names_[pi].isComplete())
-      printf(",\"ps\":\"%s\"",
-          eon_ps_names_[pi].getLastCompleteString().c_str());
+      *stream_ << jsonVal("ps", eon_ps_names_[pi].getLastCompleteString());
 
   } else if (eon_variant >= 5 && eon_variant <= 9) {
 
     uint16_t f_other = bits(group.block[OFFSET_C], 0, 8);
 
     if (isFMFrequency(f_other)) {
-      printf(",\"frequency\":%.1f", getFMFrequency(f_other));
+      *stream_ << jsonVal("frequency", getFMFrequency(f_other));
     }
 
   } else if (eon_variant == 12) {
 
     bool has_linkage = bits(group.block[OFFSET_C], 15, 1);
     uint16_t lsn = bits(group.block[OFFSET_C], 0, 12);
-    printf(",\"has_linkage\":%s", boolStr(has_linkage));
+    *stream_ << jsonVal("has_linkage", has_linkage);
     if (has_linkage && lsn != 0)
-      printf(",\"linkage_set\":\"0x%03x\"", lsn);
+      *stream_ << jsonVal("linkage_set", lsn);
 
   } else if (eon_variant == 13) {
     uint16_t pty = bits(group.block[OFFSET_C], 11, 5);
     bool ta      = bits(group.block[OFFSET_C], 0, 1);
-    printf(",\"prog_type\":\"%s\"", getPTYname(pty, is_rbds_).c_str());
-    printf(",\"ta\":%s", boolStr(ta));
+    *stream_ << jsonVal("prog_type", getPTYname(pty, is_rbds_));
+    *stream_ << jsonVal("ta", ta);
 
   } else if (eon_variant == 14) {
 
     uint16_t pin = group.block[OFFSET_C];
 
     if (pin != 0x0000)
-      printf(",\"prog_item_started\":{\"day\":%d,\"time\":\"%02d:%02d\"}",
-          bits(pin, 11, 5), bits(pin, 6, 5), bits(pin, 0, 6) );
+      *stream_ << ",\"prog_item_started\":{" << jsonVal("day", bits(pin, 11, 5))
+         << jsonVal("time", hoursMinutesString(bits(pin, 6,5), bits(pin, 0, 6)));
 
   } else {
-    printf(",\"debug\":\"TODO: EON variant %d\"",
-        bits(group.block[OFFSET_B], 0, 4));
+    *stream_ << jsonVal("debug", "TODO: EON variant" +
+        std::to_string(bits(group.block[OFFSET_B], 0, 4)));
   }
 
-  printf("}");
+  *stream_ << "}";
 }
 
 /* Group 15B: Fast basic tuning and switching information */
@@ -573,8 +587,8 @@ void Station::decodeType15B(const Group& group) {
   is_ta_    = bits(group.block[OFFSET_B], 4, 1);
   is_music_ = bits(group.block[OFFSET_B], 3, 1);
 
-  printf(",\"ta\":\"%s\"", is_ta_ ? "true" : "false");
-  printf(",\"is_music\":\"%s\"", is_music_ ? "true" : "false");
+  *stream_ << jsonVal("ta", is_ta_);
+  *stream_ << jsonVal("is_music", is_music_);
 }
 
 /* Open Data Application */
@@ -605,8 +619,7 @@ void Station::parseRadioTextPlus(const Group& group) {
     rt_plus_item_running_ = item_running;
   }
 
-  printf(",\"radiotext_plus\":{\"item_running\":%s",
-      boolStr(item_running));
+  *stream_ << ",\"radiotext_plus\":{" << jsonVal("item_running", item_running);
 
   std::vector<RTPlusTag> tags(2);
 
@@ -626,14 +639,11 @@ void Station::parseRadioTextPlus(const Group& group) {
 
     if (rt_.hasChars(tag.start, tag.length) && text.length() > 0 &&
         tag.content_type != 0) {
-
-      printf(",\"%s\":\"%s\"",
-          getRTPlusContentTypeName(tag.content_type).c_str(),
-          text.c_str());
+      *stream_ << jsonVal(getRTPlusContentTypeName(tag.content_type), text);
     }
   }
 
-  printf("}");
+  *stream_ << "}";
 }
 
 } // namespace redsea

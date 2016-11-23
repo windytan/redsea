@@ -1,5 +1,8 @@
 #include "util.h"
 
+#include <iomanip>
+#include <sstream>
+
 namespace redsea {
 
 // extract len bits from word, starting at starting_at from the right

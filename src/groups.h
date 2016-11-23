@@ -1,9 +1,12 @@
 #ifndef GROUPS_H_
 #define GROUPS_H_
 
+#include <iostream>
 #include <map>
 #include <set>
 #include <string>
+
+#include <json/json.h>
 
 #include "config.h"
 #include "src/rdsstring.h"
@@ -37,7 +40,7 @@ bool operator<(const GroupType& obj1, const GroupType& obj2);
 class Group {
   public:
   Group();
-  void printHex() const;
+  void printHex(std::ostream* stream) const;
 
   GroupType type;
   bool hasType;
@@ -52,7 +55,7 @@ class Station {
   public:
     Station();
     Station(uint16_t pi, bool _is_rbds);
-    void update(const Group& group);
+    void updateAndPrint(const Group& group);
     bool hasPS() const;
     std::string getPS() const;
     std::string getRT() const;
@@ -90,7 +93,7 @@ class Station {
     int tmc_id_;
     int ews_channel_;
     int lang_;
-    int linkage_la_;
+    bool linkage_la_;
     std::string clock_time_;
     bool has_country_;
     std::map<GroupType,uint16_t> oda_app_for_group_;
@@ -109,6 +112,11 @@ class Station {
     int pager_ecc_;
     int pager_ccf_;
     int pager_interval_;
+
+    Json::FastWriter writer_;
+    Json::Value jroot_;
+
+    std::ostream* stream_;
 
 #ifdef ENABLE_TMC
     tmc::TMC tmc_;

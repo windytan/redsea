@@ -6,6 +6,7 @@
 #include <climits>
 #include <deque>
 #include <fstream>
+#include <iostream>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -243,8 +244,8 @@ std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
       break;
     }
     default: {
-      printf(",\"debug\":\"q_value = %d, q_type=%d\"",
-          q_value, event.quantifier_type);
+      //*stream_ << jsonVal("debug", "q_value =" + std::to_string(q_value) +
+      //    ", q_type=" + std::to_string(event.quantifier_type));
       q = "TODO";
     }
   }
@@ -382,13 +383,13 @@ Event getEvent(uint16_t code) {
 
 TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
   ltn_(0), sid_(0), encid_(0), ltnbe_(0), message_(),
-  service_key_table_(loadServiceKeyTable()), ps_(8) {
+  service_key_table_(loadServiceKeyTable()), ps_(8), stream_(&std::cout) {
 
 }
 
 void TMC::systemGroup(uint16_t message) {
   if (bits(message, 14, 1) == 0) {
-    printf(",\"tmc\":{\"system_info\":{");
+    *stream_ << ",\"tmc\":{\"system_info\":{";
 
     if (g_event_data.empty())
       loadEventData();
@@ -397,20 +398,20 @@ void TMC::systemGroup(uint16_t message) {
     ltn_ = bits(message, 6, 6);
     is_encrypted_ = (ltn_ == 0);
 
-    printf("\"is_encrypted\":%s", boolStr(is_encrypted_));
+    *stream_ << jsonVal("is_encrypted", is_encrypted_);
 
     if (!is_encrypted_)
-      printf(",\"location_table\":%d", ltn_);
+      *stream_ << jsonVal("location_table", ltn_);
 
     bool afi   = bits(message, 5, 1);
     //bool m     = bits(message, 4, 1);
     bool mgs   = bits(message, 0, 4);
 
-    printf(",\"is_on_alt_freqs\":%s", boolStr(afi));
+    *stream_ << jsonVal("is_on_alt_freqs", afi);
 
-    printf(",\"scope\":[%s]", getScopeString(mgs).c_str());
+    *stream_ << ",\"scope\":[" + getScopeString(mgs) + "]";
 
-    printf("}}");
+    *stream_ << "}}";
   }
 }
 
@@ -428,9 +429,9 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
     ltnbe_ = bits(z, 10, 6);
     has_encid_ = true;
 
-    printf(",\"tmc\":{\"encryption_info\":{\"service_id\":%d,"
-           "\"encryption_id\":%d,\"location_table\":%d}}",
-           sid_, encid_, ltnbe_);
+    *stream_ << jsonObject("tmc", jsonObject("encryption_info",
+        jsonVal("service_id", sid_) + jsonVal("encryption_id", encid_) +
+        jsonVal("location_table", ltnbe_)));
 
   // Tuning information
   } else if (t) {
@@ -446,8 +447,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       ps_.setAt(pos+3, bits(z, 0, 8));
 
       if (ps_.isComplete())
-        printf(",\"tmc\":{\"service_provider\":\"%s\"}",
-            ps_.getLastCompleteString().c_str());
+        *stream_ << ",\"tmc\":{\"" <<
+            jsonVal("service_provider", ps_.getLastCompleteString());
 
     } else if (variant == 9) {
 
@@ -456,12 +457,18 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       uint16_t on_mgs = bits(y, 6, 4);
       uint16_t on_ltn = bits(y, 10, 6);
 
+      *stream_ << jsonObject("tmc", jsonObject("other_network",
+          jsonVal("pi", on_pi, 4) +
+          jsonVal("location_table", on_ltn) + jsonArray("scope",
+          getScopeString(on_mgs))));
+
       printf(",\"tmc\":{\"other_network\":{\"pi\":\"0x%04x\",\"service_id\":"
              "%d,\"location_table\":%d,\"scope\":[%s]}}", on_pi,
              on_sid, on_ltn, getScopeString(on_mgs).c_str());
 
     } else {
-      printf(",\"tmc\":{\"debug\":\"TODO: tuning info variant %d\"}", variant);
+      *stream_ << ",\"tmc\":{" << jsonVal("debug",
+          "TODO: tuning info variant " + std::to_string(variant));
     }
 
   // User message
@@ -480,7 +487,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       if (is_encrypted_ && service_key_table_.count(encid_) > 0)
         message.decrypt(service_key_table_[encid_]);
 
-      message.print();
+      message.print(stream_);
 
     // Part of multi-group message
     } else {
@@ -490,7 +497,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
       if (continuity_index != message_.getContinuityIndex()) {
         /* Message changed; print previous unfinished message
          * TODO 15-second limit */
-        message_.print();
+        message_.print(stream_);
         message_ = Message(is_encrypted_);
       }
 
@@ -500,7 +507,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z) {
         if (is_encrypted_ && service_key_table_.count(encid_) > 0)
           message_.decrypt(service_key_table_[encid_]);
 
-        message_.print();
+        message_.print(stream_);
         message_ = Message(is_encrypted_);
       }
     }
@@ -544,7 +551,7 @@ void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
 
   uint16_t new_ci = bits(x, 0, 3);
   if (continuity_index_ != new_ci && continuity_index_ != 0) {
-    printf(",\"debug\":\"ERR: wrong continuity index!\"");
+    //*stream_ << jsonVal("debug", "ERR: wrong continuity index!");
   }
   continuity_index_ = new_ci;
   bool is_first_group = bits(y, 15, 1);
@@ -619,7 +626,8 @@ void Message::decodeMulti() {
         } else if (field_data == 7) {
           extent_ += 16;
         } else {
-          printf(",\"debug\":\"TODO: TMC control code %d\"", field_data);
+          // *stream_ << jsonVal("debug", "TODO: TMC control code " +
+          //    std::to_string(field_data));
         }
 
         // Length of route affected
@@ -639,7 +647,7 @@ void Message::decodeMulti() {
             getQuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
           quantifiers_.insert({events_.size()-1, field_data});
         } else {
-          printf(",\"debug\":\"invalid quantifier\"");
+          // *stream_ << jsonVal("debug", "invalid quantifier");
         }
 
         // 8-bit quantifier
@@ -649,7 +657,7 @@ void Message::decodeMulti() {
             getQuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
           quantifiers_.insert({events_.size()-1, field_data});
         } else {
-          printf(",\"debug\":\"invalid quantifier\"");
+          // *stream_ << jsonVal("debug", "invalid quantifier");
         }
 
         // Supplementary info
@@ -677,7 +685,7 @@ void Message::decodeMulti() {
       } else if (label == 14) {
 
       } else {
-        printf(",\"debug\":\"TODO label=%d data=0x%04x\"", label, field_data);
+        //printf(",\"debug\":\"TODO label=%d data=0x%04x\"", label, field_data);
       }
     }
   }
@@ -690,17 +698,17 @@ void Message::clear() {
   continuity_index_ = 0;
 }
 
-void Message::print() const {
+void Message::print(std::ostream* stream) const {
 
   if (!is_complete_ || events_.empty())
     return;
 
-  printf(",\"tmc\":{\"message\":{");
+  *stream << ",\"tmc\":{\"message\":{";
 
-  printf("\"event_codes\":[%s]", join(events_, ",").c_str());
+  *stream << jsonArray("event_codes", join(events_, ","));
 
   if (supplementary_.size() > 0)
-    printf(",\"supplementary_codes\":[%s]", join(supplementary_, ",").c_str());
+    *stream << jsonArray("supplementary_codes", join(supplementary_, ","));
 
   std::vector<std::string> sentences;
   for (size_t i=0; i < events_.size(); i++) {
@@ -722,30 +730,26 @@ void Message::print() const {
   }
 
   if (!sentences.empty())
-    printf(",\"description\":\"%s\"",
-        std::string(join(sentences, ". ") + ".").c_str());
+    *stream << jsonVal("description", join(sentences, ". ") + ".");
 
-  if (!diversion_.empty()) {
-    printf(",\"diversion_route\":[%s]", join(diversion_, ",").c_str());
-  }
+  if (!diversion_.empty())
+    *stream << jsonArray("diversion_route", join(diversion_, ","));
 
   if (has_speed_limit_)
-    printf(",\"speed_limit\":\"%d km/h\"", speed_limit_);
+    *stream << jsonVal("speed_limit", std::to_string(speed_limit_) + " km/h");
 
-  printf(",\"%slocation\":%d,\"direction\":\"%s\",\"extent\":\"%s%d\","
-         "\"diversion_advised\":%s",
-         (is_encrypted_ ? "encrypted_" : ""), location_,
-         directionality_ == DIR_SINGLE ? "single" : "both",
-         direction_ ? "-" : "+",
-         extent_, boolStr(divertadv_));
+  *stream
+      << jsonVal(is_encrypted_ ? "encrypted_location" : "location", location_)
+      << jsonVal("direction", directionality_ == DIR_SINGLE ? "single" : "both")
+      << jsonVal("extent", (direction_ ? "-" : "+") + std::to_string(extent_))
+      << jsonVal("diversion_advised", divertadv_);
 
   if (has_time_starts_)
-    printf(",\"starts\":\"%s\"", timeString(time_starts_).c_str());
+    *stream << jsonVal("starts", timeString(time_starts_));
   if (has_time_until_)
-    printf(",\"until\":\"%s\"", timeString(time_until_).c_str());
+    *stream << jsonVal("until", timeString(time_until_));
 
-
-  printf("}}");
+  *stream << "}}";
 }
 
 void Message::decrypt(ServiceKey key) {
