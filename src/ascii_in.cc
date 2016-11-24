@@ -35,7 +35,7 @@ bool AsciiBits::isEOF() const {
   return is_eof_;
 }
 
-Group getNextGroupRSpy() {
+Group getNextGroupRSpy(bool feed_thru) {
   Group group;
 
   bool finished = false;
@@ -43,6 +43,9 @@ Group getNextGroupRSpy() {
   while (!(finished || std::cin.eof())) {
     std::string line;
     std::getline(std::cin, line);
+    if (feed_thru)
+      std::cout << line << std::endl;
+
     if (line.length() < 16)
       continue;
 

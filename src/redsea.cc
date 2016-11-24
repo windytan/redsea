@@ -95,12 +95,15 @@ int main(int argc, char** argv) {
 
   bool is_eof = false;
 
-  std::cout.setf(std::ios_base::unitbuf);
-  std::cerr.setf(std::ios_base::unitbuf);
+  // Line buffering
+  if (feed_thru)
+    std::cerr.setf(std::ios_base::unitbuf);
+  else
+    std::cout.setf(std::ios_base::unitbuf);
 
   while (!is_eof) {
     redsea::Group group = (input_type == redsea::INPUT_RDSSPY ?
-        redsea::getNextGroupRSpy() :
+        redsea::getNextGroupRSpy(feed_thru) :
         block_stream.getNextGroup());
 
     is_eof = (std::cin.eof() || block_stream.isEOF());

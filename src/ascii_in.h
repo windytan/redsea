@@ -20,7 +20,7 @@ class AsciiBits {
   bool feed_thru_;
 };
 
-Group getNextGroupRSpy();
+Group getNextGroupRSpy(bool feed_thru = false);
 
 }  // namespace redsea
 #endif // ASCII_IN_H_
