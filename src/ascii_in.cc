@@ -80,8 +80,13 @@ Group getNextGroupRSpy() {
     }
   }
 
-  group.type = (group.hasOffset[OFFSET_B] ?
-      bits(group.block[OFFSET_B], 11, 5) : 0);
+  group.hasType = group.hasOffset[OFFSET_B];
+
+  group.type = (group.hasType ? bits(group.block[OFFSET_B], 11, 5) : 0);
+
+  group.hasPi = group.hasOffset[OFFSET_A];
+  if (group.hasPi)
+    group.pi = group.block[OFFSET_A];
 
   return group;
 }
