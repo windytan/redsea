@@ -38,7 +38,7 @@ class DeltaDecoder {
 
 class Subcarrier {
  public:
-  Subcarrier(bool has_echo = false);
+  Subcarrier(bool feed_thru = false);
   ~Subcarrier();
   int getNextBit();
   bool isEOF() const;
@@ -49,7 +49,7 @@ class Subcarrier {
  private:
   void demodulateMoreBits();
   int  numsamples_;
-  bool echo_stdout_;
+  bool feed_thru_;
 
   std::deque<int> bit_buffer_;
 

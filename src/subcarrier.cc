@@ -96,8 +96,8 @@ unsigned DeltaDecoder::decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier(bool has_echo) : numsamples_(0),
-    echo_stdout_(has_echo), bit_buffer_(),
+Subcarrier::Subcarrier(bool feed_thru) : numsamples_(0),
+    feed_thru_(feed_thru), bit_buffer_(),
     fir_lpf_(256, kLowpassCutoff_Hz / kFs_Hz),
     agc_(kAGCBandwidth_Hz / kFs_Hz, kAGCInitialGain),
     nco_approx_(hertz2step(kFc_0_Hz)),
@@ -122,7 +122,7 @@ void Subcarrier::demodulateMoreBits() {
   int samplesread = fread(inbuffer, sizeof(inbuffer[0]), kInputBufferSize,
       stdin);
 
-  if (echo_stdout_)
+  if (feed_thru_)
     fwrite(inbuffer, sizeof(inbuffer[0]), samplesread, stdout);
 
   if (samplesread < kInputBufferSize) {

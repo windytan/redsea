@@ -10,14 +10,14 @@ namespace redsea {
 
 class AsciiBits {
  public:
-  AsciiBits(bool has_echo=false);
+  AsciiBits(bool feed_thru = false);
   ~AsciiBits();
   int getNextBit();
   bool isEOF() const;
 
  private:
   bool is_eof_;
-  bool echo_stdout_;
+  bool feed_thru_;
 };
 
 Group getNextGroupRSpy();

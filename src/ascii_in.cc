@@ -9,7 +9,7 @@
 
 namespace redsea {
 
-AsciiBits::AsciiBits(bool has_echo) : is_eof_(false), echo_stdout_(has_echo) {
+AsciiBits::AsciiBits(bool feed_thru) : is_eof_(false), feed_thru_(feed_thru) {
 }
 
 AsciiBits::~AsciiBits() {
@@ -19,7 +19,7 @@ int AsciiBits::getNextBit() {
   int result = 0;
   while (result != '0' && result != '1' && result != EOF) {
     result = getchar();
-    if (echo_stdout_)
+    if (feed_thru_)
       putchar(result);
   }
 

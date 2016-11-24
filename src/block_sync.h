@@ -21,7 +21,7 @@ enum eOutputType {
 
 class BlockStream {
  public:
-  BlockStream(eInputType input_type = INPUT_MPX, bool has_echo = false);
+  BlockStream(eInputType input_type = INPUT_MPX, bool feed_thru = false);
   Group getNextGroup();
   bool isEOF() const;
 #ifdef DEBUG
