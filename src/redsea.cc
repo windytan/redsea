@@ -97,9 +97,9 @@ int main(int argc, char** argv) {
 
   // Line buffering
   if (feed_thru)
-    std::cerr.setf(std::ios_base::unitbuf);
+    setvbuf(stderr, NULL, _IOLBF, 2048);
   else
-    std::cout.setf(std::ios_base::unitbuf);
+    setvbuf(stdout, NULL, _IOLBF, 2048);
 
   while (!is_eof) {
     redsea::Group group = (input_type == redsea::INPUT_RDSSPY ?
