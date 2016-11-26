@@ -190,7 +190,7 @@ void Station::updatePS(int pos, std::vector<int> chars) {
 
   if (ps_.isComplete())
     json_["ps"] = ps_.getLastCompleteStringTrimmed();
-  else
+  else if (options_.show_partial)
     json_["partial_ps"] = ps_.getString();
 }
 
@@ -387,7 +387,7 @@ void Station::decodeType2 (const Group& group) {
 
   if (rt_.isComplete())
     json_["radiotext"] = rt_.getLastCompleteStringTrimmed();
-  else if (rt_.getTrimmedString().length() > 0)
+  else if (options_.show_partial && rt_.getTrimmedString().length() > 0)
     json_["partial_radiotext"] = rt_.getTrimmedString();
 }
 

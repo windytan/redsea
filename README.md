@@ -113,13 +113,14 @@ ts` and `man strftime`.
 radio_command | ./src/redsea [OPTIONS]
 
 -b|--input-ascii  Input is ASCII bit stream (011010110...)
+-e|--feed-through Echo the input signal to stdout and print decoded
+                  groups to stderr
 -h|--input-hex    Input is hex groups in the RDS Spy format
 -x|--output-hex   Output is hex groups in the RDS Spy format
+-p|--show-partial Display PS and RadioText before completely
+                  received (as partial_ps, partial_radiotext)
 -u|--rbds         Use RBDS (North American) program types
--e|--feed-through Echo the input signal to stdout and print decoded groups to
-                  stderr
--v|--version      Version information
--?|--help         Print this help
+-v|--version      Print version
 ```
 
 By default, the input (via stdin) is demodulated FM multiplex (MPX) with 16-bit
