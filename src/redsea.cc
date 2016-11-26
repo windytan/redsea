@@ -88,12 +88,12 @@ Options getOptions(int argc, char** argv) {
         options.rbds = true;
         break;
       case 'v':
-        redsea::printVersion();
+        printVersion();
         options.just_exit = true;
         break;
       case '?':
       default:
-        redsea::printUsage();
+        printUsage();
         options.just_exit = true;
         break;
     }
