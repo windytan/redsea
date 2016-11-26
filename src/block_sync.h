@@ -11,17 +11,9 @@
 
 namespace redsea {
 
-enum eInputType {
-  INPUT_MPX, INPUT_ASCIIBITS, INPUT_RDSSPY
-};
-
-enum eOutputType {
-  OUTPUT_HEX, OUTPUT_JSON
-};
-
 class BlockStream {
  public:
-  BlockStream(eInputType input_type = INPUT_MPX, bool feed_thru = false);
+  BlockStream(Options options);
   Group getNextGroup();
   bool isEOF() const;
 #ifdef DEBUG

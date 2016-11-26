@@ -11,6 +11,7 @@
 #include <json/json.h>
 
 #include "config.h"
+#include "src/common.h"
 #include "src/rdsstring.h"
 #include "src/tmc/tmc.h"
 
@@ -55,7 +56,7 @@ class Group {
 class Station {
  public:
   Station();
-  Station(uint16_t pi, bool _is_rbds);
+  Station(uint16_t pi, Options options);
   void updateAndPrint(const Group& group, std::ostream* stream);
   bool hasPS() const;
   std::string getPS() const;
@@ -79,7 +80,7 @@ class Station {
   void updateRadioText(int pos, std::vector<int> chars);
   void parseRadioTextPlus(const Group& group);
   uint16_t pi_;
-  bool is_rbds_;
+  Options options_;
   RDSString ps_;
   RDSString rt_;
   int rt_ab_;

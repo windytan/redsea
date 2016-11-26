@@ -12,6 +12,7 @@
 #include <json/json.h>
 
 #include "config.h"
+#include "src/common.h"
 #include "src/rdsstring.h"
 #include "src/tables.h"
 #include "src/util.h"
@@ -84,10 +85,10 @@ void Group::printHex(std::ostream* stream) const {
   *stream << std::endl;
 }
 
-Station::Station() : Station(0x0000, false) {
+Station::Station() : Station(0x0000, Options()) {
 }
 
-Station::Station(uint16_t _pi, bool _is_rbds) : pi_(_pi), is_rbds_(_is_rbds),
+Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
   ps_(8), rt_(64), rt_ab_(0), pty_(0), is_tp_(false), is_ta_(false),
   is_music_(false), alt_freqs_(), num_alt_freqs_(0), pin_(0), ecc_(0), cc_(0),
   tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
@@ -206,7 +207,7 @@ void Station::decodeBasics (const Group& group) {
 
     json_["group"] = group.type.toString();
     json_["tp"] = is_tp_;
-    json_["prog_type"] = getPTYname(pty_, is_rbds_);
+    json_["prog_type"] = getPTYname(pty_, options_.rbds);
   } else if (group.type.num == 15 && group.type.ab == VERSION_B &&
       group.hasOffset[OFFSET_D]) {
     is_tp_ = bits(group.block[OFFSET_D], 10, 1);
@@ -214,7 +215,7 @@ void Station::decodeBasics (const Group& group) {
 
     json_["group"] = group.type.toString();
     json_["tp"] = is_tp_;
-    json_["prog_type"] = getPTYname(pty_, is_rbds_);
+    json_["prog_type"] = getPTYname(pty_, options_.rbds);
   }
 }
 
@@ -541,7 +542,7 @@ void Station::decodeType14A (const Group& group) {
   } else if (eon_variant == 13) {
     uint16_t pty = bits(group.block[OFFSET_C], 11, 5);
     bool ta      = bits(group.block[OFFSET_C], 0, 1);
-    json_["other_network"]["prog_type"] = getPTYname(pty, is_rbds_);
+    json_["other_network"]["prog_type"] = getPTYname(pty, options_.rbds);
     json_["other_network"]["ta"] = ta;
 
   } else if (eon_variant == 14) {

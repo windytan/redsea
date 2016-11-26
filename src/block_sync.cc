@@ -76,17 +76,17 @@ std::map<uint16_t, uint32_t> makeErrorLookupTable() {
 
 }  // namespace
 
-BlockStream::BlockStream(eInputType input_type, bool feed_thru) : bitcount_(0),
+BlockStream::BlockStream(Options options) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), wideblock_(0), prevsync_(0),
   block_counter_(0), expected_offset_(OFFSET_A),
   received_offset_(OFFSET_INVALID), pi_(0), is_in_sync_(false),
   block_has_errors_(50),
 #ifdef HAVE_LIQUID
-  subcarrier_(feed_thru),
+  subcarrier_(options.feed_thru),
 #endif
-  ascii_bits_(feed_thru),
+  ascii_bits_(options.feed_thru),
   error_lookup_(makeErrorLookupTable()),
-  input_type_(input_type), is_eof_(false) {
+  input_type_(options.input_type), is_eof_(false) {
 }
 
 int BlockStream::getNextBit() {
