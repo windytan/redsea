@@ -66,7 +66,7 @@ Options getOptions(int argc, char** argv) {
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "behxvu?", long_options,
+  while ((option_char = getopt_long(argc, argv, "behpxvu", long_options,
          &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
