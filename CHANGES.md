@@ -1,5 +1,10 @@
 # redsea changelog
 
+## 0.8.1 (xxxx-xx-xx)
+
+* Add option `-p` or `--show-partial` to display PS and RadioText before
+  completely received
+
 ## 0.8.0 (2016-11-23)
 
 * Add option `-e` to echo stdin to stdout and print the decoded output to stderr
