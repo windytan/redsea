@@ -165,5 +165,5 @@ of hex data using the `-x` switch.
 ## Licensing
 
 Redsea is released under the MIT license, which means it is copyrighted to Oona
-Räisänen yet you're free to use it provided that the copyright information is
+Räisänen OH2EIQ yet you're free to use it provided that the copyright information is
 not removed. See LICENSE.

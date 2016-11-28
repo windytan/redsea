@@ -43,9 +43,9 @@ void printUsage() {
 
 void printVersion() {
 #ifdef DEBUG
-  std::cout << PACKAGE_STRING << "-debug by Oona Raisanen" << std::endl;
+  std::cout << PACKAGE_STRING << "-debug by OH2EIQ" << std::endl;
 #else
-  std::cout << PACKAGE_STRING << " by Oona Raisanen" << std::endl;
+  std::cout << PACKAGE_STRING << " by OH2EIQ" << std::endl;
 #endif
 }
 
