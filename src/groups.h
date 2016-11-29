@@ -25,6 +25,19 @@ enum eOffset {
   OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D, OFFSET_INVALID
 };
 
+class AltFreqList {
+ public:
+  AltFreqList();
+  void add(uint8_t code);
+  bool hasAll() const;
+  std::set<float> get() const;
+  void clear();
+
+ private:
+  std::set<float> alt_freqs_;
+  int num_alt_freqs_;
+ };
+
 class GroupType {
  public:
   GroupType(uint16_t type_code = 0x00);
@@ -88,8 +101,6 @@ class Station {
   bool is_tp_;
   bool is_ta_;
   bool is_music_;
-  std::set<double> alt_freqs_;
-  int num_alt_freqs_;
   int pin_;
   int ecc_;
   int cc_;
@@ -108,6 +119,7 @@ class Station {
   bool rt_plus_item_running_;
   std::map<uint16_t, RDSString> eon_ps_names_;
   bool last_block_had_pi_;
+  AltFreqList alt_freq_list_;
 
   int pager_pac_;
   int pager_opc_;

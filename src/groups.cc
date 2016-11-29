@@ -85,17 +85,48 @@ void Group::printHex(std::ostream* stream) const {
   *stream << std::endl;
 }
 
+AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0) {
+}
+
+void AltFreqList::add(uint8_t af_code) {
+  if (isFMFrequency(af_code)) {
+    alt_freqs_.insert(getFMFrequency(af_code));
+  } else if (af_code == 205) {
+    // filler
+  } else if (af_code == 224) {
+    // no AF exists
+  } else if (af_code >= 225 && af_code <= 249) {
+    num_alt_freqs_ = af_code - 224;
+  } else if (af_code == 250) {
+    // AM/LF freq follows
+  }
+}
+
+bool AltFreqList::hasAll() const {
+  return (static_cast<int>(alt_freqs_.size()) == num_alt_freqs_ &&
+          num_alt_freqs_ > 0);
+}
+
+std::set<float> AltFreqList::get() const {
+  return alt_freqs_;
+}
+
+void AltFreqList::clear() {
+  alt_freqs_.clear();
+}
+
 Station::Station() : Station(0x0000, Options()) {
 }
 
 Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
   ps_(8), rt_(64), rt_ab_(0), pty_(0), is_tp_(false), is_ta_(false),
-  is_music_(false), alt_freqs_(), num_alt_freqs_(0), pin_(0), ecc_(0), cc_(0),
+  is_music_(false), pin_(0), ecc_(0), cc_(0),
   tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
   has_country_(false), oda_app_for_group_(), has_rt_plus_(false),
   rt_plus_toggle_(false), rt_plus_item_running_(false),
-  last_block_had_pi_(false), pager_pac_(0), pager_opc_(0), pager_tng_(0),
-  pager_ecc_(0), pager_ccf_(0), pager_interval_(0), writer_builder_(), json_()
+  last_block_had_pi_(false), alt_freq_list_(), pager_pac_(0), pager_opc_(0),
+  pager_tng_(0), pager_ecc_(0), pager_ccf_(0), pager_interval_(0),
+  writer_builder_(), json_()
 #ifdef ENABLE_TMC
                     , tmc_()
 #endif
@@ -148,20 +179,6 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
   writer_->write(json_, stream);
 
   *stream << std::endl;
-}
-
-void Station::addAltFreq(uint8_t af_code) {
-  if (isFMFrequency(af_code)) {
-    alt_freqs_.insert(getFMFrequency(af_code));
-  } else if (af_code == 205) {
-    // filler
-  } else if (af_code == 224) {
-    // no AF exists
-  } else if (af_code >= 225 && af_code <= 249) {
-    num_alt_freqs_ = af_code - 224;
-  } else if (af_code == 250) {
-    // AM/LF freq follows
-  }
 }
 
 bool Station::hasPS() const {
@@ -233,13 +250,12 @@ void Station::decodeType0 (const Group& group) {
 
   if (group.type.ab == VERSION_A) {
     for (int i=0; i<2; i++)
-      addAltFreq(bits(group.block[OFFSET_C], 8-i*8, 8));
+      alt_freq_list_.add(bits(group.block[OFFSET_C], 8-i*8, 8));
 
-    if (static_cast<int>(alt_freqs_.size()) == num_alt_freqs_ &&
-        num_alt_freqs_ > 0) {
-      for (auto f : alt_freqs_)
+    if (alt_freq_list_.hasAll()) {
+      for (auto f : alt_freq_list_.get())
         json_["alt_freqs"].append(f);
-      alt_freqs_.clear();
+      alt_freq_list_.clear();
     }
   }
 
