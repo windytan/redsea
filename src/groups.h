@@ -118,6 +118,7 @@ class Station {
   bool rt_plus_toggle_;
   bool rt_plus_item_running_;
   std::map<uint16_t, RDSString> eon_ps_names_;
+  std::map<uint16_t, AltFreqList> eon_alt_freqs_;
   bool last_block_had_pi_;
   AltFreqList alt_freq_list_;
 

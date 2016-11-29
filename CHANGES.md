@@ -4,6 +4,7 @@
 
 * Add option `-p` or `--show-partial` to display PS and RadioText before
   completely received
+* Support EON variant 4 (alternate frequencies for other network)
 
 ## 0.8.0 (2016-11-23)
 

@@ -540,6 +540,16 @@ void Station::decodeType14A (const Group& group) {
     if (eon_ps_names_[pi].isComplete())
       json_["other_network"]["ps"] = eon_ps_names_[pi].getLastCompleteString();
 
+  } else if (eon_variant == 4) {
+    eon_alt_freqs_[pi].add(bits(group.block[OFFSET_C], 8, 8));
+    eon_alt_freqs_[pi].add(bits(group.block[OFFSET_C], 0, 8));
+
+    if (eon_alt_freqs_[pi].hasAll()) {
+      for (auto f : eon_alt_freqs_[pi].get())
+        json_["other_network"]["alt_freqs"].append(f);
+      eon_alt_freqs_[pi].clear();
+    }
+
   } else if (eon_variant >= 5 && eon_variant <= 9) {
 
     uint16_t f_other = bits(group.block[OFFSET_C], 0, 8);
