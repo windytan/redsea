@@ -145,7 +145,7 @@ Redsea decodes the following basic info from RDS:
 * Traffic Program (TP) and Traffic Announcement (TA) flags
 * Music/Speech (M/S) flag
 * Program Type (PTY)
-* Alternate Frequencies (AF)
+* Alternative Frequencies (AF)
 * Clock Time and Date (CT)
 * Program Item Number (PIN)
 * Enhanced Other Networks (EON) information
