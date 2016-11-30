@@ -21,14 +21,6 @@ namespace redsea {
 
 namespace {
 
-bool isFMFrequency(uint16_t af_code) {
-  return (af_code >= 1 && af_code <= 204);
-}
-
-float getFMFrequency(uint16_t af_code) {
-  return 87.5 + af_code / 10.0;
-}
-
 std::string hoursMinutesString(int hr, int mn) {
   std::stringstream ss;
   ss << std::setfill('0') << std::setw(2) << hr << ":" << mn;
@@ -85,12 +77,58 @@ void Group::printHex(std::ostream* stream) const {
   *stream << std::endl;
 }
 
-AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0) {
+// 3.2.1.6
+CarrierFrequency::CarrierFrequency(uint8_t code, bool is_lf_mf) :
+    code_(code), is_lf_mf_(is_lf_mf) {
+}
+
+bool CarrierFrequency::isValid() const {
+  return ((is_lf_mf_ && code_ >= 1 && code_ <= 135) ||
+         (!is_lf_mf_ && code_ >= 1 && code_ <= 204));
+}
+
+int CarrierFrequency::getKhz() const {
+  int khz = 0;
+  if (isValid()) {
+    if (!is_lf_mf_)
+      khz = 87500 + 100 * code_;
+    else if (code_ <= 15)
+      khz = 144 + 9 * code_;
+    else
+      khz = 522 + (9 * (code_ - 15));
+  }
+
+  return khz;
+}
+
+std::string CarrierFrequency::getString() const {
+  float num = (is_lf_mf_ ? getKhz() : getKhz() / 1000.0f);
+  std::stringstream ss;
+  ss.precision(is_lf_mf_ ? 0 : 1);
+  ss << std::fixed << num << (is_lf_mf_ ? " kHz" : " MHz");
+  return ss.str();
+};
+
+bool operator== (const CarrierFrequency &f1,
+                 const CarrierFrequency &f2) {
+  return (f1.getKhz() == f2.getKhz());
+}
+
+bool operator< (const CarrierFrequency &f1,
+                const CarrierFrequency &f2) {
+  return (f1.getKhz() < f2.getKhz());
+}
+
+AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0),
+                             lf_mf_follows_(false) {
 }
 
 void AltFreqList::add(uint8_t af_code) {
-  if (isFMFrequency(af_code)) {
-    alt_freqs_.insert(getFMFrequency(af_code));
+  CarrierFrequency freq(af_code, lf_mf_follows_);
+  lf_mf_follows_ = false;
+
+  if (freq.isValid()) {
+    alt_freqs_.insert(freq);
   } else if (af_code == 205) {
     // filler
   } else if (af_code == 224) {
@@ -99,6 +137,7 @@ void AltFreqList::add(uint8_t af_code) {
     num_alt_freqs_ = af_code - 224;
   } else if (af_code == 250) {
     // AM/LF freq follows
+    lf_mf_follows_ = true;
   }
 }
 
@@ -107,7 +146,7 @@ bool AltFreqList::hasAll() const {
           num_alt_freqs_ > 0);
 }
 
-std::set<float> AltFreqList::get() const {
+std::set<CarrierFrequency> AltFreqList::get() const {
   return alt_freqs_;
 }
 
@@ -254,7 +293,7 @@ void Station::decodeType0 (const Group& group) {
 
     if (alt_freq_list_.hasAll()) {
       for (auto f : alt_freq_list_.get())
-        json_["alt_freqs"].append(f);
+        json_["alt_freqs"].append(f.getString());
       alt_freq_list_.clear();
     }
   }
@@ -546,16 +585,16 @@ void Station::decodeType14A (const Group& group) {
 
     if (eon_alt_freqs_[pi].hasAll()) {
       for (auto f : eon_alt_freqs_[pi].get())
-        json_["other_network"]["alt_freqs"].append(f);
+        json_["other_network"]["alt_freqs"].append(f.getString());
       eon_alt_freqs_[pi].clear();
     }
 
   } else if (eon_variant >= 5 && eon_variant <= 9) {
 
-    uint16_t f_other = bits(group.block[OFFSET_C], 0, 8);
+    CarrierFrequency f_other(bits(group.block[OFFSET_C], 0, 8));
 
-    if (isFMFrequency(f_other))
-      json_["other_network"]["frequency"] = getFMFrequency(f_other);
+    if (f_other.isValid())
+      json_["other_network"]["frequency"] = f_other.getString();
 
   } else if (eon_variant == 12) {
 

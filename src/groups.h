@@ -25,17 +25,34 @@ enum eOffset {
   OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D, OFFSET_INVALID
 };
 
+class CarrierFrequency {
+ public:
+  CarrierFrequency(uint8_t code, bool is_lf_mf=false);
+  bool isValid() const;
+  int getKhz() const;
+  std::string getString() const;
+  friend bool operator== (const CarrierFrequency &f1,
+                          const CarrierFrequency &f2);
+  friend bool operator< (const CarrierFrequency &f1,
+                         const CarrierFrequency &f2);
+
+ private:
+  uint8_t code_;
+  bool is_lf_mf_;
+};
+
 class AltFreqList {
  public:
   AltFreqList();
   void add(uint8_t code);
   bool hasAll() const;
-  std::set<float> get() const;
+  std::set<CarrierFrequency> get() const;
   void clear();
 
  private:
-  std::set<float> alt_freqs_;
+  std::set<CarrierFrequency> alt_freqs_;
   int num_alt_freqs_;
+  bool lf_mf_follows_;
  };
 
 class GroupType {

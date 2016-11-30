@@ -4,13 +4,17 @@
 
 * Add option `-p` or `--show-partial` to display PS and RadioText before
   completely received
-* Support EON variant 4 (alternate frequencies for other network)
+* Add support for EON variant 4 (alternative frequencies for other networks)
+* Add support for LF/MF alternative frequencies
+* Change the way alternative frequencies are printed (87.9 becomes "87.9 MHz")
+  to allow for LF/MF frequencies
 
 ## 0.8.0 (2016-11-23)
 
 * Add option `-e` to echo stdin to stdout and print the decoded output to stderr
-* Use jsoncpp for JSON serialization (note that this changes the order of keys
-  in the JSON objects - they are unordered collections by nature)
+* Use jsoncpp for JSON serialization
+* Change the order of JSON keys (alphabetical instead of PI first) because of
+  jsoncpp
 
 ## 0.7.6 (2016-10-02)
 
