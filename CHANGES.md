@@ -3,7 +3,7 @@
 ## 0.8.1 (xxxx-xx-xx)
 
 * Add option `-p` or `--show-partial` to display PS and RadioText before
-  completely received
+  completely received (disabled by default)
 * Add support for EON variant 4 (alternative frequencies for other networks)
 * Add support for LF/MF alternative frequencies
 * Change the way alternative frequencies are printed (87.9 becomes "87.9 MHz")
