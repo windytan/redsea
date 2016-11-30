@@ -14,6 +14,7 @@
 #include "src/common.h"
 #include "src/rdsstring.h"
 #include "src/tmc/tmc.h"
+#include "src/util.h"
 
 namespace redsea {
 
@@ -23,22 +24,6 @@ enum eGroupTypeVersion {
 
 enum eOffset {
   OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D, OFFSET_INVALID
-};
-
-class CarrierFrequency {
- public:
-  CarrierFrequency(uint8_t code, bool is_lf_mf=false);
-  bool isValid() const;
-  int getKhz() const;
-  std::string getString() const;
-  friend bool operator== (const CarrierFrequency &f1,
-                          const CarrierFrequency &f2);
-  friend bool operator< (const CarrierFrequency &f1,
-                         const CarrierFrequency &f2);
-
- private:
-  uint8_t code_;
-  bool is_lf_mf_;
 };
 
 class AltFreqList {

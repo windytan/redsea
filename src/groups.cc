@@ -77,48 +77,6 @@ void Group::printHex(std::ostream* stream) const {
   *stream << std::endl;
 }
 
-// 3.2.1.6
-CarrierFrequency::CarrierFrequency(uint8_t code, bool is_lf_mf) :
-    code_(code), is_lf_mf_(is_lf_mf) {
-}
-
-bool CarrierFrequency::isValid() const {
-  return ((is_lf_mf_ && code_ >= 1 && code_ <= 135) ||
-         (!is_lf_mf_ && code_ >= 1 && code_ <= 204));
-}
-
-int CarrierFrequency::getKhz() const {
-  int khz = 0;
-  if (isValid()) {
-    if (!is_lf_mf_)
-      khz = 87500 + 100 * code_;
-    else if (code_ <= 15)
-      khz = 144 + 9 * code_;
-    else
-      khz = 522 + (9 * (code_ - 15));
-  }
-
-  return khz;
-}
-
-std::string CarrierFrequency::getString() const {
-  float num = (is_lf_mf_ ? getKhz() : getKhz() / 1000.0f);
-  std::stringstream ss;
-  ss.precision(is_lf_mf_ ? 0 : 1);
-  ss << std::fixed << num << (is_lf_mf_ ? " kHz" : " MHz");
-  return ss.str();
-};
-
-bool operator== (const CarrierFrequency &f1,
-                 const CarrierFrequency &f2) {
-  return (f1.getKhz() == f2.getKhz());
-}
-
-bool operator< (const CarrierFrequency &f1,
-                const CarrierFrequency &f2) {
-  return (f1.getKhz() < f2.getKhz());
-}
-
 AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0),
                              lf_mf_follows_(false) {
 }

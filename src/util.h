@@ -14,5 +14,21 @@ std::string join(std::vector<uint16_t> strings, std::string);
 
 std::string hexString(int value, int numybbles);
 
-} // namespace redsea
-#endif // UTIL_H_
+class CarrierFrequency {
+ public:
+  CarrierFrequency(uint16_t code, bool is_lf_mf=false);
+  bool isValid() const;
+  int getKhz() const;
+  std::string getString() const;
+  friend bool operator== (const CarrierFrequency &f1,
+                          const CarrierFrequency &f2);
+  friend bool operator< (const CarrierFrequency &f1,
+                         const CarrierFrequency &f2);
+
+ private:
+  uint16_t code_;
+  bool is_lf_mf_;
+};
+
+}  // namespace redsea
+#endif  // UTIL_H_
