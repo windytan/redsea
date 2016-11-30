@@ -69,7 +69,10 @@ std::string CarrierFrequency::getString() const {
   float num = (is_lf_mf_ ? getKhz() : getKhz() / 1000.0f);
   std::stringstream ss;
   ss.precision(is_lf_mf_ ? 0 : 1);
-  ss << std::fixed << num << (is_lf_mf_ ? " kHz" : " MHz");
+  if (isValid())
+    ss << std::fixed << num << (is_lf_mf_ ? " kHz" : " MHz");
+  else
+    ss << "N/A";
   return ss.str();
 };
 
