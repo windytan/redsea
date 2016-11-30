@@ -245,6 +245,16 @@ std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
       q = "of up to " + std::to_string(q_value) + " millimetres";
       break;
     }
+    case Q_MHZ: {
+      CarrierFrequency freq(q_value);
+      q = freq.getString();
+      break;
+    }
+    case Q_KHZ: {
+      CarrierFrequency freq(q_value, true);
+      q = freq.getString();
+      break;
+    }
     default: {
       //*stream_ << jsonVal("debug", "q_value =" + std::to_string(q_value) +
       //    ", q_type=" + std::to_string(event.quantifier_type));

@@ -6,6 +6,7 @@
   completely received (disabled by default)
 * Add support for EON variant 4 (alternative frequencies for other networks)
 * Add support for LF/MF alternative frequencies
+* Add support for frequency quantifiers in TMC
 * Change the way alternative frequencies are printed (87.9 becomes "87.9 MHz")
   to allow for LF/MF frequencies
 
