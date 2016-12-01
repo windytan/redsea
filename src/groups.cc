@@ -389,12 +389,15 @@ void Station::decodeType2 (const Group& group) {
   std::string chars;
 
   if (group.type.ab == VERSION_A) {
+    rt_.resize(64);
     updateRadioText(rt_position,
         {bits(group.block[OFFSET_C], 8, 8), bits(group.block[OFFSET_C], 0, 8)});
+  } else {
+    rt_.resize(32);
   }
 
   if (group.hasOffset[OFFSET_D]) {
-    updateRadioText(rt_position+2,
+    updateRadioText(rt_position + (group.type.ab == VERSION_A ? 2 : 0),
         {bits(group.block[OFFSET_D], 8, 8), bits(group.block[OFFSET_D], 0, 8)});
   }
 

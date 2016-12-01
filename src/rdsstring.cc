@@ -82,6 +82,10 @@ size_t RDSString::lengthExpected() const {
   return result;
 }
 
+void RDSString::resize(int n) {
+  chars_.resize(n, 32);
+}
+
 std::string RDSString::getString() const {
   std::string result;
   for (LCDchar chr : getChars()) {
