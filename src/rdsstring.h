@@ -18,7 +18,7 @@ class LCDchar {
 };
 
 class RDSString {
-  public:
+ public:
   RDSString(int len=8);
   void setAt(int pos, LCDchar chr);
   std::string charAt(int pos) const;
@@ -34,8 +34,9 @@ class RDSString {
   bool hasChars(int start, int len) const;
   bool isComplete() const;
   void clear();
+  void resize(int n);
 
-  private:
+ private:
   std::vector<LCDchar> chars_;
   std::vector<LCDchar> last_complete_chars_;
   std::vector<bool> is_char_sequential_;
