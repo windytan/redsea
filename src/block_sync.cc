@@ -22,8 +22,8 @@ const std::vector<uint16_t> offset_words =
 const std::map<uint16_t, eOffset> offset_syndromes =
     {{0x3D8, OFFSET_A},  {0x3D4, OFFSET_B}, {0x25C, OFFSET_C},
      {0x3CC, OFFSET_CI}, {0x258, OFFSET_D}};
-const std::vector<uint16_t> block_number_for_offset =
-    {0, 1, 2, 2, 3};
+const std::vector<eBlockNumber> block_number_for_offset =
+    {BLOCK1, BLOCK2, BLOCK3, BLOCK3, BLOCK4};
 
 // Section B.1.1: '-- calculated by the modulo-two addition of all the rows of
 // the -- matrix for which the corresponding coefficient in the -- vector is 1.'
@@ -228,12 +228,9 @@ Group BlockStream::getNextGroup() {
     // Error-free block received
 
     if (received_offset_ == expected_offset_) {
-      group.block[expected_offset_] = message;
-      group.hasOffset[expected_offset_] = true;
+      group.set(block_number_for_offset[expected_offset_], message);
 
       if (expected_offset_ == OFFSET_A || expected_offset_ == OFFSET_CI) {
-        group.pi = message;
-        group.hasPi = true;
         if (was_valid_word)
           pi_ = message;
       }
@@ -246,16 +243,14 @@ Group BlockStream::getNextGroup() {
     }
   }
 
-  if (group.hasOffset[OFFSET_B]) {
-    group.type = GroupType(bits(group.block[OFFSET_B], 11, 5));
-    group.hasType = true;
-  } else if (group.hasOffset[OFFSET_CI] && group.hasOffset[OFFSET_D]) {
+  // TODO: Group type from 15B
+  /*if (group.hasOffset[OFFSET_CI] && group.hasOffset[OFFSET_D]) {
     GroupType potential(bits(group.block[OFFSET_D], 11, 5));
     if (potential.num == 15 && potential.ab == VERSION_B) {
       group.type = potential;
       group.hasType = true;
     }
-  }
+  }*/
 
   return group;
 }

@@ -18,6 +18,10 @@
 
 namespace redsea {
 
+enum eBlockNumber {
+  BLOCK1, BLOCK2, BLOCK3, BLOCK4
+};
+
 enum eGroupTypeVersion {
   VERSION_A, VERSION_B
 };
@@ -55,15 +59,23 @@ class GroupType {
 
 bool operator<(const GroupType& obj1, const GroupType& obj2);
 
-struct Group {
+class Group {
+ public:
   Group();
+  uint16_t get(eBlockNumber blocknum) const;
+  bool has(eBlockNumber blocknum) const;
+  bool hasSomeBlock() const;
+  GroupType type() const;
+  bool hasType() const;
+  uint16_t pi() const;
+  bool hasPi() const;
+  void set(eBlockNumber blocknum, uint16_t data);
 
-  GroupType type;
-  bool hasType;
-  uint16_t pi;
-  bool hasPi;
-  std::vector<bool> hasOffset;
-  std::vector<uint16_t> block;
+ private:
+  GroupType type_;
+  uint16_t pi_;
+  std::vector<bool> has_block_;
+  std::vector<uint16_t> block_;
 };
 
 class Station {

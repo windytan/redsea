@@ -33,25 +33,18 @@ void printHexGroup(const Group& group, std::ostream* stream) {
   stream->fill('0');
   stream->setf(std::ios_base::uppercase);
 
-  if (group.hasOffset[OFFSET_A])
-    *stream << std::hex << std::setw(4) << group.block[OFFSET_A] << " ";
-  else
-    *stream << "---- ";
+  if (!group.hasSomeBlock())
+    return;
 
-  if (group.hasOffset[OFFSET_B])
-    *stream << std::hex << std::setw(4) << group.block[OFFSET_B] << " ";
-  else
-    *stream << "---- ";
+  for (eBlockNumber blocknum : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
+    if (group.has(blocknum))
+      *stream << std::hex << std::setw(4) << group.get(blocknum);
+    else
+      *stream << "----";
 
-  if (group.hasOffset[OFFSET_C] || group.hasOffset[OFFSET_CI])
-    *stream << std::hex << std::setw(4) << group.block[OFFSET_C] << " ";
-  else
-    *stream << "---- ";
-
-  if (group.hasOffset[OFFSET_D])
-    *stream << std::hex << std::setw(4) << group.block[OFFSET_D];
-  else
-    *stream << "----";
+    if (blocknum != BLOCK4)
+      *stream << " ";
+  }
 
   *stream << std::endl;
 }
@@ -72,8 +65,45 @@ bool operator<(const GroupType& obj1, const GroupType& obj2) {
   return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab));
 }
 
-Group::Group() : hasType(false), hasPi(false),
-  hasOffset({false,false,false,false,false}), block(5) {
+Group::Group() : has_block_({false,false,false,false,false}), block_(5) {
+}
+
+uint16_t Group::get(eBlockNumber n) const {
+  return block_.at(n);
+}
+
+bool Group::has(eBlockNumber n) const {
+  return has_block_.at(n);
+}
+
+bool Group::hasSomeBlock() const {
+  return has(BLOCK1) || has(BLOCK2) || has(BLOCK3) || has(BLOCK4);
+}
+
+uint16_t Group::pi() const {
+  return block_.at(0);
+}
+
+bool Group::hasPi() const {
+  return has_block_.at(0);
+}
+
+GroupType Group::type() const {
+  return type_;
+}
+
+bool Group::hasType() const {
+  return has_block_.at(1);
+}
+
+void Group::set(eBlockNumber n, uint16_t data) {
+  block_[n] = data;
+  has_block_[n] = true;
+  if (has_block_[0])
+    pi_ = block_[0];
+
+  if (has_block_[1])
+    type_ = GroupType(bits(block_[1], 11, 5));
 }
 
 AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0),
@@ -136,7 +166,7 @@ Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
 void Station::updateAndPrint(const Group& group, std::ostream* stream) {
 
   // Allow 1 group with missed PI
-  if (group.hasPi) {
+  if (group.hasPi()) {
     last_block_had_pi_ = true;
   } else if (!last_block_had_pi_) {
     return;
@@ -145,31 +175,31 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
   }
 
   json_.clear();
-  json_["pi"] = "0x" + hexString(group.pi, 4);
+  json_["pi"] = "0x" + hexString(group.pi(), 4);
 
   decodeBasics(group);
 
-  if (group.hasType) {
-    if      (group.type.num == 0)
+  if (group.hasType()) {
+    if      (group.type().num == 0)
       decodeType0(group);
-    else if (group.type.num == 1)
+    else if (group.type().num == 1)
       decodeType1(group);
-    else if (group.type.num == 2)
+    else if (group.type().num == 2)
       decodeType2(group);
-    else if (group.type.num == 3 && group.type.ab == VERSION_A)
+    else if (group.type().num == 3 && group.type().ab == VERSION_A)
       decodeType3A(group);
-    else if (group.type.num == 4 && group.type.ab == VERSION_A)
+    else if (group.type().num == 4 && group.type().ab == VERSION_A)
       decodeType4A(group);
-    else if (group.type.num == 14 && group.type.ab == VERSION_A)
+    else if (group.type().num == 14 && group.type().ab == VERSION_A)
       decodeType14A(group);
-    else if (group.type.num == 15 && group.type.ab == VERSION_B)
+    else if (group.type().num == 15 && group.type().ab == VERSION_B)
       decodeType15B(group);
-    else if (oda_app_for_group_.count(group.type) > 0)
+    else if (oda_app_for_group_.count(group.type()) > 0)
       decodeODAgroup(group);
-    else if (group.type.num == 6)
+    else if (group.type().num == 6)
       decodeType6(group);
     else
-      json_["debug"].append("TODO " + group.type.toString());
+      json_["debug"].append("TODO " + group.type().toString());
   }
 
   writer_->write(json_, stream);
@@ -214,19 +244,19 @@ void Station::updateRadioText(int pos, std::vector<int> chars) {
 
 void Station::decodeBasics (const Group& group) {
 
-  if (group.hasOffset[OFFSET_B]) {
-    is_tp_ = bits(group.block[OFFSET_B], 10, 1);
-    pty_   = bits(group.block[OFFSET_B],  5, 5);
+  if (group.has(BLOCK2)) {
+    is_tp_ = bits(group.get(BLOCK2), 10, 1);
+    pty_   = bits(group.get(BLOCK2),  5, 5);
 
-    json_["group"] = group.type.toString();
+    json_["group"] = group.type().toString();
     json_["tp"] = is_tp_;
     json_["prog_type"] = getPTYname(pty_, options_.rbds);
-  } else if (group.type.num == 15 && group.type.ab == VERSION_B &&
-      group.hasOffset[OFFSET_D]) {
-    is_tp_ = bits(group.block[OFFSET_D], 10, 1);
-    pty_   = bits(group.block[OFFSET_D],  5, 5);
+  } else if (group.type().num == 15 && group.type().ab == VERSION_B &&
+      group.has(BLOCK4)) {
+    is_tp_ = bits(group.get(BLOCK4), 10, 1);
+    pty_   = bits(group.get(BLOCK4),  5, 5);
 
-    json_["group"] = group.type.toString();
+    json_["group"] = group.type().toString();
     json_["tp"] = is_tp_;
     json_["prog_type"] = getPTYname(pty_, options_.rbds);
   }
@@ -235,18 +265,18 @@ void Station::decodeBasics (const Group& group) {
 // Group 0: Basic tuning and switching information
 void Station::decodeType0 (const Group& group) {
   // not implemented: Decoder Identification
-  is_ta_    = bits(group.block[OFFSET_B], 4, 1);
-  is_music_ = bits(group.block[OFFSET_B], 3, 1);
+  is_ta_    = bits(group.get(BLOCK2), 4, 1);
+  is_music_ = bits(group.get(BLOCK2), 3, 1);
 
   json_["ta"] = is_ta_;
   json_["is_music"] = is_music_;
 
-  if (!group.hasOffset[OFFSET_C])
+  if (!group.has(BLOCK3))
     return;
 
-  if (group.type.ab == VERSION_A) {
+  if (group.type().ab == VERSION_A) {
     for (int i=0; i<2; i++)
-      alt_freq_list_.add(bits(group.block[OFFSET_C], 8-i*8, 8));
+      alt_freq_list_.add(bits(group.get(BLOCK3), 8-i*8, 8));
 
     if (alt_freq_list_.hasAll()) {
       for (auto f : alt_freq_list_.get())
@@ -255,19 +285,19 @@ void Station::decodeType0 (const Group& group) {
     }
   }
 
-  if (!group.hasOffset[OFFSET_D])
+  if (!group.has(BLOCK4))
     return;
 
-  updatePS(bits(group.block[OFFSET_B], 0, 2) * 2,
-      { bits(group.block[OFFSET_D], 8, 8), bits(group.block[OFFSET_D], 0, 8) });
+  updatePS(bits(group.get(BLOCK2), 0, 2) * 2,
+      { bits(group.get(BLOCK4), 8, 8), bits(group.get(BLOCK4), 0, 8) });
 }
 
 // Group 1: Programme Item Number and slow labelling codes
 void Station::decodeType1 (const Group& group) {
-  if (!(group.hasOffset[OFFSET_C] && group.hasOffset[OFFSET_D]))
+  if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  pin_ = group.block[OFFSET_D];
+  pin_ = group.get(BLOCK4);
 
   if (pin_ != 0x0000) {
     uint16_t dy = bits(pin_, 11, 5);
@@ -281,43 +311,43 @@ void Station::decodeType1 (const Group& group) {
     }
   }
 
-  if (group.type.ab == VERSION_A) {
-    pager_tng_ = bits(group.block[OFFSET_B], 2, 3);
+  if (group.type().ab == VERSION_A) {
+    pager_tng_ = bits(group.get(BLOCK2), 2, 3);
     if (pager_tng_ != 0) {
-      pager_interval_ = bits(group.block[OFFSET_B], 0, 2);
+      pager_interval_ = bits(group.get(BLOCK2), 0, 2);
     }
-    linkage_la_ = bits(group.block[OFFSET_C], 15, 1);
+    linkage_la_ = bits(group.get(BLOCK3), 15, 1);
     json_["has_linkage"] = linkage_la_;
 
-    int slc_variant = bits(group.block[OFFSET_C], 12, 3);
+    int slc_variant = bits(group.get(BLOCK3), 12, 3);
 
     if (slc_variant == 0) {
       if (pager_tng_ != 0) {
-        pager_opc_ = bits(group.block[OFFSET_C], 8, 4);
+        pager_opc_ = bits(group.get(BLOCK3), 8, 4);
       }
 
       // No PIN, section M.3.2.4.3
-      if (group.hasOffset[OFFSET_D] && (group.block[OFFSET_D] >> 11) == 0) {
-        int subtype = bits(group.block[OFFSET_D], 10, 1);
+      if (group.has(BLOCK4) && (group.get(BLOCK4) >> 11) == 0) {
+        int subtype = bits(group.get(BLOCK4), 10, 1);
         if (subtype == 0) {
           if (pager_tng_ != 0) {
-            pager_pac_ = bits(group.block[OFFSET_D], 4, 6);
-            pager_opc_ = bits(group.block[OFFSET_D], 0, 4);
+            pager_pac_ = bits(group.get(BLOCK4), 4, 6);
+            pager_opc_ = bits(group.get(BLOCK4), 0, 4);
           }
         } else if (subtype == 1) {
           if (pager_tng_ != 0) {
-            int b = bits(group.block[OFFSET_D], 8, 2);
+            int b = bits(group.get(BLOCK4), 8, 2);
             if (b == 0) {
-              pager_ecc_ = bits(group.block[OFFSET_D], 0, 6);
+              pager_ecc_ = bits(group.get(BLOCK4), 0, 6);
             } else if (b == 3) {
-              pager_ccf_ = bits(group.block[OFFSET_D], 0, 4);
+              pager_ccf_ = bits(group.get(BLOCK4), 0, 4);
             }
           }
         }
       }
 
-      ecc_ = bits(group.block[OFFSET_C],  0, 8);
-      cc_  = bits(group.block[OFFSET_A], 12, 4);
+      ecc_ = bits(group.get(BLOCK3),  0, 8);
+      cc_  = bits(group.get(BLOCK1), 12, 4);
 
       if (ecc_ != 0x00) {
         has_country_ = true;
@@ -326,41 +356,41 @@ void Station::decodeType1 (const Group& group) {
       }
 
     } else if (slc_variant == 1) {
-      tmc_id_ = bits(group.block[OFFSET_C], 0, 12);
+      tmc_id_ = bits(group.get(BLOCK3), 0, 12);
       json_["tmc_id"] = tmc_id_;
 
     } else if (slc_variant == 2) {
       if (pager_tng_ != 0) {
-        pager_pac_ = bits(group.block[OFFSET_C], 0, 6);
-        pager_opc_ = bits(group.block[OFFSET_C], 8, 4);
+        pager_pac_ = bits(group.get(BLOCK3), 0, 6);
+        pager_opc_ = bits(group.get(BLOCK3), 8, 4);
       }
 
       // No PIN, section M.3.2.4.3
-      if (group.hasOffset[OFFSET_D] && (group.block[OFFSET_D] >> 11) == 0) {
-        int subtype = bits(group.block[OFFSET_D], 10, 1);
+      if (group.has(BLOCK4) && (group.get(BLOCK4) >> 11) == 0) {
+        int subtype = bits(group.get(BLOCK4), 10, 1);
         if (subtype == 0) {
           if (pager_tng_ != 0) {
-            pager_pac_ = bits(group.block[OFFSET_D], 4, 6);
-            pager_opc_ = bits(group.block[OFFSET_D], 0, 4);
+            pager_pac_ = bits(group.get(BLOCK4), 4, 6);
+            pager_opc_ = bits(group.get(BLOCK4), 0, 4);
           }
         } else if (subtype == 1) {
           if (pager_tng_ != 0) {
-            int b = bits(group.block[OFFSET_D], 8, 2);
+            int b = bits(group.get(BLOCK4), 8, 2);
             if (b == 0) {
-              pager_ecc_ = bits(group.block[OFFSET_D], 0, 6);
+              pager_ecc_ = bits(group.get(BLOCK4), 0, 6);
             } else if (b == 3) {
-              pager_ccf_ = bits(group.block[OFFSET_D], 0, 4);
+              pager_ccf_ = bits(group.get(BLOCK4), 0, 4);
             }
           }
         }
       }
 
     } else if (slc_variant == 3) {
-      lang_ = bits(group.block[OFFSET_C], 0, 8);
+      lang_ = bits(group.get(BLOCK3), 0, 8);
       json_["language"] = getLanguageString(lang_);
 
     } else if (slc_variant == 7) {
-      ews_channel_ = bits(group.block[OFFSET_C], 0, 12);
+      ews_channel_ = bits(group.get(BLOCK3), 0, 12);
       json_["ews"] = ews_channel_;
 
     } else {
@@ -373,31 +403,30 @@ void Station::decodeType1 (const Group& group) {
 // Group 2: RadioText
 void Station::decodeType2 (const Group& group) {
 
-  if (!((group.hasOffset[OFFSET_C] || group.hasOffset[OFFSET_CI]) &&
-         group.hasOffset[OFFSET_D]))
+  if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  int rt_position = bits(group.block[OFFSET_B], 0, 4) *
-    (group.type.ab == VERSION_A ? 4 : 2);
+  int rt_position = bits(group.get(BLOCK2), 0, 4) *
+    (group.type().ab == VERSION_A ? 4 : 2);
   int prev_textAB = rt_ab_;
-  rt_ab_          = bits(group.block[OFFSET_B], 4, 1);
+  rt_ab_          = bits(group.get(BLOCK2), 4, 1);
 
   if (prev_textAB != rt_ab_)
     rt_.clear();
 
   std::string chars;
 
-  if (group.type.ab == VERSION_A) {
+  if (group.type().ab == VERSION_A) {
     rt_.resize(64);
     updateRadioText(rt_position,
-        {bits(group.block[OFFSET_C], 8, 8), bits(group.block[OFFSET_C], 0, 8)});
+        {bits(group.get(BLOCK3), 8, 8), bits(group.get(BLOCK3), 0, 8)});
   } else {
     rt_.resize(32);
   }
 
-  if (group.hasOffset[OFFSET_D]) {
-    updateRadioText(rt_position + (group.type.ab == VERSION_A ? 2 : 0),
-        {bits(group.block[OFFSET_D], 8, 8), bits(group.block[OFFSET_D], 0, 8)});
+  if (group.has(BLOCK4)) {
+    updateRadioText(rt_position + (group.type().ab == VERSION_A ? 2 : 0),
+        {bits(group.get(BLOCK4), 8, 8), bits(group.get(BLOCK4), 0, 8)});
   }
 
   if (rt_.isComplete())
@@ -409,15 +438,15 @@ void Station::decodeType2 (const Group& group) {
 // Group 3A: Application identification for Open Data
 void Station::decodeType3A (const Group& group) {
 
-  if (!(group.hasOffset[OFFSET_C] && group.hasOffset[OFFSET_D]))
+  if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  if (group.type.ab != VERSION_A)
+  if (group.type().ab != VERSION_A)
     return;
 
-  GroupType oda_group(bits(group.block[OFFSET_B], 0, 5));
-  uint16_t oda_msg = group.block[OFFSET_C];
-  uint16_t oda_aid = group.block[OFFSET_D];
+  GroupType oda_group(bits(group.get(BLOCK2), 0, 5));
+  uint16_t oda_msg = group.get(BLOCK3);
+  uint16_t oda_aid = group.get(BLOCK4);
 
   oda_app_for_group_[oda_group] = oda_aid;
 
@@ -426,15 +455,15 @@ void Station::decodeType3A (const Group& group) {
 
   if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
 #ifdef ENABLE_TMC
-    tmc_.systemGroup(group.block[OFFSET_C], &json_);
+    tmc_.systemGroup(group.get(BLOCK3), &json_);
 #else
     json_["debug"].append("redsea compiled without TMC support");
 #endif
   } else if (oda_aid == 0x4BD7) {
     has_rt_plus_ = true;
-    rt_plus_cb_ = bits(group.block[OFFSET_C], 12, 1);
-    rt_plus_scb_ = bits(group.block[OFFSET_C], 8, 4);
-    rt_plus_template_num_ = bits(group.block[OFFSET_C], 0, 8);
+    rt_plus_cb_ = bits(group.get(BLOCK3), 12, 1);
+    rt_plus_scb_ = bits(group.get(BLOCK3), 8, 4);
+    rt_plus_template_num_ = bits(group.get(BLOCK3), 0, 8);
   } else {
     json_["debug"].append("TODO: Unimplemented ODA app " +
         std::to_string(oda_aid));
@@ -445,16 +474,16 @@ void Station::decodeType3A (const Group& group) {
 // Group 4A: Clock-time and date
 void Station::decodeType4A (const Group& group) {
 
-  if (!(group.hasOffset[OFFSET_C] && group.hasOffset[OFFSET_D]))
+  if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  int mjd = (bits(group.block[OFFSET_B], 0, 2) << 15) +
-             bits(group.block[OFFSET_C], 1, 15);
+  int mjd = (bits(group.get(BLOCK2), 0, 2) << 15) +
+             bits(group.get(BLOCK3), 1, 15);
   double lto = 0.0;
 
-  if (group.hasOffset[OFFSET_D]) {
-    lto = (bits(group.block[OFFSET_D], 5, 1) ? -1 : 1) *
-           bits(group.block[OFFSET_D], 0, 5) / 2.0;
+  if (group.has(BLOCK4)) {
+    lto = (bits(group.get(BLOCK4), 5, 1) ? -1 : 1) *
+           bits(group.get(BLOCK4), 0, 5) / 2.0;
     mjd = mjd + lto / 24.0;
   }
 
@@ -468,12 +497,12 @@ void Station::decodeType4A (const Group& group) {
   yr += 1900;
   mo -= 1;
 
-  if (group.hasOffset[OFFSET_D]) {
+  if (group.has(BLOCK4)) {
     int ltom = (lto - std::trunc(lto)) * 60;
 
-    int hr = int((bits(group.block[OFFSET_C], 0, 1) << 4) +
-        bits(group.block[OFFSET_D], 12, 14) + lto) % 24;
-    int mn = bits(group.block[OFFSET_D], 6, 6) + ltom;
+    int hr = int((bits(group.get(BLOCK3), 0, 1) << 4) +
+        bits(group.get(BLOCK4), 12, 14) + lto) % 24;
+    int mn = bits(group.get(BLOCK4), 6, 6) + ltom;
 
     if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31 && hr >= 0 && hr <= 23 &&
         mn >= 0 && mn <= 59 && fabs(std::trunc(lto)) <= 13.0) {
@@ -492,22 +521,22 @@ void Station::decodeType4A (const Group& group) {
 
 // Group 6: In-house applications
 void Station::decodeType6 (const Group& group) {
-  json_["in_house_data"].append(bits(group.block[OFFSET_B], 0, 5));
+  json_["in_house_data"].append(bits(group.get(BLOCK2), 0, 5));
 
-  if (group.type.ab == VERSION_A) {
-    if (group.hasOffset[OFFSET_C] || group.hasOffset[OFFSET_CI]) {
-      json_["in_house_data"].append(bits(group.block[OFFSET_C], 0, 16));
+  if (group.type().ab == VERSION_A) {
+    if (group.has(BLOCK3)) {
+      json_["in_house_data"].append(bits(group.get(BLOCK3), 0, 16));
     } else {
       json_["in_house_data"].append("(not received)");
     }
-    if (group.hasOffset[OFFSET_D]) {
-      json_["in_house_data"].append(bits(group.block[OFFSET_D], 0, 16));
+    if (group.has(BLOCK4)) {
+      json_["in_house_data"].append(bits(group.get(BLOCK4), 0, 16));
     } else {
       json_["in_house_data"].append("(not received)");
     }
   } else {
-    if (group.hasOffset[OFFSET_C] || group.hasOffset[OFFSET_CI]) {
-      json_["in_house_data"].append(bits(group.block[OFFSET_D], 0, 16));
+    if (group.has(BLOCK3)) {
+      json_["in_house_data"].append(bits(group.get(BLOCK4), 0, 16));
     } else {
       json_["in_house_data"].append("(not received)");
     }
@@ -517,31 +546,31 @@ void Station::decodeType6 (const Group& group) {
 // Group 14A: Enhanced Other Networks information
 void Station::decodeType14A (const Group& group) {
 
-  if (!(group.hasOffset[OFFSET_C] || group.hasOffset[OFFSET_D]))
+  if (!(group.has(BLOCK3) || group.has(BLOCK4)))
     return;
 
-  uint16_t pi = group.block[OFFSET_D];
-  bool tp = bits(group.block[OFFSET_B], 4, 1);
+  uint16_t pi = group.get(BLOCK4);
+  bool tp = bits(group.get(BLOCK2), 4, 1);
 
   json_["other_network"]["pi"] = "0x" + hexString(pi, 4);
   json_["other_network"]["tp"] = tp;
 
-  uint16_t eon_variant = bits(group.block[OFFSET_B], 0, 4);
+  uint16_t eon_variant = bits(group.get(BLOCK2), 0, 4);
 
   if (eon_variant <= 3) {
 
     if (eon_ps_names_.count(pi) == 0)
       eon_ps_names_[pi] = RDSString(8);
 
-    eon_ps_names_[pi].setAt(2*eon_variant,   bits(group.block[OFFSET_C], 8, 8));
-    eon_ps_names_[pi].setAt(2*eon_variant+1, bits(group.block[OFFSET_C], 0, 8));
+    eon_ps_names_[pi].setAt(2*eon_variant,   bits(group.get(BLOCK3), 8, 8));
+    eon_ps_names_[pi].setAt(2*eon_variant+1, bits(group.get(BLOCK3), 0, 8));
 
     if (eon_ps_names_[pi].isComplete())
       json_["other_network"]["ps"] = eon_ps_names_[pi].getLastCompleteString();
 
   } else if (eon_variant == 4) {
-    eon_alt_freqs_[pi].add(bits(group.block[OFFSET_C], 8, 8));
-    eon_alt_freqs_[pi].add(bits(group.block[OFFSET_C], 0, 8));
+    eon_alt_freqs_[pi].add(bits(group.get(BLOCK3), 8, 8));
+    eon_alt_freqs_[pi].add(bits(group.get(BLOCK3), 0, 8));
 
     if (eon_alt_freqs_[pi].hasAll()) {
       for (auto f : eon_alt_freqs_[pi].get())
@@ -551,28 +580,28 @@ void Station::decodeType14A (const Group& group) {
 
   } else if (eon_variant >= 5 && eon_variant <= 9) {
 
-    CarrierFrequency f_other(bits(group.block[OFFSET_C], 0, 8));
+    CarrierFrequency f_other(bits(group.get(BLOCK3), 0, 8));
 
     if (f_other.isValid())
       json_["other_network"]["frequency"] = f_other.getString();
 
   } else if (eon_variant == 12) {
 
-    bool has_linkage = bits(group.block[OFFSET_C], 15, 1);
-    uint16_t lsn = bits(group.block[OFFSET_C], 0, 12);
+    bool has_linkage = bits(group.get(BLOCK3), 15, 1);
+    uint16_t lsn = bits(group.get(BLOCK3), 0, 12);
     json_["other_network"]["has_linkage"] = has_linkage;
     if (has_linkage && lsn != 0)
       json_["other_network"]["linkage_set"] = lsn;
 
   } else if (eon_variant == 13) {
-    uint16_t pty = bits(group.block[OFFSET_C], 11, 5);
-    bool ta      = bits(group.block[OFFSET_C], 0, 1);
+    uint16_t pty = bits(group.get(BLOCK3), 11, 5);
+    bool ta      = bits(group.get(BLOCK3), 0, 1);
     json_["other_network"]["prog_type"] = getPTYname(pty, options_.rbds);
     json_["other_network"]["ta"] = ta;
 
   } else if (eon_variant == 14) {
 
-    uint16_t pin = group.block[OFFSET_C];
+    uint16_t pin = group.get(BLOCK3);
 
     if (pin != 0x0000) {
       json_["other_network"]["prog_item_started"]["day"] = bits(pin, 11, 5);
@@ -582,14 +611,14 @@ void Station::decodeType14A (const Group& group) {
 
   } else {
     json_["debug"].append("TODO: EON variant " +
-        std::to_string(bits(group.block[OFFSET_B], 0, 4)));
+        std::to_string(bits(group.get(BLOCK2), 0, 4)));
   }
 }
 
 /* Group 15B: Fast basic tuning and switching information */
 void Station::decodeType15B(const Group& group) {
-  is_ta_    = bits(group.block[OFFSET_B], 4, 1);
-  is_music_ = bits(group.block[OFFSET_B], 3, 1);
+  is_ta_    = bits(group.get(BLOCK2), 4, 1);
+  is_music_ = bits(group.get(BLOCK2), 3, 1);
 
   json_["ta"] = is_ta_;
   json_["is_music"] = is_music_;
@@ -598,15 +627,15 @@ void Station::decodeType15B(const Group& group) {
 /* Open Data Application */
 void Station::decodeODAgroup(const Group& group) {
 
-  if (oda_app_for_group_.count(group.type) == 0)
+  if (oda_app_for_group_.count(group.type()) == 0)
     return;
 
-  uint16_t aid = oda_app_for_group_[group.type];
+  uint16_t aid = oda_app_for_group_[group.type()];
 
   if (aid == 0xCD46 || aid == 0xCD47) {
 #ifdef ENABLE_TMC
-    tmc_.userGroup(bits(group.block[OFFSET_B], 0, 5), group.block[OFFSET_C],
-        group.block[OFFSET_D], &json_);
+    tmc_.userGroup(bits(group.get(BLOCK2), 0, 5), group.get(BLOCK3),
+        group.get(BLOCK4), &json_);
 #endif
   } else if (aid == 0x4BD7) {
     parseRadioTextPlus(group);
@@ -614,8 +643,8 @@ void Station::decodeODAgroup(const Group& group) {
 }
 
 void Station::parseRadioTextPlus(const Group& group) {
-  bool item_toggle  = bits(group.block[OFFSET_B], 4, 1);
-  bool item_running = bits(group.block[OFFSET_B], 3, 1);
+  bool item_toggle  = bits(group.get(BLOCK2), 4, 1);
+  bool item_running = bits(group.get(BLOCK2), 3, 1);
 
   if (item_toggle != rt_plus_toggle_ || item_running != rt_plus_item_running_) {
     rt_.clear();
@@ -627,15 +656,15 @@ void Station::parseRadioTextPlus(const Group& group) {
 
   std::vector<RTPlusTag> tags(2);
 
-  tags[0].content_type = (bits(group.block[OFFSET_B], 0, 3) << 3) +
-                          bits(group.block[OFFSET_C], 13, 3);
-  tags[0].start  = bits(group.block[OFFSET_C], 7, 6);
-  tags[0].length = bits(group.block[OFFSET_C], 1, 6) + 1;
+  tags[0].content_type = (bits(group.get(BLOCK2), 0, 3) << 3) +
+                          bits(group.get(BLOCK3), 13, 3);
+  tags[0].start  = bits(group.get(BLOCK3), 7, 6);
+  tags[0].length = bits(group.get(BLOCK3), 1, 6) + 1;
 
-  tags[1].content_type = (bits(group.block[OFFSET_C], 0, 1) << 5) +
-                          bits(group.block[OFFSET_D], 11, 5);
-  tags[1].start  = bits(group.block[OFFSET_D], 5, 6);
-  tags[1].length = bits(group.block[OFFSET_D], 0, 5) + 1;
+  tags[1].content_type = (bits(group.get(BLOCK3), 0, 1) << 5) +
+                          bits(group.get(BLOCK4), 11, 5);
+  tags[1].start  = bits(group.get(BLOCK4), 5, 6);
+  tags[1].length = bits(group.get(BLOCK4), 0, 5) + 1;
 
   for (RTPlusTag tag : tags) {
     std::string text =

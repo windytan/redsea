@@ -49,10 +49,9 @@ Group getNextGroupRSpy(bool feed_thru) {
     if (line.length() < 16)
       continue;
 
-    for (int nblok=0; nblok < 4; nblok++) {
-      uint16_t bval = 0;
+    for (eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
+      uint16_t block_data = 0;
       bool block_still_valid = true;
-      group.hasOffset[nblok == 3 ? OFFSET_D : nblok] = true;
 
       int nyb = 0;
       while (nyb < 4) {
@@ -66,30 +65,22 @@ Group getNextGroupRSpy(bool feed_thru) {
         if (single.compare(" ") != 0) {
           try {
             int nval = std::stoi(std::string(single), nullptr, 16);
-            bval = (bval << 4) + nval;
+            block_data = (block_data << 4) + nval;
           } catch (std::invalid_argument) {
             block_still_valid = false;
-            group.hasOffset[nblok == 3 ? OFFSET_D : nblok] = false;
           }
           nyb++;
         }
         line = line.substr(1);
       }
 
-      group.block[nblok == 3 ? OFFSET_D : nblok] = bval;
+      if (block_still_valid)
+        group.set(block_num, block_data);
 
-      if (nblok == 3)
+      if (block_num == BLOCK4)
         finished = true;
     }
   }
-
-  group.hasType = group.hasOffset[OFFSET_B];
-
-  group.type = (group.hasType ? bits(group.block[OFFSET_B], 11, 5) : 0);
-
-  group.hasPi = group.hasOffset[OFFSET_A];
-  if (group.hasPi)
-    group.pi = group.block[OFFSET_A];
 
   return group;
 }

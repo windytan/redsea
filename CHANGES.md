@@ -10,6 +10,7 @@
 * Change the way alternative frequencies are printed (87.9 becomes "87.9 MHz")
   to allow for LF/MF frequencies
 * Fix radiotext decoding for group 2B, thanks Anonymous
+* Fix empty hex group printout at EOF
 
 ## 0.8.0 (2016-11-23)
 

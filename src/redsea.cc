@@ -139,10 +139,10 @@ int main(int argc, char** argv) {
 
     is_eof = (std::cin.eof() || block_stream.isEOF());
 
-    if (group.hasPi) {
+    if (group.hasPi()) {
       // Repeated PI confirms change
       prev_new_pi = new_pi;
-      new_pi = group.block[redsea::OFFSET_A];
+      new_pi = group.get(redsea::BLOCK1);
 
       if (new_pi == prev_new_pi || options.input_type == redsea::INPUT_RDSSPY) {
         pi = new_pi;
