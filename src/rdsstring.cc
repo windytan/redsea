@@ -83,7 +83,7 @@ size_t RDSString::lengthExpected() const {
 }
 
 void RDSString::resize(int n) {
-  chars_.resize(n, 32);
+  chars_.resize(n, 0x20);
 }
 
 std::string RDSString::getString() const {
