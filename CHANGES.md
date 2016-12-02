@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.8.1 (xxxx-xx-xx)
+## 0.8.1 (2016-12-02)
 
 * Add option `-p` or `--show-partial` to display PS and RadioText before
   completely received (disabled by default)
