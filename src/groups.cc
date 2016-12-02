@@ -33,7 +33,7 @@ void printHexGroup(const Group& group, std::ostream* stream) {
   stream->fill('0');
   stream->setf(std::ios_base::uppercase);
 
-  if (!group.hasSomeBlock())
+  if (group.empty())
     return;
 
   for (eBlockNumber blocknum : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
@@ -65,7 +65,8 @@ bool operator<(const GroupType& obj1, const GroupType& obj2) {
   return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab));
 }
 
-Group::Group() : has_block_({false,false,false,false,false}), block_(5) {
+Group::Group() : has_block_({false,false,false,false,false}), block_(5),
+                 has_type_(false), has_pi_(false), has_ci_(false) {
 }
 
 uint16_t Group::get(eBlockNumber n) const {
@@ -76,16 +77,16 @@ bool Group::has(eBlockNumber n) const {
   return has_block_.at(n);
 }
 
-bool Group::hasSomeBlock() const {
-  return has(BLOCK1) || has(BLOCK2) || has(BLOCK3) || has(BLOCK4);
+bool Group::empty() const {
+  return !(has(BLOCK1) || has(BLOCK2) || has(BLOCK3) || has(BLOCK4));
 }
 
 uint16_t Group::pi() const {
-  return block_.at(0);
+  return pi_;
 }
 
 bool Group::hasPi() const {
-  return has_block_.at(0);
+  return has_pi_;
 }
 
 GroupType Group::type() const {
@@ -93,17 +94,40 @@ GroupType Group::type() const {
 }
 
 bool Group::hasType() const {
-  return has_block_.at(1);
+  return has_type_;
 }
 
 void Group::set(eBlockNumber n, uint16_t data) {
   block_[n] = data;
   has_block_[n] = true;
-  if (has_block_[0])
-    pi_ = block_[0];
 
-  if (has_block_[1])
-    type_ = GroupType(bits(block_[1], 11, 5));
+  if (n == BLOCK1) {
+    pi_ = data;
+    has_pi_ = true;
+  }
+
+  if (n == BLOCK3 && has_ci_ && !has_pi_) {
+    pi_ = data;
+    has_pi_ = true;
+  }
+
+  if (n == BLOCK4 && has_ci_ && !has_type_) {
+    GroupType potential_type(bits(data, 11, 5));
+    if (potential_type.num == 15 && potential_type.ab == VERSION_B) {
+      type_ = potential_type;
+      has_type_ = true;
+    }
+  }
+
+  if (n == BLOCK2) {
+    type_ = GroupType(bits(data, 11, 5));
+    has_type_ = true;
+  }
+}
+
+void Group::setCI(uint16_t data) {
+  has_ci_ = true;
+  set(BLOCK3, data);
 }
 
 AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0),
@@ -621,8 +645,10 @@ void Station::decodeType14A (const Group& group) {
 
 /* Group 15B: Fast basic tuning and switching information */
 void Station::decodeType15B(const Group& group) {
-  is_ta_    = bits(group.get(BLOCK2), 4, 1);
-  is_music_ = bits(group.get(BLOCK2), 3, 1);
+  eBlockNumber block = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
+
+  is_ta_    = bits(group.get(block), 4, 1);
+  is_music_ = bits(group.get(block), 3, 1);
 
   json_["ta"] = is_ta_;
   json_["is_music"] = is_music_;

@@ -64,18 +64,22 @@ class Group {
   Group();
   uint16_t get(eBlockNumber blocknum) const;
   bool has(eBlockNumber blocknum) const;
-  bool hasSomeBlock() const;
+  bool empty() const;
   GroupType type() const;
   bool hasType() const;
   uint16_t pi() const;
   bool hasPi() const;
   void set(eBlockNumber blocknum, uint16_t data);
+  void setCI(uint16_t data);
 
  private:
   GroupType type_;
   uint16_t pi_;
   std::vector<bool> has_block_;
   std::vector<uint16_t> block_;
+  bool has_type_;
+  bool has_pi_;
+  bool has_ci_;
 };
 
 class Station {

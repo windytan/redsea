@@ -228,7 +228,10 @@ Group BlockStream::getNextGroup() {
     // Error-free block received
 
     if (received_offset_ == expected_offset_) {
-      group.set(block_number_for_offset[expected_offset_], message);
+      if (expected_offset_ == OFFSET_CI)
+        group.setCI(message);
+      else
+        group.set(block_number_for_offset[expected_offset_], message);
 
       if (expected_offset_ == OFFSET_A || expected_offset_ == OFFSET_CI) {
         if (was_valid_word)
@@ -242,15 +245,6 @@ Group BlockStream::getNextGroup() {
       break;
     }
   }
-
-  // TODO: Group type from 15B
-  /*if (group.hasOffset[OFFSET_CI] && group.hasOffset[OFFSET_D]) {
-    GroupType potential(bits(group.block[OFFSET_D], 11, 5));
-    if (potential.num == 15 && potential.ab == VERSION_B) {
-      group.type = potential;
-      group.hasType = true;
-    }
-  }*/
 
   return group;
 }
