@@ -242,4 +242,12 @@ std::string getRTPlusContentTypeName(uint16_t content_type) {
       content_type_names[content_type] : "unknown");
 }
 
+std::string getDICode(uint16_t di) {
+  static const std::vector<std::string> di_codes({
+      "stereo", "artificial_head", "compressed", "dynamic_pty" });
+
+  assert (di < di_codes.size());
+  return di_codes[di];
+}
+
 }  // namespace redsea

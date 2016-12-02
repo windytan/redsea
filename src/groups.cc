@@ -264,7 +264,10 @@ void Station::decodeBasics (const Group& group) {
 
 // Group 0: Basic tuning and switching information
 void Station::decodeType0 (const Group& group) {
-  // not implemented: Decoder Identification
+  uint16_t seg_address = bits(group.get(BLOCK2), 0, 2);
+  bool is_di = bits(group.get(BLOCK2), 2, 1);
+  json_["di"][getDICode(seg_address)] = is_di;
+
   is_ta_    = bits(group.get(BLOCK2), 4, 1);
   is_music_ = bits(group.get(BLOCK2), 3, 1);
 
@@ -288,7 +291,7 @@ void Station::decodeType0 (const Group& group) {
   if (!group.has(BLOCK4))
     return;
 
-  updatePS(bits(group.get(BLOCK2), 0, 2) * 2,
+  updatePS(seg_address * 2,
       { bits(group.get(BLOCK4), 8, 8), bits(group.get(BLOCK4), 0, 8) });
 }
 

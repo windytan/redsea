@@ -1,5 +1,9 @@
 # redsea changelog
 
+## 0.8.2 (xxxx-xx-xx)
+
+* Add support for Decoder Identification (DI)
+
 ## 0.8.1 (2016-12-02)
 
 * Add option `-p` or `--show-partial` to display PS and RadioText before
