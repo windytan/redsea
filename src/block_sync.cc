@@ -233,10 +233,8 @@ Group BlockStream::getNextGroup() {
       else
         group.set(block_number_for_offset[expected_offset_], message);
 
-      if (expected_offset_ == OFFSET_A || expected_offset_ == OFFSET_CI) {
-        if (was_valid_word)
-          pi_ = message;
-      }
+      if (group.hasPi())
+        pi_ = group.pi();
     }
 
     expected_offset_ = nextOffsetFor(expected_offset_);
