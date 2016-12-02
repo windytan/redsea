@@ -549,33 +549,34 @@ void Station::decodeType14A (const Group& group) {
   if (!(group.has(BLOCK3) || group.has(BLOCK4)))
     return;
 
-  uint16_t pi = group.get(BLOCK4);
+  uint16_t on_pi = group.get(BLOCK4);
   bool tp = bits(group.get(BLOCK2), 4, 1);
 
-  json_["other_network"]["pi"] = "0x" + hexString(pi, 4);
+  json_["other_network"]["pi"] = "0x" + hexString(on_pi, 4);
   json_["other_network"]["tp"] = tp;
 
   uint16_t eon_variant = bits(group.get(BLOCK2), 0, 4);
 
   if (eon_variant <= 3) {
 
-    if (eon_ps_names_.count(pi) == 0)
-      eon_ps_names_[pi] = RDSString(8);
+    if (eon_ps_names_.count(on_pi) == 0)
+      eon_ps_names_[on_pi] = RDSString(8);
 
-    eon_ps_names_[pi].setAt(2*eon_variant,   bits(group.get(BLOCK3), 8, 8));
-    eon_ps_names_[pi].setAt(2*eon_variant+1, bits(group.get(BLOCK3), 0, 8));
+    eon_ps_names_[on_pi].setAt(2*eon_variant,   bits(group.get(BLOCK3), 8, 8));
+    eon_ps_names_[on_pi].setAt(2*eon_variant+1, bits(group.get(BLOCK3), 0, 8));
 
-    if (eon_ps_names_[pi].isComplete())
-      json_["other_network"]["ps"] = eon_ps_names_[pi].getLastCompleteString();
+    if (eon_ps_names_[on_pi].isComplete())
+      json_["other_network"]["ps"] =
+          eon_ps_names_[on_pi].getLastCompleteString();
 
   } else if (eon_variant == 4) {
-    eon_alt_freqs_[pi].add(bits(group.get(BLOCK3), 8, 8));
-    eon_alt_freqs_[pi].add(bits(group.get(BLOCK3), 0, 8));
+    eon_alt_freqs_[on_pi].add(bits(group.get(BLOCK3), 8, 8));
+    eon_alt_freqs_[on_pi].add(bits(group.get(BLOCK3), 0, 8));
 
-    if (eon_alt_freqs_[pi].hasAll()) {
-      for (auto f : eon_alt_freqs_[pi].get())
+    if (eon_alt_freqs_[on_pi].hasAll()) {
+      for (auto f : eon_alt_freqs_[on_pi].get())
         json_["other_network"]["alt_freqs"].append(f.getString());
-      eon_alt_freqs_[pi].clear();
+      eon_alt_freqs_[on_pi].clear();
     }
 
   } else if (eon_variant >= 5 && eon_variant <= 9) {
