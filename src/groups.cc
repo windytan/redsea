@@ -29,6 +29,33 @@ std::string hoursMinutesString(int hr, int mn) {
 
 }  // namespace
 
+void printHexGroup(const Group& group, std::ostream* stream) {
+  stream->fill('0');
+  stream->setf(std::ios_base::uppercase);
+
+  if (group.hasOffset[OFFSET_A])
+    *stream << std::hex << std::setw(4) << group.block[OFFSET_A] << " ";
+  else
+    *stream << "---- ";
+
+  if (group.hasOffset[OFFSET_B])
+    *stream << std::hex << std::setw(4) << group.block[OFFSET_B] << " ";
+  else
+    *stream << "---- ";
+
+  if (group.hasOffset[OFFSET_C] || group.hasOffset[OFFSET_CI])
+    *stream << std::hex << std::setw(4) << group.block[OFFSET_C] << " ";
+  else
+    *stream << "---- ";
+
+  if (group.hasOffset[OFFSET_D])
+    *stream << std::hex << std::setw(4) << group.block[OFFSET_D];
+  else
+    *stream << "----";
+
+  *stream << std::endl;
+}
+
 GroupType::GroupType(uint16_t type_code) : num((type_code >> 1) & 0xF),
   ab((type_code & 0x1) == 0 ? VERSION_A : VERSION_B) {}
 GroupType::GroupType(const GroupType& obj) : num(obj.num), ab(obj.ab) {}
@@ -47,34 +74,6 @@ bool operator<(const GroupType& obj1, const GroupType& obj2) {
 
 Group::Group() : hasType(false), hasPi(false),
   hasOffset({false,false,false,false,false}), block(5) {
-}
-
-void Group::printHex(std::ostream* stream) const {
-
-  stream->fill('0');
-  stream->setf(std::ios_base::uppercase);
-
-  if (hasOffset[OFFSET_A])
-    *stream << std::hex << std::setw(4) << block[OFFSET_A] << " ";
-  else
-    *stream << "---- ";
-
-  if (hasOffset[OFFSET_B])
-    *stream << std::hex << std::setw(4) << block[OFFSET_B] << " ";
-  else
-    *stream << "---- ";
-
-  if (hasOffset[OFFSET_C] || hasOffset[OFFSET_CI])
-    *stream << std::hex << std::setw(4) << block[OFFSET_C] << " ";
-  else
-    *stream << "---- ";
-
-  if (hasOffset[OFFSET_D])
-    *stream << std::hex << std::setw(4) << block[OFFSET_D];
-  else
-    *stream << "----";
-
-  *stream << std::endl;
 }
 
 AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0),

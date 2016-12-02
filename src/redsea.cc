@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
 #endif
 
     if (options.output_type == redsea::OUTPUT_HEX) {
-      group.printHex(options.feed_thru ? &std::cerr : &std::cout);
+      redsea::printHexGroup(group, options.feed_thru ? &std::cerr : &std::cout);
     } else {
       station.updateAndPrint(group, options.feed_thru ?
                              &std::cerr : &std::cout);

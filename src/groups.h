@@ -55,10 +55,8 @@ class GroupType {
 
 bool operator<(const GroupType& obj1, const GroupType& obj2);
 
-class Group {
- public:
+struct Group {
   Group();
-  void printHex(std::ostream* stream) const;
 
   GroupType type;
   bool hasType;
@@ -145,6 +143,8 @@ struct RTPlusTag {
   uint16_t start;
   uint16_t length;
 };
+
+void printHexGroup(const Group& group, std::ostream* stream);
 
 }  // namespace redsea
 #endif // GROUPS_H_
