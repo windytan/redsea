@@ -525,19 +525,26 @@ void Station::decodeType4A (const Group& group) {
   mo -= 1;
 
   if (group.has(BLOCK4)) {
-    int ltom = (lto - std::trunc(lto)) * 60;
+    int lto_min = (lto - std::trunc(lto)) * 60;
 
     int hr = int((bits(group.get(BLOCK3), 0, 1) << 4) +
         bits(group.get(BLOCK4), 12, 14) + lto) % 24;
-    int mn = bits(group.get(BLOCK4), 6, 6) + ltom;
+    int mn = bits(group.get(BLOCK4), 6, 6) + lto_min;
 
     if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31 && hr >= 0 && hr <= 23 &&
         mn >= 0 && mn <= 59 && fabs(std::trunc(lto)) <= 13.0) {
       char buff[100];
-      snprintf(buff, sizeof(buff),
-          "%04d-%02d-%02dT%02d:%02d:00%s%02.0f:%02d",
-          yr, mo, dy, hr, mn, lto > 0 ? "+" : "-", fabs(std::trunc(lto)),
-          abs(ltom));
+      int lto_hour = fabs(std::trunc(lto));
+
+      if (lto_hour == 0 && lto_min == 0) {
+        snprintf(buff, sizeof(buff), "%04d-%02d-%02dT%02d:%02d:00Z",
+                 yr, mo, dy, hr, mn);
+      } else {
+        snprintf(buff, sizeof(buff),
+                 "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
+                 yr, mo, dy, hr, mn, lto > 0 ? "+" : "-", lto_hour,
+                 abs(lto_min));
+      }
       clock_time_ = buff;
       json_["clock_time"] = clock_time_;
     } else {

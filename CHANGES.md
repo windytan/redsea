@@ -4,6 +4,7 @@
 
 * Add support for Decoder Identification (DI)
 * Add schema to specify JSON output format
+* Fix UTC time zone being displayed as "-00:00"
 * Fix PS strings getting trimmed
 
 ## 0.8.1 (2016-12-02)

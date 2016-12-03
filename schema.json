@@ -309,7 +309,7 @@
       "clock_time": {
         "description": "Time and date at transmitter (RFC 3339, section 5.6)",
         "type": "string",
-        "pattern": "^....-..-..T..:..:..(\\+|-)..:..$"
+        "pattern": "^....-..-..T..:..:..((\\+|-)..:..|Z)$"
       },
       "in_house_data": {
         "type": "array"
