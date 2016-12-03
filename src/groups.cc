@@ -256,7 +256,7 @@ void Station::updatePS(int pos, std::vector<int> chars) {
     ps_.setAt(i, chars[i-pos]);
 
   if (ps_.isComplete())
-    json_["ps"] = ps_.getLastCompleteStringTrimmed();
+    json_["ps"] = ps_.getLastCompleteString();
   else if (options_.show_partial)
     json_["partial_ps"] = ps_.getString();
 }
