@@ -204,7 +204,7 @@
         "$ref": "#/definitions/grouptype"
       },
       "pi": {
-        "description": "Program Identification number",
+        "description": "Program Identification code",
         "$ref": "#/definitions/pi"
       },
       "prog_type": {
@@ -240,27 +240,33 @@
         "type": "boolean"
       },
       "di": {
+        "description": "Decoder identification code",
         "$ref": "#/definitions/di"
       },
       "language": {
+        "description": "Program language",
         "type": "string"
       },
       "radiotext_plus": {
         "$ref": "#/definitions/rtplus"
       },
       "tmc": {
+        "description": "Traffic Message Channel",
         "$ref": "#/definitions/tmc"
       },
       "alt_freqs": {
+        "description": "Alternative Frequencies",
         "type": "array",
         "items": {
           "$ref": "#/definitions/carrierfreq"
         }
       },
       "prog_item_started": {
+        "description": "Program Item number (start time)",
         "$ref": "#/definitions/pin"
       },
       "debug": {
+        "description": "Debug messages from redsea",
         "type": "array",
         "items": {
           "type": "string"
@@ -272,14 +278,17 @@
         "maximum": 4095
       },
       "ews": {
+        "description": "Emergency Warning System channel number",
         "type": "integer",
         "minimum": 0,
         "maximum": 4095
       },
       "partial_radiotext": {
+        "description": "Incompletely received RadioText",
         "$ref": "#/definitions/radiotext"
       },
       "partial_ps": {
+        "description": "Incompletely received Program Service name",
         "$ref": "#/definitions/ps"
       },
       "open_data_app": {
@@ -298,6 +307,7 @@
         "additionalProperties": false
       },
       "clock_time": {
+        "description": "Time and date at transmitter (RFC 3339, section 5.6)",
         "type": "string",
         "pattern": "^....-..-..T..:..:..(\\+|-)..:..$"
       },
@@ -305,6 +315,7 @@
         "type": "array"
       },
       "other_network": {
+        "description": "Information about programs on other networks",
         "type": "object",
         "properties": {
           "pi": {
