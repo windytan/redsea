@@ -3,6 +3,7 @@
 ## 0.8.2 (xxxx-xx-xx)
 
 * Add support for Decoder Identification (DI)
+* Add schema to specify JSON output format
 * Fix PS strings getting trimmed
 
 ## 0.8.1 (2016-12-02)
