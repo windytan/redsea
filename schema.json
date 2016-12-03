@@ -1,0 +1,354 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "redsea",
+  "description": "Array of RDS groups from redsea",
+
+  "definitions": {
+    "pi": {
+      "type": "string",
+      "pattern": "^0x[0-9A-F]{4}$"
+    },
+    "grouptype": {
+      "type": "string",
+      "pattern": "^([0-9]|1[0-5])[AB]$"
+    },
+    "carrierfreq": {
+      "type": "string",
+      "pattern": "^((8[7-9]|9[0-9]|10[0-7])\\.[0-9] MHz|[0-9]{3,4} kHz)$"
+    },
+    "di": {
+      "type": "object",
+      "properties": {
+        "compressed":      { "type": "boolean" },
+        "artificial_head": { "type": "boolean" },
+        "stereo":          { "type": "boolean" },
+        "dynamic_pty":     { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "radiotext": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "ps": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 8
+    },
+    "rtplus": {
+      "type": "object",
+      "properties": {
+        "dummy_class":  { "type": "string" },
+        "item.title":  { "type": "string" },
+        "item.album":  { "type": "string" },
+        "item.tracknumber":  { "type": "string" },
+        "item.artist":  { "type": "string" },
+        "item.composition":  { "type": "string" },
+        "item.movement":  { "type": "string" },
+        "item.conductor":  { "type": "string" },
+        "item.composer":  { "type": "string" },
+        "item.band":  { "type": "string" },
+        "item.comment":  { "type": "string" },
+        "item.genre":  { "type": "string" },
+        "info.news":  { "type": "string" },
+        "info.news.local":  { "type": "string" },
+        "info.stockmarket":  { "type": "string" },
+        "info.sport":  { "type": "string" },
+        "info.lottery":  { "type": "string" },
+        "info.horoscope":  { "type": "string" },
+        "info.daily_diversion":  { "type": "string" },
+        "info.health":  { "type": "string" },
+        "info.event":  { "type": "string" },
+        "info.scene":  { "type": "string" },
+        "info.cinema":  { "type": "string" },
+        "info.tv":  { "type": "string" },
+        "info.date_time":  { "type": "string" },
+        "info.weather":  { "type": "string" },
+        "info.traffic":  { "type": "string" },
+        "info.alarm":  { "type": "string" },
+        "info.advertisement":  { "type": "string" },
+        "info.url":  { "type": "string" },
+        "info.other":  { "type": "string" },
+        "stationname.short":  { "type": "string" },
+        "stationname.long":  { "type": "string" },
+        "programme.now":  { "type": "string" },
+        "programme.next":  { "type": "string" },
+        "programme.part":  { "type": "string" },
+        "programme.host":  { "type": "string" },
+        "programme.editorial_staff":  { "type": "string" },
+        "programme.frequency":  { "type": "string" },
+        "programme.homepage":  { "type": "string" },
+        "programme.subchannel":  { "type": "string" },
+        "phone.hotline":  { "type": "string" },
+        "phone.studio":  { "type": "string" },
+        "phone.other":  { "type": "string" },
+        "sms.studio":  { "type": "string" },
+        "sms.other":  { "type": "string" },
+        "email.hotline":  { "type": "string" },
+        "email.studio":  { "type": "string" },
+        "email.other":  { "type": "string" },
+        "mms.other":  { "type": "string" },
+        "chat":  { "type": "string" },
+        "chat.centre":  { "type": "string" },
+        "vote.question":  { "type": "string" },
+        "vote.centre":  { "type": "string" },
+        "unknown":  { "type": "string" },
+        "place":  { "type": "string" },
+        "appointment":  { "type": "string" },
+        "identifier":  { "type": "string" },
+        "purchase":  { "type": "string" },
+        "get_data":  { "type": "string" },
+        "item_running":  { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "pin": {
+      "type": "object",
+      "properties": {
+        "day": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 31
+        },
+        "time": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "tmc": {
+      "type": "object",
+      "oneOf": [{
+        "encryption_info": {
+          "type": "object",
+          "properties": {
+            "encryption_id": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
+            },
+            "location_table": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "service_id": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            }
+          },
+          "additionalProperties": false
+        },
+        "system_info": {
+          "type": "object",
+          "properties": {
+            "is_encrypted": { "type": "boolean" },
+            "is_on_alt_freq": { "type": "boolean" },
+            "location_table": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 63
+            },
+            "scope": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["inter-road", "national", "regional", "urban"]
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "message": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "direction":   {
+              "type": "string",
+              "enum": ["single", "both"]
+            },
+            "extent": {
+              "type": "string",
+              "pattern": "^(\\+|-)[0-9]+$"
+            },
+            "location": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "event_codes": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2047
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }]
+    }
+  },
+
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+
+      "group": {
+        "description": "Group type",
+        "$ref": "#/definitions/grouptype"
+      },
+      "pi": {
+        "description": "Program Identification number",
+        "$ref": "#/definitions/pi"
+      },
+      "prog_type": {
+        "description": "Program Type",
+        "type": "string"
+      },
+      "tp": {
+        "description": "Traffic Program flag",
+        "type": "boolean"
+      },
+      "is_music": {
+        "description": "Music/Speech flag",
+        "type": "boolean"
+      },
+      "ta": {
+        "description": "Traffic Announcement flag",
+        "type": "boolean"
+      },
+      "radiotext": {
+        "$ref": "#/definitions/radiotext"
+      },
+      "ps": {
+        "description": "Program Service name",
+        "$ref": "#/definitions/ps"
+      },
+      "country": {
+        "description": "ISO country code",
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 2
+      },
+      "has_linkage": {
+        "type": "boolean"
+      },
+      "di": {
+        "$ref": "#/definitions/di"
+      },
+      "language": {
+        "type": "string"
+      },
+      "radiotext_plus": {
+        "$ref": "#/definitions/rtplus"
+      },
+      "tmc": {
+        "$ref": "#/definitions/tmc"
+      },
+      "alt_freqs": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/carrierfreq"
+        }
+      },
+      "prog_item_started": {
+        "$ref": "#/definitions/pin"
+      },
+      "debug": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "tmc_id": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4095
+      },
+      "ews": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4095
+      },
+      "partial_radiotext": {
+        "$ref": "#/definitions/radiotext"
+      },
+      "partial_ps": {
+        "$ref": "#/definitions/ps"
+      },
+      "open_data_app": {
+        "type": "object",
+        "properties": {
+          "oda_group": {
+            "$ref": "#/definitions/grouptype"
+          },
+          "app_name": { "type": "string" },
+          "message": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          }
+        },
+        "additionalProperties": false
+      },
+      "clock_time": {
+        "type": "string",
+        "pattern": "^....-..-..T..:..:..(\\+|-)..:..$"
+      },
+      "in_house_data": {
+        "type": "array"
+      },
+      "other_network": {
+        "type": "object",
+        "properties": {
+          "pi": {
+            "$ref": "#/definitions/pi"
+          },
+          "tp": {
+            "type": "boolean"
+          },
+          "ta": {
+            "type": "boolean"
+          },
+          "ps": {
+            "$ref": "#/definitions/ps"
+          },
+          "prog_type": {
+            "type": "string"
+          },
+          "alt_freqs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/carrierfreq"
+            }
+          },
+          "frequency": {
+            "$ref": "#/definitions/carrierfreq"
+          },
+          "has_linkage": {
+            "type": "boolean"
+          },
+          "linkage_set": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4095
+          },
+          "prog_item_started": {
+            "$ref": "#/definitions/pin"
+          }
+        },
+        "required": ["pi"],
+        "additionalProperties": false
+      }
+    },
+
+    "required": ["pi"],
+    "additionalProperties": false
+  }
+}
