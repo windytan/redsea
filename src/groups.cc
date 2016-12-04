@@ -251,9 +251,8 @@ std::string Station::getCountryCode() const {
   return getCountryString(pi_, ecc_);
 }
 
-void Station::updatePS(int pos, std::vector<int> chars) {
-  for (size_t i=pos; i < pos+chars.size(); i++)
-    ps_.setAt(i, chars[i-pos]);
+void Station::updatePS(int pos, int char1, int char2) {
+  ps_.setAt(pos, char1, char2);
 
   if (ps_.isComplete())
     json_["ps"] = ps_.getLastCompleteString();
@@ -261,9 +260,8 @@ void Station::updatePS(int pos, std::vector<int> chars) {
     json_["partial_ps"] = ps_.getString();
 }
 
-void Station::updateRadioText(int pos, std::vector<int> chars) {
-  for (size_t i=pos; i < pos+chars.size(); i++)
-    rt_.setAt(i, chars[i-pos]);
+void Station::updateRadioText(int pos, int chr1, int chr2) {
+  rt_.setAt(pos, chr1, chr2);
 }
 
 void Station::decodeBasics (const Group& group) {
@@ -316,7 +314,8 @@ void Station::decodeType0 (const Group& group) {
     return;
 
   updatePS(seg_address * 2,
-      { bits(group.get(BLOCK4), 8, 8), bits(group.get(BLOCK4), 0, 8) });
+           bits(group.get(BLOCK4), 8, 8),
+           bits(group.get(BLOCK4), 0, 8));
 }
 
 // Group 1: Programme Item Number and slow labelling codes
@@ -446,14 +445,16 @@ void Station::decodeType2 (const Group& group) {
   if (group.type().ab == VERSION_A) {
     rt_.resize(64);
     updateRadioText(rt_position,
-        {bits(group.get(BLOCK3), 8, 8), bits(group.get(BLOCK3), 0, 8)});
+                    bits(group.get(BLOCK3), 8, 8),
+                    bits(group.get(BLOCK3), 0, 8));
   } else {
     rt_.resize(32);
   }
 
   if (group.has(BLOCK4)) {
     updateRadioText(rt_position + (group.type().ab == VERSION_A ? 2 : 0),
-        {bits(group.get(BLOCK4), 8, 8), bits(group.get(BLOCK4), 0, 8)});
+                    bits(group.get(BLOCK4), 8, 8),
+                    bits(group.get(BLOCK4), 0, 8));
   }
 
   if (rt_.isComplete())

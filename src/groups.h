@@ -105,8 +105,8 @@ class Station {
   void decodeType15B(const Group& group);
   void decodeODAgroup(const Group& group);
   void addAltFreq(uint8_t);
-  void updatePS(int pos, std::vector<int> chars);
-  void updateRadioText(int pos, std::vector<int> chars);
+  void updatePS(int pos, int chr1, int chr2);
+  void updateRadioText(int pos, int chr1, int chr2);
   void parseRadioTextPlus(const Group& group);
   uint16_t pi_;
   Options options_;

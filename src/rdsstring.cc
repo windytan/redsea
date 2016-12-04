@@ -14,18 +14,22 @@ std::string rtrim(std::string s) {
 
 }
 
-LCDchar::LCDchar() : code_(0) {
+LCDchar::LCDchar() : code_(0), codetable_(0) {
 }
 
 LCDchar::LCDchar(uint8_t _code) : code_(_code) {
 }
 
-uint8_t LCDchar::getCode() const {
+void LCDchar::setCodeTable(int codetable) {
+  codetable_ = codetable;
+}
+
+uint8_t LCDchar::code() const {
   return code_;
 }
 
 std::string LCDchar::toString() const {
-  return getLCDchar(code_);
+  return getLCDchar(code_, codetable_);
 }
 
 RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
@@ -35,6 +39,8 @@ RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
 void RDSString::setAt(int pos, LCDchar chr) {
   if (pos < 0 || pos >= static_cast<int>(chars_.size()))
     return;
+
+  chr.setCodeTable(repertoireAt(pos));
 
   chars_.at(pos) = chr;
 
@@ -51,6 +57,32 @@ void RDSString::setAt(int pos, LCDchar chr) {
   }
 
   prev_pos_ = pos;
+}
+
+void RDSString::setAt(int pos, LCDchar chr1, LCDchar chr2) {
+  if (chr1.code() == 0x0F && chr2.code() == 0x0F) {
+    setRepertoire(pos, 0);
+  } else if (chr1.code() == 0x0E && chr2.code() == 0x0E) {
+    setRepertoire(pos, 1);
+  } else if (chr1.code() == 0x1B && chr2.code() == 0x6E) {
+    setRepertoire(pos, 2);
+  } else {
+    setAt(pos, chr1);
+    setAt(pos + 1, chr2);
+  }
+}
+
+void RDSString::setRepertoire(int pos, int codetable) {
+  if (pos >= 0)
+    repertoire_[pos] = codetable;
+}
+
+int RDSString::repertoireAt(int pos) const {
+  int codetable = 0;
+  for (std::pair<int,int> r : repertoire_)
+    if (pos >= r.first)
+      codetable = r.second;
+  return codetable;
 }
 
 std::string RDSString::charAt(int pos) const {
@@ -73,7 +105,7 @@ size_t RDSString::lengthExpected() const {
   size_t result = chars_.size();
 
   for (size_t i=0; i < chars_.size(); i++) {
-    if (chars_[i].getCode() == 0x0D) {
+    if (chars_[i].code() == 0x0D) {
       result = i;
       break;
     }
@@ -88,8 +120,9 @@ void RDSString::resize(int n) {
 
 std::string RDSString::getString() const {
   std::string result;
-  for (LCDchar chr : getChars()) {
-    result += chr.toString();
+  std::vector<LCDchar> chars = getChars();
+  for (size_t pos=0; pos < chars.size(); pos++) {
+    result += chars[pos].toString();
   }
 
   return result;
@@ -99,7 +132,7 @@ std::vector<LCDchar> RDSString::getChars() const {
   std::vector<LCDchar> result;
   size_t len = lengthExpected();
   for (size_t i=0; i < len; i++) {
-    result.push_back(is_char_sequential_[i] ? chars_[i] : 32);
+    result.push_back(is_char_sequential_[i] ? chars_[i] : 0x20);
   }
 
   return result;
@@ -145,6 +178,7 @@ void RDSString::clear() {
   }
   last_complete_string_ = getString();
   last_complete_chars_.clear();
+  repertoire_.clear();
 }
 
 }  // namespace redsea

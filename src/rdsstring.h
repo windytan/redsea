@@ -1,6 +1,7 @@
 #ifndef RDSSTRING_H_
 #define RDSSTRING_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -10,17 +11,22 @@ class LCDchar {
   public:
     LCDchar();
     LCDchar(uint8_t _code);
-    uint8_t getCode() const;
+    uint8_t code() const;
     std::string toString() const;
+    void setCodeTable(int codetable);
 
   private:
     uint8_t code_;
+    int codetable_;
 };
 
 class RDSString {
  public:
   RDSString(int len=8);
   void setAt(int pos, LCDchar chr);
+  void setAt(int pos, LCDchar chr1, LCDchar chr2);
+  void setRepertoire(int pos, int codetable);
+  int repertoireAt(int pos) const;
   std::string charAt(int pos) const;
   size_t lengthReceived() const;
   size_t lengthExpected() const;
@@ -42,6 +48,7 @@ class RDSString {
   std::vector<bool> is_char_sequential_;
   int prev_pos_;
   std::string last_complete_string_;
+  std::map<int,int> repertoire_;
 
 };
 
