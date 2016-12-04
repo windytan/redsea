@@ -6,6 +6,7 @@
 
 namespace redsea {
 
+// EN 50067:1998, Annex E (pp. 73-76)
 std::string getLCDchar(uint8_t code, int codetable) {
   std::string result(" ");
   static const std::vector<std::string> char_map_G0({
@@ -40,6 +41,7 @@ std::string getLCDchar(uint8_t code, int codetable) {
 std::string getPTYname(int pty, bool is_rbds) {
   assert(pty >= 0 && pty <= 32);
 
+  // EN 50067:1998, Annex F (pp. 77-78)
   static const std::vector<std::string> pty_names({
     "No PTY", "News", "Current affairs", "Information",
     "Sport", "Education", "Drama", "Culture",
@@ -50,6 +52,7 @@ std::string getPTYname(int pty, bool is_rbds) {
     "Jazz music", "Country music", "National music", "Oldies music",
     "Folk music", "Documentary", "Alarm test", "Alarm"});
 
+  // U.S. RBDS Standard, Annex F (pp. 95-96)
   static const std::vector<std::string> pty_names_rbds({
     "No PTY", "News", "Information", "Sports",
     "Talk", "Rock", "Classic rock", "Adult hits",
@@ -63,6 +66,7 @@ std::string getPTYname(int pty, bool is_rbds) {
   return is_rbds ? pty_names_rbds[pty] : pty_names[pty];
 }
 
+// EN 50067:1998, Annex D, Table D.1 (p. 71)
 std::string getCountryString(uint16_t pi, uint16_t ecc) {
   static const std::map<uint16_t, std::vector<std::string>> country_codes({
     {0xA0, {"us", "us", "us", "us", "us", "us", "us", "us",
@@ -117,6 +121,7 @@ std::string getCountryString(uint16_t pi, uint16_t ecc) {
   return result;
 }
 
+// EN 50067:1998, Annex J (p. 84)
 std::string getLanguageString(uint16_t code) {
   static const std::vector<std::string> languages({
     "Unknown", "Albanian", "Breton", "Catalan",
