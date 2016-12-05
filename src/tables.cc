@@ -9,7 +9,7 @@ namespace redsea {
 // EN 50067:1998, Annex E (pp. 73-76)
 std::string getLCDchar(uint8_t code, int codetable) {
   std::string result(" ");
-  static const std::vector<std::string> char_map_G0({
+  static const std::vector<std::string> codetable_G0({
       " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Á", "Â", "Ã", "ã",
       "!", "1", "A", "Q", "a", "q", "à", "ä", "α", "¹", "À", "Ä", "Å", "å",
       "\"","2", "B", "R", "b", "r", "é", "ê", "©", "²", "É", "Ê", "Æ", "æ",
@@ -27,16 +27,16 @@ std::string getLCDchar(uint8_t code, int codetable) {
       ".", ">", "N", "―", "n", "¯", "¡", "ı", "→", "¾", "Ð", "đ", "Ŧ", "ŧ",
       "/", "?", "O", "_", "o", " ", "Ĳ", "ĳ", "↓", "§", "Ŀ", "ŀ", "ð" });
 
-  static const std::vector<std::string> char_map_G1({
+  static const std::vector<std::string> codetable_G1({
       " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Є", "ý", "Π", "π",
-      "!", "1", "A", "Q", "a", "q", "à", "ä", "α", "¹", "Я", "Љ", "α", "Ω",
+      "!", "1", "A", "Q", "a", "q", "à", "ä", "ľ", "¹", "Я", "Љ", "α", "Ω",
       "\"","2", "B", "R", "b", "r", "é", "ê", "©", "²", "Б", "ď", "β", "ρ",
       "#", "3", "C", "S", "c", "s", "è", "ë", "‰", "³", "Ч", "Ш", "ψ", "σ",
-      "¤", "4", "D", "T", "d", "t", "í", "î", "Ǧ", "±", "Д", "Ц", "δ", "τ",
+      "¤", "4", "D", "T", "d", "t", "í", "î", "ǎ", "±", "Д", "Ц", "δ", "τ",
       "%", "5", "E", "U", "e", "u", "ì", "ï", "ě", "İ", "Э", "Ю", "ε", "ξ",
       "&", "6", "F", "V", "f", "v", "ó", "ô", "ň", "ń", "Ф", "Щ", "φ", "Θ",
       "'", "7", "G", "W", "g", "w", "ò", "ö", "ő", "ű", "Ѓ", "Њ", "γ", "Γ",
-      "(", "8", "H", "X", "h", "x", "ú", "û", "π", "µ", "Ъ", "Џ", "η", "Ξ",
+      "(", "8", "H", "X", "h", "x", "ú", "û", "ť", "ţ", "Ъ", "Џ", "η", "Ξ",
       ")", "9", "I", "Y", "i", "y", "ù", "ü", "€", "¿", "И", "Й", "ι", "υ",
       "*", ":", "J", "Z", "j", "z", "Ñ", "ñ", "£", "÷", "Ж", "З", "Σ", "ζ",
       "+", ";", "K", "[", "k", "{", "Ç", "ç", "$", "°", "Ќ", "č", "χ", "ς",
@@ -48,11 +48,11 @@ std::string getLCDchar(uint8_t code, int codetable) {
   int row = code & 0xF;
   int col = code >> 4;
   int idx = row * 14 + (col - 2);
-  if (col >= 2 && idx >= 0 && idx < static_cast<int>(char_map_G0.size())) {
+  if (col >= 2 && idx >= 0 && idx < static_cast<int>(codetable_G0.size())) {
     if (codetable == 0)
-      result = char_map_G0[idx];
+      result = codetable_G0[idx];
     else if (codetable == 1)
-      result = char_map_G1[idx];
+      result = codetable_G1[idx];
   }
 
   return result;
