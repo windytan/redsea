@@ -85,25 +85,25 @@ std::string getPTYname(int pty, bool is_rbds) {
 
   // EN 50067:1998, Annex F (pp. 77-78)
   static const std::vector<std::string> pty_names({
-    "No PTY", "News", "Current affairs", "Information",
-    "Sport", "Education", "Drama", "Culture",
-    "Science", "Varied", "Pop music", "Rock music",
-    "Easy listening", "Light classical", "Serious classical", "Other music",
-    "Weather", "Finance", "Children's programmes", "Social affairs",
-    "Religion", "Phone-in", "Travel", "Leisure",
-    "Jazz music", "Country music", "National music", "Oldies music",
-    "Folk music", "Documentary", "Alarm test", "Alarm"});
+    "No PTY",         "News",            "Current affairs",    "Information",
+    "Sport",          "Education",       "Drama",              "Culture",
+    "Science",        "Varied",          "Pop music",          "Rock music",
+    "Easy listening", "Light classical", "Serious classical",  "Other music",
+    "Weather",        "Finance",      "Children's programmes", "Social affairs",
+    "Religion",       "Phone-in",        "Travel",             "Leisure",
+    "Jazz music",     "Country music",   "National music",     "Oldies music",
+    "Folk music",     "Documentary",     "Alarm test",         "Alarm" });
 
   // U.S. RBDS Standard, Annex F (pp. 95-96)
   static const std::vector<std::string> pty_names_rbds({
-    "No PTY", "News", "Information", "Sports",
-    "Talk", "Rock", "Classic rock", "Adult hits",
-    "Soft rock", "Top 40", "Country", "Oldies",
-    "Soft", "Nostalgia", "Jazz", "Classical",
-    "Rhythm and blues", "Soft rhythm and blues", "Language", "Religious music",
-    "Religious talk", "Personality", "Public", "College",
-    "Spanish talk", "Spanish music", "Hip hop", "",
-    "", "Weather", "Emergency test", "Emergency"});
+    "No PTY",           "News",                  "Information",  "Sports",
+    "Talk",             "Rock",                  "Classic rock", "Adult hits",
+    "Soft rock",        "Top 40",                "Country",      "Oldies",
+    "Soft",             "Nostalgia",             "Jazz",         "Classical",
+    "Rhythm and blues", "Soft rhythm and blues", "Language",  "Religious music",
+    "Religious talk",   "Personality",           "Public",       "College",
+    "Spanish talk",     "Spanish music",         "Hip hop",      "",
+    "",                 "Weather",              "Emergency test", "Emergency"});
 
   return is_rbds ? pty_names_rbds[pty] : pty_names[pty];
 }
@@ -166,38 +166,38 @@ std::string getCountryString(uint16_t pi, uint16_t ecc) {
 // EN 50067:1998, Annex J (p. 84)
 std::string getLanguageString(uint16_t code) {
   static const std::vector<std::string> languages({
-    "Unknown", "Albanian", "Breton", "Catalan",
-    "Croatian", "Welsh", "Czech", "Danish",
-    "German", "English", "Spanish", "Esperanto",
-    "Estonian", "Basque", "Faroese", "French",
-    "Frisian", "Irish", "Gaelic", "Galician",
-    "Icelandic", "Italian", "Lappish", "Latin",
-    "Latvian", "Luxembourgian", "Lithuanian", "Hungarian",
-    "Maltese", "Dutch", "Norwegian", "Occitan",
-    "Polish", "Portuguese", "Romanian", "Romansh",
-    "Serbian", "Slovak", "Slovene", "Finnish",
-    "Swedish", "Turkish", "Flemish", "Walloon",
-    "", "", "", "",
-    "", "", "", "",
-    "", "", "", "",
-    "", "", "", "",
-    "", "", "", "",
-    "Background", "", "", "",
-    "", "Zulu", "Vietnamese", "Uzbek",
-    "Urdu", "Ukrainian", "Thai", "Telugu",
-    "Tatar", "Tamil", "Tadzhik", "Swahili",
-    "SrananTongo", "Somali", "Sinhalese", "Shona",
-    "Serbo-Croat", "Ruthenian", "Russian", "Quechua",
-    "Pushtu", "Punjabi", "Persian", "Papamiento",
-    "Oriya", "Nepali", "Ndebele", "Marathi",
-    "Moldovian", "Malaysian", "Malagasay", "Macedonian",
-    "Laotian", "Korean", "Khmer", "Kazakh",
-    "Kannada", "Japanese", "Indonesian", "Hindi",
-    "Hebrew", "Hausa", "Gurani", "Gujurati",
-    "Greek", "Georgian", "Fulani", "Dari",
-    "Churash", "Chinese", "Burmese", "Bulgarian",
-    "Bengali", "Belorussian", "Bambora", "Azerbaijan",
-    "Assamese", "Armenian", "Arabic", "Amharic" });
+    "Unknown",     "Albanian",      "Breton",     "Catalan",
+    "Croatian",    "Welsh",         "Czech",      "Danish",
+    "German",      "English",       "Spanish",    "Esperanto",
+    "Estonian",    "Basque",        "Faroese",    "French",
+    "Frisian",     "Irish",         "Gaelic",     "Galician",
+    "Icelandic",   "Italian",       "Lappish",    "Latin",
+    "Latvian",     "Luxembourgian", "Lithuanian", "Hungarian",
+    "Maltese",     "Dutch",         "Norwegian",  "Occitan",
+    "Polish",      "Portuguese",    "Romanian",   "Romansh",
+    "Serbian",     "Slovak",        "Slovene",    "Finnish",
+    "Swedish",     "Turkish",       "Flemish",    "Walloon",
+    "",            "",              "",           "",
+    "",            "",              "",           "",
+    "",            "",              "",           "",
+    "",            "",              "",           "",
+    "",            "",              "",           "",
+    "Background",  "",              "",           "",
+    "",            "Zulu",          "Vietnamese", "Uzbek",
+    "Urdu",        "Ukrainian",     "Thai",       "Telugu",
+    "Tatar",       "Tamil",         "Tadzhik",    "Swahili",
+    "SrananTongo", "Somali",        "Sinhalese",  "Shona",
+    "Serbo-Croat", "Ruthenian",     "Russian",    "Quechua",
+    "Pushtu",      "Punjabi",       "Persian",    "Papamiento",
+    "Oriya",       "Nepali",        "Ndebele",    "Marathi",
+    "Moldovian",   "Malaysian",     "Malagasay",  "Macedonian",
+    "Laotian",     "Korean",        "Khmer",      "Kazakh",
+    "Kannada",     "Japanese",      "Indonesian", "Hindi",
+    "Hebrew",      "Hausa",         "Gurani",     "Gujurati",
+    "Greek",       "Georgian",      "Fulani",     "Dari",
+    "Churash",     "Chinese",       "Burmese",    "Bulgarian",
+    "Bengali",     "Belorussian",   "Bambora",    "Azerbaijan",
+    "Assamese",    "Armenian",      "Arabic",     "Amharic" });
 
   std::string result("");
   if (code < languages.size())
