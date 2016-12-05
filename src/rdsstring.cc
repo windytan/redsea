@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "src/common.h"
 #include "src/tables.h"
 
 namespace redsea {
@@ -14,13 +15,13 @@ std::string rtrim(std::string s) {
 
 }
 
-LCDchar::LCDchar() : code_(0), codetable_(0) {
+LCDchar::LCDchar() : code_(0), codetable_(G0) {
 }
 
 LCDchar::LCDchar(uint8_t _code) : code_(_code) {
 }
 
-void LCDchar::setCodeTable(int codetable) {
+void LCDchar::setCodeTable(eCodeTable codetable) {
   codetable_ = codetable;
 }
 
@@ -61,25 +62,25 @@ void RDSString::setAt(int pos, LCDchar chr) {
 
 void RDSString::setAt(int pos, LCDchar chr1, LCDchar chr2) {
   if (chr1.code() == 0x0F && chr2.code() == 0x0F) {
-    setRepertoire(pos, 0);
+    setRepertoire(pos, G0);
   } else if (chr1.code() == 0x0E && chr2.code() == 0x0E) {
-    setRepertoire(pos, 1);
+    setRepertoire(pos, G1);
   } else if (chr1.code() == 0x1B && chr2.code() == 0x6E) {
-    setRepertoire(pos, 2);
+    setRepertoire(pos, G2);
   } else {
     setAt(pos, chr1);
     setAt(pos + 1, chr2);
   }
 }
 
-void RDSString::setRepertoire(int pos, int codetable) {
+void RDSString::setRepertoire(int pos, eCodeTable codetable) {
   if (pos >= 0)
     repertoire_[pos] = codetable;
 }
 
-int RDSString::repertoireAt(int pos) const {
-  int codetable = 0;
-  for (std::pair<int,int> r : repertoire_)
+eCodeTable RDSString::repertoireAt(int pos) const {
+  eCodeTable codetable = G0;
+  for (std::pair<int, eCodeTable> r : repertoire_)
     if (pos >= r.first)
       codetable = r.second;
   return codetable;

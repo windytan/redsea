@@ -3,9 +3,11 @@
 
 #include <string>
 
+#include "src/common.h"
+
 namespace redsea {
 
-std::string getLCDchar(uint8_t code, int codetable=0);
+std::string getLCDchar(uint8_t code, eCodeTable codetable=G0);
 std::string getPTYname(int pty, bool is_rbds=false);
 std::string getCountryString(uint16_t pi, uint16_t ecc);
 std::string getLanguageString(uint16_t code);

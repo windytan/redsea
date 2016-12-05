@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "src/common.h"
+
 namespace redsea {
 
 class LCDchar {
@@ -13,11 +15,11 @@ class LCDchar {
     LCDchar(uint8_t _code);
     uint8_t code() const;
     std::string toString() const;
-    void setCodeTable(int codetable);
+    void setCodeTable(eCodeTable codetable);
 
   private:
     uint8_t code_;
-    int codetable_;
+    eCodeTable codetable_;
 };
 
 class RDSString {
@@ -25,8 +27,8 @@ class RDSString {
   RDSString(int len=8);
   void setAt(int pos, LCDchar chr);
   void setAt(int pos, LCDchar chr1, LCDchar chr2);
-  void setRepertoire(int pos, int codetable);
-  int repertoireAt(int pos) const;
+  void setRepertoire(int pos, eCodeTable codetable);
+  eCodeTable repertoireAt(int pos) const;
   std::string charAt(int pos) const;
   size_t lengthReceived() const;
   size_t lengthExpected() const;
@@ -48,8 +50,7 @@ class RDSString {
   std::vector<bool> is_char_sequential_;
   int prev_pos_;
   std::string last_complete_string_;
-  std::map<int,int> repertoire_;
-
+  std::map<int, eCodeTable> repertoire_;
 };
 
 } // namespace redsea

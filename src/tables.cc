@@ -4,10 +4,12 @@
 #include <map>
 #include <vector>
 
+#include "src/common.h"
+
 namespace redsea {
 
 // EN 50067:1998, Annex E (pp. 73-76)
-std::string getLCDchar(uint8_t code, int codetable) {
+std::string getLCDchar(uint8_t code, eCodeTable codetable) {
   std::string result(" ");
   static const std::vector<std::string> codetable_G0({
       " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Á", "Â", "Ã", "ã",
@@ -49,9 +51,9 @@ std::string getLCDchar(uint8_t code, int codetable) {
   int col = code >> 4;
   int idx = row * 14 + (col - 2);
   if (col >= 2 && idx >= 0 && idx < static_cast<int>(codetable_G0.size())) {
-    if (codetable == 0)
+    if (codetable == G0)
       result = codetable_G0[idx];
-    else if (codetable == 1)
+    else if (codetable == G1)
       result = codetable_G1[idx];
   }
 
