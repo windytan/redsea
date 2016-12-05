@@ -74,7 +74,7 @@ std::string CarrierFrequency::getString() const {
   else
     ss << "N/A";
   return ss.str();
-};
+}
 
 bool operator== (const CarrierFrequency &f1,
                  const CarrierFrequency &f2) {
