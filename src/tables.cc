@@ -273,21 +273,28 @@ std::string getAppName(uint16_t aid) {
 
 std::string getRTPlusContentTypeName(uint16_t content_type) {
   static const std::vector<std::string> content_type_names({
-      "dummy_class", "item.title", "item.album", "item.tracknumber",
-      "item.artist", "item.composition", "item.movement", "item.conductor",
-      "item.composer", "item.band", "item.comment", "item.genre", "info.news",
-      "info.news.local", "info.stockmarket", "info.sport", "info.lottery",
-      "info.horoscope", "info.daily_diversion", "info.health", "info.event",
-      "info.scene", "info.cinema", "info.tv", "info.date_time", "info.weather",
-      "info.traffic", "info.alarm", "info.advertisement", "info.url",
-      "info.other", "stationname.short", "stationname.long", "programme.now",
-      "programme.next", "programme.part", "programme.host",
-      "programme.editorial_staff", "programme.frequency", "programme.homepage",
-      "programme.subchannel", "phone.hotline", "phone.studio", "phone.other",
-      "sms.studio", "sms.other", "email.hotline", "email.studio", "email.other",
-      "mms.other", "chat", "chat.centre", "vote.question", "vote.centre",
-      "unknown", "unknown", "unknown", "unknown", "unknown", "place",
-      "appointment", "identifier", "purchase", "get_data" });
+      "dummy_class",          "item.title",         "item.album",
+      "item.tracknumber",     "item.artist",        "item.composition",
+      "item.movement",        "item.conductor",     "item.composer",
+      "item.band",            "item.comment",       "item.genre",
+      "info.news",            "info.news.local",    "info.stockmarket",
+      "info.sport",           "info.lottery",       "info.horoscope",
+      "info.daily_diversion", "info.health",        "info.event",
+      "info.scene",           "info.cinema",        "info.tv",
+      "info.date_time",       "info.weather",       "info.traffic",
+      "info.alarm",           "info.advertisement", "info.url",
+      "info.other",           "stationname.short",  "stationname.long",
+      "programme.now",        "programme.next",     "programme.part",
+      "programme.host",     "programme.editorial_staff", "programme.frequency",
+      "programme.homepage", "programme.subchannel", "phone.hotline",
+      "phone.studio",         "phone.other",        "sms.studio",
+      "sms.other",            "email.hotline",      "email.studio",
+      "email.other",          "mms.other",          "chat",
+      "chat.centre",          "vote.question",      "vote.centre",
+      "unknown",              "unknown",            "unknown",
+      "unknown",              "unknown",            "place",
+      "appointment",          "identifier",         "purchase",
+      "get_data" });
 
   return (content_type < content_type_names.size() ?
       content_type_names[content_type] : "unknown");
