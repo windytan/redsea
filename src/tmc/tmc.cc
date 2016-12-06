@@ -493,7 +493,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
       if (is_encrypted_ && service_key_table_.count(encid_) > 0)
         message.decrypt(service_key_table_[encid_]);
 
-      message.print(jsroot);
+      if (!message.json().empty())
+        (*jsroot)["tmc"]["message"] = message.json();
 
     // Part of multi-group message
     } else {
@@ -503,7 +504,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
       if (continuity_index != message_.getContinuityIndex()) {
         /* Message changed; print previous unfinished message
          * TODO 15-second limit */
-        message_.print(jsroot);
+        if (!message_.json().empty())
+          (*jsroot)["tmc"]["message"] = message_.json();
         message_ = Message(is_encrypted_);
       }
 
@@ -513,7 +515,8 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
         if (is_encrypted_ && service_key_table_.count(encid_) > 0)
           message_.decrypt(service_key_table_[encid_]);
 
-        message_.print(jsroot);
+        if (!message_.json().empty())
+          (*jsroot)["tmc"]["message"] = message_.json();
         message_ = Message(is_encrypted_);
       }
     }
@@ -704,17 +707,19 @@ void Message::clear() {
   continuity_index_ = 0;
 }
 
-void Message::print(Json::Value* jsroot) const {
+Json::Value Message::json() const {
+
+  Json::Value json;
 
   if (!is_complete_ || events_.empty())
-    return;
+    return json;
 
   for (auto code : events_)
-    (*jsroot)["tmc"]["message"]["event_codes"].append(code);
+    json["event_codes"].append(code);
 
   if (supplementary_.size() > 0)
     for (auto code : supplementary_)
-      (*jsroot)["tmc"]["message"]["supplementary_codes"].append(code);
+      json["supplementary_codes"].append(code);
 
   std::vector<std::string> sentences;
   for (size_t i=0; i < events_.size(); i++) {
@@ -736,31 +741,33 @@ void Message::print(Json::Value* jsroot) const {
   }
 
   if (!sentences.empty())
-    (*jsroot)["tmc"]["message"]["description"] = join(sentences, ". ") + ".";
+    json["description"] = join(sentences, ". ") + ".";
 
   if (!diversion_.empty())
     for (auto code : diversion_)
-      (*jsroot)["tmc"]["message"]["diversion_route"].append(code);
+      json["diversion_route"].append(code);
 
   if (has_speed_limit_)
-    (*jsroot)["tmc"]["message"]["speed_limit"] =
+    json["speed_limit"] =
         std::to_string(speed_limit_) + " km/h";
 
   if (is_encrypted_)
-    (*jsroot)["tmc"]["message"]["encrypted_location"] = location_;
+    json["encrypted_location"] = location_;
   else
-    (*jsroot)["tmc"]["message"]["location"] = location_;
+    json["location"] = location_;
 
-  (*jsroot)["tmc"]["message"]["direction"] =
+  json["direction"] =
       directionality_ == DIR_SINGLE ? "single" : "both";
 
-  (*jsroot)["tmc"]["message"]["extent"] = (direction_ ? "-" : "+") +
+  json["extent"] = (direction_ ? "-" : "+") +
       std::to_string(extent_);
 
   if (has_time_starts_)
-    (*jsroot)["tmc"]["message"]["starts"] = timeString(time_starts_);
+    json["starts"] = timeString(time_starts_);
   if (has_time_until_)
-    (*jsroot)["tmc"]["message"]["until"] = timeString(time_until_);
+    json["until"] = timeString(time_until_);
+
+  return json;
 }
 
 void Message::decrypt(ServiceKey key) {

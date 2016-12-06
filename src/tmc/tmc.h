@@ -77,8 +77,7 @@ class Message {
   explicit Message(bool is_loc_encrypted = false);
   void pushMulti(uint16_t x, uint16_t y, uint16_t z);
   void pushSingle(uint16_t x, uint16_t y, uint16_t z);
-  std::string toString() const;
-  void print(Json::Value* jsroot) const;
+  Json::Value json() const;
   void decrypt(ServiceKey);
   bool isComplete() const;
   void clear();
