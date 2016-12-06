@@ -41,7 +41,6 @@ class BlockStream {
   Subcarrier subcarrier_;
 #endif
   AsciiBits ascii_bits_;
-  std::map<uint16_t, uint32_t> error_lookup_;
   const eInputType input_type_;
   bool is_eof_;
 };

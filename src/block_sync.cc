@@ -74,6 +74,8 @@ std::map<uint16_t, uint32_t> makeErrorLookupTable() {
   return result;
 }
 
+std::map<uint16_t, uint32_t> kErrorLookup = makeErrorLookupTable();
+
 }  // namespace
 
 BlockStream::BlockStream(Options options) : bitcount_(0),
@@ -85,7 +87,6 @@ BlockStream::BlockStream(Options options) : bitcount_(0),
   subcarrier_(options.feed_thru),
 #endif
   ascii_bits_(options.feed_thru),
-  error_lookup_(makeErrorLookupTable()),
   input_type_(options.input_type), is_eof_(false) {
 }
 
@@ -112,9 +113,9 @@ uint32_t BlockStream::correctBurstErrors(uint32_t block) const {
 
   uint32_t corrected_block = block;
 
-  if (error_lookup_.find(synd_reg) != error_lookup_.end()) {
+  if (kErrorLookup.find(synd_reg) != kErrorLookup.end()) {
     corrected_block = (block ^ offset_words[expected_offset_])
-      ^ (error_lookup_.at(synd_reg));
+      ^ (kErrorLookup[synd_reg]);
   }
 
   return corrected_block;
