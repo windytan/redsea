@@ -144,8 +144,12 @@
           "type": "object",
           "properties": {
             "is_encrypted": { "type": "boolean" },
-            "is_on_alt_freq": { "type": "boolean" },
+            "is_on_alt_freq": {
+              "description": "Whether alternative frequencies carry TMC",
+              "type": "boolean"
+            },
             "location_table": {
+              "description": "Location table number (LTN)",
               "type": "integer",
               "minimum": 0,
               "maximum": 63
@@ -164,22 +168,33 @@
           "type": "object",
           "properties": {
             "description": {
+              "description": "Human-readable message",
               "type": "string"
             },
             "direction":   {
+              "description": "Whether this event affects only one direction",
               "type": "string",
               "enum": ["single", "both"]
             },
             "extent": {
+              "description": "The event affects this many points from location",
               "type": "string",
               "pattern": "^(\\+|-)[0-9]+$"
             },
             "location": {
+              "description": "Location code (reference to a location database)",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "encrypted_location": {
+              "description": "Location code in its encrypted form",
               "type": "integer",
               "minimum": 0,
               "maximum": 65535
             },
             "event_codes": {
+              "description": "Event codes (references to event code list)",
               "type": "array",
               "items": {
                 "type": "number",
@@ -295,6 +310,7 @@
         "type": "object",
         "properties": {
           "oda_group": {
+            "description": "The group that carries this Open Data Application",
             "$ref": "#/definitions/grouptype"
           },
           "app_name": { "type": "string" },
@@ -312,7 +328,13 @@
         "pattern": "^....-..-..T..:..:..((\\+|-)..:..|Z)$"
       },
       "in_house_data": {
-        "type": "array"
+        "description": "The contents of these bits are defined by the operator",
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535,
+        }
       },
       "other_network": {
         "description": "Information about programs on other networks",
