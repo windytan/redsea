@@ -1,6 +1,8 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <string>
+
 namespace redsea {
 
 enum eInputType {
@@ -21,6 +23,7 @@ struct Options {
   bool just_exit;
   eInputType input_type;
   eOutputType output_type;
+  std::string loctable_dir;
 };
 
 }  // namespace redsea

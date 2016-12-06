@@ -1,5 +1,6 @@
 #include "src/util.h"
 
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 
@@ -85,5 +86,52 @@ bool operator< (const CarrierFrequency &f1,
                 const CarrierFrequency &f2) {
   return (f1.getKhz() < f2.getKhz());
 }
+
+std::vector<std::string> splitline(std::string line, char delimiter) {
+  std::stringstream ss(line);
+  std::vector<std::string> result;
+
+  while (ss.good()) {
+    std::string val;
+    std::getline(ss, val, delimiter);
+    result.push_back(val);
+  }
+
+  return result;
+}
+
+std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
+                                              char delimiter) {
+  std::vector<std::vector<std::string>> lines;
+
+  for (std::string line : csvdata)
+    lines.push_back(splitline(line, delimiter));
+
+  return lines;
+}
+
+std::vector<std::vector<std::string>> readCSV(std::string filename,
+                                              char delimiter,
+                                              size_t numfields) {
+  std::vector<std::vector<std::string>> lines;
+
+  std::ifstream in(filename);
+  if (!in.is_open())
+    return lines;
+
+  for (std::string line; std::getline(in, line); ) {
+    if (!in.good())
+      break;
+
+    std::vector<std::string> fields = splitline(line, delimiter);
+    if (fields.size() == numfields)
+      lines.push_back(fields);
+  }
+
+  in.close();
+
+  return lines;
+}
+
 
 }  // namespace redsea

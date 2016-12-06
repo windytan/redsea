@@ -14,7 +14,9 @@
 
 #include <json/json.h>
 
+#include "src/common.h"
 #include "src/tmc/event_list.h"
+#include "src/tmc/locationdb.h"
 #include "src/util.h"
 
 namespace redsea {
@@ -274,41 +276,29 @@ std::string ucfirst(std::string in) {
 }
 
 void loadEventData() {
-  for (std::string line : tmc_data_events) {
-    std::stringstream iss(line);
-    uint16_t code;
+  for (std::vector<std::string> fields : readCSV(tmc_data_events, ';')) {
+    if (fields.size() != 9)
+      continue;
+
+    uint16_t code = std::stoi(fields[0]);
     std::vector<std::string> strings(2);
     std::vector<uint16_t> nums(6);
 
-    for (int col=0; col < 9; col++) {
-      std::string val;
-      std::getline(iss, val, ';');
-      if (!iss.good())
-        break;
+    for (int col=1; col < 3; col++)
+      strings[col-1] = fields[col];
 
-      if (col == 0)
-        code = std::stoi(val);
-      else if (col <= 2)
-        strings[col-1] = val;
-      else
-        nums[col-3] = std::stoi(val);
-    }
+    for (int col=3; col < 9; col++)
+      nums[col-3] = std::stoi(fields[col]);
+
     bool allow_q = (strings[1].size() > 0);
 
     g_event_data.insert({code, {strings[0], strings[1], nums[0], nums[1],
         nums[2], nums[3], nums[4], nums[5], allow_q}});
-
   }
 
-  for (std::string line : tmc_data_suppl) {
-    std::stringstream iss(line);
-    uint16_t code;
-    std::string code_str, desc;
-
-    std::getline(iss, code_str, ';');
-    std::getline(iss, desc, ';');
-
-    code = std::stoi(code_str);
+  for (std::vector<std::string> fields : readCSV(tmc_data_suppl, ';')) {
+    uint16_t code = std::stoi(fields[0]);
+    std::string desc = fields[1];
 
     g_suppl_data.insert({code, desc});
   }
@@ -317,49 +307,40 @@ void loadEventData() {
 std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
   std::map<uint16_t, ServiceKey> result;
 
-  std::ifstream in("service_key_table.csv");
-
-  if (!in.is_open())
-    return result;
-
-  for (std::string line; std::getline(in, line); ) {
-    if (!in.good())
-      break;
-
-    std::stringstream iss(line);
+  for (std::vector<std::string> fields :
+       readCSV("service_key_table.csv", ',', 4)) {
     uint16_t encid;
-    bool line_has_key = false;
 
     std::vector<uint8_t> nums(3);
 
-    for (int col=0; col < 4; col++) {
-      if (!iss.good())
-        break;
-
-      std::string val;
-      std::getline(iss, val, ',');
-
-      try {
-        if (col == 0)
-          encid = std::stoi(val);
-        else
-          nums[col-1] = std::stoi(val);
-      } catch (const std::exception& e) {
-        break;
-      }
-
-      if (col == 3)
-        line_has_key = true;
+    try {
+      encid = std::stoi(fields[0]);
+      nums[0] = std::stoi(fields[1]);
+      nums[1] = std::stoi(fields[2]);
+      nums[2] = std::stoi(fields[3]);
+    } catch (const std::exception& e) {
+      continue;
     }
 
-    if (line_has_key)
-      result.insert({encid, {nums[0], nums[1], nums[2]}});
-
+    result.insert({encid, {nums[0], nums[1], nums[2]}});
   }
 
-  in.close();
-
   return result;
+}
+
+void addLocationData(Json::Value* jsroot, const LocationDatabase& db) {
+  if ((*jsroot)["tmc"]["message"].isMember("location")) {
+    uint16_t lcd = (*jsroot)["tmc"]["message"]["location"].asUInt();
+
+    if (db.points.count(lcd) > 0) {
+      (*jsroot)["tmc"]["message"]["loc_name"] = db.points.at(lcd).name1;
+      (*jsroot)["tmc"]["message"]["road_name"] = db.points.at(lcd).road_name;
+      (*jsroot)["tmc"]["message"]["lat"] = db.points.at(lcd).lat;
+      (*jsroot)["tmc"]["message"]["lon"] = db.points.at(lcd).lon;
+
+    }
+
+  }
 }
 
 bool isValidEventCode(uint16_t code) {
@@ -375,7 +356,6 @@ bool isValidSupplementaryCode(uint16_t code) {
 Event::Event() : description(""), description_with_quantifier(""), nature(0),
   quantifier_type(0), duration_type(0), directionality(0), urgency(0),
   update_class(0), allows_quantifier(false) {
-
 }
 
 Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature,
@@ -393,10 +373,10 @@ Event getEvent(uint16_t code) {
     return Event();
 }
 
-TMC::TMC() : is_initialized_(false), is_encrypted_(false), has_encid_(false),
-  ltn_(0), sid_(0), encid_(0), ltnbe_(0), message_(),
+TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
+  has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
   service_key_table_(loadServiceKeyTable()), ps_(8) {
-
+  locdb_ = loadLocationDatabase(options.loctable_dir);
 }
 
 void TMC::systemGroup(uint16_t message, Json::Value* jsroot) {
@@ -405,13 +385,15 @@ void TMC::systemGroup(uint16_t message, Json::Value* jsroot) {
       loadEventData();
 
     is_initialized_ = true;
-    ltn_ = bits(message, 6, 6);
-    is_encrypted_ = (ltn_ == 0);
+    uint16_t ltn = bits(message, 6, 6);
 
+    is_encrypted_ = (ltn == 0);
     (*jsroot)["tmc"]["system_info"]["is_encrypted"] = is_encrypted_;
 
-    if (!is_encrypted_)
+    if (!is_encrypted_) {
+      ltn_ = ltn;
       (*jsroot)["tmc"]["system_info"]["location_table"] = ltn_;
+    }
 
     bool afi   = bits(message, 5, 1);
     //bool m     = bits(message, 4, 1);
@@ -435,12 +417,12 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
   if (bits(x, 0, 5) == 0x00) {
     sid_   = bits(y, 5, 6);
     encid_ = bits(y, 0, 5);
-    ltnbe_ = bits(z, 10, 6);
+    ltn_   = bits(z, 10, 6);
     has_encid_ = true;
 
     (*jsroot)["tmc"]["encryption_info"]["service_id"] = sid_;
     (*jsroot)["tmc"]["encryption_info"]["encryption_id"] = encid_;
-    (*jsroot)["tmc"]["encryption_info"]["location_table"] = ltnbe_;
+    (*jsroot)["tmc"]["system_info"]["location_table"] = ltn_;
 
   // Tuning information
   } else if (t) {
@@ -493,8 +475,10 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
       if (is_encrypted_ && service_key_table_.count(encid_) > 0)
         message.decrypt(service_key_table_[encid_]);
 
-      if (!message.json().empty())
+      if (!message.json().empty()) {
         (*jsroot)["tmc"]["message"] = message.json();
+        addLocationData(jsroot, locdb_);
+      }
 
     // Part of multi-group message
     } else {
@@ -504,8 +488,10 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
       if (continuity_index != message_.getContinuityIndex()) {
         /* Message changed; print previous unfinished message
          * TODO 15-second limit */
-        if (!message_.json().empty())
+        if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
+          addLocationData(jsroot, locdb_);
+        }
         message_ = Message(is_encrypted_);
       }
 
@@ -515,8 +501,10 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
         if (is_encrypted_ && service_key_table_.count(encid_) > 0)
           message_.decrypt(service_key_table_[encid_]);
 
-        if (!message_.json().empty())
+        if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
+          addLocationData(jsroot, locdb_);
+        }
         message_ = Message(is_encrypted_);
       }
     }
@@ -531,7 +519,6 @@ Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
     has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
     speed_limit_(0), directionality_(DIR_SINGLE), urgency_(URGENCY_NONE),
     continuity_index_(0), parts_(5) {
-
 }
 
 bool Message::isComplete() const {
@@ -708,7 +695,6 @@ void Message::clear() {
 }
 
 Json::Value Message::json() const {
-
   Json::Value json;
 
   if (!is_complete_ || events_.empty())
@@ -751,10 +737,11 @@ Json::Value Message::json() const {
     json["speed_limit"] =
         std::to_string(speed_limit_) + " km/h";
 
-  if (is_encrypted_)
+  if (is_encrypted_) {
     json["encrypted_location"] = location_;
-  else
+  } else {
     json["location"] = location_;
+  }
 
   json["direction"] =
       directionality_ == DIR_SINGLE ? "single" : "both";
@@ -771,7 +758,6 @@ Json::Value Message::json() const {
 }
 
 void Message::decrypt(ServiceKey key) {
-
   if (!is_encrypted_)
     return;
 
