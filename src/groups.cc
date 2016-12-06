@@ -561,19 +561,13 @@ void Station::decodeType6 (const Group& group) {
   if (group.type().ab == VERSION_A) {
     if (group.has(BLOCK3)) {
       json_["in_house_data"].append(bits(group.get(BLOCK3), 0, 16));
-    } else {
-      json_["in_house_data"].append("(not received)");
-    }
-    if (group.has(BLOCK4)) {
-      json_["in_house_data"].append(bits(group.get(BLOCK4), 0, 16));
-    } else {
-      json_["in_house_data"].append("(not received)");
+      if (group.has(BLOCK4)) {
+        json_["in_house_data"].append(bits(group.get(BLOCK4), 0, 16));
+      }
     }
   } else {
     if (group.has(BLOCK3)) {
       json_["in_house_data"].append(bits(group.get(BLOCK4), 0, 16));
-    } else {
-      json_["in_house_data"].append("(not received)");
     }
   }
 }
