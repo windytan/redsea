@@ -331,6 +331,7 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
 void addLocationData(Json::Value* jsroot, const LocationDatabase& db) {
   if ((*jsroot)["tmc"]["message"].isMember("location")) {
     uint16_t lcd = (*jsroot)["tmc"]["message"]["location"].asUInt();
+    int extent = (*jsroot)["tmc"]["message"]["extent"].asInt();
 
     if (db.points.count(lcd) > 0) {
       (*jsroot)["tmc"]["message"]["loc_name"] = db.points.at(lcd).name1;

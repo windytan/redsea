@@ -69,6 +69,32 @@ LocationDatabase loadLocationDatabase(std::string directory) {
       continue;
     }
   }
+
+  columns.clear();
+  is_title_row = true;
+
+  for (std::vector<std::string> fields :
+       readCSV(directory + "/POFFSETS.DAT", ';', 5)) {
+
+    if (is_title_row) {
+      for (size_t i=0; i<fields.size(); i++)
+        columns[fields[i]] = i;
+      is_title_row = false;
+    }
+
+    try {
+      int lcd = std::stoi(fields[columns.at("LCD")]);
+      int neg = std::stoi(fields[columns.at("NEG_OFF_LCD")]);
+      int pos = std::stoi(fields[columns.at("POS_OFF_LCD")]);
+      if (locdb.points.count(lcd) > 0) {
+        locdb.points[lcd].neg_off = neg;
+        locdb.points[lcd].pos_off = pos;
+      }
+    } catch (const std::exception& e) {
+      continue;
+    }
+  }
+
   return locdb;
 }
 

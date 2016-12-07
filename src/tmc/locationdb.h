@@ -20,8 +20,8 @@ struct Point {
   std::string name1;
   std::string road_name;
   uint16_t roa_lcd;
-  uint16_t inpos;
-  uint16_t inneg;
+  uint16_t neg_off;
+  uint16_t pos_off;
   float lon;
   float lat;
 };
