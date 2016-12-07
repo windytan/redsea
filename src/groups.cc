@@ -178,11 +178,11 @@ Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
   pager_tng_(0), pager_ecc_(0), pager_ccf_(0), pager_interval_(0),
   writer_builder_(), json_()
 #ifdef ENABLE_TMC
-                    , tmc_()
+                    , tmc_(options)
 #endif
 {
   writer_builder_["indentation"] = "";
-  writer_builder_["precision"] = 1;
+  writer_builder_["precision"] = 5;
   writer_ =
       std::unique_ptr<Json::StreamWriter>(writer_builder_.newStreamWriter());
 }
@@ -561,19 +561,13 @@ void Station::decodeType6 (const Group& group) {
   if (group.type().ab == VERSION_A) {
     if (group.has(BLOCK3)) {
       json_["in_house_data"].append(bits(group.get(BLOCK3), 0, 16));
-    } else {
-      json_["in_house_data"].append("(not received)");
-    }
-    if (group.has(BLOCK4)) {
-      json_["in_house_data"].append(bits(group.get(BLOCK4), 0, 16));
-    } else {
-      json_["in_house_data"].append("(not received)");
+      if (group.has(BLOCK4)) {
+        json_["in_house_data"].append(bits(group.get(BLOCK4), 0, 16));
+      }
     }
   } else {
     if (group.has(BLOCK3)) {
       json_["in_house_data"].append(bits(group.get(BLOCK4), 0, 16));
-    } else {
-      json_["in_house_data"].append("(not received)");
     }
   }
 }

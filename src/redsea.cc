@@ -28,17 +28,18 @@ namespace redsea {
 
 void printUsage() {
   std::cout <<
-         "radio_command | ./src/redsea [OPTIONS]\n"
-         "\n"
-         "-b|--input-ascii  Input is ASCII bit stream (011010110...)\n"
-         "-e|--feed-through Echo the input signal to stdout and print decoded\n"
-         "                  groups to stderr\n"
-         "-h|--input-hex    Input is hex groups in the RDS Spy format\n"
-         "-x|--output-hex   Output is hex groups in the RDS Spy format\n"
-         "-p|--show-partial Display PS and RadioText before completely\n"
-         "                  received (as partial_ps, partial_radiotext)\n"
-         "-u|--rbds         Use RBDS (North American) program types\n"
-         "-v|--version      Print version\n";
+     "radio_command | ./src/redsea [OPTIONS]\n"
+     "\n"
+     "-b, --input-ascii      Input is ASCII bit stream (011010110...)\n"
+     "-e, --feed-through     Echo the input signal to stdout and print\n"
+     "                       decoded groups to stderr\n"
+     "-h, --input-hex        Input is hex groups in the RDS Spy format\n"
+     "-x, --output-hex       Output is hex groups in the RDS Spy format\n"
+     "-p. --show-partial     Display PS and RadioText before completely\n"
+     "                       received (as partial_ps, partial_radiotext)\n"
+     "-u, --rbds             Use RBDS (North American) program types\n"
+     "-l, --loctable DIR     Load TMC location table from a directory\n"
+     "-v, --version          Print version\n";
 }
 
 void printVersion() {
@@ -60,13 +61,14 @@ Options getOptions(int argc, char** argv) {
     { "show-partial",  no_argument, 0, 'p'},
     { "rbds",          no_argument, 0, 'u'},
     { "help",          no_argument, 0, '?'},
+    { "loctable",      1,           0, 'l'},
     { "version",       no_argument, 0, 'v'},
     {0,                0,           0,  0}};
 
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "behpxvu", long_options,
+  while ((option_char = getopt_long(argc, argv, "behpxvul:", long_options,
          &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
@@ -86,6 +88,9 @@ Options getOptions(int argc, char** argv) {
         break;
       case 'u':
         options.rbds = true;
+        break;
+      case 'l':
+        options.loctable_dir = std::string(optarg);
         break;
       case 'v':
         printVersion();
