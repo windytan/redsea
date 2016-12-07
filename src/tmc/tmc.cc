@@ -308,16 +308,16 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
   std::map<uint16_t, ServiceKey> result;
 
   for (std::vector<std::string> fields :
-       readCSV("service_key_table.csv", ',', 4)) {
+       readCSV("service_key_table.csv", ',')) {
     uint16_t encid;
 
     std::vector<uint8_t> nums(3);
 
     try {
-      encid = std::stoi(fields[0]);
-      nums[0] = std::stoi(fields[1]);
-      nums[1] = std::stoi(fields[2]);
-      nums[2] = std::stoi(fields[3]);
+      encid = std::stoi(fields.at(0));
+      nums[0] = std::stoi(fields.at(1));
+      nums[1] = std::stoi(fields.at(2));
+      nums[2] = std::stoi(fields.at(3));
     } catch (const std::exception& e) {
       continue;
     }
@@ -328,19 +328,50 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
   return result;
 }
 
-void addLocationData(Json::Value* jsroot, const LocationDatabase& db) {
+void decodeLocation(const LocationDatabase& db, uint16_t ltn,
+                    Json::Value* jsroot) {
   if ((*jsroot)["tmc"]["message"].isMember("location")) {
     uint16_t lcd = (*jsroot)["tmc"]["message"]["location"].asUInt();
-    int extent = (*jsroot)["tmc"]["message"]["extent"].asInt();
+    int extent = std::stoi((*jsroot)["tmc"]["message"]["extent"].asString());
+    bool is_pos = (extent >= 0);
 
-    if (db.points.count(lcd) > 0) {
-      (*jsroot)["tmc"]["message"]["loc_name"] = db.points.at(lcd).name1;
-      (*jsroot)["tmc"]["message"]["road_name"] = db.points.at(lcd).road_name;
-      (*jsroot)["tmc"]["message"]["lat"] = db.points.at(lcd).lat;
-      (*jsroot)["tmc"]["message"]["lon"] = db.points.at(lcd).lon;
 
+    printf("db.ltn%d  ltn=%d\n",db.ltn,ltn);
+    if (db.points.count(lcd) > 0 && db.ltn == ltn) {
+
+      (*jsroot)["tmc"]["message"].removeMember("location");
+      (*jsroot)["tmc"]["message"].removeMember("extent");
+      std::vector<Point> pts;
+      int points_left = abs(extent) + 1;
+      uint16_t this_lcd = lcd;
+      while (points_left > 0 && db.points.count(this_lcd) > 0) {
+        pts.push_back(db.points.at(this_lcd));
+        this_lcd = (is_pos ? db.points.at(this_lcd).pos_off :
+                             db.points.at(this_lcd).neg_off);
+        points_left--;
+      }
+
+      for (int i=0; i < static_cast<int>(pts.size()); i++) {
+//        (*jsroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
+        (*jsroot)["tmc"]["message"]["coordinates"][i].append(pts[i].lat);
+        (*jsroot)["tmc"]["message"]["coordinates"][i].append(pts[i].lon);
+      }
+
+      if (pts.size() > 1 && pts.at(0).name1.length() > 0 &&
+          pts.at(pts.size()-1).name1.length() > 0) {
+        (*jsroot)["tmc"]["message"]["from"] = pts.at(0).name1;
+        (*jsroot)["tmc"]["message"]["to"] = pts.at(pts.size()-1).name1;
+      }
+      uint16_t roa_lcd = db.points.at(lcd).roa_lcd;
+//      uint16_t seg_lcd = db.points.at(lcd).seg_lcd;
+//      (*jsroot)["tmc"]["message"]["seg_lcd"] = seg_lcd;
+//      (*jsroot)["tmc"]["message"]["roa_lcd"] = roa_lcd;
+      if (db.roads.count(roa_lcd) > 0) {
+        (*jsroot)["tmc"]["message"]["road_number"] = db.roads.at(roa_lcd).road_number;
+        if (db.roads.at(roa_lcd).name.length() > 0)
+          (*jsroot)["tmc"]["message"]["road_name"] = db.roads.at(roa_lcd).name;
+      }
     }
-
   }
 }
 
@@ -376,7 +407,7 @@ Event getEvent(uint16_t code) {
 
 TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
   has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
-  service_key_table_(loadServiceKeyTable()), ps_(8) {
+  service_key_table_(loadServiceKeyTable()), ps_(8), locdb_(0) {
   locdb_ = loadLocationDatabase(options.loctable_dir);
 }
 
@@ -478,7 +509,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
       if (!message.json().empty()) {
         (*jsroot)["tmc"]["message"] = message.json();
-        addLocationData(jsroot, locdb_);
+        decodeLocation(locdb_, ltn_, jsroot);
       }
 
     // Part of multi-group message
@@ -491,7 +522,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
          * TODO 15-second limit */
         if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
-          addLocationData(jsroot, locdb_);
+          decodeLocation(locdb_, ltn_, jsroot);
         }
         message_ = Message(is_encrypted_);
       }
@@ -504,7 +535,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
         if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
-          addLocationData(jsroot, locdb_);
+          decodeLocation(locdb_, ltn_, jsroot);
         }
         message_ = Message(is_encrypted_);
       }

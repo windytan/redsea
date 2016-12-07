@@ -1,5 +1,6 @@
 #include "src/util.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -111,8 +112,7 @@ std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
 }
 
 std::vector<std::vector<std::string>> readCSV(std::string filename,
-                                              char delimiter,
-                                              size_t numfields) {
+                                              char delimiter) {
   std::vector<std::vector<std::string>> lines;
 
   std::ifstream in(filename);
@@ -123,15 +123,16 @@ std::vector<std::vector<std::string>> readCSV(std::string filename,
     if (!in.good())
       break;
 
+    line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+    line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+
     std::vector<std::string> fields = splitline(line, delimiter);
-    if (fields.size() == numfields)
-      lines.push_back(fields);
+    lines.push_back(fields);
   }
 
   in.close();
 
   return lines;
 }
-
 
 }  // namespace redsea

@@ -18,7 +18,7 @@ std::vector<std::string> splitline(std::string line, char delimiter);
 std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
                                               char delimiter);
 std::vector<std::vector<std::string>> readCSV(std::string filename,
-                                              char delimiter, size_t numfields);
+                                              char delimiter);
 
 class CarrierFrequency {
  public:
