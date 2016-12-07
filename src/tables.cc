@@ -206,6 +206,7 @@ std::string getLanguageString(uint16_t code) {
   return result;
 }
 
+// RDS Forum R13/041_2 (2013-09-05)
 std::string getAppName(uint16_t aid) {
   static const std::map<uint16_t, std::string> oda_apps({
     {0x0000, "None"},
@@ -271,6 +272,7 @@ std::string getAppName(uint16_t aid) {
   return result;
 }
 
+// RDS Forum R06/040_1 (2006-07-21)
 std::string getRTPlusContentTypeName(uint16_t content_type) {
   static const std::vector<std::string> content_type_names({
       "dummy_class",          "item.title",         "item.album",

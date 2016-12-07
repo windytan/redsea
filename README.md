@@ -112,15 +112,16 @@ ts` and `man strftime`.
 ```
 radio_command | ./src/redsea [OPTIONS]
 
--b|--input-ascii  Input is ASCII bit stream (011010110...)
--e|--feed-through Echo the input signal to stdout and print decoded
-                  groups to stderr
--h|--input-hex    Input is hex groups in the RDS Spy format
--x|--output-hex   Output is hex groups in the RDS Spy format
--p|--show-partial Display PS and RadioText before completely
-                  received (as partial_ps, partial_radiotext)
--u|--rbds         Use RBDS (North American) program types
--v|--version      Print version
+-b, --input-ascii      Input is ASCII bit stream (011010110...)
+-e, --feed-through     Echo the input signal to stdout and print
+                       decoded groups to stderr
+-h, --input-hex        Input is hex groups in the RDS Spy format
+-x, --output-hex       Output is hex groups in the RDS Spy format
+-p. --show-partial     Display PS and RadioText before completely
+                       received (as partial_ps, partial_radiotext)
+-u, --rbds             Use RBDS (North American) program types
+-l, --loctable DIR     Load TMC location table from a directory
+-v, --version          Print version
 ```
 
 By default, the input (via stdin) is demodulated FM multiplex (MPX) with 16-bit
@@ -131,6 +132,7 @@ mono samples at 171 kHz. The output format defaults to newline-delimited JSON.
 * Linux/OSX
 * C++11 compiler
 * GNU autotools
+* libiconv
 * [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals
@@ -165,5 +167,6 @@ of hex data using the `-x` switch.
 ## Licensing
 
 Redsea is released under the MIT license, which means it is copyrighted to Oona
-Räisänen OH2EIQ yet you're free to use it provided that the copyright information is
-not removed. See LICENSE.
+Räisänen OH2EIQ yet you're free to use it provided that the copyright
+information is not removed. (jsoncpp and iconvpp have their own licenses.)
+See LICENSE.

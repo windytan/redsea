@@ -11,7 +11,9 @@
 
 #include <json/json.h>
 
+#include "src/common.h"
 #include "src/rdsstring.h"
+#include "src/tmc/locationdb.h"
 
 namespace redsea {
 namespace tmc {
@@ -74,7 +76,7 @@ struct MessagePart {
 
 class Message {
  public:
-  explicit Message(bool is_loc_encrypted = false);
+  explicit Message(bool is_loc_encrypted);
   void pushMulti(uint16_t x, uint16_t y, uint16_t z);
   void pushSingle(uint16_t x, uint16_t y, uint16_t z);
   Json::Value json() const;
@@ -113,7 +115,7 @@ class Message {
 
 class TMC {
  public:
-  TMC();
+  TMC(Options options);
   void systemGroup(uint16_t message, Json::Value*);
   void userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value*);
 
@@ -124,10 +126,10 @@ class TMC {
   uint16_t ltn_;
   uint16_t sid_;
   uint16_t encid_;
-  uint16_t ltnbe_;
   Message message_;
   std::map<uint16_t, ServiceKey> service_key_table_;
   RDSString ps_;
+  LocationDatabase locdb_;
 };
 
 }  // namespace tmc
