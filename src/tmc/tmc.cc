@@ -335,8 +335,6 @@ void decodeLocation(const LocationDatabase& db, uint16_t ltn,
     int extent = std::stoi((*jsroot)["tmc"]["message"]["extent"].asString());
     bool is_pos = (extent >= 0);
 
-
-    printf("db.ltn%d  ltn=%d\n",db.ltn,ltn);
     if (db.points.count(lcd) > 0 && db.ltn == ltn) {
 
       (*jsroot)["tmc"]["message"].removeMember("location");
