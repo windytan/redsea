@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 
+#include "iconvpp/iconv.hpp"
 #include <json/json.h>
 
 #include "src/tmc/event_list.h"
@@ -19,11 +20,38 @@ namespace redsea {
 
 namespace tmc {
 
+namespace {
+
+std::string utf8(std::string input, iconvpp::converter* conv) {
+  std::string converted;
+  conv->convert(input, converted);
+  return converted;
+}
+
+}  // namespace
+
 LocationDatabase loadLocationDatabase(std::string directory) {
   LocationDatabase locdb(0);
   std::map<std::string, int> columns;
+  std::string encoding("UTF-8");
+
+  for (std::vector<std::string> fields :
+       readCSV(directory + "/README.DAT", ';')) {
+    try {
+      encoding = fields.at(4);
+    } catch (const std::exception& e) {
+      continue;
+    }
+  }
+
+  // Misspelled encodings in the wild
+  if (encoding.compare("ISO 8859-1") == 0)
+    encoding = "ISO-8859-1";
+
+  iconvpp::converter conv("UTF-8", encoding);
 
   bool is_title_row = true;
+
   for (std::vector<std::string> fields :
        readCSV(directory + "/NAMES.DAT", ';')) {
 
@@ -34,8 +62,8 @@ LocationDatabase loadLocationDatabase(std::string directory) {
     } else {
 
       try {
-        int nid = std::stoi(fields[columns.at("NID")]);
-        locdb.names[nid] = fields[columns.at("NAME")];
+        int nid = std::stoi(fields.at(columns.at("NID")));
+        locdb.names[nid] = utf8(fields.at(columns.at("NAME")), &conv);
       } catch (const std::exception& e) {
         continue;
       }

@@ -1,9 +1,10 @@
 # redsea changelog
 
-## 0.8.2 (xxxx-xx-xx)
+## 0.9 (xxxx-xx-xx)
 
 * Add support for Decoder Identification (DI)
 * Add support for auxiliary character code tables (G1 and G2)
+* Add support for TMC location tables (`--loctable DIR`), adds iconv dependency
 * Add schema to specify JSON output format
 * Fix UTC time zone being displayed as "-00:00"
 * Fix PS strings getting trimmed
