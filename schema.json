@@ -201,6 +201,24 @@
                 "minimum": 0,
                 "maximum": 2047
               }
+            },
+            "road_number": {
+              "type": "integer"
+            },
+            "span_from": {
+              "type": "string"
+            },
+            "span_to": {
+              "type": "string"
+            },
+            "coordinates": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -333,7 +351,7 @@
         "items": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 65535,
+          "maximum": 65535
         }
       },
       "other_network": {
