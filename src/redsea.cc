@@ -38,7 +38,8 @@ void printUsage() {
      "-p. --show-partial     Display PS and RadioText before completely\n"
      "                       received (as partial_ps, partial_radiotext)\n"
      "-u, --rbds             Use RBDS (North American) program types\n"
-     "-l, --loctable DIR     Load TMC location table from a directory\n"
+     "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
+     "                       Exchange format\n"
      "-v, --version          Print version\n";
 }
 
