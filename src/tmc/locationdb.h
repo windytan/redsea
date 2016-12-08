@@ -36,6 +36,7 @@ struct Segment {
 };
 
 struct Road {
+  Road() : lcd(), road_number(""), name(""), name1("") {}
   uint16_t lcd;
   std::string road_number;
   std::string name;

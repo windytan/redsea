@@ -86,7 +86,9 @@ LocationDatabase loadLocationDatabase(std::string directory) {
         Road road;
         road.lcd = std::stoi(fields.at(columns.at("LCD")));
         road.road_number = fields.at(columns.at("ROADNUMBER"));
-        int rnid = std::stoi(fields.at(columns.at("RNID")));
+        int rnid = 0;
+        if (!fields.at(columns.at("RNID")).empty())
+          rnid = std::stoi(fields.at(columns.at("RNID")));
         if (locdb.names.count(rnid) > 0)
           road.name = locdb.names[rnid];
         locdb.roads[road.lcd] = road;
@@ -135,15 +137,23 @@ LocationDatabase loadLocationDatabase(std::string directory) {
         locdb.ltn = std::stoi(fields.at(columns.at("TABCD")));
         Point point;
         point.lcd = std::stoi(fields.at(columns.at("LCD")));
-        int n1id = std::stoi(fields.at(columns.at("N1ID")));
+        int n1id = 0;
+        if (!fields.at(columns.at("N1ID")).empty())
+          std::stoi(fields.at(columns.at("N1ID")));
         if (locdb.names.count(n1id) > 0)
           point.name1 = locdb.names[n1id];
-        point.lon = std::stoi(fields.at(columns.at("XCOORD"))) * 1e-5f;
-        point.lat = std::stoi(fields.at(columns.at("YCOORD"))) * 1e-5f;
-        point.roa_lcd = std::stoi(fields.at(columns.at("ROA_LCD")));
-        point.seg_lcd = std::stoi(fields.at(columns.at("SEG_LCD")));
+        if (!fields.at(columns.at("XCOORD")).empty())
+          point.lon = std::stoi(fields.at(columns.at("XCOORD"))) * 1e-5f;
+        if (!fields.at(columns.at("YCOORD")).empty())
+          point.lat = std::stoi(fields.at(columns.at("YCOORD"))) * 1e-5f;
+        if (!fields.at(columns.at("ROA_LCD")).empty())
+          point.roa_lcd = std::stoi(fields.at(columns.at("ROA_LCD")));
+        if (!fields.at(columns.at("SEG_LCD")).empty())
+          point.seg_lcd = std::stoi(fields.at(columns.at("SEG_LCD")));
 
-        int rnid = std::stoi(fields.at(columns.at("RNID")));
+        int rnid = 0;
+        if (!fields.at(columns.at("RNID")).empty())
+          std::stoi(fields.at(columns.at("RNID")));
         if (locdb.names.count(rnid) > 0)
           point.road_name = locdb.names[rnid];
 
