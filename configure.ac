@@ -32,7 +32,6 @@ AS_IF([test "x$with_liquid" != xno],
        [Could not find liquid-dsp (--without-liquid to disable)])])])
 
 AC_CANONICAL_HOST
-build_mac = no
 case "${host_os}" in
   darwin*)
       AC_SUBST([ICONV], ["-liconv"])
