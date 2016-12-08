@@ -85,7 +85,7 @@ LocationDatabase loadLocationDatabase(std::string directory) {
       try {
         Road road;
         road.lcd = std::stoi(fields.at(columns.at("LCD")));
-        road.road_number = std::stoi(fields.at(columns.at("ROADNUMBER")));
+        road.road_number = fields.at(columns.at("ROADNUMBER"));
         int rnid = std::stoi(fields.at(columns.at("RNID")));
         if (locdb.names.count(rnid) > 0)
           road.name = locdb.names[rnid];
