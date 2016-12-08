@@ -186,6 +186,10 @@ LocationDatabase loadLocationDatabase(std::string directory) {
     }
   }
 
+  printf("{\"location_table_info\":{\"ltn\":%d,\"num_points\":%ld,"
+         "\"num_roads\":%ld,\"num_names\":%ld}}\n", locdb.ltn,
+         locdb.points.size(), locdb.roads.size(), locdb.names.size());
+
   return locdb;
 }
 
