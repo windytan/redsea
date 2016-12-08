@@ -31,6 +31,14 @@ AS_IF([test "x$with_liquid" != xno],
     [AC_MSG_FAILURE(
        [Could not find liquid-dsp (--without-liquid to disable)])])])
 
+AC_CANONICAL_HOST
+build_mac = no
+case "${host_os}" in
+  darwin*)
+      AC_SUBST([ICONV], ["-liconv"])
+      ;;
+esac
+
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_LANG([C++])
