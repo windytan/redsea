@@ -405,9 +405,10 @@ Event getEvent(uint16_t code) {
 }
 
 TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
-  has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
-  service_key_table_(loadServiceKeyTable()), ps_(8), locdb_(0) {
-  locdb_ = loadLocationDatabase(options.loctable_dir);
+    has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
+    service_key_table_(loadServiceKeyTable()), ps_(8), locdb_(0) {
+  if (!options.loctable_dir.empty())
+    locdb_ = loadLocationDatabase(options.loctable_dir);
 }
 
 void TMC::systemGroup(uint16_t message, Json::Value* jsroot) {
