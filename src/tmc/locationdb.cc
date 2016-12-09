@@ -109,7 +109,7 @@ LocationDatabase loadLocationDatabase(std::string directory) {
 
       int rnid = 0;
       if (!row.at("RNID").empty())
-        std::stoi(row.at("RNID"));
+        rnid = std::stoi(row.at("RNID"));
       if (locdb.names.count(rnid) > 0)
         point.road_name = locdb.names[rnid];
 

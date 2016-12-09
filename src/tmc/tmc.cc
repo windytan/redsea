@@ -366,10 +366,14 @@ void decodeLocation(const LocationDatabase& db, uint16_t ltn,
 //      (*jsroot)["tmc"]["message"]["seg_lcd"] = seg_lcd;
 //      (*jsroot)["tmc"]["message"]["roa_lcd"] = roa_lcd;
       if (db.roads.count(roa_lcd) > 0) {
-        (*jsroot)["tmc"]["message"]["road_number"] =
-            db.roads.at(roa_lcd).road_number;
-        if (db.roads.at(roa_lcd).name.length() > 0)
-          (*jsroot)["tmc"]["message"]["road_name"] = db.roads.at(roa_lcd).name;
+        Road road = db.roads.at(roa_lcd);
+        if (!road.road_number.empty())
+          (*jsroot)["tmc"]["message"]["road_number"] = road.road_number;
+        if (road.name.length() > 0)
+          (*jsroot)["tmc"]["message"]["road_name"] = road.name;
+        else if (!db.points.at(lcd).road_name.empty())
+          (*jsroot)["tmc"]["message"]["road_name"] =
+              db.points.at(lcd).road_name;
       }
     }
   }
