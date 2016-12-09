@@ -2,6 +2,7 @@
 
 #ifdef HAVE_LIQUID
 
+#include <cmath>
 #include <complex>
 #include <deque>
 #include <iostream>
@@ -55,12 +56,10 @@ std::pair<bool, std::complex<float>> BiphaseDecoder::push(
   std::complex<float> biphase = (psk_symbol - prev_psk_symbol_) * 0.5f;
   bool is_clock = (clock_ % 2 == clock_polarity_);
 
-  clock_history_[clock_] =
-    biphase.real() < 0.f ? -biphase.real() : biphase.real(); // aka. fabs()
+  clock_history_[clock_] = std::fabs(biphase.real());
 
   // Periodically evaluate validity of the chosen biphase clock polarity
   if (++clock_ == clock_history_.size()) {
-
     float a = 0;
     float b = 0;
 
@@ -76,7 +75,6 @@ std::pair<bool, std::complex<float>> BiphaseDecoder::push(
     else if (b > a) clock_polarity_ = 1;
 
     clock_ = 0;
-
   }
 
   prev_psk_symbol_ = psk_symbol;
@@ -163,7 +161,7 @@ void Subcarrier::demodulateMoreBits() {
 
         bool is_clock;
         std::complex<float> biphase;
-        std::tie(is_clock,biphase) = biphase_decoder_.push(symbol);
+        std::tie(is_clock, biphase) = biphase_decoder_.push(symbol);
 
         // One biphase symbol received for every 2 PSK symbols
         if (is_clock) {
@@ -193,7 +191,7 @@ void Subcarrier::demodulateMoreBits() {
     nco_exact_.step();
     nco_approx_.step();
 
-    numsamples_ ++;
+    numsamples_++;
   }
 }
 
@@ -223,4 +221,4 @@ float Subcarrier::getT() const {
 
 }  // namespace redsea
 
-#endif // HAVE_LIQUID
+#endif  // HAVE_LIQUID

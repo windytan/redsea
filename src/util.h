@@ -2,12 +2,13 @@
 #define UTIL_H_
 
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
 namespace redsea {
 
-uint16_t bits (uint16_t word, int starting_at, int len);
+uint16_t bits(uint16_t word, int starting_at, int len);
 
 std::string join(std::vector<std::string> strings, std::string);
 std::string join(std::vector<uint16_t> strings, std::string);
@@ -22,7 +23,7 @@ std::vector<std::vector<std::string>> readCSV(std::string filename,
 
 class CarrierFrequency {
  public:
-  CarrierFrequency(uint16_t code, bool is_lf_mf=false);
+  CarrierFrequency(uint16_t code, bool is_lf_mf = false);
   bool isValid() const;
   int getKhz() const;
   std::string getString() const;

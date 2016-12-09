@@ -65,7 +65,7 @@ bool operator<(const GroupType& obj1, const GroupType& obj2) {
   return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab));
 }
 
-Group::Group() : has_block_({false,false,false,false,false}), block_(5),
+Group::Group() : has_block_({false, false, false, false, false}), block_(5),
                  has_type_(false), has_pi_(false), has_ci_(false) {
 }
 
@@ -188,7 +188,6 @@ Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
 }
 
 void Station::updateAndPrint(const Group& group, std::ostream* stream) {
-
   // Allow 1 group with missed PI
   if (group.hasPi()) {
     last_block_had_pi_ = true;
@@ -264,8 +263,7 @@ void Station::updateRadioText(int pos, int chr1, int chr2) {
   rt_.setAt(pos, chr1, chr2);
 }
 
-void Station::decodeBasics (const Group& group) {
-
+void Station::decodeBasics(const Group& group) {
   if (group.has(BLOCK2)) {
     is_tp_ = bits(group.get(BLOCK2), 10, 1);
     pty_   = bits(group.get(BLOCK2),  5, 5);
@@ -285,7 +283,7 @@ void Station::decodeBasics (const Group& group) {
 }
 
 // Group 0: Basic tuning and switching information
-void Station::decodeType0 (const Group& group) {
+void Station::decodeType0(const Group& group) {
   uint16_t seg_address = bits(group.get(BLOCK2), 0, 2);
   bool is_di = bits(group.get(BLOCK2), 2, 1);
   json_["di"][getDICode(seg_address)] = is_di;
@@ -300,8 +298,8 @@ void Station::decodeType0 (const Group& group) {
     return;
 
   if (group.type().ab == VERSION_A) {
-    for (int i=0; i<2; i++)
-      alt_freq_list_.add(bits(group.get(BLOCK3), 8-i*8, 8));
+    alt_freq_list_.add(bits(group.get(BLOCK3), 8, 8));
+    alt_freq_list_.add(bits(group.get(BLOCK3), 0, 8));
 
     if (alt_freq_list_.hasAll()) {
       for (auto f : alt_freq_list_.get())
@@ -319,7 +317,7 @@ void Station::decodeType0 (const Group& group) {
 }
 
 // Group 1: Programme Item Number and slow labelling codes
-void Station::decodeType1 (const Group& group) {
+void Station::decodeType1(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
@@ -427,7 +425,7 @@ void Station::decodeType1 (const Group& group) {
 }
 
 // Group 2: RadioText
-void Station::decodeType2 (const Group& group) {
+void Station::decodeType2(const Group& group) {
 
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
@@ -464,7 +462,7 @@ void Station::decodeType2 (const Group& group) {
 }
 
 // Group 3A: Application identification for Open Data
-void Station::decodeType3A (const Group& group) {
+void Station::decodeType3A(const Group& group) {
 
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
@@ -500,7 +498,7 @@ void Station::decodeType3A (const Group& group) {
 }
 
 // Group 4A: Clock-time and date
-void Station::decodeType4A (const Group& group) {
+void Station::decodeType4A(const Group& group) {
 
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
@@ -528,7 +526,7 @@ void Station::decodeType4A (const Group& group) {
   if (group.has(BLOCK4)) {
     int lto_min = (lto - std::trunc(lto)) * 60;
 
-    int hr = int((bits(group.get(BLOCK3), 0, 1) << 4) +
+    int hr = static_cast<int>((bits(group.get(BLOCK3), 0, 1) << 4) +
         bits(group.get(BLOCK4), 12, 14) + lto) % 24;
     int mn = bits(group.get(BLOCK4), 6, 6) + lto_min;
 
@@ -555,7 +553,7 @@ void Station::decodeType4A (const Group& group) {
 }
 
 // Group 6: In-house applications
-void Station::decodeType6 (const Group& group) {
+void Station::decodeType6(const Group& group) {
   json_["in_house_data"].append(bits(group.get(BLOCK2), 0, 5));
 
   if (group.type().ab == VERSION_A) {
@@ -573,7 +571,7 @@ void Station::decodeType6 (const Group& group) {
 }
 
 // Group 14A: Enhanced Other Networks information
-void Station::decodeType14A (const Group& group) {
+void Station::decodeType14A(const Group& group) {
 
   if (!(group.has(BLOCK3) || group.has(BLOCK4)))
     return;
@@ -636,7 +634,7 @@ void Station::decodeType14A (const Group& group) {
     if (pin != 0x0000) {
       json_["other_network"]["prog_item_started"]["day"] = bits(pin, 11, 5);
       json_["other_network"]["prog_item_started"]["time"] =
-          hoursMinutesString(bits(pin, 6,5), bits(pin, 0, 6));
+          hoursMinutesString(bits(pin, 6, 5), bits(pin, 0, 6));
     }
 
   } else {

@@ -17,7 +17,7 @@ class BiphaseDecoder {
  public:
   BiphaseDecoder();
   ~BiphaseDecoder();
-  std::pair<bool,std::complex<float>> push(std::complex<float> psk_symbol);
+  std::pair<bool, std::complex<float>> push(std::complex<float> psk_symbol);
 
  private:
   std::complex<float> prev_psk_symbol_;
@@ -70,5 +70,5 @@ class Subcarrier {
 
 }  // namespace redsea
 
-#endif // HAVE_LIQUID
-#endif // MPX2BITS_H_
+#endif  // HAVE_LIQUID
+#endif  // MPX2BITS_H_

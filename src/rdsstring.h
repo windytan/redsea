@@ -10,21 +10,21 @@
 namespace redsea {
 
 class LCDchar {
-  public:
-    LCDchar();
-    LCDchar(uint8_t _code);
-    uint8_t code() const;
-    std::string toString() const;
-    void setCodeTable(eCodeTable codetable);
+ public:
+  LCDchar();
+  LCDchar(uint8_t _code);
+  uint8_t code() const;
+  std::string toString() const;
+  void setCodeTable(eCodeTable codetable);
 
-  private:
-    uint8_t code_;
-    eCodeTable codetable_;
+ private:
+  uint8_t code_;
+  eCodeTable codetable_;
 };
 
 class RDSString {
  public:
-  RDSString(int len=8);
+  RDSString(int len = 8);
   void setAt(int pos, LCDchar chr);
   void setAt(int pos, LCDchar chr1, LCDchar chr2);
   void setRepertoire(int pos, eCodeTable codetable);
@@ -53,5 +53,5 @@ class RDSString {
   std::map<int, eCodeTable> repertoire_;
 };
 
-} // namespace redsea
-#endif // RDSSTRING_H_
+}  // namespace redsea
+#endif  // RDSSTRING_H_

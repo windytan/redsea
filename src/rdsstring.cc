@@ -1,6 +1,7 @@
 #include "src/rdsstring.h"
 
 #include <string>
+#include <utility>
 
 #include "src/common.h"
 #include "src/tables.h"

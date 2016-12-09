@@ -42,7 +42,7 @@ class AltFreqList {
   std::set<CarrierFrequency> alt_freqs_;
   int num_alt_freqs_;
   bool lf_mf_follows_;
- };
+};
 
 class GroupType {
  public:
