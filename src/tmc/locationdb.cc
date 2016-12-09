@@ -31,8 +31,7 @@ std::string utf8(std::string input, iconvpp::converter* conv) {
 }  // namespace
 
 LocationDatabase loadLocationDatabase(std::string directory) {
-  LocationDatabase locdb(0);
-  std::map<std::string, int> columns;
+  LocationDatabase locdb;
   std::string encoding("UTF-8");
 
   for (std::vector<std::string> fields :

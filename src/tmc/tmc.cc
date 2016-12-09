@@ -27,6 +27,7 @@ namespace {
 
 std::map<uint16_t, Event> g_event_data;
 std::map<uint16_t, std::string> g_suppl_data;
+LocationDatabase g_locdb;
 
 uint16_t popBits(std::deque<int>* bit_deque, int len) {
   uint16_t result = 0x00;
@@ -330,7 +331,7 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
 
 void decodeLocation(const LocationDatabase& db, uint16_t ltn,
                     Json::Value* jsroot) {
-  if ((*jsroot)["tmc"]["message"].isMember("location")) {
+  if ((*jsroot)["tmc"]["message"].isMember("location") && db.ltn != 0) {
     uint16_t lcd = (*jsroot)["tmc"]["message"]["location"].asUInt();
     int extent = std::stoi((*jsroot)["tmc"]["message"]["extent"].asString());
     bool is_pos = (extent >= 0);
@@ -406,9 +407,9 @@ Event getEvent(uint16_t code) {
 
 TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
     has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
-    service_key_table_(loadServiceKeyTable()), ps_(8), locdb_(0) {
-  if (!options.loctable_dir.empty())
-    locdb_ = loadLocationDatabase(options.loctable_dir);
+    service_key_table_(loadServiceKeyTable()), ps_(8) {
+  if (!options.loctable_dir.empty() && g_locdb.ltn == 0)
+    g_locdb = loadLocationDatabase(options.loctable_dir);
 }
 
 void TMC::systemGroup(uint16_t message, Json::Value* jsroot) {
@@ -509,7 +510,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
       if (!message.json().empty()) {
         (*jsroot)["tmc"]["message"] = message.json();
-        decodeLocation(locdb_, ltn_, jsroot);
+        decodeLocation(g_locdb, ltn_, jsroot);
       }
 
     // Part of multi-group message
@@ -522,7 +523,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
          * TODO 15-second limit */
         if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
-          decodeLocation(locdb_, ltn_, jsroot);
+          decodeLocation(g_locdb, ltn_, jsroot);
         }
         message_ = Message(is_encrypted_);
       }
@@ -535,7 +536,7 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
         if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
-          decodeLocation(locdb_, ltn_, jsroot);
+          decodeLocation(g_locdb, ltn_, jsroot);
         }
         message_ = Message(is_encrypted_);
       }

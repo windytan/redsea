@@ -129,7 +129,6 @@ class TMC {
   Message message_;
   std::map<uint16_t, ServiceKey> service_key_table_;
   RDSString ps_;
-  LocationDatabase locdb_;
 };
 
 }  // namespace tmc

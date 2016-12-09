@@ -44,7 +44,7 @@ struct Road {
 };
 
 struct LocationDatabase {
-  LocationDatabase(int _ltn) : ltn(_ltn) {}
+  LocationDatabase() : ltn(0) {}
   uint16_t ltn;
   std::map<uint16_t, Point> points;
   std::map<uint16_t, Road> roads;
