@@ -6,6 +6,7 @@
 #include <climits>
 #include <deque>
 #include <fstream>
+#include <regex>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -43,9 +44,11 @@ LocationDatabase loadLocationDatabase(std::string directory) {
     }
   }
 
-  // Misspelled encodings in the wild
-  if (encoding.compare("ISO 8859-1") == 0)
+  // Misspelled encodings in the wild (TODO a better way to do this)
+  if (std::regex_match(encoding, std::regex("^ISO.8859-1\\b")))
     encoding = "ISO-8859-1";
+  if (std::regex_match(encoding, std::regex("^ISO.8859-15\\b")))
+    encoding = "ISO-8859-15";
 
   iconvpp::converter conv("UTF-8", encoding);
 
