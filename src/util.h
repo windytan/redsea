@@ -15,11 +15,21 @@ std::string join(std::vector<uint16_t> strings, std::string);
 
 std::string hexString(int value, int numybbles);
 
+class CSVRow {
+ public:
+  CSVRow(std::map<std::string, int> titles, std::vector<std::string> values);
+  std::string at(std::string title) const;
+ private:
+  std::map<std::string, int> titles_;
+  std::vector<std::string> values_;
+};
+
 std::vector<std::string> splitline(std::string line, char delimiter);
 std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
                                               char delimiter);
 std::vector<std::vector<std::string>> readCSV(std::string filename,
                                               char delimiter);
+std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter);
 
 class CarrierFrequency {
  public:

@@ -135,4 +135,46 @@ std::vector<std::vector<std::string>> readCSV(std::string filename,
   return lines;
 }
 
+std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter) {
+  std::vector<CSVRow> lines;
+  std::map<std::string, int> titles;
+
+  std::ifstream in(filename);
+  if (!in.is_open())
+    return lines;
+
+  bool is_title_row = true;
+
+  for (std::string line; std::getline(in, line); ) {
+    if (!in.good())
+      break;
+
+    line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+    line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+
+    std::vector<std::string> fields = splitline(line, delimiter);
+    if (is_title_row) {
+      for (size_t i = 0; i < fields.size(); i++)
+        titles[fields[i]] = i;
+      is_title_row = false;
+    }
+
+    CSVRow csvrow(titles, fields);
+    lines.push_back(csvrow);
+  }
+
+  in.close();
+
+  return lines;
+}
+
+CSVRow::CSVRow(std::map<std::string, int> titles,
+               std::vector<std::string> values) :
+    titles_(titles), values_(values) {
+}
+
+std::string CSVRow::at(std::string title) const {
+  return values_.at(titles_.at(title));
+}
+
 }  // namespace redsea
