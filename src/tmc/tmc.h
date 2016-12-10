@@ -22,7 +22,7 @@ enum eDirection {
   DIR_POSITIVE, DIR_NEGATIVE
 };
 enum eEventNature {
-  EVENT_INFO, EVENT_FORECAST
+  EVENT_INFO, EVENT_FORECAST, EVENT_SILENT
 };
 enum eEventDirectionality {
   DIR_SINGLE, DIR_BOTH
