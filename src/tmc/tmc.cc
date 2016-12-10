@@ -776,6 +776,9 @@ Json::Value Message::json() const {
     }
   }
 
+  if (isValidEventCode(events_[0]))
+    json["update_class"] = getEvent(events_[0]).update_class;
+
   for (uint16_t code : supplementary_) {
     if (isValidSupplementaryCode(code))
       sentences.push_back(ucfirst(g_suppl_data.find(code)->second));
@@ -808,6 +811,8 @@ Json::Value Message::json() const {
     json["starts"] = timeString(time_starts_);
   if (has_time_until_)
     json["until"] = timeString(time_until_);
+
+  json["urgency"] = urgency_;
 
   return json;
 }
