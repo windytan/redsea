@@ -48,11 +48,11 @@ struct ServiceKey {
   uint8_t nrot;
 };
 
-class Event {
+struct Event {
  public:
-  Event();
-  Event(std::string, std::string, uint16_t, uint16_t, uint16_t, uint16_t,
-      uint16_t, uint16_t, bool);
+  Event() : description(""), description_with_quantifier(""), nature(0),
+            quantifier_type(0), duration_type(0), directionality(0), urgency(0),
+            update_class(0), allows_quantifier(false), show_duration(true) {}
   std::string description;
   std::string description_with_quantifier;
   uint16_t nature;
@@ -62,6 +62,7 @@ class Event {
   uint16_t urgency;
   uint16_t update_class;
   bool allows_quantifier;
+  bool show_duration;
 };
 
 Event getEvent(uint16_t code);
