@@ -139,6 +139,18 @@ LocationDatabase loadLocationDatabase(std::string directory) {
     }
   }
 
+  for (CSVRow row :
+       readCSVWithTitles(directory + "/ADMINISTRATIVEAREA.DAT", ';')) {
+    try {
+      AdminArea area;
+      area.lcd = std::stoi(row.at("LCD"));
+      area.name = row.at("NID");
+      locdb.admin_areas[area.lcd] = area;
+    } catch (const std::exception& e) {
+      continue;
+    }
+  }
+
   printf("{\"location_table_info\":{\"ltn\":%d,\"num_points\":%ld,"
          "\"num_roads\":%ld,\"num_names\":%ld}}\n", locdb.ltn,
          locdb.points.size(), locdb.roads.size(), locdb.names.size());

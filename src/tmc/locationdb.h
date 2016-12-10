@@ -43,6 +43,11 @@ struct Road {
   std::string name1;
 };
 
+struct AdminArea {
+  uint16_t lcd;
+  std::string name;
+};
+
 struct LocationDatabase {
   LocationDatabase() : ltn(0) {}
   uint16_t ltn;
@@ -50,6 +55,7 @@ struct LocationDatabase {
   std::map<uint16_t, Road> roads;
   std::map<int, std::string> names;
   std::map<uint16_t, Segment> segments;
+  std::map<uint16_t, AdminArea> admin_areas;
 };
 
 LocationDatabase loadLocationDatabase(std::string directory);
