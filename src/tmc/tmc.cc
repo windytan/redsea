@@ -549,9 +549,11 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 }
 
 Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
+    was_encrypted_(is_encrypted_),
     duration_(0), duration_type_(0), divertadv_(false), direction_(0),
     extent_(0), events_(), supplementary_(), quantifiers_(), diversion_(),
-    location_(0), is_complete_(false), has_length_affected_(false),
+    location_(0), encrypted_location_(0), is_complete_(false),
+    has_length_affected_(false),
     length_affected_(0), has_time_until_(false), time_until_(0),
     has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
     speed_limit_(0), directionality_(DIR_SINGLE), urgency_(URGENCY_NONE),
@@ -572,7 +574,10 @@ void Message::pushSingle(uint16_t x, uint16_t y, uint16_t z) {
   direction_ = bits(y, 14, 1);
   extent_    = bits(y, 11, 3);
   events_.push_back(bits(y, 0, 11));
-  location_  = z;
+  if (is_encrypted_)
+    encrypted_location_ = z;
+  else
+    location_  = z;
   directionality_ = getEvent(events_[0]).directionality;
   urgency_   = getEvent(events_[0]).urgency;
   duration_type_ = getEvent(events_[0]).duration_type;
@@ -622,9 +627,12 @@ void Message::decodeMulti() {
   direction_ = bits(parts_[0].data[0], 14, 1);
   extent_    = bits(parts_[0].data[0], 11, 3);
   events_.push_back(bits(parts_[0].data[0], 0, 11));
-  location_  = parts_[0].data[1];
+  if (is_encrypted_)
+    encrypted_location_ = parts_[0].data[1];
+  else
+    location_ = parts_[0].data[1];
   directionality_ = getEvent(events_[0]).directionality;
-  urgency_   = getEvent(events_[0]).urgency;
+  urgency_ = getEvent(events_[0]).urgency;
   duration_type_ = getEvent(events_[0]).duration_type;
 
   // Subsequent parts
@@ -774,9 +782,10 @@ Json::Value Message::json() const {
     json["speed_limit"] =
         std::to_string(speed_limit_) + " km/h";
 
-  if (is_encrypted_)
-    json["encrypted_location"] = location_;
-  else
+  if (was_encrypted_)
+    json["encrypted_location"] = encrypted_location_;
+
+  if (!is_encrypted_)
     json["location"] = location_;
 
   json["direction"] =
@@ -797,7 +806,8 @@ void Message::decrypt(ServiceKey key) {
   if (!is_encrypted_)
     return;
 
-  location_ = rotl16(location_ ^ (key.xorval << key.xorstart), key.nrot);
+  location_ = rotl16(encrypted_location_ ^ (key.xorval << key.xorstart),
+                     key.nrot);
   is_encrypted_ = false;
 }
 

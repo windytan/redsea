@@ -88,6 +88,7 @@ class Message {
  private:
   void decodeMulti();
   bool is_encrypted_;
+  bool was_encrypted_;
   uint16_t duration_;
   uint16_t duration_type_;
   bool divertadv_;
@@ -98,6 +99,7 @@ class Message {
   std::map<uint16_t, uint16_t> quantifiers_;
   std::vector<uint16_t> diversion_;
   uint16_t location_;
+  uint16_t encrypted_location_;
   bool is_complete_;
   bool has_length_affected_;
   uint16_t length_affected_;
