@@ -30,6 +30,8 @@ std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
 std::vector<std::vector<std::string>> readCSV(std::string filename,
                                               char delimiter);
 std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter);
+std::vector<CSVRow> readCSVWithTitles(std::vector<std::string> csvdata,
+                                      char delimiter);
 
 class CarrierFrequency {
  public:

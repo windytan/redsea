@@ -135,19 +135,14 @@ std::vector<std::vector<std::string>> readCSV(std::string filename,
   return lines;
 }
 
-std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter) {
+std::vector<CSVRow> readCSVWithTitles(std::vector<std::string> csvdata,
+                                      char delimiter) {
   std::vector<CSVRow> lines;
   std::map<std::string, int> titles;
 
-  std::ifstream in(filename);
-  if (!in.is_open())
-    return lines;
-
   bool is_title_row = true;
 
-  for (std::string line; std::getline(in, line); ) {
-    if (!in.good())
-      break;
+  for (std::string line : csvdata ) {
 
     line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
@@ -163,9 +158,25 @@ std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter) {
     lines.push_back(csvrow);
   }
 
-  in.close();
-
   return lines;
+}
+
+std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter) {
+  std::vector<std::string> lines;
+
+  std::ifstream in(filename);
+  if (in.is_open()) {
+    for (std::string line; std::getline(in, line); ) {
+      if (!in.good())
+        break;
+
+      lines.push_back(line);
+    }
+
+    in.close();
+  }
+
+  return readCSVWithTitles(lines, delimiter);
 }
 
 CSVRow::CSVRow(std::map<std::string, int> titles,
