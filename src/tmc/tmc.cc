@@ -331,50 +331,50 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
 
 void decodeLocation(const LocationDatabase& db, uint16_t ltn,
                     Json::Value* jsroot) {
-  if ((*jsroot)["tmc"]["message"].isMember("location") && db.ltn != 0) {
-    uint16_t lcd = (*jsroot)["tmc"]["message"]["location"].asUInt();
-    int extent = std::stoi((*jsroot)["tmc"]["message"]["extent"].asString());
-    bool is_pos = (extent >= 0);
 
-    if (db.points.count(lcd) > 0 && db.ltn == ltn) {
+  if (db.ltn != ltn || db.ltn == 0 ||
+      !(*jsroot)["tmc"]["message"].isMember("location"))
+    return;
 
-      (*jsroot)["tmc"]["message"].removeMember("location");
-      (*jsroot)["tmc"]["message"].removeMember("extent");
-      std::vector<Point> pts;
-      int points_left = abs(extent) + 1;
-      uint16_t this_lcd = lcd;
-      while (points_left > 0 && db.points.count(this_lcd) > 0) {
-        pts.push_back(db.points.at(this_lcd));
-        this_lcd = (is_pos ? db.points.at(this_lcd).pos_off :
-                             db.points.at(this_lcd).neg_off);
-        points_left--;
-      }
+  uint16_t lcd = (*jsroot)["tmc"]["message"]["location"].asUInt();
+  int extent = std::stoi((*jsroot)["tmc"]["message"]["extent"].asString());
+  bool is_pos = (extent >= 0);
 
-      for (int i=0; i < static_cast<int>(pts.size()); i++) {
+  if (db.points.count(lcd) > 0) {
+    std::vector<Point> pts;
+    int points_left = abs(extent) + 1;
+    uint16_t this_lcd = lcd;
+    while (points_left > 0 && db.points.count(this_lcd) > 0) {
+      pts.push_back(db.points.at(this_lcd));
+      this_lcd = (is_pos ? db.points.at(this_lcd).pos_off :
+                           db.points.at(this_lcd).neg_off);
+      points_left--;
+    }
+
+    for (int i=0; i < static_cast<int>(pts.size()); i++) {
 //        (*jsroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
-        (*jsroot)["tmc"]["message"]["coordinates"][i].append(pts[i].lat);
-        (*jsroot)["tmc"]["message"]["coordinates"][i].append(pts[i].lon);
-      }
+      (*jsroot)["tmc"]["message"]["coordinates"][i].append(pts[i].lat);
+      (*jsroot)["tmc"]["message"]["coordinates"][i].append(pts[i].lon);
+    }
 
-      if (pts.size() > 1 && pts.at(0).name1.length() > 0 &&
-          pts.at(pts.size()-1).name1.length() > 0) {
-        (*jsroot)["tmc"]["message"]["span_from"] = pts.at(0).name1;
-        (*jsroot)["tmc"]["message"]["span_to"] = pts.at(pts.size()-1).name1;
-      }
-      uint16_t roa_lcd = db.points.at(lcd).roa_lcd;
+    if (pts.size() > 1 && pts.at(0).name1.length() > 0 &&
+        pts.at(pts.size()-1).name1.length() > 0) {
+      (*jsroot)["tmc"]["message"]["span_from"] = pts.at(0).name1;
+      (*jsroot)["tmc"]["message"]["span_to"] = pts.at(pts.size()-1).name1;
+    }
+    uint16_t roa_lcd = db.points.at(lcd).roa_lcd;
 //      uint16_t seg_lcd = db.points.at(lcd).seg_lcd;
 //      (*jsroot)["tmc"]["message"]["seg_lcd"] = seg_lcd;
 //      (*jsroot)["tmc"]["message"]["roa_lcd"] = roa_lcd;
-      if (db.roads.count(roa_lcd) > 0) {
-        Road road = db.roads.at(roa_lcd);
-        if (!road.road_number.empty())
-          (*jsroot)["tmc"]["message"]["road_number"] = road.road_number;
-        if (road.name.length() > 0)
-          (*jsroot)["tmc"]["message"]["road_name"] = road.name;
-        else if (!db.points.at(lcd).road_name.empty())
-          (*jsroot)["tmc"]["message"]["road_name"] =
-              db.points.at(lcd).road_name;
-      }
+    if (db.roads.count(roa_lcd) > 0) {
+      Road road = db.roads.at(roa_lcd);
+      if (!road.road_number.empty())
+        (*jsroot)["tmc"]["message"]["road_number"] = road.road_number;
+      if (road.name.length() > 0)
+        (*jsroot)["tmc"]["message"]["road_name"] = road.name;
+      else if (!db.points.at(lcd).road_name.empty())
+        (*jsroot)["tmc"]["message"]["road_name"] =
+            db.points.at(lcd).road_name;
     }
   }
 }
