@@ -156,8 +156,8 @@ uint16_t getQuantifierSize(uint16_t code) {
 }
 
 std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
-  std::string q("_");
-  std::regex q_re("_");
+  std::string q("(Q)");
+  std::regex q_re("\\(Q\\)");
 
   if (getQuantifierSize(event.quantifier_type) == 5 && q_value == 0)
     q_value = 32;
@@ -277,24 +277,47 @@ std::string ucfirst(std::string in) {
 }
 
 void loadEventData() {
-  for (std::vector<std::string> fields : readCSV(tmc_data_events, ';')) {
-    if (fields.size() != 9)
+  for (CSVRow row : readCSVWithTitles(tmc_data_events, ';')) {
+
+    try {
+      uint16_t code = std::stoi(row.at("Code"));
+      Event event;
+      event.description = row.at("Description");
+      event.description_with_quantifier = row.at("Description with Q");
+
+      if (row.at("N").compare("F") == 0)
+        event.nature = EVENT_FORECAST;
+      else if (row.at("N").compare("S") == 0)
+        event.nature = EVENT_SILENT;
+
+      if (!row.at("Q").empty())
+        event.quantifier_type = std::stoi(row.at("Q"));
+      event.allows_quantifier = !event.description_with_quantifier.empty();
+
+      if (row.at("U").compare("U") == 0)
+        event.urgency = URGENCY_U;
+      else if (row.at("U").compare("X") == 0)
+        event.urgency = URGENCY_X;
+
+      if (std::regex_match(row.at("T"), std::regex(".?D.?")))
+        event.duration_type = DURATION_DYNAMIC;
+      else if (std::regex_match(row.at("T"), std::regex(".?L.?")))
+        event.duration_type = DURATION_LASTING;
+
+      if (std::regex_match(row.at("T"), std::regex("\\(")))
+        event.show_duration = false;
+
+      if (!row.at("D").empty() && std::stoi(row.at("D")) == 2)
+        event.directionality = DIR_BOTH;
+
+      event.update_class = std::stoi(row.at("C"));
+
+      g_event_data[code] = event;
+
+    } catch (std::exception& e) {
       continue;
+    }
 
-    uint16_t code = std::stoi(fields[0]);
-    std::vector<std::string> strings(2);
-    std::vector<uint16_t> nums(6);
-
-    for (int col=1; col < 3; col++)
-      strings[col-1] = fields[col];
-
-    for (int col=3; col < 9; col++)
-      nums[col-3] = std::stoi(fields[col]);
-
-    bool allow_q = (strings[1].size() > 0);
-
-    g_event_data.insert({code, {strings[0], strings[1], nums[0], nums[1],
-        nums[2], nums[3], nums[4], nums[5], allow_q}});
   }
 
   for (std::vector<std::string> fields : readCSV(tmc_data_suppl, ';')) {
@@ -387,20 +410,7 @@ bool isValidSupplementaryCode(uint16_t code) {
   return g_suppl_data.count(code) != 0;
 }
 
-} // namespace
-
-Event::Event() : description(""), description_with_quantifier(""), nature(0),
-  quantifier_type(0), duration_type(0), directionality(0), urgency(0),
-  update_class(0), allows_quantifier(false) {
-}
-
-Event::Event(std::string _desc, std::string _desc_q, uint16_t _nature,
-    uint16_t _qtype, uint16_t _dur, uint16_t _dir, uint16_t _urg,
-    uint16_t _class, bool _allow_q) : description(_desc),
-    description_with_quantifier(_desc_q), nature(_nature),
-    quantifier_type(_qtype), duration_type(_dur), directionality(_dir),
-    urgency(_urg), update_class(_class), allows_quantifier(_allow_q) {
-}
+}  // namespace
 
 Event getEvent(uint16_t code) {
   if (g_event_data.find(code) != g_event_data.end())
