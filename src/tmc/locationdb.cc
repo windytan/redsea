@@ -45,9 +45,9 @@ LocationDatabase loadLocationDatabase(std::string directory) {
   }
 
   // Misspelled encodings in the wild (TODO a better way to do this)
-  if (std::regex_match(encoding, std::regex("^ISO.8859-1\\b")))
+  if (std::regex_match(encoding, std::regex("ISO.8859-1\\b.*")))
     encoding = "ISO-8859-1";
-  if (std::regex_match(encoding, std::regex("^ISO.8859-15\\b")))
+  if (std::regex_match(encoding, std::regex("ISO.8859-15\\b.*")))
     encoding = "ISO-8859-15";
 
   iconvpp::converter conv("UTF-8", encoding);
