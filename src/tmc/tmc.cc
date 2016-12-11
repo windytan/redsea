@@ -376,8 +376,8 @@ void decodeLocation(const LocationDatabase& db, uint16_t ltn,
 
     for (int i=0; i < static_cast<int>(pts.size()); i++) {
 //        (*jsroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
-      (*jsroot)["tmc"]["message"]["coordinates"][i].append(pts[i].lat);
-      (*jsroot)["tmc"]["message"]["coordinates"][i].append(pts[i].lon);
+      (*jsroot)["tmc"]["message"]["coordinates"][i]["lat"] = pts[i].lat;
+      (*jsroot)["tmc"]["message"]["coordinates"][i]["lon"] = pts[i].lon;
     }
 
     if (pts.size() > 1 && pts.at(0).name1.length() > 0 &&
