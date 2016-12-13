@@ -11,6 +11,11 @@
 
 namespace redsea {
 
+uint32_t calcSyndrome(uint32_t vec);
+std::pair<eOffset, uint32_t> offsetForSyndrome(uint16_t syndrome);
+eOffset nextOffsetFor(eOffset o);
+uint32_t correctBurstErrors(uint32_t block);
+
 class BlockStream {
  public:
   BlockStream(Options options);
@@ -23,7 +28,6 @@ class BlockStream {
  private:
   int getNextBit();
   void uncorrectable();
-  uint32_t correctBurstErrors(uint32_t block) const;
   bool acquireSync();
 
   unsigned bitcount_;

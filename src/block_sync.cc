@@ -6,8 +6,6 @@
 
 namespace redsea {
 
-namespace {
-
 const unsigned kBitmask16 = 0x000FFFF;
 const unsigned kBitmask26 = 0x3FFFFFF;
 const unsigned kBitmask28 = 0xFFFFFFF;
@@ -19,9 +17,6 @@ const unsigned kMaxErrorLength = 2;
 
 const std::vector<uint16_t> offset_words =
     {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
-const std::map<uint16_t, eOffset> offset_syndromes =
-    {{0x3D8, OFFSET_A},  {0x3D4, OFFSET_B}, {0x25C, OFFSET_C},
-     {0x3CC, OFFSET_CI}, {0x258, OFFSET_D}};
 const std::vector<eBlockNumber> block_number_for_offset =
     {BLOCK1, BLOCK2, BLOCK3, BLOCK3, BLOCK4};
 
@@ -60,23 +55,50 @@ eOffset nextOffsetFor(eOffset o) {
 }
 
 // Precompute mapping of syndromes to error vectors
-std::map<uint16_t, uint32_t> makeErrorLookupTable() {
-  std::map<uint16_t, uint32_t> result;
+std::map<uint16_t, std::pair<eOffset, uint32_t>> makeErrorLookupTable() {
+  std::map<uint16_t, std::pair<eOffset, uint32_t>> result;
 
-  for (uint32_t e=1; e < (1 << kMaxErrorLength); e++) {
-    for (unsigned shift=0; shift < 26; shift++) {
-      uint32_t errvec = ((e << shift) & kBitmask26);
+  for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_D}) {
+    for (uint32_t e=1; e < (1 << kMaxErrorLength); e++) {
+      for (unsigned shift=0; shift < 26; shift++) {
+        uint32_t errvec = ((e << shift) & kBitmask26);
 
-      uint32_t sy = calcSyndrome(errvec);
-      result[sy] = errvec;
+        uint32_t sy = calcSyndrome(offset_words[o] ^ errvec);
+        result.insert({sy, {o, errvec}});
+      }
     }
   }
   return result;
 }
 
+// Return: offset, error vector
+std::pair<eOffset, uint32_t> offsetForSyndrome(uint16_t syndrome) {
+  static const std::map<uint16_t, eOffset> offset_syndromes =
+    {{0x3D8, OFFSET_A},  {0x3D4, OFFSET_B}, {0x25C, OFFSET_C},
+     {0x3CC, OFFSET_CI}, {0x258, OFFSET_D}};
+
+  if (offset_syndromes.count(syndrome) > 0)
+    return offset_syndromes.at(syndrome);
+  else
+    return OFFSET_INVALID;
+}
+
 std::map<uint16_t, uint32_t> kErrorLookup = makeErrorLookupTable();
 
-}  // namespace
+// Section B.2.2
+uint32_t correctBurstErrors(uint32_t block) {
+  uint16_t synd_reg =
+    calcSyndrome(block ^ offset_words[expected_offset_]);
+
+  uint32_t corrected_block = block;
+
+  if (kErrorLookup.find(synd_reg) != kErrorLookup.end()) {
+    corrected_block = (block ^ offset_words[expected_offset_])
+      ^ (kErrorLookup[synd_reg]);
+  }
+
+  return corrected_block;
+}
 
 BlockStream::BlockStream(Options options) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), wideblock_(0), prevsync_(0),
@@ -104,21 +126,6 @@ int BlockStream::getNextBit() {
   }
 
   return result;
-}
-
-// Section B.2.2
-uint32_t BlockStream::correctBurstErrors(uint32_t block) const {
-  uint16_t synd_reg =
-    calcSyndrome(block ^ offset_words[expected_offset_]);
-
-  uint32_t corrected_block = block;
-
-  if (kErrorLookup.find(synd_reg) != kErrorLookup.end()) {
-    corrected_block = (block ^ offset_words[expected_offset_])
-      ^ (kErrorLookup[synd_reg]);
-  }
-
-  return corrected_block;
 }
 
 // A block can't be decoded
@@ -179,9 +186,7 @@ Group BlockStream::getNextGroup() {
 
     uint32_t block = (wideblock_ >> 1) & kBitmask26;
 
-    uint16_t syndrome = calcSyndrome(block);
-    received_offset_ = (offset_syndromes.count(syndrome) > 0 ?
-        offset_syndromes.at(syndrome) : OFFSET_INVALID);
+    received_offset_ = offsetForSyndrome(calcSyndrome(block));
 
     if (!acquireSync())
       continue;
