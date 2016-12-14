@@ -10,11 +10,6 @@ const unsigned kBitmask16 = 0x000FFFF;
 const unsigned kBitmask26 = 0x3FFFFFF;
 const unsigned kBitmask28 = 0xFFFFFFF;
 
-// "...the error-correction system should be enabled, but should be restricted
-// by attempting to correct bursts of errors spanning one or two bits."
-// Kopitz & Marks 1999: "RDS: The Radio Data System", p. 224
-const unsigned kMaxErrorLength = 2;
-
 const std::vector<uint16_t> offset_words =
     {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
 const std::vector<eBlockNumber> block_number_for_offset =
@@ -55,11 +50,15 @@ eOffset nextOffsetFor(eOffset o) {
 }
 
 // Precompute mapping of syndromes to error vectors
+
 std::map<std::pair<uint16_t, eOffset>, uint32_t> makeErrorLookupTable() {
   std::map<std::pair<uint16_t, eOffset>, uint32_t> result;
 
   for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D}) {
-    //for (uint32_t e=0; e < (1 << kMaxErrorLength); e++) {
+    // "...the error-correction system should be enabled, but should be
+    // restricted by attempting to correct bursts of errors spanning one or two
+    // bits."
+    // Kopitz & Marks 1999: "RDS: The Radio Data System", p. 224
     for (uint32_t e : {0x1, 0x3}) {
       for (int shift=0; shift < 26; shift++) {
         uint32_t errvec = ((e << shift) & kBitmask26);
