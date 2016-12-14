@@ -14,7 +14,7 @@ namespace redsea {
 uint32_t calcSyndrome(uint32_t vec);
 std::pair<eOffset, uint32_t> offsetForSyndrome(uint16_t syndrome);
 eOffset nextOffsetFor(eOffset o);
-uint32_t correctBurstErrors(uint32_t block);
+std::pair<uint16_t, eOffset> correctBurstErrors(uint32_t block);
 
 class BlockStream {
  public:

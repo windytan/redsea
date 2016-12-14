@@ -13,7 +13,7 @@ const unsigned kBitmask28 = 0xFFFFFFF;
 // "...the error-correction system should be enabled, but should be restricted
 // by attempting to correct bursts of errors spanning one or two bits."
 // Kopitz & Marks 1999: "RDS: The Radio Data System", p. 224
-const unsigned kMaxErrorLength = 2;
+const unsigned kMaxErrorLength = 1;
 
 const std::vector<uint16_t> offset_words =
     {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
@@ -58,13 +58,15 @@ eOffset nextOffsetFor(eOffset o) {
 std::map<uint16_t, std::pair<eOffset, uint32_t>> makeErrorLookupTable() {
   std::map<uint16_t, std::pair<eOffset, uint32_t>> result;
 
-  for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_D}) {
-    for (uint32_t e=1; e < (1 << kMaxErrorLength); e++) {
-      for (unsigned shift=0; shift < 26; shift++) {
+  for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D}) {
+    //for (uint32_t e=0; e < (1 << kMaxErrorLength); e++) {
+    for (uint32_t e : {0x0, 0x3}) {
+      for (int shift=0; shift < 26; shift++) {
         uint32_t errvec = ((e << shift) & kBitmask26);
 
-        uint32_t sy = calcSyndrome(offset_words[o] ^ errvec);
+        uint32_t sy = calcSyndrome(errvec ^ offset_words[o]);
         result.insert({sy, {o, errvec}});
+        printf("%d %07x = %03x\n",o,errvec,sy);
       }
     }
   }
@@ -72,7 +74,7 @@ std::map<uint16_t, std::pair<eOffset, uint32_t>> makeErrorLookupTable() {
 }
 
 // Return: offset, error vector
-std::pair<eOffset, uint32_t> offsetForSyndrome(uint16_t syndrome) {
+/*std::pair<eOffset, uint32_t> offsetForSyndrome(uint16_t syndrome) {
   static const std::map<uint16_t, eOffset> offset_syndromes =
     {{0x3D8, OFFSET_A},  {0x3D4, OFFSET_B}, {0x25C, OFFSET_C},
      {0x3CC, OFFSET_CI}, {0x258, OFFSET_D}};
@@ -81,23 +83,24 @@ std::pair<eOffset, uint32_t> offsetForSyndrome(uint16_t syndrome) {
     return offset_syndromes.at(syndrome);
   else
     return OFFSET_INVALID;
-}
+}*/
 
-std::map<uint16_t, uint32_t> kErrorLookup = makeErrorLookupTable();
+std::map<uint16_t, std::pair<eOffset, uint32_t>> kErrorLookup = makeErrorLookupTable();
 
 // Section B.2.2
-uint32_t correctBurstErrors(uint32_t block) {
-  uint16_t synd_reg =
-    calcSyndrome(block ^ offset_words[expected_offset_]);
+std::pair<uint16_t, eOffset> correctBurstErrors(uint32_t block) {
+  uint16_t syndrome = calcSyndrome(block);
+  eOffset offset = OFFSET_INVALID;
+  uint16_t message = block >> 10;
 
-  uint32_t corrected_block = block;
-
-  if (kErrorLookup.find(synd_reg) != kErrorLookup.end()) {
-    corrected_block = (block ^ offset_words[expected_offset_])
-      ^ (kErrorLookup[synd_reg]);
+  if (kErrorLookup.count(syndrome) > 0) {
+    uint32_t err;
+    std::tie(offset, err) = kErrorLookup.at(syndrome);
+    message = (block ^ err) >> 10;
+    printf("offset %d, vector %07x\n",offset,err);
   }
 
-  return corrected_block;
+  return {message, offset};
 }
 
 BlockStream::BlockStream(Options options) : bitcount_(0),
@@ -185,14 +188,16 @@ Group BlockStream::getNextGroup() {
     wideblock_ &= kBitmask28;
 
     uint32_t block = (wideblock_ >> 1) & kBitmask26;
+    uint16_t message;
 
-    received_offset_ = offsetForSyndrome(calcSyndrome(block));
+    std::tie(message, received_offset_) = correctBurstErrors(block);
+
+    printf("exp %d, rcv %d\n", expected_offset_, received_offset_);
 
     if (!acquireSync())
       continue;
 
     block_counter_++;
-    uint16_t message = block >> 10;
     bool was_valid_word = true;
 
     if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_CI)
@@ -218,12 +223,12 @@ Group BlockStream::getNextGroup() {
         received_offset_ = OFFSET_A;
         left_to_read_ = 25;
 
-      } else {
+      /*} else {
         block = correctBurstErrors(block);
         if (calcSyndrome(block) == 0x000) {
           message = block >> 10;
           received_offset_ = expected_offset_;
-        }
+        }*/
       }
 
       // Still no valid syndrome
