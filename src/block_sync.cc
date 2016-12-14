@@ -13,7 +13,7 @@ const unsigned kBitmask28 = 0xFFFFFFF;
 // "...the error-correction system should be enabled, but should be restricted
 // by attempting to correct bursts of errors spanning one or two bits."
 // Kopitz & Marks 1999: "RDS: The Radio Data System", p. 224
-const unsigned kMaxErrorLength = 1;
+const unsigned kMaxErrorLength = 2;
 
 const std::vector<uint16_t> offset_words =
     {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
@@ -49,32 +49,30 @@ eOffset nextOffsetFor(eOffset o) {
   static const std::map<eOffset, eOffset> next_offset({
       {OFFSET_A, OFFSET_B}, {OFFSET_B, OFFSET_C},
       {OFFSET_C, OFFSET_D}, {OFFSET_CI, OFFSET_D},
-      {OFFSET_D, OFFSET_A}
+      {OFFSET_D, OFFSET_A}, {OFFSET_INVALID, OFFSET_A}
   });
   return next_offset.at(o);
 }
 
 // Precompute mapping of syndromes to error vectors
-std::map<uint16_t, std::pair<eOffset, uint32_t>> makeErrorLookupTable() {
-  std::map<uint16_t, std::pair<eOffset, uint32_t>> result;
+std::map<std::pair<uint16_t, eOffset>, uint32_t> makeErrorLookupTable() {
+  std::map<std::pair<uint16_t, eOffset>, uint32_t> result;
 
   for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D}) {
     //for (uint32_t e=0; e < (1 << kMaxErrorLength); e++) {
-    for (uint32_t e : {0x0, 0x3}) {
+    for (uint32_t e : {0x1, 0x3}) {
       for (int shift=0; shift < 26; shift++) {
         uint32_t errvec = ((e << shift) & kBitmask26);
 
         uint32_t sy = calcSyndrome(errvec ^ offset_words[o]);
-        result.insert({sy, {o, errvec}});
-        printf("%d %07x = %03x\n",o,errvec,sy);
+        result.insert({{sy, o}, errvec});
       }
     }
   }
   return result;
 }
 
-// Return: offset, error vector
-/*std::pair<eOffset, uint32_t> offsetForSyndrome(uint16_t syndrome) {
+eOffset offsetForSyndrome(uint16_t syndrome) {
   static const std::map<uint16_t, eOffset> offset_syndromes =
     {{0x3D8, OFFSET_A},  {0x3D4, OFFSET_B}, {0x25C, OFFSET_C},
      {0x3CC, OFFSET_CI}, {0x258, OFFSET_D}};
@@ -83,24 +81,21 @@ std::map<uint16_t, std::pair<eOffset, uint32_t>> makeErrorLookupTable() {
     return offset_syndromes.at(syndrome);
   else
     return OFFSET_INVALID;
-}*/
+}
 
-std::map<uint16_t, std::pair<eOffset, uint32_t>> kErrorLookup = makeErrorLookupTable();
+std::map<std::pair<uint16_t, eOffset>, uint32_t> kErrorLookup = makeErrorLookupTable();
 
 // Section B.2.2
-std::pair<uint16_t, eOffset> correctBurstErrors(uint32_t block) {
+uint32_t correctBurstErrors(uint32_t block, eOffset offset) {
   uint16_t syndrome = calcSyndrome(block);
-  eOffset offset = OFFSET_INVALID;
-  uint16_t message = block >> 10;
+  uint32_t corrected_block = block;
 
-  if (kErrorLookup.count(syndrome) > 0) {
-    uint32_t err;
-    std::tie(offset, err) = kErrorLookup.at(syndrome);
-    message = (block ^ err) >> 10;
-    printf("offset %d, vector %07x\n",offset,err);
+  if (kErrorLookup.count({syndrome, offset}) > 0) {
+    uint32_t err = kErrorLookup.at({syndrome, offset});
+    corrected_block ^= err;
   }
 
-  return {message, offset};
+  return corrected_block;
 }
 
 BlockStream::BlockStream(Options options) : bitcount_(0),
@@ -188,11 +183,9 @@ Group BlockStream::getNextGroup() {
     wideblock_ &= kBitmask28;
 
     uint32_t block = (wideblock_ >> 1) & kBitmask26;
-    uint16_t message;
+    uint16_t message = block >> 10;
 
-    std::tie(message, received_offset_) = correctBurstErrors(block);
-
-    printf("exp %d, rcv %d\n", expected_offset_, received_offset_);
+    received_offset_ = offsetForSyndrome(calcSyndrome(block));
 
     if (!acquireSync())
       continue;
@@ -222,6 +215,13 @@ Group BlockStream::getNextGroup() {
         wideblock_ = (wideblock_ << 1) + getNextBit();
         received_offset_ = OFFSET_A;
         left_to_read_ = 25;
+      } else {
+        uint32_t corrected_block = correctBurstErrors(block, expected_offset_);
+        if (corrected_block != block) {
+          message = corrected_block >> 10;
+          received_offset_ = expected_offset_;
+        }
+      }
 
       /*} else {
         block = correctBurstErrors(block);
@@ -229,7 +229,7 @@ Group BlockStream::getNextGroup() {
           message = block >> 10;
           received_offset_ = expected_offset_;
         }*/
-      }
+      //}
 
       // Still no valid syndrome
       if (received_offset_ != expected_offset_)
