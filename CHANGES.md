@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.9 (xxxx-xx-xx)
+## 0.9 (2016-12-15)
 
 * Add support for Decoder Identification (DI)
 * Add support for auxiliary character code tables (G1 and G2)
