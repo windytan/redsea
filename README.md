@@ -1,6 +1,6 @@
 # redsea
 
-redsea is an experiment at building a lightweight command-line
+redsea is a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/OSX.
 It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio
 stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream, the hex
