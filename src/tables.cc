@@ -109,6 +109,7 @@ std::string getPTYname(int pty, bool is_rbds) {
 }
 
 // EN 50067:1998, Annex D, Table D.1 (p. 71)
+// RDS Forum R08/008_7, Table D.2 (p. 75)
 std::string getCountryString(uint16_t pi, uint16_t ecc) {
   static const std::map<uint16_t, std::vector<std::string>> country_codes({
     {0xA0, {"us", "us", "us", "us", "us", "us", "us", "us",
@@ -138,11 +139,11 @@ std::string getCountryString(uint16_t pi, uint16_t ecc) {
     {0xE1, {"gr", "cy", "sm", "ch", "jo", "fi", "lu", "bg",
             "dk", "gi", "iq", "gb", "ly", "ro", "fr"}},
     {0xE2, {"ma", "cz", "pl", "va", "sk", "sy", "tn", "--",
-            "li", "is", "mc", "lt", "yu", "es", "no"}},
-    {0xE3, {"ie", "ie", "tr", "mk", "tj", "--", "--", "nl",
+            "li", "is", "mc", "lt", "rs", "es", "no"}},
+    {0xE3, {"me", "ie", "tr", "mk", "--", "--", "--", "nl",
             "lv", "lb", "az", "hr", "kz", "se", "by"}},
-    {0xE4, {"md", "ee", "kg", "--", "--", "ua", "--", "pt",
-            "si", "am", "uz", "ge", "--", "tm", "ba"}},
+    {0xE4, {"md", "ee", "kg", "--", "--", "ua", "ks", "pt",
+            "si", "am", "--", "ge", "--", "--", "ba"}},
     {0xF0, {"au", "au", "au", "au", "au", "au", "au", "au",
             "sa", "af", "mm", "cn", "kp", "bh", "my"}},
     {0xF1, {"ki", "bt", "bd", "pk", "fj", "om", "nr", "ir",
