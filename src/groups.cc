@@ -213,8 +213,8 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
       decodeType3A(group);
     else if (group.type().num == 4 && group.type().ab == VERSION_A)
       decodeType4A(group);
-    else if (group.type().num == 14 && group.type().ab == VERSION_A)
-      decodeType14A(group);
+    else if (group.type().num == 14)
+      decodeType14(group);
     else if (group.type().num == 15 && group.type().ab == VERSION_B)
       decodeType15B(group);
     else if (oda_app_for_group_.count(group.type()) > 0)
@@ -570,17 +570,26 @@ void Station::decodeType6(const Group& group) {
   }
 }
 
-// Group 14A: Enhanced Other Networks information
-void Station::decodeType14A(const Group& group) {
-
-  if (!(group.has(BLOCK3) || group.has(BLOCK4)))
+// Group 14: Enhanced Other Networks information
+void Station::decodeType14(const Group& group) {
+  if (!(group.has(BLOCK4)))
     return;
 
   uint16_t on_pi = group.get(BLOCK4);
+  json_["other_network"]["pi"] = "0x" + hexString(on_pi, 4);
+
   bool tp = bits(group.get(BLOCK2), 4, 1);
 
-  json_["other_network"]["pi"] = "0x" + hexString(on_pi, 4);
   json_["other_network"]["tp"] = tp;
+
+  if (group.type().ab == VERSION_B) {
+    bool ta = bits(group.get(BLOCK2), 3, 1);
+    json_["other_network"]["ta"] = ta;
+    return;
+  }
+
+  if (!group.has(BLOCK3))
+    return;
 
   uint16_t eon_variant = bits(group.get(BLOCK2), 0, 4);
 

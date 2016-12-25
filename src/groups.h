@@ -101,7 +101,7 @@ class Station {
   void decodeType3A(const Group& group);
   void decodeType4A(const Group& group);
   void decodeType6(const Group& group);
-  void decodeType14A(const Group& group);
+  void decodeType14(const Group& group);
   void decodeType15B(const Group& group);
   void decodeODAgroup(const Group& group);
   void addAltFreq(uint8_t);
