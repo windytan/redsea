@@ -75,17 +75,16 @@ approximation, so that more cycles will be left to redsea.
 Note that `rtl_fm` will tune a bit off; this is expected behavior and is done to
 avoid the DC spike.
 
-### Decoding a pre-recorded signal with SoX
+### Decoding MPX from a file or via sound card
+
+If you have `sox` installed, it's easy to decode audio files containing a
+demodulated FM carrier. Note that the file must have around 128k samples per
+second or more.
 
     $ sox multiplex.wav -t .s16 -r 171k -c 1 - | ./src/redsea
 
-The signal should be FM demodulated and have enough bandwidth to accommodate the
-RDS subcarrier (> 60 kHz).
-
-### Decoding MPX via sound card
-
-If your sound card supports recording at 192 kHz, and you have `sox` installed,
-you can also decode the MPX output of an FM tuner or RDS encoder:
+If your sound card supports recording at high sample rates (e.g. 192 kHz) you
+can also decode the MPX output of an FM tuner or RDS encoder:
 
     $ rec -t .s16 -r 171k -c 1 - | ./src/redsea
 
