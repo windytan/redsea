@@ -31,25 +31,23 @@ tools (`xcode-select --install`).
         $ ./configure
         $ make
 
-To later update with the newest changes and recompile:
+3. Install:
+
+        $ make install
+
+Updating with the newest changes later:
 
         $ git pull
         $ ./autogen.sh
         $ ./configure
         $ make clean
-        $ make
+        $ make install
 
 For a slower machine it can take some time to compile the TMC support. This can
-be disabled.
-
-        $ ./configure --disable-tmc
-        $ make
+be disabled (`./configure --disable-tmc`).
 
 If you only need to decode hex or binary input and don't need demodulation,
-you can compile redsea without liquid-dsp:
-
-        $ ./configure --without-liquid
-        $ make
+you can compile redsea without liquid-dsp (`./configure --without-liquid`).
 
 ## Usage
 
@@ -57,7 +55,7 @@ you can compile redsea without liquid-dsp:
 
 The full command is:
 
-    $ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M | ./src/redsea
+    $ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M | redsea
 
 There's a shorthand shell script called `rtl-rx.sh`:
 
@@ -77,17 +75,17 @@ avoid the DC spike.
 
 ### Decoding a pre-recorded signal with SoX
 
-    $ sox multiplex.wav -t .s16 -r 171k -c 1 - | ./src/redsea
+    $ sox multiplex.wav -t .s16 -r 171k -c 1 - | redsea
 
 The signal should be FM demodulated and have enough bandwidth to accommodate the
-RDS subcarrier (> 60 kHz).
+57 kHz RDS subcarrier.
 
 ### Decoding MPX via sound card
 
 If your sound card supports recording at 192 kHz, and you have `sox` installed,
 you can also decode the MPX output of an FM tuner or RDS encoder:
 
-    $ rec -t .s16 -r 171k -c 1 - | ./src/redsea
+    $ rec -t .s16 -r 171k -c 1 - | redsea
 
 ### Tips for output formatting
 
