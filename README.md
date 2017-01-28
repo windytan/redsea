@@ -79,7 +79,7 @@ If you have `sox` installed, it's easy to decode audio files containing a
 demodulated FM carrier. Note that the file must have around 128k samples per
 second or more.
 
-    $ sox multiplex.wav -t .s16 -r 171k -c 1 - | ./src/redsea
+    $ sox multiplex.wav -t .s16 -r 171k -c 1 - | redsea
 
 If your sound card supports recording at high sample rates (e.g. 192 kHz) you
 can also decode the MPX output of an FM tuner or RDS encoder:
