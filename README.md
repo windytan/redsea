@@ -27,9 +27,7 @@ tools (`xcode-select --install`).
 
 2. Compile redsea:
 
-        $ ./autogen.sh
-        $ ./configure
-        $ make
+        $ ./autogen.sh && ./configure && make
 
 3. Install:
 
@@ -38,9 +36,7 @@ tools (`xcode-select --install`).
 Updating with the newest changes later:
 
         $ git pull
-        $ ./autogen.sh
-        $ ./configure
-        $ make clean
+        $ ./autogen.sh && ./configure && make clean && make
         $ make install
 
 For a slower machine it can take some time to compile the TMC support. This can
