@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([redsea], [0.9.0], [oona@kapsi.fi], [redsea],
+AC_INIT([redsea], [0.9.1], [oona@kapsi.fi], [redsea],
         [https://github.com/windytan/redsea])
 AM_INIT_AUTOMAKE([1.10 -Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
