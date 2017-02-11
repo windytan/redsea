@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.9.1 (2017-01-11)
+## 0.9.1 (2017-02-11)
 * Add support for type 14B EON groups
 * Change rtl-rx.sh to run redsea installed in $PATH
 
