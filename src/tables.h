@@ -14,6 +14,7 @@ std::string getLanguageString(uint16_t code);
 std::string getAppName(uint16_t aid);
 std::string getRTPlusContentTypeName(uint16_t content_type);
 std::string getDICode(uint16_t di);
+eOpenDataApp getODApp(uint16_t aid);
 
 }  // namespace redsea
 #endif  // DATA_H_

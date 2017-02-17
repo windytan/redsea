@@ -17,6 +17,10 @@ enum eCodeTable {
   G0, G1, G2
 };
 
+enum eOpenDataApp {
+  ODA_UNKNOWN, ODA_TMC, ODA_RTPLUS
+};
+
 struct Options {
   Options() : rbds(false), feed_thru(false), show_partial(false),
               just_exit(false), input_type(INPUT_MPX),

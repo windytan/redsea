@@ -126,7 +126,7 @@ class Station {
   bool linkage_la_;
   std::string clock_time_;
   bool has_country_;
-  std::map<GroupType, uint16_t> oda_app_for_group_;
+  std::map<GroupType, uint16_t> oda_id_for_group_;
   bool has_rt_plus_;
   bool rt_plus_cb_;
   uint16_t rt_plus_scb_;
@@ -163,4 +163,4 @@ struct RTPlusTag {
 void printHexGroup(const Group& group, std::ostream* stream);
 
 }  // namespace redsea
-#endif // GROUPS_H_
+#endif  // GROUPS_H_

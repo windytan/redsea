@@ -172,7 +172,7 @@ Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
   ps_(8), rt_(64), rt_ab_(0), pty_(0), is_tp_(false), is_ta_(false),
   is_music_(false), pin_(0), ecc_(0), cc_(0),
   tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
-  has_country_(false), oda_app_for_group_(), has_rt_plus_(false),
+  has_country_(false), oda_id_for_group_(), has_rt_plus_(false),
   rt_plus_toggle_(false), rt_plus_item_running_(false),
   last_block_had_pi_(false), alt_freq_list_(), pager_pac_(0), pager_opc_(0),
   pager_tng_(0), pager_ecc_(0), pager_ccf_(0), pager_interval_(0),
@@ -217,7 +217,7 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
       decodeType14(group);
     else if (group.type().num == 15 && group.type().ab == VERSION_B)
       decodeType15B(group);
-    else if (oda_app_for_group_.count(group.type()) > 0)
+    else if (oda_id_for_group_.count(group.type()) > 0)
       decodeODAgroup(group);
     else if (group.type().num == 6)
       decodeType6(group);
@@ -426,7 +426,6 @@ void Station::decodeType1(const Group& group) {
 
 // Group 2: RadioText
 void Station::decodeType2(const Group& group) {
-
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
@@ -463,7 +462,6 @@ void Station::decodeType2(const Group& group) {
 
 // Group 3A: Application identification for Open Data
 void Station::decodeType3A(const Group& group) {
-
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
@@ -474,18 +472,18 @@ void Station::decodeType3A(const Group& group) {
   uint16_t oda_msg = group.get(BLOCK3);
   uint16_t oda_aid = group.get(BLOCK4);
 
-  oda_app_for_group_[oda_group] = oda_aid;
+  oda_id_for_group_[oda_group] = oda_aid;
 
   json_["open_data_app"]["oda_group"] = oda_group.toString();
   json_["open_data_app"]["app_name"] = getAppName(oda_aid);
 
-  if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
+  if (getODApp(oda_aid) == ODA_TMC) {
 #ifdef ENABLE_TMC
     tmc_.systemGroup(group.get(BLOCK3), &json_);
 #else
     json_["debug"].append("redsea compiled without TMC support");
 #endif
-  } else if (oda_aid == 0x4BD7) {
+  } else if (getODApp(oda_aid) == ODA_RTPLUS) {
     has_rt_plus_ = true;
     rt_plus_cb_ = bits(group.get(BLOCK3), 12, 1);
     rt_plus_scb_ = bits(group.get(BLOCK3), 8, 4);
@@ -499,7 +497,6 @@ void Station::decodeType3A(const Group& group) {
 
 // Group 4A: Clock-time and date
 void Station::decodeType4A(const Group& group) {
-
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
@@ -665,18 +662,17 @@ void Station::decodeType15B(const Group& group) {
 
 /* Open Data Application */
 void Station::decodeODAgroup(const Group& group) {
-
-  if (oda_app_for_group_.count(group.type()) == 0)
+  if (oda_id_for_group_.count(group.type()) == 0)
     return;
 
-  uint16_t aid = oda_app_for_group_[group.type()];
+  uint16_t app_id = oda_id_for_group_[group.type()];
 
-  if (aid == 0xCD46 || aid == 0xCD47) {
+  if (getODApp(app_id) == ODA_TMC) {
 #ifdef ENABLE_TMC
     tmc_.userGroup(bits(group.get(BLOCK2), 0, 5), group.get(BLOCK3),
         group.get(BLOCK4), &json_);
 #endif
-  } else if (aid == 0x4BD7) {
+  } else if (getODApp(app_id) == ODA_RTPLUS) {
     parseRadioTextPlus(group);
   }
 }
