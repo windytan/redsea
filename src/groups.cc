@@ -324,12 +324,12 @@ void Station::decodeType1(const Group& group) {
   pin_ = group.get(BLOCK4);
 
   if (pin_ != 0x0000) {
-    uint16_t dy = bits(pin_, 11, 5);
-    uint16_t hr = bits(pin_, 6, 5);
-    uint16_t mn = bits(pin_, 0, 6);
-    if (dy >= 1 && hr <= 24 && mn <= 59) {
-      json_["prog_item_started"]["day"] = dy;
-      json_["prog_item_started"]["time"] = hoursMinutesString(hr, mn);
+    uint16_t day = bits(pin_, 11, 5);
+    uint16_t hour = bits(pin_, 6, 5);
+    uint16_t minute = bits(pin_, 0, 6);
+    if (day >= 1 && hour <= 24 && minute <= 59) {
+      json_["prog_item_started"]["day"] = day;
+      json_["prog_item_started"]["time"] = hoursMinutesString(hour, minute);
     } else {
       json_["debug"].append("invalid PIN");
     }
@@ -502,46 +502,48 @@ void Station::decodeType4A(const Group& group) {
 
   int mjd = (bits(group.get(BLOCK2), 0, 2) << 15) +
              bits(group.get(BLOCK3), 1, 15);
-  double lto = 0.0;
+  double local_offset = 0.0;
 
   if (group.has(BLOCK4)) {
-    lto = (bits(group.get(BLOCK4), 5, 1) ? -1 : 1) *
-           bits(group.get(BLOCK4), 0, 5) / 2.0;
-    mjd = mjd + lto / 24.0;
+    local_offset = (bits(group.get(BLOCK4), 5, 1) ? -1 : 1) *
+        bits(group.get(BLOCK4), 0, 5) / 2.0;
+    mjd = mjd + local_offset / 24.0;
   }
 
-  int yr = (mjd - 15078.2) / 365.25;
-  int mo = (mjd - 14956.1 - std::trunc(yr * 365.25)) / 30.6001;
-  int dy = mjd - 14956 - std::trunc(yr * 365.25) - std::trunc(mo * 30.6001);
-  if (mo == 14 || mo == 15) {
-    yr += 1;
-    mo -= 12;
+  int year = (mjd - 15078.2) / 365.25;
+  int month = (mjd - 14956.1 - std::trunc(year * 365.25)) / 30.6001;
+  int day = mjd - 14956 - std::trunc(year * 365.25) -
+      std::trunc(month * 30.6001);
+  if (month == 14 || month == 15) {
+    year += 1;
+    month -= 12;
   }
-  yr += 1900;
-  mo -= 1;
+  year += 1900;
+  month -= 1;
 
   if (group.has(BLOCK4)) {
-    int lto_min = (lto - std::trunc(lto)) * 60;
+    int local_offset_min = (local_offset - std::trunc(local_offset)) * 60;
 
-    int hr = static_cast<int>((bits(group.get(BLOCK3), 0, 1) << 4) +
-        bits(group.get(BLOCK4), 12, 14) + lto) % 24;
-    int mn = bits(group.get(BLOCK4), 6, 6) + lto_min;
+    int hour = static_cast<int>((bits(group.get(BLOCK3), 0, 1) << 4) +
+        bits(group.get(BLOCK4), 12, 14) + local_offset) % 24;
+    int minute = bits(group.get(BLOCK4), 6, 6) + local_offset_min;
 
-    if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31 && hr >= 0 && hr <= 23 &&
-        mn >= 0 && mn <= 59 && fabs(std::trunc(lto)) <= 13.0) {
-      char buff[100];
-      int lto_hour = fabs(std::trunc(lto));
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && hour >= 0 &&
+        hour <= 23 && minute >= 0 && minute <= 59 &&
+        fabs(std::trunc(local_offset)) <= 13.0) {
+      char str_buffer[100];
+      int local_offset_hour = fabs(std::trunc(local_offset));
 
-      if (lto_hour == 0 && lto_min == 0) {
-        snprintf(buff, sizeof(buff), "%04d-%02d-%02dT%02d:%02d:00Z",
-                 yr, mo, dy, hr, mn);
+      if (local_offset_hour == 0 && local_offset_min == 0) {
+        snprintf(str_buffer, sizeof(str_buffer), "%04d-%02d-%02dT%02d:%02d:00Z",
+                 year, month, day, hour, minute);
       } else {
-        snprintf(buff, sizeof(buff),
+        snprintf(str_buffer, sizeof(str_buffer),
                  "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
-                 yr, mo, dy, hr, mn, lto > 0 ? "+" : "-", lto_hour,
-                 abs(lto_min));
+                 year, month, day, hour, minute, local_offset > 0.0 ? "+" : "-",
+                 local_offset_hour, abs(local_offset_min));
       }
-      clock_time_ = buff;
+      clock_time_ = str_buffer;
       json_["clock_time"] = clock_time_;
     } else {
       json_["debug"].append("invalid date/time");
