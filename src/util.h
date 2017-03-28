@@ -34,7 +34,7 @@ std::vector<CSVRow> ReadCSVWithTitles(std::string filename, char delimiter);
 std::vector<CSVRow> ReadCSVWithTitles(std::vector<std::string> csvdata,
                                       char delimiter);
 
-bool kFrequencyIsLFMF = true;
+const bool kFrequencyIsLFMF = true;
 
 class CarrierFrequency {
  public:

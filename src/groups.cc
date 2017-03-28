@@ -456,8 +456,8 @@ void Station::DecodeType2(const Group& group) {
 
   if (rt_.complete())
     json_["radiotext"] = rt_.last_complete_string_trimmed();
-  else if (options_.show_partial && rt_.getTrimmedString().length() > 0)
-    json_["partial_radiotext"] = rt_.getTrimmedString();
+  else if (options_.show_partial && rt_.trimmed_string().length() > 0)
+    json_["partial_radiotext"] = rt_.trimmed_string();
 }
 
 // Group 3A: Application identification for Open Data

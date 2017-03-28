@@ -72,6 +72,8 @@ struct Event {
 
 Event getEvent(uint16_t code);
 
+const bool kMessagePartIsReceived = true;
+
 struct MessagePart {
   MessagePart() : is_received(false), data() {}
   MessagePart(bool _is_received, std::vector<uint16_t> _data) :
@@ -86,7 +88,7 @@ class Message {
   void PushMulti(uint16_t x, uint16_t y, uint16_t z);
   void PushSingle(uint16_t x, uint16_t y, uint16_t z);
   Json::Value json() const;
-  void Decrypt(ServiceKey);
+  void Decrypt(const ServiceKey& key);
   bool complete() const;
   void clear();
   uint16_t continuity_index() const;

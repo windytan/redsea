@@ -15,7 +15,7 @@ class RDSChar {
   explicit RDSChar(uint8_t _code);
   uint8_t code() const;
   std::string str() const;
-  void setCodeTable(eCodeTable codetable);
+  void set_codetable(eCodeTable codetable);
 
  private:
   uint8_t code_;
@@ -27,13 +27,13 @@ class RDSString {
   explicit RDSString(int len = 8);
   void set(int pos, RDSChar chr);
   void set(int pos, RDSChar chr1, RDSChar chr2);
-  void setRepertoire(int pos, eCodeTable codetable);
-  eCodeTable repertoireAt(int pos) const;
-  size_t lengthReceived() const;
-  size_t lengthExpected() const;
+  void set_repertoire(int pos, eCodeTable codetable);
+  eCodeTable repertoire_at(int pos) const;
+  size_t length_received() const;
+  size_t length_expected() const;
   std::vector<RDSChar> chars() const;
   std::string str() const;
-  std::string getTrimmedString() const;
+  std::string trimmed_string() const;
   std::string last_complete_string() const;
   std::string last_complete_string(int start, int len) const;
   std::string last_complete_string_trimmed() const;

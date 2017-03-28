@@ -608,22 +608,22 @@ void Message::PushMulti(uint16_t x, uint16_t y, uint16_t z) {
   }
   continuity_index_ = new_ci;
   bool is_first_group = Bits(y, 15, 1);
-  int cur_grp;
-  int gsi = -1;
+  int current_group;
+  int group_sequence_indicator = -1;
 
   if (is_first_group) {
-    cur_grp = 0;
+    current_group = 0;
   } else if (Bits(y, 14, 1)) {  // SG
-    gsi = Bits(y, 12, 2);
-    cur_grp = 1;
+    group_sequence_indicator = Bits(y, 12, 2);
+    current_group = 1;
   } else {
-    gsi = Bits(y, 12, 2);
-    cur_grp = 4 - gsi;
+    group_sequence_indicator = Bits(y, 12, 2);
+    current_group = 4 - group_sequence_indicator;
   }
 
-  bool is_last_group = (gsi == 0);
+  bool is_last_group = (group_sequence_indicator == 0);
 
-  parts_.at(cur_grp) = {true, {y, z}};
+  parts_.at(current_group) = MessagePart(kMessagePartIsReceived, {y, z});
 
   if (is_last_group) {
     DecodeMulti();
