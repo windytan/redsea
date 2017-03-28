@@ -47,8 +47,8 @@ uint16_t rotl16(uint16_t value, unsigned int count) {
 }
 
 // label, field_data (ISO 14819-1: 5.5)
-std::vector<std::pair<uint16_t, uint16_t>>
-    getFreeformFields(std::vector<MessagePart> parts) {
+std::vector<FreeformField> getFreeformFields(
+    const std::vector<MessagePart>& parts) {
   static const std::vector<int> field_size(
       {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
@@ -70,7 +70,7 @@ std::vector<std::pair<uint16_t, uint16_t>>
   }
 
   // Separate freeform data into fields
-  std::vector<std::pair<uint16_t, uint16_t>> result;
+  std::vector<FreeformField> result;
   while (freeform_data_bits.size() > 4) {
     uint16_t label = PopBits(&freeform_data_bits, 4);
     if (static_cast<int>(freeform_data_bits.size()) < field_size.at(label))
@@ -254,7 +254,7 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       break;
     }
     case Q_KHZ: {
-      CarrierFrequency freq(q_value, true);
+      CarrierFrequency freq(q_value, kFrequencyIsLFMF);
       q = freq.str();
       break;
     }
@@ -652,34 +652,29 @@ void Message::DecodeMulti() {
 
   // Subsequent parts
   if (parts_[1].is_received) {
-    auto freeform = getFreeformFields(parts_);
-
-    for (std::pair<uint16_t, uint16_t> p : freeform) {
-      uint16_t label = p.first;
-      uint16_t field_data = p.second;
-
+    for (FreeformField field : getFreeformFields(parts_)) {
       // Duration
-      if (label == 0) {
-        duration_ = field_data;
+      if (field.label == 0) {
+        duration_ = field.data;
 
         // Control code
-      } else if (label == 1) {
-        if (field_data == 0) {
+      } else if (field.label == 1) {
+        if (field.data == 0) {
           urgency_ = (urgency_ + 1) % 3;
-        } else if (field_data == 1) {
+        } else if (field.data == 1) {
           if (urgency_ == URGENCY_NONE)
             urgency_ = URGENCY_X;
           else
             urgency_--;
-        } else if (field_data == 2) {
+        } else if (field.data == 2) {
           directionality_ ^= 1;
-        } else if (field_data == 3) {
+        } else if (field.data == 3) {
           duration_type_ ^= 1;
-        } else if (field_data == 5) {
+        } else if (field.data == 5) {
           divertadv_ = true;
-        } else if (field_data == 6) {
+        } else if (field.data == 6) {
           extent_ += 8;
-        } else if (field_data == 7) {
+        } else if (field.data == 7) {
           extent_ += 16;
         } else {
           // *stream_ << jsonVal("debug", "TODO: TMC control code " +
@@ -687,58 +682,58 @@ void Message::DecodeMulti() {
         }
 
         // Length of route affected
-      } else if (label == 2) {
-        length_affected_ = field_data;
+      } else if (field.label == 2) {
+        length_affected_ = field.data;
         has_length_affected_ = true;
 
         // speed limit advice
-      } else if (label == 3) {
-        speed_limit_ = field_data * 5;
+      } else if (field.label == 3) {
+        speed_limit_ = field.data * 5;
         has_speed_limit_ = true;
 
         // 5-bit quantifier
-      } else if (label == 4) {
+      } else if (field.label == 4) {
         if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
             getEvent(events_.back()).allows_quantifier &&
             QuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
-          quantifiers_.insert({events_.size()-1, field_data});
+          quantifiers_.insert({events_.size()-1, field.data});
         } else {
           // *stream_ << jsonVal("debug", "invalid quantifier");
         }
 
         // 8-bit quantifier
-      } else if (label == 5) {
+      } else if (field.label == 5) {
         if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
             getEvent(events_.back()).allows_quantifier &&
             QuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
-          quantifiers_.insert({events_.size()-1, field_data});
+          quantifiers_.insert({events_.size()-1, field.data});
         } else {
           // *stream_ << jsonVal("debug", "invalid quantifier");
         }
 
         // Supplementary info
-      } else if (label == 6) {
-        supplementary_.push_back(field_data);
+      } else if (field.label == 6) {
+        supplementary_.push_back(field.data);
 
         // Start / stop time
-      } else if (label == 7) {
-        time_starts_ = field_data;
+      } else if (field.label == 7) {
+        time_starts_ = field.data;
         has_time_starts_ = true;
 
-      } else if (label == 8) {
-        time_until_ = field_data;
+      } else if (field.label == 8) {
+        time_until_ = field.data;
         has_time_until_ = true;
 
         // Multi-event message
-      } else if (label == 9) {
-        events_.push_back(field_data);
+      } else if (field.label == 9) {
+        events_.push_back(field.data);
 
         // Detailed diversion
-      } else if (label == 10) {
-        diversion_.push_back(field_data);
+      } else if (field.label == 10) {
+        diversion_.push_back(field.data);
 
         // Separator
-      } else if (label == 14) {
+      } else if (field.label == 14) {
 
       } else {
         //printf(",\"debug\":\"TODO label=%d data=0x%04x\"", label, field_data);
@@ -760,11 +755,11 @@ Json::Value Message::json() const {
   if (!is_complete_ || events_.empty())
     return json;
 
-  for (auto code : events_)
+  for (uint16_t code : events_)
     json["event_codes"].append(code);
 
   if (supplementary_.size() > 0)
-    for (auto code : supplementary_)
+    for (uint16_t code : supplementary_)
       json["supplementary_codes"].append(code);
 
   std::vector<std::string> sentences;
@@ -793,7 +788,7 @@ Json::Value Message::json() const {
     json["description"] = Join(sentences, ". ") + ".";
 
   if (!diversion_.empty())
-    for (auto code : diversion_)
+    for (uint16_t code : diversion_)
       json["diversion_route"].append(code);
 
   if (has_speed_limit_)
@@ -822,7 +817,7 @@ Json::Value Message::json() const {
   return json;
 }
 
-void Message::Decrypt(ServiceKey key) {
+void Message::Decrypt(const ServiceKey& key) {
   if (!is_encrypted_)
     return;
 

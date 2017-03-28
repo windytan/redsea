@@ -39,6 +39,11 @@ enum eQuantifierType {
   Q_MHZ, Q_KHZ
 };
 
+struct FreeformField {
+  uint16_t label;
+  uint16_t data;
+};
+
 struct ServiceKey {
   ServiceKey() {}
   ServiceKey(uint8_t _xorval, uint8_t _xorstart, uint8_t _nrot) :

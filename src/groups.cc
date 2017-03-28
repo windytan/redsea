@@ -302,7 +302,7 @@ void Station::DecodeType0(const Group& group) {
     alt_freq_list_.insert(Bits(group.block(BLOCK3), 0, 8));
 
     if (alt_freq_list_.complete()) {
-      for (auto f : alt_freq_list_.get())
+      for (CarrierFrequency f : alt_freq_list_.get())
         json_["alt_freqs"].append(f.str());
       alt_freq_list_.clear();
     }
