@@ -29,7 +29,7 @@ std::map<uint16_t, Event> g_event_data;
 std::map<uint16_t, std::string> g_suppl_data;
 LocationDatabase g_locdb;
 
-uint16_t popBits(std::deque<int>* bit_deque, int len) {
+uint16_t PopBits(std::deque<int>* bit_deque, int len) {
   uint16_t result = 0x00;
   if (static_cast<int>(bit_deque->size()) >= len) {
     for (int i=0; i < len; i++) {
@@ -52,7 +52,7 @@ std::vector<std::pair<uint16_t, uint16_t>>
   static const std::vector<int> field_size(
       {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
-  uint16_t second_gsi = bits(parts[1].data[0], 12, 2);
+  uint16_t second_gsi = Bits(parts[1].data[0], 12, 2);
 
   // Concatenate freeform data from used message length (derived from
   // GSI of second group)
@@ -72,11 +72,11 @@ std::vector<std::pair<uint16_t, uint16_t>>
   // Separate freeform data into fields
   std::vector<std::pair<uint16_t, uint16_t>> result;
   while (freeform_data_bits.size() > 4) {
-    uint16_t label = popBits(&freeform_data_bits, 4);
+    uint16_t label = PopBits(&freeform_data_bits, 4);
     if (static_cast<int>(freeform_data_bits.size()) < field_size.at(label))
       break;
 
-    uint16_t field_data = popBits(&freeform_data_bits, field_size.at(label));
+    uint16_t field_data = PopBits(&freeform_data_bits, field_size.at(label));
 
     if (label == 0x00 && field_data == 0x00)
       break;
@@ -87,7 +87,7 @@ std::vector<std::pair<uint16_t, uint16_t>>
   return result;
 }
 
-std::string timeString(uint16_t field_data) {
+std::string TimeString(uint16_t field_data) {
   std::string time_string("");
 
   if (field_data <= 95) {
@@ -127,11 +127,11 @@ std::string timeString(uint16_t field_data) {
   return time_string;
 }
 
-std::vector<std::string> getScopeStrings(uint16_t mgs) {
-  bool mgs_i = bits(mgs, 3, 1);
-  bool mgs_n = bits(mgs, 2, 1);
-  bool mgs_r = bits(mgs, 1, 1);
-  bool mgs_u = bits(mgs, 0, 1);
+std::vector<std::string> ScopeStrings(uint16_t mgs) {
+  bool mgs_i = Bits(mgs, 3, 1);
+  bool mgs_n = Bits(mgs, 2, 1);
+  bool mgs_r = Bits(mgs, 1, 1);
+  bool mgs_u = Bits(mgs, 0, 1);
 
   std::vector<std::string> scope;
   if (mgs_i)
@@ -146,7 +146,7 @@ std::vector<std::string> getScopeStrings(uint16_t mgs) {
   return scope;
 }
 
-uint16_t getQuantifierSize(uint16_t code) {
+uint16_t QuantifierSize(uint16_t code) {
   if (code <= 5)
     return 5;
   else if (code <= 12)
@@ -155,11 +155,11 @@ uint16_t getQuantifierSize(uint16_t code) {
     return 0;
 }
 
-std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
+std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
   std::string q("(Q)");
   std::regex q_re("\\(Q\\)");
 
-  if (getQuantifierSize(event.quantifier_type) == 5 && q_value == 0)
+  if (QuantifierSize(event.quantifier_type) == 5 && q_value == 0)
     q_value = 32;
 
   switch (event.quantifier_type) {
@@ -250,12 +250,12 @@ std::string getDescWithQuantifier(const Event& event, uint16_t q_value) {
     }
     case Q_MHZ: {
       CarrierFrequency freq(q_value);
-      q = freq.getString();
+      q = freq.str();
       break;
     }
     case Q_KHZ: {
       CarrierFrequency freq(q_value, true);
-      q = freq.getString();
+      q = freq.str();
       break;
     }
     default: {
@@ -276,8 +276,8 @@ std::string ucfirst(std::string in) {
   return in;
 }
 
-void loadEventData() {
-  for (CSVRow row : readCSVWithTitles(tmc_data_events, ';')) {
+void LoadEventData() {
+  for (CSVRow row : ReadCSVWithTitles(tmc_data_events, ';')) {
 
     try {
       uint16_t code = std::stoi(row.at("Code"));
@@ -320,7 +320,7 @@ void loadEventData() {
 
   }
 
-  for (std::vector<std::string> fields : readCSV(tmc_data_suppl, ';')) {
+  for (std::vector<std::string> fields : ReadCSV(tmc_data_suppl, ';')) {
     uint16_t code = std::stoi(fields[0]);
     std::string desc = fields[1];
 
@@ -328,11 +328,11 @@ void loadEventData() {
   }
 }
 
-std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
+std::map<uint16_t, ServiceKey> LoadServiceKeyTable() {
   std::map<uint16_t, ServiceKey> result;
 
   for (std::vector<std::string> fields :
-       readCSV("service_key_table.csv", ',')) {
+       ReadCSV("service_key_table.csv", ',')) {
     uint16_t encid;
 
     std::vector<uint8_t> nums(3);
@@ -352,7 +352,7 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
   return result;
 }
 
-void decodeLocation(const LocationDatabase& db, uint16_t ltn,
+void DecodeLocation(const LocationDatabase& db, uint16_t ltn,
                     Json::Value* jsroot) {
 
   if (db.ltn != ltn || db.ltn == 0 ||
@@ -402,11 +402,11 @@ void decodeLocation(const LocationDatabase& db, uint16_t ltn,
   }
 }
 
-bool isValidEventCode(uint16_t code) {
+bool IsValidEventCode(uint16_t code) {
   return g_event_data.count(code) != 0;
 }
 
-bool isValidSupplementaryCode(uint16_t code) {
+bool IsValidSupplementaryCode(uint16_t code) {
   return g_suppl_data.count(code) != 0;
 }
 
@@ -421,18 +421,20 @@ Event getEvent(uint16_t code) {
 
 TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
     has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
-    service_key_table_(loadServiceKeyTable()), ps_(8) {
-  if (!options.loctable_dir.empty() && g_locdb.ltn == 0)
-    g_locdb = loadLocationDatabase(options.loctable_dir);
+    service_key_table_(LoadServiceKeyTable()), ps_(8) {
+  if (!options.loctable_dir.empty() && g_locdb.ltn == 0) {
+    g_locdb = LoadLocationDatabase(options.loctable_dir);
+    std::cout << g_locdb;
+  }
 }
 
-void TMC::systemGroup(uint16_t message, Json::Value* jsroot) {
-  if (bits(message, 14, 1) == 0) {
+void TMC::SystemGroup(uint16_t message, Json::Value* jsroot) {
+  if (Bits(message, 14, 1) == 0) {
     if (g_event_data.empty())
-      loadEventData();
+      LoadEventData();
 
     is_initialized_ = true;
-    uint16_t ltn = bits(message, 6, 6);
+    uint16_t ltn = Bits(message, 6, 6);
 
     is_encrypted_ = (ltn == 0);
     (*jsroot)["tmc"]["system_info"]["is_encrypted"] = is_encrypted_;
@@ -442,29 +444,29 @@ void TMC::systemGroup(uint16_t message, Json::Value* jsroot) {
       (*jsroot)["tmc"]["system_info"]["location_table"] = ltn_;
     }
 
-    bool afi   = bits(message, 5, 1);
-    //bool m     = bits(message, 4, 1);
-    bool mgs   = bits(message, 0, 4);
+    bool afi   = Bits(message, 5, 1);
+    //bool m     = Bits(message, 4, 1);
+    bool mgs   = Bits(message, 0, 4);
 
     (*jsroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
 
-    for (std::string s : getScopeStrings(mgs))
+    for (std::string s : ScopeStrings(mgs))
       (*jsroot)["tmc"]["system_info"]["scope"].append(s);
   }
 }
 
-void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
+void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
   if (!is_initialized_)
     return;
 
-  bool t = bits(x, 4, 1);
+  bool t = Bits(x, 4, 1);
 
   // Encryption administration group
-  if (bits(x, 0, 5) == 0x00) {
-    sid_   = bits(y, 5, 6);
-    encid_ = bits(y, 0, 5);
-    ltn_   = bits(z, 10, 6);
+  if (Bits(x, 0, 5) == 0x00) {
+    sid_   = Bits(y, 5, 6);
+    encid_ = Bits(y, 0, 5);
+    ltn_   = Bits(z, 10, 6);
     has_encid_ = true;
 
     (*jsroot)["tmc"]["encryption_info"]["service_id"] = sid_;
@@ -473,32 +475,32 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
   // Tuning information
   } else if (t) {
-    uint16_t variant = bits(x, 0, 4);
+    uint16_t variant = Bits(x, 0, 4);
 
     if (variant == 4 || variant == 5) {
 
       int pos = 4 * (variant - 4);
 
-      ps_.setAt(pos,   bits(y, 8, 8));
-      ps_.setAt(pos+1, bits(y, 0, 8));
-      ps_.setAt(pos+2, bits(z, 8, 8));
-      ps_.setAt(pos+3, bits(z, 0, 8));
+      ps_.set(pos,   RDSChar(Bits(y, 8, 8)));
+      ps_.set(pos+1, RDSChar(Bits(y, 0, 8)));
+      ps_.set(pos+2, RDSChar(Bits(z, 8, 8)));
+      ps_.set(pos+3, RDSChar(Bits(z, 0, 8)));
 
-      if (ps_.isComplete())
-        (*jsroot)["tmc"]["service_provider"] = ps_.getLastCompleteString();
+      if (ps_.complete())
+        (*jsroot)["tmc"]["service_provider"] = ps_.last_complete_string();
 
     } else if (variant == 9) {
 
       uint16_t on_pi = z;
-      uint16_t on_sid = bits(y, 0, 6);
-      uint16_t on_mgs = bits(y, 6, 4);
-      uint16_t on_ltn = bits(y, 10, 6);
+      uint16_t on_sid = Bits(y, 0, 6);
+      uint16_t on_mgs = Bits(y, 6, 4);
+      uint16_t on_ltn = Bits(y, 10, 6);
 
-      (*jsroot)["tmc"]["other_network"]["pi"] = hexString(on_pi, 4);
+      (*jsroot)["tmc"]["other_network"]["pi"] = HexString(on_pi, 4);
       (*jsroot)["tmc"]["other_network"]["service_id"] = on_sid;
       (*jsroot)["tmc"]["other_network"]["location_table"] = on_ltn;
 
-      for (std::string s : getScopeStrings(on_mgs))
+      for (std::string s : ScopeStrings(on_mgs))
         (*jsroot)["tmc"]["other_network"]["scope"].append(s);
 
     } else {
@@ -512,45 +514,45 @@ void TMC::userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
     if (is_encrypted_ && !has_encid_)
       return;
 
-    bool f = bits(x, 3, 1);
+    bool f = Bits(x, 3, 1);
 
     // Single-group message
     if (f) {
       Message message(is_encrypted_);
-      message.pushSingle(x, y, z);
+      message.PushSingle(x, y, z);
 
       if (is_encrypted_ && service_key_table_.count(encid_) > 0)
-        message.decrypt(service_key_table_[encid_]);
+        message.Decrypt(service_key_table_[encid_]);
 
       if (!message.json().empty()) {
         (*jsroot)["tmc"]["message"] = message.json();
-        decodeLocation(g_locdb, ltn_, jsroot);
+        DecodeLocation(g_locdb, ltn_, jsroot);
       }
 
     // Part of multi-group message
     } else {
 
-      uint16_t continuity_index = bits(x, 0, 3);
+      uint16_t continuity_index = Bits(x, 0, 3);
 
-      if (continuity_index != message_.getContinuityIndex()) {
+      if (continuity_index != message_.continuity_index()) {
         /* Message changed; print previous unfinished message
          * TODO 15-second limit */
         if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
-          decodeLocation(g_locdb, ltn_, jsroot);
+          DecodeLocation(g_locdb, ltn_, jsroot);
         }
         message_ = Message(is_encrypted_);
       }
 
-      message_.pushMulti(x, y, z);
-      if (message_.isComplete()) {
+      message_.PushMulti(x, y, z);
+      if (message_.complete()) {
 
         if (is_encrypted_ && service_key_table_.count(encid_) > 0)
-          message_.decrypt(service_key_table_[encid_]);
+          message_.Decrypt(service_key_table_[encid_]);
 
         if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
-          decodeLocation(g_locdb, ltn_, jsroot);
+          DecodeLocation(g_locdb, ltn_, jsroot);
         }
         message_ = Message(is_encrypted_);
       }
@@ -570,20 +572,20 @@ Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
     continuity_index_(0), parts_(5) {
 }
 
-bool Message::isComplete() const {
+bool Message::complete() const {
   return is_complete_;
 }
 
-uint16_t Message::getContinuityIndex() const {
+uint16_t Message::continuity_index() const {
   return continuity_index_;
 }
 
-void Message::pushSingle(uint16_t x, uint16_t y, uint16_t z) {
-  duration_  = bits(x, 0, 3);
-  divertadv_ = bits(y, 15, 1);
-  direction_ = bits(y, 14, 1);
-  extent_    = bits(y, 11, 3);
-  events_.push_back(bits(y, 0, 11));
+void Message::PushSingle(uint16_t x, uint16_t y, uint16_t z) {
+  duration_  = Bits(x, 0, 3);
+  divertadv_ = Bits(y, 15, 1);
+  direction_ = Bits(y, 14, 1);
+  extent_    = Bits(y, 11, 3);
+  events_.push_back(Bits(y, 0, 11));
   if (is_encrypted_)
     encrypted_location_ = z;
   else
@@ -595,24 +597,24 @@ void Message::pushSingle(uint16_t x, uint16_t y, uint16_t z) {
   is_complete_ = true;
 }
 
-void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
+void Message::PushMulti(uint16_t x, uint16_t y, uint16_t z) {
 
-  uint16_t new_ci = bits(x, 0, 3);
+  uint16_t new_ci = Bits(x, 0, 3);
   if (continuity_index_ != new_ci && continuity_index_ != 0) {
     //*stream_ << jsonVal("debug", "ERR: wrong continuity index!");
   }
   continuity_index_ = new_ci;
-  bool is_first_group = bits(y, 15, 1);
+  bool is_first_group = Bits(y, 15, 1);
   int cur_grp;
   int gsi = -1;
 
   if (is_first_group) {
     cur_grp = 0;
-  } else if (bits(y, 14, 1)) {  // SG
-    gsi = bits(y, 12, 2);
+  } else if (Bits(y, 14, 1)) {  // SG
+    gsi = Bits(y, 12, 2);
     cur_grp = 1;
   } else {
-    gsi = bits(y, 12, 2);
+    gsi = Bits(y, 12, 2);
     cur_grp = 4 - gsi;
   }
 
@@ -621,12 +623,12 @@ void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
   parts_.at(cur_grp) = {true, {y, z}};
 
   if (is_last_group) {
-    decodeMulti();
+    DecodeMulti();
     clear();
   }
 }
 
-void Message::decodeMulti() {
+void Message::DecodeMulti() {
   // Need at least the first group
   if (!parts_[0].is_received)
     return;
@@ -634,9 +636,9 @@ void Message::decodeMulti() {
   is_complete_ = true;
 
   // First group
-  direction_ = bits(parts_[0].data[0], 14, 1);
-  extent_    = bits(parts_[0].data[0], 11, 3);
-  events_.push_back(bits(parts_[0].data[0], 0, 11));
+  direction_ = Bits(parts_[0].data[0], 14, 1);
+  extent_    = Bits(parts_[0].data[0], 11, 3);
+  events_.push_back(Bits(parts_[0].data[0], 0, 11));
   if (is_encrypted_)
     encrypted_location_ = parts_[0].data[1];
   else
@@ -695,7 +697,7 @@ void Message::decodeMulti() {
       } else if (label == 4) {
         if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
             getEvent(events_.back()).allows_quantifier &&
-            getQuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
+            QuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
           quantifiers_.insert({events_.size()-1, field_data});
         } else {
           // *stream_ << jsonVal("debug", "invalid quantifier");
@@ -705,7 +707,7 @@ void Message::decodeMulti() {
       } else if (label == 5) {
         if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
             getEvent(events_.back()).allows_quantifier &&
-            getQuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
+            QuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
           quantifiers_.insert({events_.size()-1, field_data});
         } else {
           // *stream_ << jsonVal("debug", "invalid quantifier");
@@ -765,10 +767,10 @@ Json::Value Message::json() const {
   std::vector<std::string> sentences;
   for (size_t i=0; i < events_.size(); i++) {
     std::string desc;
-    if (isValidEventCode(events_[i])) {
+    if (IsValidEventCode(events_[i])) {
       Event event = getEvent(events_[i]);
       if (quantifiers_.count(i) == 1) {
-        desc = getDescWithQuantifier(event, quantifiers_.at(i));
+        desc = DescriptionWithQuantifier(event, quantifiers_.at(i));
       } else {
         desc = event.description;
       }
@@ -776,16 +778,16 @@ Json::Value Message::json() const {
     }
   }
 
-  if (isValidEventCode(events_[0]))
+  if (IsValidEventCode(events_[0]))
     json["update_class"] = getEvent(events_[0]).update_class;
 
   for (uint16_t code : supplementary_) {
-    if (isValidSupplementaryCode(code))
+    if (IsValidSupplementaryCode(code))
       sentences.push_back(ucfirst(g_suppl_data.find(code)->second));
   }
 
   if (!sentences.empty())
-    json["description"] = join(sentences, ". ") + ".";
+    json["description"] = Join(sentences, ". ") + ".";
 
   if (!diversion_.empty())
     for (auto code : diversion_)
@@ -808,16 +810,16 @@ Json::Value Message::json() const {
       std::to_string(extent_);
 
   if (has_time_starts_)
-    json["starts"] = timeString(time_starts_);
+    json["starts"] = TimeString(time_starts_);
   if (has_time_until_)
-    json["until"] = timeString(time_until_);
+    json["until"] = TimeString(time_until_);
 
   json["urgency"] = urgency_;
 
   return json;
 }
 
-void Message::decrypt(ServiceKey key) {
+void Message::Decrypt(ServiceKey key) {
   if (!is_encrypted_)
     return;
 

@@ -33,8 +33,8 @@ enum eOffset {
 class AltFreqList {
  public:
   AltFreqList();
-  void add(uint8_t code);
-  bool hasAll() const;
+  void insert(uint8_t code);
+  bool complete() const;
   std::set<CarrierFrequency> get() const;
   void clear();
 
@@ -51,7 +51,7 @@ class GroupType {
 
   bool operator==(const GroupType& other);
 
-  std::string toString() const;
+  std::string str() const;
 
   uint16_t num;
   eGroupTypeVersion ab;
@@ -62,15 +62,15 @@ bool operator<(const GroupType& obj1, const GroupType& obj2);
 class Group {
  public:
   Group();
-  uint16_t get(eBlockNumber blocknum) const;
+  uint16_t block(eBlockNumber blocknum) const;
   bool has(eBlockNumber blocknum) const;
   bool empty() const;
   GroupType type() const;
-  bool hasType() const;
+  bool has_type() const;
   uint16_t pi() const;
-  bool hasPi() const;
+  bool has_pi() const;
   void set(eBlockNumber blocknum, uint16_t data);
-  void setCI(uint16_t data);
+  void set_ci(uint16_t data);
 
  private:
   GroupType type_;
@@ -86,28 +86,28 @@ class Station {
  public:
   Station();
   Station(uint16_t pi, Options options);
-  void updateAndPrint(const Group& group, std::ostream* stream);
-  bool hasPS() const;
-  std::string getPS() const;
-  std::string getRT() const;
-  uint16_t getPI() const;
-  std::string getCountryCode() const;
+  void UpdateAndPrint(const Group& group, std::ostream* stream);
+  bool has_ps() const;
+  std::string ps() const;
+  std::string rt() const;
+  uint16_t pi() const;
+  std::string country_code() const;
 
  private:
-  void decodeBasics(const Group& group);
-  void decodeType0(const Group& group);
-  void decodeType1(const Group& group);
-  void decodeType2(const Group& group);
-  void decodeType3A(const Group& group);
-  void decodeType4A(const Group& group);
-  void decodeType6(const Group& group);
-  void decodeType14(const Group& group);
-  void decodeType15B(const Group& group);
-  void decodeODAgroup(const Group& group);
-  void addAltFreq(uint8_t);
-  void updatePS(int pos, int chr1, int chr2);
-  void updateRadioText(int pos, int chr1, int chr2);
-  void parseRadioTextPlus(const Group& group);
+  void DecodeBasics(const Group& group);
+  void DecodeType0(const Group& group);
+  void DecodeType1(const Group& group);
+  void DecodeType2(const Group& group);
+  void DecodeType3A(const Group& group);
+  void DecodeType4A(const Group& group);
+  void DecodeType6(const Group& group);
+  void DecodeType14(const Group& group);
+  void DecodeType15B(const Group& group);
+  void DecodeODAGroup(const Group& group);
+  void AddAltFreq(uint8_t);
+  void UpdatePS(int pos, int chr1, int chr2);
+  void UpdateRadioText(int pos, int chr1, int chr2);
+  void ParseRadioTextPlus(const Group& group);
   uint16_t pi_;
   Options options_;
   RDSString ps_;
@@ -160,7 +160,7 @@ struct RTPlusTag {
   uint16_t length;
 };
 
-void printHexGroup(const Group& group, std::ostream* stream);
+void PrintHexGroup(const Group& group, std::ostream* stream);
 
 }  // namespace redsea
 #endif // GROUPS_H_

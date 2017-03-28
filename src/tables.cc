@@ -9,7 +9,7 @@
 namespace redsea {
 
 // EN 50067:1998, Annex E (pp. 73-76)
-std::string getLCDchar(uint8_t code, eCodeTable codetable) {
+std::string RDSCharString(uint8_t code, eCodeTable codetable) {
   std::string result(" ");
   static const std::vector<std::string> codetable_G0({
       " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Á", "Â", "Ã", "ã",
@@ -80,7 +80,7 @@ std::string getLCDchar(uint8_t code, eCodeTable codetable) {
   return result;
 }
 
-std::string getPTYname(int pty, bool is_rbds) {
+std::string PTYNameString(int pty, bool is_rbds) {
   assert(pty >= 0 && pty <= 32);
 
   // EN 50067:1998, Annex F (pp. 77-78)
@@ -110,7 +110,7 @@ std::string getPTYname(int pty, bool is_rbds) {
 
 // EN 50067:1998, Annex D, Table D.1 (p. 71)
 // RDS Forum R08/008_7, Table D.2 (p. 75)
-std::string getCountryString(uint16_t pi, uint16_t ecc) {
+std::string CountryString(uint16_t pi, uint16_t ecc) {
   static const std::map<uint16_t, std::vector<std::string>> country_codes({
     {0xA0, {"us", "us", "us", "us", "us", "us", "us", "us",
             "us", "us", "us", "--", "us", "us", "--"}},
@@ -165,7 +165,7 @@ std::string getCountryString(uint16_t pi, uint16_t ecc) {
 }
 
 // EN 50067:1998, Annex J (p. 84)
-std::string getLanguageString(uint16_t code) {
+std::string LanguageString(uint16_t code) {
   static const std::vector<std::string> languages({
     "Unknown",     "Albanian",      "Breton",     "Catalan",
     "Croatian",    "Welsh",         "Czech",      "Danish",
@@ -208,7 +208,7 @@ std::string getLanguageString(uint16_t code) {
 }
 
 // RDS Forum R13/041_2 (2013-09-05)
-std::string getAppName(uint16_t aid) {
+std::string AppNameString(uint16_t aid) {
   static const std::map<uint16_t, std::string> oda_apps({
     {0x0000, "None"},
     {0x0093, "Cross referencing DAB within RDS"},
@@ -274,7 +274,7 @@ std::string getAppName(uint16_t aid) {
 }
 
 // RDS Forum R06/040_1 (2006-07-21)
-std::string getRTPlusContentTypeName(uint16_t content_type) {
+std::string RTPlusContentTypeString(uint16_t content_type) {
   static const std::vector<std::string> content_type_names({
       "dummy_class",          "item.title",         "item.album",
       "item.tracknumber",     "item.artist",        "item.composition",
@@ -303,7 +303,7 @@ std::string getRTPlusContentTypeName(uint16_t content_type) {
       content_type_names[content_type] : "unknown");
 }
 
-std::string getDICode(uint16_t di) {
+std::string DICodeString(uint16_t di) {
   static const std::vector<std::string> di_codes({
       "stereo", "artificial_head", "compressed", "dynamic_pty" });
 

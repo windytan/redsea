@@ -8,29 +8,30 @@
 
 namespace redsea {
 
-uint16_t bits(uint16_t word, int starting_at, int len);
+uint16_t Bits(uint16_t word, int starting_at, int len);
 
-std::string join(std::vector<std::string> strings, std::string);
-std::string join(std::vector<uint16_t> strings, std::string);
+std::string Join(std::vector<std::string> strings, std::string);
+std::string Join(std::vector<uint16_t> strings, std::string);
 
-std::string hexString(int value, int numybbles);
+std::string HexString(int value, int numybbles);
 
 class CSVRow {
  public:
   CSVRow(std::map<std::string, int> titles, std::vector<std::string> values);
   std::string at(std::string title) const;
+
  private:
   std::map<std::string, int> titles_;
   std::vector<std::string> values_;
 };
 
 std::vector<std::string> splitline(std::string line, char delimiter);
-std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
+std::vector<std::vector<std::string>> ReadCSV(std::vector<std::string> csvdata,
                                               char delimiter);
-std::vector<std::vector<std::string>> readCSV(std::string filename,
+std::vector<std::vector<std::string>> ReadCSV(std::string filename,
                                               char delimiter);
-std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter);
-std::vector<CSVRow> readCSVWithTitles(std::vector<std::string> csvdata,
+std::vector<CSVRow> ReadCSVWithTitles(std::string filename, char delimiter);
+std::vector<CSVRow> ReadCSVWithTitles(std::vector<std::string> csvdata,
                                       char delimiter);
 
 class CarrierFrequency {

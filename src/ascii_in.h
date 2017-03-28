@@ -12,15 +12,15 @@ class AsciiBits {
  public:
   AsciiBits(bool feed_thru = false);
   ~AsciiBits();
-  int getNextBit();
-  bool isEOF() const;
+  int NextBit();
+  bool eof() const;
 
  private:
   bool is_eof_;
   bool feed_thru_;
 };
 
-Group getNextGroupRSpy(bool feed_thru = false);
+Group NextGroupRSpy(bool feed_thru = false);
 
 }  // namespace redsea
 #endif // ASCII_IN_H_

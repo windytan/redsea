@@ -78,16 +78,16 @@ struct MessagePart {
 class Message {
  public:
   explicit Message(bool is_loc_encrypted);
-  void pushMulti(uint16_t x, uint16_t y, uint16_t z);
-  void pushSingle(uint16_t x, uint16_t y, uint16_t z);
+  void PushMulti(uint16_t x, uint16_t y, uint16_t z);
+  void PushSingle(uint16_t x, uint16_t y, uint16_t z);
   Json::Value json() const;
-  void decrypt(ServiceKey);
-  bool isComplete() const;
+  void Decrypt(ServiceKey);
+  bool complete() const;
   void clear();
-  uint16_t getContinuityIndex() const;
+  uint16_t continuity_index() const;
 
  private:
-  void decodeMulti();
+  void DecodeMulti();
   bool is_encrypted_;
   bool was_encrypted_;
   uint16_t duration_;
@@ -119,8 +119,8 @@ class Message {
 class TMC {
  public:
   TMC(Options options);
-  void systemGroup(uint16_t message, Json::Value*);
-  void userGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value*);
+  void SystemGroup(uint16_t message, Json::Value*);
+  void UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value*);
 
  private:
   bool is_initialized_;

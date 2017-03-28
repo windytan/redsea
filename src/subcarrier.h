@@ -30,7 +30,7 @@ class DeltaDecoder {
  public:
   DeltaDecoder();
   ~DeltaDecoder();
-  unsigned decode(unsigned);
+  unsigned Decode(unsigned);
 
  private:
   unsigned prev_;
@@ -38,16 +38,16 @@ class DeltaDecoder {
 
 class Subcarrier {
  public:
-  Subcarrier(bool feed_thru = false);
+  explicit Subcarrier(bool feed_thru = false);
   ~Subcarrier();
-  int getNextBit();
-  bool isEOF() const;
+  int NextBit();
+  bool eof() const;
 #ifdef DEBUG
-  float getT() const;
+  float t() const;
 #endif
 
  private:
-  void demodulateMoreBits();
+  void DemodulateMoreBits();
   int  numsamples_;
   bool feed_thru_;
 

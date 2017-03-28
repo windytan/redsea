@@ -26,7 +26,7 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   return result;
 }
 
-float AGC::getGain() {
+float AGC::gain() {
   return agc_crcf_get_gain(object_);
 }
 
@@ -61,36 +61,36 @@ NCO::~NCO() {
   nco_crcf_destroy(object_);
 }
 
-std::complex<float> NCO::mixDown(std::complex<float> s) {
+std::complex<float> NCO::MixDown(std::complex<float> s) {
   std::complex<float> result;
   nco_crcf_mix_down(object_, s, &result);
   return result;
 }
 
-std::complex<float> NCO::mixUp(std::complex<float> s) {
+std::complex<float> NCO::MixUp(std::complex<float> s) {
   std::complex<float> result;
   nco_crcf_mix_up(object_, s, &result);
   return result;
 }
 
-void NCO::mixBlockDown(std::complex<float>* x, std::complex<float>* y,
+void NCO::MixBlockDown(std::complex<float>* x, std::complex<float>* y,
     int n) {
   nco_crcf_mix_block_down(object_, x, y, n);
 }
 
-void NCO::step() {
+void NCO::Step() {
   nco_crcf_step(object_);
 }
 
-void NCO::setPLLBandwidth(float bw) {
+void NCO::set_pll_bandwidth(float bw) {
   nco_crcf_pll_set_bandwidth(object_, bw);
 }
 
-void NCO::stepPLL(float dphi) {
+void NCO::StepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
-float NCO::getFrequency() {
+float NCO::frequency() {
   return nco_crcf_get_frequency(object_);
 }
 
@@ -103,11 +103,11 @@ SymSync::~SymSync() {
   symsync_crcf_destroy(object_);
 }
 
-void SymSync::setBandwidth(float bw) {
+void SymSync::set_bandwidth(float bw) {
   symsync_crcf_set_lf_bw(object_, bw);
 }
 
-void SymSync::setOutputRate(unsigned r) {
+void SymSync::set_output_rate(unsigned r) {
   symsync_crcf_set_output_rate(object_, r);
 }
 
@@ -128,7 +128,7 @@ Modem::~Modem() {
   modem_destroy(object_);
 }
 
-unsigned int Modem::demodulate(std::complex<float> sample) {
+unsigned int Modem::Demodulate(std::complex<float> sample) {
   unsigned symbol_out;
 
   modem_demodulate(object_, sample, &symbol_out);
@@ -136,7 +136,7 @@ unsigned int Modem::demodulate(std::complex<float> sample) {
   return symbol_out;
 }
 
-float Modem::getPhaseError() {
+float Modem::phase_error() {
   return modem_get_demodulator_phase_error(object_);
 }
 

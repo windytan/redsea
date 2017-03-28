@@ -23,7 +23,7 @@ namespace tmc {
 
 namespace {
 
-std::string utf8(std::string input, iconvpp::converter* conv) {
+std::string to_utf8(std::string input, iconvpp::converter* conv) {
   std::string converted;
   conv->convert(input, converted);
   return converted;
@@ -31,12 +31,12 @@ std::string utf8(std::string input, iconvpp::converter* conv) {
 
 }  // namespace
 
-LocationDatabase loadLocationDatabase(std::string directory) {
+LocationDatabase LoadLocationDatabase(std::string directory) {
   LocationDatabase locdb;
   std::string encoding("UTF-8");
 
   for (std::vector<std::string> fields :
-       readCSV(directory + "/README.DAT", ';')) {
+       ReadCSV(directory + "/README.DAT", ';')) {
     try {
       encoding = fields.at(4);
     } catch (const std::exception& e) {
@@ -52,16 +52,16 @@ LocationDatabase loadLocationDatabase(std::string directory) {
 
   iconvpp::converter conv("UTF-8", encoding);
 
-  for (CSVRow row : readCSVWithTitles(directory + "/NAMES.DAT", ';')) {
+  for (CSVRow row : ReadCSVWithTitles(directory + "/NAMES.DAT", ';')) {
     try {
       int nid = std::stoi(row.at("NID"));
-      locdb.names[nid] = utf8(row.at("NAME"), &conv);
+      locdb.names[nid] = to_utf8(row.at("NAME"), &conv);
     } catch (const std::exception& e) {
       continue;
     }
   }
 
-  for (CSVRow row : readCSVWithTitles(directory + "/ROADS.DAT", ';')) {
+  for (CSVRow row : ReadCSVWithTitles(directory + "/ROADS.DAT", ';')) {
     try {
       Road road;
       road.lcd = std::stoi(row.at("LCD"));
@@ -77,7 +77,7 @@ LocationDatabase loadLocationDatabase(std::string directory) {
     }
   }
 
-  for (CSVRow row : readCSVWithTitles(directory + "/SEGMENTS.DAT", ';')) {
+  for (CSVRow row : ReadCSVWithTitles(directory + "/SEGMENTS.DAT", ';')) {
     try {
       Segment seg;
       seg.lcd = std::stoi(row.at("LCD"));
@@ -88,7 +88,7 @@ LocationDatabase loadLocationDatabase(std::string directory) {
     }
   }
 
-  for (CSVRow row : readCSVWithTitles(directory + "/POINTS.DAT", ';')) {
+  for (CSVRow row : ReadCSVWithTitles(directory + "/POINTS.DAT", ';')) {
     try {
       locdb.ltn = std::stoi(row.at("TABCD"));
       Point point;
@@ -125,7 +125,7 @@ LocationDatabase loadLocationDatabase(std::string directory) {
     }
   }
 
-  for (CSVRow row : readCSVWithTitles(directory + "/POFFSETS.DAT", ';')) {
+  for (CSVRow row : ReadCSVWithTitles(directory + "/POFFSETS.DAT", ';')) {
     try {
       int lcd = std::stoi(row.at("LCD"));
       int neg = std::stoi(row.at("NEG_OFF_LCD"));
@@ -140,7 +140,7 @@ LocationDatabase loadLocationDatabase(std::string directory) {
   }
 
   for (CSVRow row :
-       readCSVWithTitles(directory + "/ADMINISTRATIVEAREA.DAT", ';')) {
+       ReadCSVWithTitles(directory + "/ADMINISTRATIVEAREA.DAT", ';')) {
     try {
       AdminArea area;
       area.lcd = std::stoi(row.at("LCD"));

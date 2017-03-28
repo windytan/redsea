@@ -8,11 +8,11 @@
 namespace redsea {
 
 // extract len bits from word, starting at starting_at from the right
-uint16_t bits(uint16_t word, int starting_at, int len) {
+uint16_t Bits(uint16_t word, int starting_at, int len) {
   return ((word >> starting_at) & ((1 << len) - 1));
 }
 
-std::string join(std::vector<std::string> strings, std::string d) {
+std::string Join(std::vector<std::string> strings, std::string d) {
   std::string result("");
   for (size_t i=0; i < strings.size(); i++) {
     result += strings[i];
@@ -22,7 +22,7 @@ std::string join(std::vector<std::string> strings, std::string d) {
   return result;
 }
 
-std::string join(std::vector<std::uint16_t> nums, std::string d) {
+std::string Join(std::vector<std::uint16_t> nums, std::string d) {
   std::string result("");
   for (size_t i=0; i < nums.size(); i++) {
     result += std::to_string(nums[i]);
@@ -32,13 +32,13 @@ std::string join(std::vector<std::uint16_t> nums, std::string d) {
   return result;
 }
 
-std::string hexString(int value, int numnybbles) {
+std::string HexString(int value, int num_nybbles) {
   std::stringstream ss;
 
   ss.fill('0');
   ss.setf(std::ios_base::uppercase);
 
-  ss << std::hex << std::setw(numnybbles) << value;
+  ss << std::hex << std::setw(num_nybbles) << value;
 
   return ss.str();
 }
@@ -48,14 +48,14 @@ CarrierFrequency::CarrierFrequency(uint16_t code, bool is_lf_mf) :
     code_(code), is_lf_mf_(is_lf_mf) {
 }
 
-bool CarrierFrequency::isValid() const {
+bool CarrierFrequency::valid() const {
   return ((is_lf_mf_ && code_ >= 1 && code_ <= 135) ||
          (!is_lf_mf_ && code_ >= 1 && code_ <= 204));
 }
 
-int CarrierFrequency::getKhz() const {
+int CarrierFrequency::kHz() const {
   int khz = 0;
-  if (isValid()) {
+  if (valid()) {
     if (!is_lf_mf_)
       khz = 87500 + 100 * code_;
     else if (code_ <= 15)
@@ -67,28 +67,29 @@ int CarrierFrequency::getKhz() const {
   return khz;
 }
 
-std::string CarrierFrequency::getString() const {
-  float num = (is_lf_mf_ ? getKhz() : getKhz() / 1000.0f);
+std::string CarrierFrequency::str() const {
   std::stringstream ss;
-  ss.precision(is_lf_mf_ ? 0 : 1);
-  if (isValid())
+  if (valid()) {
+    float num = (is_lf_mf_ ? kHz() : kHz() / 1000.0f);
+    ss.precision(is_lf_mf_ ? 0 : 1);
     ss << std::fixed << num << (is_lf_mf_ ? " kHz" : " MHz");
-  else
+  } else {
     ss << "N/A";
+  }
   return ss.str();
 }
 
 bool operator== (const CarrierFrequency &f1,
                  const CarrierFrequency &f2) {
-  return (f1.getKhz() == f2.getKhz());
+  return (f1.kHz() == f2.kHz());
 }
 
 bool operator< (const CarrierFrequency &f1,
                 const CarrierFrequency &f2) {
-  return (f1.getKhz() < f2.getKhz());
+  return (f1.kHz() < f2.kHz());
 }
 
-std::vector<std::string> splitline(std::string line, char delimiter) {
+std::vector<std::string> SplitLine(std::string line, char delimiter) {
   std::stringstream ss(line);
   std::vector<std::string> result;
 
@@ -101,17 +102,17 @@ std::vector<std::string> splitline(std::string line, char delimiter) {
   return result;
 }
 
-std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
+std::vector<std::vector<std::string>> ReadCSV(std::vector<std::string> csvdata,
                                               char delimiter) {
   std::vector<std::vector<std::string>> lines;
 
   for (std::string line : csvdata)
-    lines.push_back(splitline(line, delimiter));
+    lines.push_back(SplitLine(line, delimiter));
 
   return lines;
 }
 
-std::vector<std::vector<std::string>> readCSV(std::string filename,
+std::vector<std::vector<std::string>> ReadCSV(std::string filename,
                                               char delimiter) {
   std::vector<std::vector<std::string>> lines;
 
@@ -126,7 +127,7 @@ std::vector<std::vector<std::string>> readCSV(std::string filename,
     line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
-    std::vector<std::string> fields = splitline(line, delimiter);
+    std::vector<std::string> fields = SplitLine(line, delimiter);
     lines.push_back(fields);
   }
 
@@ -135,19 +136,18 @@ std::vector<std::vector<std::string>> readCSV(std::string filename,
   return lines;
 }
 
-std::vector<CSVRow> readCSVWithTitles(std::vector<std::string> csvdata,
+std::vector<CSVRow> ReadCSVWithTitles(std::vector<std::string> csvdata,
                                       char delimiter) {
   std::vector<CSVRow> lines;
   std::map<std::string, int> titles;
 
   bool is_title_row = true;
 
-  for (std::string line : csvdata ) {
-
+  for (std::string line : csvdata) {
     line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
-    std::vector<std::string> fields = splitline(line, delimiter);
+    std::vector<std::string> fields = SplitLine(line, delimiter);
     if (is_title_row) {
       for (size_t i = 0; i < fields.size(); i++)
         titles[fields[i]] = i;
@@ -161,7 +161,7 @@ std::vector<CSVRow> readCSVWithTitles(std::vector<std::string> csvdata,
   return lines;
 }
 
-std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter) {
+std::vector<CSVRow> ReadCSVWithTitles(std::string filename, char delimiter) {
   std::vector<std::string> lines;
 
   std::ifstream in(filename);
@@ -176,7 +176,7 @@ std::vector<CSVRow> readCSVWithTitles(std::string filename, char delimiter) {
     in.close();
   }
 
-  return readCSVWithTitles(lines, delimiter);
+  return ReadCSVWithTitles(lines, delimiter);
 }
 
 CSVRow::CSVRow(std::map<std::string, int> titles,

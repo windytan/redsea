@@ -9,12 +9,12 @@
 
 namespace redsea {
 
-class LCDchar {
+class RDSChar {
  public:
   LCDchar();
   LCDchar(uint8_t _code);
   uint8_t code() const;
-  std::string toString() const;
+  std::string str() const;
   void setCodeTable(eCodeTable codetable);
 
  private:
@@ -29,24 +29,23 @@ class RDSString {
   void setAt(int pos, LCDchar chr1, LCDchar chr2);
   void setRepertoire(int pos, eCodeTable codetable);
   eCodeTable repertoireAt(int pos) const;
-  std::string charAt(int pos) const;
   size_t lengthReceived() const;
   size_t lengthExpected() const;
-  std::vector<LCDchar> getChars() const;
-  std::string getString() const;
+  std::vector<RDSChar> chars() const;
+  std::string str() const;
   std::string getTrimmedString() const;
-  std::string getLastCompleteString() const;
-  std::string getLastCompleteString(int start, int len) const;
-  std::string getLastCompleteStringTrimmed() const;
-  std::string getLastCompleteStringTrimmed(int start, int len) const;
-  bool hasChars(int start, int len) const;
-  bool isComplete() const;
+  std::string last_complete_string() const;
+  std::string last_complete_string(int start, int len) const;
+  std::string last_complete_string_trimmed() const;
+  std::string last_complete_string_trimmed(int start, int len) const;
+  bool has_chars(int start, int len) const;
+  bool complete() const;
   void clear();
   void resize(int n);
 
  private:
-  std::vector<LCDchar> chars_;
-  std::vector<LCDchar> last_complete_chars_;
+  std::vector<RDSChar> chars_;
+  std::vector<RDSChar> last_complete_chars_;
   std::vector<bool> is_char_sequential_;
   int prev_pos_;
   std::string last_complete_string_;
