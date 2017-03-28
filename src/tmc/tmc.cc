@@ -424,7 +424,10 @@ TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
     service_key_table_(LoadServiceKeyTable()), ps_(8) {
   if (!options.loctable_dir.empty() && g_locdb.ltn == 0) {
     g_locdb = LoadLocationDatabase(options.loctable_dir);
-    std::cout << g_locdb;
+    if (options.feed_thru)
+      std::cerr << g_locdb;
+    else
+      std::cout << g_locdb;
   }
 }
 

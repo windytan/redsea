@@ -12,7 +12,6 @@
 #include <utility>
 
 #include "iconvpp/iconv.hpp"
-#include <json/json.h>
 
 #include "src/tmc/event_list.h"
 #include "src/util.h"
@@ -151,11 +150,16 @@ LocationDatabase LoadLocationDatabase(std::string directory) {
     }
   }
 
-  printf("{\"location_table_info\":{\"ltn\":%d,\"num_points\":%ld,"
-         "\"num_roads\":%ld,\"num_names\":%ld}}\n", locdb.ltn,
-         locdb.points.size(), locdb.roads.size(), locdb.names.size());
-
   return locdb;
+}
+
+std::ostream& operator<<(std::ostream& strm, const LocationDatabase& locdb) {
+  return strm << "{\"location_table_info\":{" <<
+                 "\"ltn\":" << locdb.ltn << "," <<
+                 "\"num_points\":" << locdb.points.size() << "," <<
+                 "\"num_roads\":" << locdb.roads.size() << "," <<
+                 "\"num_names\":" << locdb.names.size() <<
+                 "}}" << std::endl;
 }
 
 }  // namespace tmc
