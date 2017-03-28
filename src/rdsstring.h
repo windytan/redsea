@@ -11,8 +11,8 @@ namespace redsea {
 
 class RDSChar {
  public:
-  LCDchar();
-  LCDchar(uint8_t _code);
+  RDSChar();
+  explicit RDSChar(uint8_t _code);
   uint8_t code() const;
   std::string str() const;
   void setCodeTable(eCodeTable codetable);
@@ -24,9 +24,9 @@ class RDSChar {
 
 class RDSString {
  public:
-  RDSString(int len = 8);
-  void setAt(int pos, LCDchar chr);
-  void setAt(int pos, LCDchar chr1, LCDchar chr2);
+  explicit RDSString(int len = 8);
+  void set(int pos, RDSChar chr);
+  void set(int pos, RDSChar chr1, RDSChar chr2);
   void setRepertoire(int pos, eCodeTable codetable);
   eCodeTable repertoireAt(int pos) const;
   size_t lengthReceived() const;

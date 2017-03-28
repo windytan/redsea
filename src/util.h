@@ -36,10 +36,10 @@ std::vector<CSVRow> ReadCSVWithTitles(std::vector<std::string> csvdata,
 
 class CarrierFrequency {
  public:
-  CarrierFrequency(uint16_t code, bool is_lf_mf = false);
-  bool isValid() const;
-  int getKhz() const;
-  std::string getString() const;
+  explicit CarrierFrequency(uint16_t code, bool is_lf_mf = false);
+  bool valid() const;
+  int kHz() const;
+  std::string str() const;
   friend bool operator== (const CarrierFrequency &f1,
                           const CarrierFrequency &f2);
   friend bool operator< (const CarrierFrequency &f1,

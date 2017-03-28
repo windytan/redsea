@@ -65,7 +65,7 @@ class SymSync {
 
 class Modem {
  public:
-  Modem(modulation_scheme scheme);
+  explicit Modem(modulation_scheme scheme);
   ~Modem();
   unsigned int Demodulate(std::complex<float> sample);
   float phase_error();

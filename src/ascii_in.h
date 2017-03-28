@@ -10,7 +10,7 @@ namespace redsea {
 
 class AsciiBits {
  public:
-  AsciiBits(bool feed_thru = false);
+  explicit AsciiBits(bool feed_thru = false);
   ~AsciiBits();
   int NextBit();
   bool eof() const;
