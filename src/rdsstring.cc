@@ -87,11 +87,6 @@ eCodeTable RDSString::repertoireAt(int pos) const {
   return codetable;
 }
 
-std::string RDSString::charAt(int pos) const {
-  return (pos < static_cast<int>(last_complete_chars_.size()) ?
-      last_complete_chars_[pos].toString() : " ");
-}
-
 size_t RDSString::lengthReceived() const {
   size_t result = 0;
   for (size_t i=0; i < is_char_sequential_.size(); i++) {
