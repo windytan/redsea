@@ -127,7 +127,7 @@ void Subcarrier::DemodulateMoreBits() {
     return;
   }
 
-  const int decimate = kFs_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol;
+  const int decimate_ratio = kFs_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol;
 
   for (int16_t sample : inbuffer) {
     // Mix RDS to baseband for filtering purposes
@@ -135,7 +135,7 @@ void Subcarrier::DemodulateMoreBits() {
 
     fir_lpf_.push(sample_baseband);
 
-    if (numsamples_ % decimate == 0) {
+    if (numsamples_ % decimate_ratio == 0) {
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
       // PLL-controlled 57 kHz mixdown - aliasing is intentional so we don't

@@ -21,9 +21,9 @@ namespace redsea {
 
 namespace {
 
-std::string HoursMinutesString(int hr, int mn) {
+std::string HoursMinutesString(int hour, int minute) {
   std::stringstream ss;
-  ss << std::setfill('0') << std::setw(2) << hr << ":" << mn;
+  ss << std::setfill('0') << std::setw(2) << hour << ":" << minute;
   return ss.str();
 }
 
@@ -169,11 +169,11 @@ Station::Station() : Station(0x0000, Options()) {
 }
 
 Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
-  ps_(8), rt_(64), rt_ab_(0), pty_(0), is_tp_(false), is_ta_(false),
+  ps_(8), radiotext_(64), radiotext_ab_(0), pty_(0), is_tp_(false), is_ta_(false),
   is_music_(false), pin_(0), ecc_(0), cc_(0),
   tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
-  has_country_(false), oda_app_for_group_(), has_rt_plus_(false),
-  rt_plus_toggle_(false), rt_plus_item_running_(false),
+  has_country_(false), oda_app_for_group_(), has_radiotext_plus_(false),
+  radiotext_plus_toggle_(false), radiotext_plus_item_running_(false),
   last_block_had_pi_(false), alt_freq_list_(), pager_pac_(0), pager_opc_(0),
   pager_tng_(0), pager_ecc_(0), pager_ccf_(0), pager_interval_(0),
   writer_builder_(), json_()
@@ -260,7 +260,7 @@ void Station::UpdatePS(int pos, int char1, int char2) {
 }
 
 void Station::UpdateRadioText(int pos, int char1, int char2) {
-  rt_.set(pos, RDSChar(char1), RDSChar(char2));
+  radiotext_.set(pos, RDSChar(char1), RDSChar(char2));
 }
 
 void Station::DecodeBasics(const Group& group) {
@@ -429,35 +429,33 @@ void Station::DecodeType2(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  int rt_position = Bits(group.block(BLOCK2), 0, 4) *
+  int radiotext_position = Bits(group.block(BLOCK2), 0, 4) *
     (group.type().ab == VERSION_A ? 4 : 2);
-  int prev_textAB = rt_ab_;
-  rt_ab_          = Bits(group.block(BLOCK2), 4, 1);
+  int prev_text_ab = radiotext_ab_;
+  radiotext_ab_ = Bits(group.block(BLOCK2), 4, 1);
 
-  if (prev_textAB != rt_ab_)
-    rt_.clear();
-
-  std::string chars;
+  if (prev_text_ab != radiotext_ab_)
+    radiotext_.clear();
 
   if (group.type().ab == VERSION_A) {
-    rt_.resize(64);
-    UpdateRadioText(rt_position,
+    radiotext_.resize(64);
+    UpdateRadioText(radiotext_position,
                     Bits(group.block(BLOCK3), 8, 8),
                     Bits(group.block(BLOCK3), 0, 8));
   } else {
-    rt_.resize(32);
+    radiotext_.resize(32);
   }
 
   if (group.has(BLOCK4)) {
-    UpdateRadioText(rt_position + (group.type().ab == VERSION_A ? 2 : 0),
+    UpdateRadioText(radiotext_position + (group.type().ab == VERSION_A ? 2 : 0),
                     Bits(group.block(BLOCK4), 8, 8),
                     Bits(group.block(BLOCK4), 0, 8));
   }
 
-  if (rt_.complete())
-    json_["radiotext"] = rt_.last_complete_string_trimmed();
-  else if (options_.show_partial && rt_.trimmed_string().length() > 0)
-    json_["partial_radiotext"] = rt_.trimmed_string();
+  if (radiotext_.complete())
+    json_["radiotext"] = radiotext_.last_complete_string_trimmed();
+  else if (options_.show_partial && radiotext_.trimmed_string().length() > 0)
+    json_["partial_radiotext"] = radiotext_.trimmed_string();
 }
 
 // Group 3A: Application identification for Open Data
@@ -484,10 +482,10 @@ void Station::DecodeType3A(const Group& group) {
     json_["debug"].append("redsea compiled without TMC support");
 #endif
   } else if (oda_aid == 0x4BD7) {
-    has_rt_plus_ = true;
-    rt_plus_cb_ = Bits(group.block(BLOCK3), 12, 1);
-    rt_plus_scb_ = Bits(group.block(BLOCK3), 8, 4);
-    rt_plus_template_num_ = Bits(group.block(BLOCK3), 0, 8);
+    has_radiotext_plus_ = true;
+    radiotext_plus_cb_ = Bits(group.block(BLOCK3), 12, 1);
+    radiotext_plus_scb_ = Bits(group.block(BLOCK3), 8, 4);
+    radiotext_plus_template_num_ = Bits(group.block(BLOCK3), 0, 8);
   } else {
     json_["debug"].append("TODO: Unimplemented ODA app " +
         std::to_string(oda_aid));
@@ -500,48 +498,51 @@ void Station::DecodeType4A(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  int mjd = (Bits(group.block(BLOCK2), 0, 2) << 15) +
+  int modified_julian_date = (Bits(group.block(BLOCK2), 0, 2) << 15) +
              Bits(group.block(BLOCK3), 1, 15);
-  double lto = 0.0;
+  double local_offset = 0.0;
 
   if (group.has(BLOCK4)) {
-    lto = (Bits(group.block(BLOCK4), 5, 1) ? -1 : 1) *
+    local_offset = (Bits(group.block(BLOCK4), 5, 1) ? -1 : 1) *
            Bits(group.block(BLOCK4), 0, 5) / 2.0;
-    mjd = mjd + lto / 24.0;
+    modified_julian_date += local_offset / 24.0;
   }
 
-  int yr = (mjd - 15078.2) / 365.25;
-  int mo = (mjd - 14956.1 - std::trunc(yr * 365.25)) / 30.6001;
-  int dy = mjd - 14956 - std::trunc(yr * 365.25) - std::trunc(mo * 30.6001);
-  if (mo == 14 || mo == 15) {
-    yr += 1;
-    mo -= 12;
+  int year = (modified_julian_date - 15078.2) / 365.25;
+  int month = (modified_julian_date - 14956.1 -
+              std::trunc(year * 365.25)) / 30.6001;
+  int day = modified_julian_date - 14956 - std::trunc(year * 365.25) -
+            std::trunc(month * 30.6001);
+  if (month == 14 || month == 15) {
+    year += 1;
+    month -= 12;
   }
-  yr += 1900;
-  mo -= 1;
+  year += 1900;
+  month -= 1;
 
   if (group.has(BLOCK4)) {
-    int lto_min = (lto - std::trunc(lto)) * 60;
+    int local_offset_min = (local_offset - std::trunc(local_offset)) * 60;
 
-    int hr = static_cast<int>((Bits(group.block(BLOCK3), 0, 1) << 4) +
-        Bits(group.block(BLOCK4), 12, 14) + lto) % 24;
-    int mn = Bits(group.block(BLOCK4), 6, 6) + lto_min;
+    int hour = static_cast<int>((Bits(group.block(BLOCK3), 0, 1) << 4) +
+        Bits(group.block(BLOCK4), 12, 14) + local_offset) % 24;
+    int minute = Bits(group.block(BLOCK4), 6, 6) + local_offset_min;
 
-    if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31 && hr >= 0 && hr <= 23 &&
-        mn >= 0 && mn <= 59 && fabs(std::trunc(lto)) <= 13.0) {
-      char buff[100];
-      int lto_hour = fabs(std::trunc(lto));
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 &&
+        hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 &&
+        fabs(std::trunc(local_offset)) <= 13.0) {
+      char buffer[100];
+      int local_offset_hour = fabs(std::trunc(local_offset));
 
-      if (lto_hour == 0 && lto_min == 0) {
-        snprintf(buff, sizeof(buff), "%04d-%02d-%02dT%02d:%02d:00Z",
-                 yr, mo, dy, hr, mn);
+      if (local_offset_hour == 0 && local_offset_min == 0) {
+        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00Z",
+                 year, month, day, hour, minute);
       } else {
-        snprintf(buff, sizeof(buff),
+        snprintf(buffer, sizeof(buffer),
                  "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
-                 yr, mo, dy, hr, mn, lto > 0 ? "+" : "-", lto_hour,
-                 abs(lto_min));
+                 year, month, day, hour, minute, local_offset > 0 ? "+" : "-",
+                 local_offset_hour, abs(local_offset_min));
       }
-      clock_time_ = buff;
+      clock_time_ = std::string(buffer);
       json_["clock_time"] = clock_time_;
     } else {
       json_["debug"].append("invalid date/time");
@@ -679,10 +680,11 @@ void Station::ParseRadioTextPlus(const Group& group) {
   bool item_toggle  = Bits(group.block(BLOCK2), 4, 1);
   bool item_running = Bits(group.block(BLOCK2), 3, 1);
 
-  if (item_toggle != rt_plus_toggle_ || item_running != rt_plus_item_running_) {
-    rt_.clear();
-    rt_plus_toggle_ = item_toggle;
-    rt_plus_item_running_ = item_running;
+  if (item_toggle != radiotext_plus_toggle_ ||
+      item_running != radiotext_plus_item_running_) {
+    radiotext_.clear();
+    radiotext_plus_toggle_ = item_toggle;
+    radiotext_plus_item_running_ = item_running;
   }
 
   json_["radiotext_plus"]["item_running"] = item_running;
@@ -701,9 +703,9 @@ void Station::ParseRadioTextPlus(const Group& group) {
 
   for (RTPlusTag tag : tags) {
     std::string text =
-      rt_.last_complete_string_trimmed(tag.start, tag.length);
+      radiotext_.last_complete_string_trimmed(tag.start, tag.length);
 
-    if (rt_.has_chars(tag.start, tag.length) && text.length() > 0 &&
+    if (radiotext_.has_chars(tag.start, tag.length) && text.length() > 0 &&
         tag.content_type != 0)
       json_["radiotext_plus"][RTPlusContentTypeString(tag.content_type)] =
           text;
