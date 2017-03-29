@@ -87,11 +87,7 @@ class Station {
   Station();
   Station(uint16_t pi, Options options);
   void UpdateAndPrint(const Group& group, std::ostream* stream);
-  bool has_ps() const;
-  std::string ps() const;
-  std::string rt() const;
   uint16_t pi() const;
-  std::string country_code() const;
 
  private:
   void DecodeBasics(const Group& group);

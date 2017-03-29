@@ -230,24 +230,8 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
   *stream << std::endl;
 }
 
-bool Station::has_ps() const {
-  return ps_.complete();
-}
-
-std::string Station::ps() const {
-  return ps_.last_complete_string();
-}
-
-std::string Station::rt() const {
-  return rt_.last_complete_string();
-}
-
 uint16_t Station::pi() const {
   return pi_;
-}
-
-std::string Station::country_code() const {
-  return CountryString(pi_, ecc_);
 }
 
 void Station::UpdatePS(int pos, int char1, int char2) {
