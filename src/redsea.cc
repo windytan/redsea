@@ -35,7 +35,7 @@ void PrintUsage() {
      "                       decoded groups to stderr\n"
      "-h, --input-hex        Input is hex groups in the RDS Spy format\n"
      "-x, --output-hex       Output is hex groups in the RDS Spy format\n"
-     "-p. --show-partial     Display PS and RadioText before completely\n"
+     "-p, --show-partial     Display PS and RadioText before completely\n"
      "                       received (as partial_ps, partial_radiotext)\n"
      "-u, --rbds             Use RBDS (North American) program types\n"
      "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
