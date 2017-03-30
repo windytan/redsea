@@ -26,8 +26,8 @@ namespace tmc {
 namespace {
 
 std::map<uint16_t, Event> g_event_data;
-std::map<uint16_t, std::string> g_suppl_data;
-LocationDatabase g_locdb;
+std::map<uint16_t, std::string> g_supplementary_data;
+LocationDatabase g_location_database;
 
 uint16_t PopBits(std::deque<int>* bit_deque, int len) {
   uint16_t result = 0x00;
@@ -324,7 +324,7 @@ void LoadEventData() {
     uint16_t code = std::stoi(fields[0]);
     std::string desc = fields[1];
 
-    g_suppl_data.insert({code, desc});
+    g_supplementary_data.insert({code, desc});
   }
 }
 
@@ -407,7 +407,7 @@ bool IsValidEventCode(uint16_t code) {
 }
 
 bool IsValidSupplementaryCode(uint16_t code) {
-  return g_suppl_data.count(code) != 0;
+  return g_supplementary_data.count(code) != 0;
 }
 
 }  // namespace
@@ -422,12 +422,12 @@ Event getEvent(uint16_t code) {
 TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
     has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
     service_key_table_(LoadServiceKeyTable()), ps_(8) {
-  if (!options.loctable_dir.empty() && g_locdb.ltn == 0) {
-    g_locdb = LoadLocationDatabase(options.loctable_dir);
+  if (!options.loctable_dir.empty() && g_location_database.ltn == 0) {
+    g_location_database = LoadLocationDatabase(options.loctable_dir);
     if (options.feed_thru)
-      std::cerr << g_locdb;
+      std::cerr << g_location_database;
     else
-      std::cout << g_locdb;
+      std::cout << g_location_database;
   }
 }
 
@@ -529,7 +529,7 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
       if (!message.json().empty()) {
         (*jsroot)["tmc"]["message"] = message.json();
-        DecodeLocation(g_locdb, ltn_, jsroot);
+        DecodeLocation(g_location_database, ltn_, jsroot);
       }
 
     // Part of multi-group message
@@ -542,7 +542,7 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
          * TODO 15-second limit */
         if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
-          DecodeLocation(g_locdb, ltn_, jsroot);
+          DecodeLocation(g_location_database, ltn_, jsroot);
         }
         message_ = Message(is_encrypted_);
       }
@@ -555,7 +555,7 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
 
         if (!message_.json().empty()) {
           (*jsroot)["tmc"]["message"] = message_.json();
-          DecodeLocation(g_locdb, ltn_, jsroot);
+          DecodeLocation(g_location_database, ltn_, jsroot);
         }
         message_ = Message(is_encrypted_);
       }
@@ -764,15 +764,15 @@ Json::Value Message::json() const {
 
   std::vector<std::string> sentences;
   for (size_t i=0; i < events_.size(); i++) {
-    std::string desc;
+    std::string description;
     if (IsValidEventCode(events_[i])) {
       Event event = getEvent(events_[i]);
       if (quantifiers_.count(i) == 1) {
-        desc = DescriptionWithQuantifier(event, quantifiers_.at(i));
+        description = DescriptionWithQuantifier(event, quantifiers_.at(i));
       } else {
-        desc = event.description;
+        description = event.description;
       }
-      sentences.push_back(ucfirst(desc));
+      sentences.push_back(ucfirst(description));
     }
   }
 
@@ -781,7 +781,7 @@ Json::Value Message::json() const {
 
   for (uint16_t code : supplementary_) {
     if (IsValidSupplementaryCode(code))
-      sentences.push_back(ucfirst(g_suppl_data.find(code)->second));
+      sentences.push_back(ucfirst(g_supplementary_data.find(code)->second));
   }
 
   if (!sentences.empty())

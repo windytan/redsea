@@ -33,7 +33,7 @@ class BlockStream {
   unsigned bitcount_;
   unsigned prevbitcount_;
   int left_to_read_;
-  uint32_t wideblock_;
+  uint32_t padded_block_;
   unsigned prevsync_;
   unsigned block_counter_;
   eOffset expected_offset_;

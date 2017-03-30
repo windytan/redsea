@@ -41,13 +41,13 @@ uint32_t CalcSyndrome(uint32_t vec) {
   return MatrixMultiply(vec, parity_check_matrix);
 }
 
-eOffset nextOffsetFor(eOffset o) {
+eOffset nextOffsetFor(eOffset this_offset) {
   static const std::map<eOffset, eOffset> next_offset({
       {OFFSET_A, OFFSET_B}, {OFFSET_B, OFFSET_C},
-      {OFFSET_C, OFFSET_D}, {OFFSET_CI, OFFSET_D},
+      {OFFSET_C, OFFSET_D}, {OFFSET_C_PRIME, OFFSET_D},
       {OFFSET_D, OFFSET_A}, {OFFSET_INVALID, OFFSET_A}
   });
-  return next_offset.at(o);
+  return next_offset.at(this_offset);
 }
 
 // Precompute mapping of syndromes to error vectors
@@ -60,12 +60,12 @@ std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
     // restricted by attempting to correct bursts of errors spanning one or two
     // bits."
     // Kopitz & Marks 1999: "RDS: The Radio Data System", p. 224
-    for (uint32_t e : {0x1, 0x3}) {
+    for (uint32_t error_bits : {0x1, 0x3}) {
       for (int shift=0; shift < 26; shift++) {
-        uint32_t errvec = ((e << shift) & kBitmask26);
+        uint32_t error_vector = ((error_bits << shift) & kBitmask26);
 
-        uint32_t sy = CalcSyndrome(errvec ^ offset_words[o]);
-        result.insert({{sy, o}, errvec});
+        uint32_t syndrome = CalcSyndrome(error_vector ^ offset_words[offset]);
+        result.insert({{syndrome, offset}, error_vector});
       }
     }
   }
@@ -75,7 +75,7 @@ std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
 eOffset OffsetForSyndrome(uint16_t syndrome) {
   static const std::map<uint16_t, eOffset> offset_syndromes =
     {{0x3D8, OFFSET_A},  {0x3D4, OFFSET_B}, {0x25C, OFFSET_C},
-     {0x3CC, OFFSET_CI}, {0x258, OFFSET_D}};
+     {0x3CC, OFFSET_C_PRIME}, {0x258, OFFSET_D}};
 
   if (offset_syndromes.count(syndrome) > 0)
     return offset_syndromes.at(syndrome);
@@ -100,7 +100,7 @@ uint32_t CorrectBurstErrors(uint32_t block, eOffset offset) {
 }
 
 BlockStream::BlockStream(Options options) : bitcount_(0),
-  prevbitcount_(0), left_to_read_(0), wideblock_(0), prevsync_(0),
+  prevbitcount_(0), left_to_read_(0), padded_block_(0), prevsync_(0),
   block_counter_(0), expected_offset_(OFFSET_A),
   received_offset_(OFFSET_INVALID), pi_(0), is_in_sync_(false),
   block_has_errors_(50),
@@ -155,8 +155,8 @@ bool BlockStream::AcquireSync() {
     int dist = bitcount_ - prevbitcount_;
 
     if (dist % 26 == 0 && dist <= 156 &&
-        (block_number_for_offset[prevsync_] + dist/26) % 4 ==
-        block_number_for_offset[received_offset_]) {
+        (g_block_number_for_offset[prevsync_] + dist/26) % 4 ==
+        g_block_number_for_offset[received_offset_]) {
       is_in_sync_ = true;
       expected_offset_ = received_offset_;
     } else {
@@ -177,13 +177,13 @@ Group BlockStream::NextGroup() {
 
     // Read from radio
     for (int i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++) {
-      wideblock_ = (wideblock_ << 1) + NextBit();
+      padded_block_ = (padded_block_ << 1) + NextBit();
     }
 
     left_to_read_ = 26;
-    wideblock_ &= kBitmask28;
+    padded_block_ &= kBitmask28;
 
-    uint32_t block = (wideblock_ >> 1) & kBitmask26;
+    uint32_t block = (padded_block_ >> 1) & kBitmask26;
     uint16_t message = block >> 10;
 
     received_offset_ = OffsetForSyndrome(CalcSyndrome(block));
@@ -192,28 +192,25 @@ Group BlockStream::NextGroup() {
       continue;
 
     block_counter_++;
-    bool was_valid_word = true;
 
-    if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_CI)
-      expected_offset_ = OFFSET_CI;
+    if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_C_PRIME)
+      expected_offset_ = OFFSET_C_PRIME;
 
     block_has_errors_[block_counter_ % block_has_errors_.size()] = false;
 
     if (received_offset_ != expected_offset_) {
       block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 
-      was_valid_word = false;
-
       // Detect & correct clock slips (Section C.1.2)
       if (expected_offset_ == OFFSET_A && pi_ != 0 &&
-          ((wideblock_ >> 12) & kBitmask16) == pi_) {
+          ((padded_block_ >> 12) & kBitmask16) == pi_) {
         message = pi_;
-        wideblock_ >>= 1;
+        padded_block_ >>= 1;
         received_offset_ = OFFSET_A;
       } else if (expected_offset_ == OFFSET_A && pi_ != 0 &&
-          ((wideblock_ >> 10) & kBitmask16) == pi_) {
+          ((padded_block_ >> 10) & kBitmask16) == pi_) {
         message = pi_;
-        wideblock_ = (wideblock_ << 1) + NextBit();
+        padded_block_ = (padded_block_ << 1) + NextBit();
         received_offset_ = OFFSET_A;
         left_to_read_ = 25;
       } else {
@@ -240,10 +237,10 @@ Group BlockStream::NextGroup() {
     // Error-free block received
 
     if (received_offset_ == expected_offset_) {
-      if (expected_offset_ == OFFSET_CI)
-        group.set_ci(message);
+      if (expected_offset_ == OFFSET_C_PRIME)
+        group.set_c_prime(message);
       else
-        group.set(block_number_for_offset[expected_offset_], message);
+        group.set(g_block_number_for_offset[expected_offset_], message);
 
       if (group.has_pi())
         pi_ = group.pi();

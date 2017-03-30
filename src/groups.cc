@@ -36,45 +36,50 @@ void PrintHexGroup(const Group& group, std::ostream* stream) {
   if (group.empty())
     return;
 
-  for (eBlockNumber blocknum : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
-    if (group.has(blocknum))
-      *stream << std::hex << std::setw(4) << group.block(blocknum);
+  for (eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
+    if (group.has(block_num))
+      *stream << std::hex << std::setw(4) << group.block(block_num);
     else
       *stream << "----";
 
-    if (blocknum != BLOCK4)
+    if (block_num != BLOCK4)
       *stream << " ";
   }
 
   *stream << std::endl;
 }
 
-GroupType::GroupType(uint16_t type_code) : num((type_code >> 1) & 0xF),
-  ab((type_code & 0x1) == 0 ? VERSION_A : VERSION_B) {}
-GroupType::GroupType(const GroupType& obj) : num(obj.num), ab(obj.ab) {}
+GroupType::GroupType(uint16_t type_code) :
+  number((type_code >> 1) & 0xF),
+  version((type_code & 0x1) == 0 ? VERSION_A : VERSION_B) {}
+GroupType::GroupType(const GroupType& type) :
+  number(type.number),
+  version(type.version) {}
 
 std::string GroupType::str() const {
-  return std::string(std::to_string(num) + (ab == VERSION_A ? "A" : "B"));
+  return std::string(std::to_string(number) +
+         (version == VERSION_A ? "A" : "B"));
 }
 
-bool operator==(const GroupType& obj1, const GroupType& obj2) {
-  return (obj1.num == obj2.num && obj1.ab == obj2.ab);
+bool operator==(const GroupType& type1, const GroupType& type2) {
+  return type1.number == type2.number && type1.version == type2.version;
 }
 
-bool operator<(const GroupType& obj1, const GroupType& obj2) {
-  return ((obj1.num < obj2.num) || (obj1.ab < obj2.ab));
+bool operator<(const GroupType& type1, const GroupType& type2) {
+  return (type1.number < type2.number) ||
+         (type1.number == type2.number && type1.version < type2.version);
 }
 
 Group::Group() : has_block_({false, false, false, false, false}), block_(5),
-                 has_type_(false), has_pi_(false), has_ci_(false) {
+                 has_type_(false), has_pi_(false), has_c_prime_(false) {
 }
 
-uint16_t Group::block(eBlockNumber n) const {
-  return block_.at(n);
+uint16_t Group::block(eBlockNumber block_num) const {
+  return block_.at(block_num);
 }
 
-bool Group::has(eBlockNumber n) const {
-  return has_block_.at(n);
+bool Group::has(eBlockNumber block_num) const {
+  return has_block_.at(block_num);
 }
 
 bool Group::empty() const {
@@ -97,36 +102,36 @@ bool Group::has_type() const {
   return has_type_;
 }
 
-void Group::set(eBlockNumber n, uint16_t data) {
-  block_[n] = data;
-  has_block_[n] = true;
+void Group::set(eBlockNumber block_num, uint16_t data) {
+  block_[block_num] = data;
+  has_block_[block_num] = true;
 
-  if (n == BLOCK1) {
+  if (block_num == BLOCK1) {
     pi_ = data;
     has_pi_ = true;
   }
 
-  if (n == BLOCK3 && has_ci_ && !has_pi_) {
+  if (block_num == BLOCK3 && has_c_prime_ && !has_pi_) {
     pi_ = data;
     has_pi_ = true;
   }
 
-  if (n == BLOCK4 && has_ci_ && !has_type_) {
+  if (block_num == BLOCK4 && has_c_prime_ && !has_type_) {
     GroupType potential_type(Bits(data, 11, 5));
-    if (potential_type.num == 15 && potential_type.ab == VERSION_B) {
+    if (potential_type.number == 15 && potential_type.version == VERSION_B) {
       type_ = potential_type;
       has_type_ = true;
     }
   }
 
-  if (n == BLOCK2) {
+  if (block_num == BLOCK2) {
     type_ = GroupType(Bits(data, 11, 5));
     has_type_ = true;
   }
 }
 
-void Group::set_ci(uint16_t data) {
-  has_ci_ = true;
+void Group::set_c_prime(uint16_t data) {
+  has_c_prime_ = true;
   set(BLOCK3, data);
 }
 
@@ -135,11 +140,11 @@ AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0),
 }
 
 void AltFreqList::insert(uint8_t af_code) {
-  CarrierFrequency freq(af_code, lf_mf_follows_);
+  CarrierFrequency frequency(af_code, lf_mf_follows_);
   lf_mf_follows_ = false;
 
-  if (freq.valid()) {
-    alt_freqs_.insert(freq);
+  if (frequency.valid()) {
+    alt_freqs_.insert(frequency);
   } else if (af_code == 205) {
     // filler
   } else if (af_code == 224) {
@@ -169,8 +174,8 @@ Station::Station() : Station(0x0000, Options()) {
 }
 
 Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
-  ps_(8), radiotext_(64), radiotext_ab_(0), pty_(0), is_tp_(false), is_ta_(false),
-  is_music_(false), pin_(0), ecc_(0), cc_(0),
+  ps_(8), radiotext_(64), radiotext_ab_(0), pty_(0), is_tp_(false),
+  is_ta_(false), is_music_(false), pin_(0), ecc_(0), cc_(0),
   tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
   has_country_(false), oda_app_for_group_(), has_radiotext_plus_(false),
   radiotext_plus_toggle_(false), radiotext_plus_item_running_(false),
@@ -203,23 +208,23 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
   DecodeBasics(group);
 
   if (group.has_type()) {
-    if      (group.type().num == 0)
+    if      (group.type().number == 0)
       DecodeType0(group);
-    else if (group.type().num == 1)
+    else if (group.type().number == 1)
       DecodeType1(group);
-    else if (group.type().num == 2)
+    else if (group.type().number == 2)
       DecodeType2(group);
-    else if (group.type().num == 3 && group.type().ab == VERSION_A)
+    else if (group.type().number == 3 && group.type().version == VERSION_A)
       DecodeType3A(group);
-    else if (group.type().num == 4 && group.type().ab == VERSION_A)
+    else if (group.type().number == 4 && group.type().version == VERSION_A)
       DecodeType4A(group);
-    else if (group.type().num == 14)
+    else if (group.type().number == 14)
       DecodeType14(group);
-    else if (group.type().num == 15 && group.type().ab == VERSION_B)
+    else if (group.type().number == 15 && group.type().version == VERSION_B)
       DecodeType15B(group);
     else if (oda_app_for_group_.count(group.type()) > 0)
       DecodeODAGroup(group);
-    else if (group.type().num == 6)
+    else if (group.type().number == 6)
       DecodeType6(group);
     else
       json_["debug"].append("TODO " + group.type().str());
@@ -255,7 +260,7 @@ void Station::DecodeBasics(const Group& group) {
     json_["group"] = group.type().str();
     json_["tp"] = is_tp_;
     json_["prog_type"] = PTYNameString(pty_, options_.rbds);
-  } else if (group.type().num == 15 && group.type().ab == VERSION_B &&
+  } else if (group.type().number == 15 && group.type().version == VERSION_B &&
       group.has(BLOCK4)) {
     is_tp_ = Bits(group.block(BLOCK4), 10, 1);
     pty_   = Bits(group.block(BLOCK4),  5, 5);
@@ -281,7 +286,7 @@ void Station::DecodeType0(const Group& group) {
   if (!group.has(BLOCK3))
     return;
 
-  if (group.type().ab == VERSION_A) {
+  if (group.type().version == VERSION_A) {
     alt_freq_list_.insert(Bits(group.block(BLOCK3), 8, 8));
     alt_freq_list_.insert(Bits(group.block(BLOCK3), 0, 8));
 
@@ -308,18 +313,18 @@ void Station::DecodeType1(const Group& group) {
   pin_ = group.block(BLOCK4);
 
   if (pin_ != 0x0000) {
-    uint16_t dy = Bits(pin_, 11, 5);
-    uint16_t hr = Bits(pin_, 6, 5);
-    uint16_t mn = Bits(pin_, 0, 6);
-    if (dy >= 1 && hr <= 24 && mn <= 59) {
-      json_["prog_item_started"]["day"] = dy;
-      json_["prog_item_started"]["time"] = HoursMinutesString(hr, mn);
+    uint16_t day    = Bits(pin_, 11, 5);
+    uint16_t hour   = Bits(pin_, 6, 5);
+    uint16_t minute = Bits(pin_, 0, 6);
+    if (day >= 1 && hour <= 24 && minute <= 59) {
+      json_["prog_item_started"]["day"] = day;
+      json_["prog_item_started"]["time"] = HoursMinutesString(hour, minute);
     } else {
       json_["debug"].append("invalid PIN");
     }
   }
 
-  if (group.type().ab == VERSION_A) {
+  if (group.type().version == VERSION_A) {
     pager_tng_ = Bits(group.block(BLOCK2), 2, 3);
     if (pager_tng_ != 0) {
       pager_interval_ = Bits(group.block(BLOCK2), 0, 2);
@@ -414,14 +419,14 @@ void Station::DecodeType2(const Group& group) {
     return;
 
   int radiotext_position = Bits(group.block(BLOCK2), 0, 4) *
-    (group.type().ab == VERSION_A ? 4 : 2);
+    (group.type().version == VERSION_A ? 4 : 2);
   int prev_text_ab = radiotext_ab_;
   radiotext_ab_ = Bits(group.block(BLOCK2), 4, 1);
 
   if (prev_text_ab != radiotext_ab_)
     radiotext_.clear();
 
-  if (group.type().ab == VERSION_A) {
+  if (group.type().version == VERSION_A) {
     radiotext_.resize(64);
     UpdateRadioText(radiotext_position,
                     Bits(group.block(BLOCK3), 8, 8),
@@ -431,7 +436,8 @@ void Station::DecodeType2(const Group& group) {
   }
 
   if (group.has(BLOCK4)) {
-    UpdateRadioText(radiotext_position + (group.type().ab == VERSION_A ? 2 : 0),
+    UpdateRadioText(radiotext_position +
+                    (group.type().version == VERSION_A ? 2 : 0),
                     Bits(group.block(BLOCK4), 8, 8),
                     Bits(group.block(BLOCK4), 0, 8));
   }
@@ -447,33 +453,33 @@ void Station::DecodeType3A(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  if (group.type().ab != VERSION_A)
+  if (group.type().version != VERSION_A)
     return;
 
   GroupType oda_group_type(Bits(group.block(BLOCK2), 0, 5));
-  uint16_t oda_msg = group.block(BLOCK3);
-  uint16_t oda_aid = group.block(BLOCK4);
+  uint16_t oda_message = group.block(BLOCK3);
+  uint16_t oda_app_id  = group.block(BLOCK4);
 
-  oda_app_for_group_[oda_group_type] = oda_aid;
+  oda_app_for_group_[oda_group_type] = oda_app_id;
 
   json_["open_data_app"]["oda_group"] = oda_group_type.str();
-  json_["open_data_app"]["app_name"] = AppNameString(oda_aid);
+  json_["open_data_app"]["app_name"] = AppNameString(oda_app_id);
 
-  if (oda_aid == 0xCD46 || oda_aid == 0xCD47) {
+  if (oda_app_id == 0xCD46 || oda_app_id == 0xCD47) {
 #ifdef ENABLE_TMC
     tmc_.SystemGroup(group.block(BLOCK3), &json_);
 #else
     json_["debug"].append("redsea compiled without TMC support");
 #endif
-  } else if (oda_aid == 0x4BD7) {
+  } else if (oda_app_id == 0x4BD7) {
     has_radiotext_plus_ = true;
     radiotext_plus_cb_ = Bits(group.block(BLOCK3), 12, 1);
     radiotext_plus_scb_ = Bits(group.block(BLOCK3), 8, 4);
     radiotext_plus_template_num_ = Bits(group.block(BLOCK3), 0, 8);
   } else {
     json_["debug"].append("TODO: Unimplemented ODA app " +
-        std::to_string(oda_aid));
-    json_["open_data_app"]["message"] = oda_msg;
+        std::to_string(oda_app_id));
+    json_["open_data_app"]["message"] = oda_message;
   }
 }
 
@@ -538,7 +544,7 @@ void Station::DecodeType4A(const Group& group) {
 void Station::DecodeType6(const Group& group) {
   json_["in_house_data"].append(Bits(group.block(BLOCK2), 0, 5));
 
-  if (group.type().ab == VERSION_A) {
+  if (group.type().version == VERSION_A) {
     if (group.has(BLOCK3)) {
       json_["in_house_data"].append(Bits(group.block(BLOCK3), 0, 16));
       if (group.has(BLOCK4)) {
@@ -564,7 +570,7 @@ void Station::DecodeType14(const Group& group) {
 
   json_["other_network"]["tp"] = tp;
 
-  if (group.type().ab == VERSION_B) {
+  if (group.type().version == VERSION_B) {
     bool ta = Bits(group.block(BLOCK2), 3, 1);
     json_["other_network"]["ta"] = ta;
     return;
@@ -634,10 +640,10 @@ void Station::DecodeType14(const Group& group) {
 
 /* Group 15B: Fast basic tuning and switching information */
 void Station::DecodeType15B(const Group& group) {
-  eBlockNumber block = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
+  eBlockNumber block_num = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
 
-  is_ta_    = Bits(group.block(block), 4, 1);
-  is_music_ = Bits(group.block(block), 3, 1);
+  is_ta_    = Bits(group.block(block_num), 4, 1);
+  is_music_ = Bits(group.block(block_num), 3, 1);
 
   json_["ta"] = is_ta_;
   json_["is_music"] = is_music_;
@@ -648,14 +654,14 @@ void Station::DecodeODAGroup(const Group& group) {
   if (oda_app_for_group_.count(group.type()) == 0)
     return;
 
-  uint16_t aid = oda_app_for_group_[group.type()];
+  uint16_t app_id = oda_app_for_group_[group.type()];
 
-  if (aid == 0xCD46 || aid == 0xCD47) {
+  if (app_id == 0xCD46 || app_id == 0xCD47) {
 #ifdef ENABLE_TMC
     tmc_.UserGroup(Bits(group.block(BLOCK2), 0, 5), group.block(BLOCK3),
         group.block(BLOCK4), &json_);
 #endif
-  } else if (aid == 0x4BD7) {
+  } else if (app_id == 0x4BD7) {
     ParseRadioTextPlus(group);
   }
 }

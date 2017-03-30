@@ -27,7 +27,7 @@ enum eGroupTypeVersion {
 };
 
 enum eOffset {
-  OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D, OFFSET_INVALID
+  OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_C_PRIME, OFFSET_D, OFFSET_INVALID
 };
 
 class AltFreqList {
@@ -53,8 +53,8 @@ class GroupType {
 
   std::string str() const;
 
-  uint16_t num;
-  eGroupTypeVersion ab;
+  uint16_t number;
+  eGroupTypeVersion version;
 };
 
 bool operator<(const GroupType& obj1, const GroupType& obj2);
@@ -70,7 +70,7 @@ class Group {
   uint16_t pi() const;
   bool has_pi() const;
   void set(eBlockNumber blocknum, uint16_t data);
-  void set_ci(uint16_t data);
+  void set_c_prime(uint16_t data);
 
  private:
   GroupType type_;
@@ -79,7 +79,7 @@ class Group {
   std::vector<uint16_t> block_;
   bool has_type_;
   bool has_pi_;
-  bool has_ci_;
+  bool has_c_prime_;
 };
 
 class Station {
