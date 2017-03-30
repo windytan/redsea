@@ -11,9 +11,7 @@ const unsigned kBitmask16 = 0x000FFFF;
 const unsigned kBitmask26 = 0x3FFFFFF;
 const unsigned kBitmask28 = 0xFFFFFFF;
 
-const std::vector<uint16_t> offset_words =
-    {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
-const std::vector<eBlockNumber> block_number_for_offset =
+const eBlockNumber g_block_number_for_offset[5] =
     {BLOCK1, BLOCK2, BLOCK3, BLOCK3, BLOCK4};
 
 // Section B.1.1: '-- calculated by the modulo-two addition of all the rows of
@@ -55,7 +53,11 @@ eOffset nextOffsetFor(eOffset this_offset) {
 std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
   std::map<std::pair<uint16_t, eOffset>, uint32_t> result;
 
-  for (eOffset o : {OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_CI, OFFSET_D}) {
+  const std::vector<uint16_t> offset_words =
+      {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
+
+  for (eOffset offset : {OFFSET_A, OFFSET_B, OFFSET_C,
+                         OFFSET_C_PRIME, OFFSET_D}) {
     // "...the error-correction system should be enabled, but should be
     // restricted by attempting to correct bursts of errors spanning one or two
     // bits."
