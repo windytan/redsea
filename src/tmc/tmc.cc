@@ -48,7 +48,7 @@ uint16_t rotl16(uint16_t value, unsigned int count) {
 }
 
 // label, field_data (ISO 14819-1: 5.5)
-std::vector<FreeformField> getFreeformFields(
+std::vector<FreeformField> GetFreeformFields(
     const std::vector<MessagePart>& parts) {
   static const std::vector<int> field_size(
       {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
@@ -58,7 +58,7 @@ std::vector<FreeformField> getFreeformFields(
   // Concatenate freeform data from used message length (derived from
   // GSI of second group)
   std::deque<int> freeform_data_bits;
-  for (size_t i=1; i < parts.size(); i++) {
+  for (size_t i = 1; i < parts.size(); i++) {
     if (!parts[i].is_received)
       break;
 
@@ -650,7 +650,7 @@ void Message::DecodeMulti() {
 
   // Subsequent parts
   if (parts_[1].is_received) {
-    for (FreeformField field : getFreeformFields(parts_)) {
+    for (FreeformField field : GetFreeformFields(parts_)) {
       if (field.label == kLabelDuration) {
         duration_ = field.data;
 
@@ -791,7 +791,7 @@ Json::Value Message::json() const {
   json["direction"] =
       directionality_ == kSingleDirection ? "single" : "both";
 
-  json["extent"] = (direction_ ? "-" : "+") +
+  json["extent"] = (direction_ == kNegativeDirection ? "-" : "+") +
       std::to_string(extent_);
 
   if (has_time_starts_)
