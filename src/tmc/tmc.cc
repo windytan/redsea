@@ -6,6 +6,7 @@
 #include <climits>
 #include <deque>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <regex>
 #include <sstream>
@@ -88,29 +89,26 @@ std::vector<FreeformField> getFreeformFields(
 }
 
 std::string TimeString(uint16_t field_data) {
-  std::string time_string("");
+  std::stringstream ss;
 
   if (field_data <= 95) {
-    char t[6];
-    std::snprintf(t, sizeof(t), "%02d:%02d", field_data/4, 15*(field_data % 4));
-    time_string = t;
+    ss << std::setfill('0') << std::setw(2) << (field_data / 4) << ":" <<
+       (15 * (field_data % 4));
 
   } else if (field_data <= 200) {
     int days = (field_data - 96) / 24;
     int hour = (field_data - 96) % 24;
-    char t[25];
     if (days == 0)
-      std::snprintf(t, sizeof(t), "at %02d:00", hour);
+      ss << "at " << std::setfill('0') << std::setw(2) << hour << ":00";
     else if (days == 1)
-      std::snprintf(t, sizeof(t), "after 1 day at %02d:00", hour);
+      ss << "after 1 day at " << std::setfill('0') << std::setw(2) << hour <<
+         ":00";
     else
-      std::snprintf(t, sizeof(t), "after %d days at %02d:00", days, hour);
-    time_string = t;
+      ss << "after " << days << " days at " << std::setfill('0') <<
+         std::setw(2) << hour << ":00";
 
   } else if (field_data <= 231) {
-    char t[20];
-    std::snprintf(t, sizeof(t), "day %d of the month", field_data-200);
-    time_string = t;
+    ss << "day " << (field_data - 200) << " of the month";
 
   } else {
     int mo = (field_data-232) / 2;
@@ -120,11 +118,11 @@ std::string TimeString(uint16_t field_data) {
         "June", "July", "August", "September", "October", "November",
         "December"});
     if (mo < 12) {
-      time_string = (end_mid ? "end of " : "mid-") + month_names.at(mo);
+      ss << (end_mid ? "end of " : "mid-") + month_names.at(mo);
     }
   }
 
-  return time_string;
+  return ss.str();
 }
 
 std::vector<std::string> ScopeStrings(uint16_t mgs) {
@@ -156,21 +154,21 @@ uint16_t QuantifierSize(uint16_t code) {
 }
 
 std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
-  std::string q("(Q)");
-  std::regex q_re("\\(Q\\)");
+  std::string text("(Q)");
+  std::regex q_regex("\\(Q\\)");
 
   if (QuantifierSize(event.quantifier_type) == 5 && q_value == 0)
     q_value = 32;
 
   switch (event.quantifier_type) {
-    case Q_SMALL_NUMBER: {
+    case kQuantifierSmallNumber: {
       int num = q_value;
       if (num > 28)
         num += (num - 28);
-      q = std::to_string(num);
+      text = std::to_string(num);
       break;
     }
-    case Q_NUMBER: {
+    case kQuantifierNumber: {
       int num;
       if (q_value <= 4)
         num = q_value;
@@ -178,45 +176,45 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
         num = (q_value - 4) * 10;
       else
         num = (q_value - 12) * 50;
-      q = std::to_string(num);
+      text = std::to_string(num);
       break;
     }
-    case Q_LESS_THAN_METRES: {
-      q = "less than " + std::to_string(q_value * 10) + " metres";
+    case kQuantifierLessThanMetres: {
+      text = "less than " + std::to_string(q_value * 10) + " metres";
       break;
     }
-    case Q_PERCENT: {
-      q = std::to_string(q_value == 32 ? 0 : q_value * 5) + " %";
+    case kQuantifierPercent: {
+      text = std::to_string(q_value == 32 ? 0 : q_value * 5) + " %";
       break;
     }
-    case Q_UPTO_KMH: {
-      q = "of up to " + std::to_string(q_value * 5) + " km/h";
+    case kQuantifierUptoKmh: {
+      text = "of up to " + std::to_string(q_value * 5) + " km/h";
       break;
     }
-    case Q_UPTO_TIME: {
+    case kQuantifierUptoTime: {
       if (q_value <= 10)
-        q = "of up to " + std::to_string(q_value * 5) + " minutes";
+        text = "of up to " + std::to_string(q_value * 5) + " minutes";
       else if (q_value <= 22)
-        q = "of up to " + std::to_string(q_value - 10) + " hours";
+        text = "of up to " + std::to_string(q_value - 10) + " hours";
       else
-        q = "of up to " + std::to_string((q_value - 20) * 6) + " hours";
+        text = "of up to " + std::to_string((q_value - 20) * 6) + " hours";
       break;
     }
-    case Q_DEG_CELSIUS: {
-      q = std::to_string(q_value - 51) + " degrees Celsius";
+    case kQuantifierDegreesCelsius: {
+      text = std::to_string(q_value - 51) + " degrees Celsius";
       break;
     }
-    case Q_TIME: {
-      int m = (q_value - 1) * 10;
-      int h = m / 60;
-      m = m % 60;
+    case kQuantifierTime: {
+      int minute = (q_value - 1) * 10;
+      int hour = minute / 60;
+      minute = minute % 60;
 
-      char t[6];
-      std::snprintf(t, sizeof(t), "%02d:%02d", m, h);
-      q = t;
+      char buffer[6];
+      std::snprintf(buffer, sizeof(buffer), "%02d:%02d", minute, hour);
+      text = std::string(buffer);
       break;
     }
-    case Q_TONNES: {
+    case kQuantifierTonnes: {
       int decitonnes;
       if (q_value <= 100)
         decitonnes = q_value;
@@ -226,11 +224,11 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       int whole_tonnes = decitonnes / 10;
       decitonnes = decitonnes % 10;
 
-      q = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes) +
+      text = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes) +
         " tonnes";
       break;
     }
-    case Q_METRES: {
+    case kQuantifierMetres: {
       int decimetres;
       if (q_value <= 100)
         decimetres = q_value;
@@ -240,33 +238,33 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       int whole_metres = decimetres / 10;
       decimetres = decimetres % 10;
 
-      q = std::to_string(whole_metres) + "." + std::to_string(decimetres) +
+      text = std::to_string(whole_metres) + "." + std::to_string(decimetres) +
         " metres";
       break;
     }
-    case Q_UPTO_MILLIMETRES: {
-      q = "of up to " + std::to_string(q_value) + " millimetres";
+    case kQuantifierUptoMillimetres: {
+      text = "of up to " + std::to_string(q_value) + " millimetres";
       break;
     }
-    case Q_MHZ: {
+    case kQuantifierMHz: {
       CarrierFrequency freq(q_value);
-      q = freq.str();
+      text = freq.str();
       break;
     }
-    case Q_KHZ: {
+    case kQuantifierkHz: {
       CarrierFrequency freq(q_value, kFrequencyIsLFMF);
-      q = freq.str();
+      text = freq.str();
       break;
     }
     default: {
       //*stream_ << jsonVal("debug", "q_value =" + std::to_string(q_value) +
       //    ", q_type=" + std::to_string(event.quantifier_type));
-      q = "TODO";
+      text = "TODO";
     }
   }
 
   std::string desc = std::regex_replace(event.description_with_quantifier,
-      q_re, q);
+      q_regex, text);
   return desc;
 }
 
@@ -286,29 +284,29 @@ void LoadEventData() {
       event.description_with_quantifier = row.at("Description with Q");
 
       if (row.at("N").compare("F") == 0)
-        event.nature = EVENT_FORECAST;
+        event.nature = kForecastEvent;
       else if (row.at("N").compare("S") == 0)
-        event.nature = EVENT_SILENT;
+        event.nature = kSilentEvent;
 
       if (!row.at("Q").empty())
         event.quantifier_type = std::stoi(row.at("Q"));
       event.allows_quantifier = !event.description_with_quantifier.empty();
 
       if (row.at("U").compare("U") == 0)
-        event.urgency = URGENCY_U;
+        event.urgency = kUrgencyU;
       else if (row.at("U").compare("X") == 0)
-        event.urgency = URGENCY_X;
+        event.urgency = kUrgencyX;
 
       if (std::regex_match(row.at("T"), std::regex(".?D.?")))
-        event.duration_type = DURATION_DYNAMIC;
+        event.duration_type = kDurationDynamic;
       else if (std::regex_match(row.at("T"), std::regex(".?L.?")))
-        event.duration_type = DURATION_LASTING;
+        event.duration_type = kDurationLongerLasting;
 
       if (std::regex_match(row.at("T"), std::regex("\\(")))
         event.show_duration = false;
 
       if (!row.at("D").empty() && std::stoi(row.at("D")) == 2)
-        event.directionality = DIR_BOTH;
+        event.directionality = kBothDirections;
 
       event.update_class = std::stoi(row.at("C"));
 
@@ -353,14 +351,14 @@ std::map<uint16_t, ServiceKey> LoadServiceKeyTable() {
 }
 
 void DecodeLocation(const LocationDatabase& db, uint16_t ltn,
-                    Json::Value* jsroot) {
+                    Json::Value* jsonroot) {
 
   if (db.ltn != ltn || db.ltn == 0 ||
-      !(*jsroot)["tmc"]["message"].isMember("location"))
+      !(*jsonroot)["tmc"]["message"].isMember("location"))
     return;
 
-  uint16_t lcd = (*jsroot)["tmc"]["message"]["location"].asUInt();
-  int extent = std::stoi((*jsroot)["tmc"]["message"]["extent"].asString());
+  uint16_t lcd = (*jsonroot)["tmc"]["message"]["location"].asUInt();
+  int extent = std::stoi((*jsonroot)["tmc"]["message"]["extent"].asString());
   bool is_pos = (extent >= 0);
 
   if (db.points.count(lcd) > 0) {
@@ -375,28 +373,28 @@ void DecodeLocation(const LocationDatabase& db, uint16_t ltn,
     }
 
     for (int i=0; i < static_cast<int>(pts.size()); i++) {
-//        (*jsroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
-      (*jsroot)["tmc"]["message"]["coordinates"][i]["lat"] = pts[i].lat;
-      (*jsroot)["tmc"]["message"]["coordinates"][i]["lon"] = pts[i].lon;
+//        (*jsonroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
+      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lat"] = pts[i].lat;
+      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lon"] = pts[i].lon;
     }
 
     if (pts.size() > 1 && pts.at(0).name1.length() > 0 &&
         pts.at(pts.size()-1).name1.length() > 0) {
-      (*jsroot)["tmc"]["message"]["span_from"] = pts.at(0).name1;
-      (*jsroot)["tmc"]["message"]["span_to"] = pts.at(pts.size()-1).name1;
+      (*jsonroot)["tmc"]["message"]["span_from"] = pts.at(0).name1;
+      (*jsonroot)["tmc"]["message"]["span_to"] = pts.at(pts.size()-1).name1;
     }
     uint16_t roa_lcd = db.points.at(lcd).roa_lcd;
 //      uint16_t seg_lcd = db.points.at(lcd).seg_lcd;
-//      (*jsroot)["tmc"]["message"]["seg_lcd"] = seg_lcd;
-//      (*jsroot)["tmc"]["message"]["roa_lcd"] = roa_lcd;
+//      (*jsonroot)["tmc"]["message"]["seg_lcd"] = seg_lcd;
+//      (*jsonroot)["tmc"]["message"]["roa_lcd"] = roa_lcd;
     if (db.roads.count(roa_lcd) > 0) {
       Road road = db.roads.at(roa_lcd);
       if (!road.road_number.empty())
-        (*jsroot)["tmc"]["message"]["road_number"] = road.road_number;
+        (*jsonroot)["tmc"]["message"]["road_number"] = road.road_number;
       if (road.name.length() > 0)
-        (*jsroot)["tmc"]["message"]["road_name"] = road.name;
+        (*jsonroot)["tmc"]["message"]["road_name"] = road.name;
       else if (!db.points.at(lcd).road_name.empty())
-        (*jsroot)["tmc"]["message"]["road_name"] =
+        (*jsonroot)["tmc"]["message"]["road_name"] =
             db.points.at(lcd).road_name;
     }
   }
@@ -431,7 +429,7 @@ TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
   }
 }
 
-void TMC::SystemGroup(uint16_t message, Json::Value* jsroot) {
+void TMC::SystemGroup(uint16_t message, Json::Value* jsonroot) {
   if (Bits(message, 14, 1) == 0) {
     if (g_event_data.empty())
       LoadEventData();
@@ -440,25 +438,25 @@ void TMC::SystemGroup(uint16_t message, Json::Value* jsroot) {
     uint16_t ltn = Bits(message, 6, 6);
 
     is_encrypted_ = (ltn == 0);
-    (*jsroot)["tmc"]["system_info"]["is_encrypted"] = is_encrypted_;
+    (*jsonroot)["tmc"]["system_info"]["is_encrypted"] = is_encrypted_;
 
     if (!is_encrypted_) {
       ltn_ = ltn;
-      (*jsroot)["tmc"]["system_info"]["location_table"] = ltn_;
+      (*jsonroot)["tmc"]["system_info"]["location_table"] = ltn_;
     }
 
     bool afi   = Bits(message, 5, 1);
     //bool m     = Bits(message, 4, 1);
     bool mgs   = Bits(message, 0, 4);
 
-    (*jsroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
+    (*jsonroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
 
     for (std::string s : ScopeStrings(mgs))
-      (*jsroot)["tmc"]["system_info"]["scope"].append(s);
+      (*jsonroot)["tmc"]["system_info"]["scope"].append(s);
   }
 }
 
-void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
+void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
 
   if (!is_initialized_)
     return;
@@ -472,9 +470,9 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
     ltn_   = Bits(z, 10, 6);
     has_encid_ = true;
 
-    (*jsroot)["tmc"]["encryption_info"]["service_id"] = sid_;
-    (*jsroot)["tmc"]["encryption_info"]["encryption_id"] = encid_;
-    (*jsroot)["tmc"]["system_info"]["location_table"] = ltn_;
+    (*jsonroot)["tmc"]["encryption_info"]["service_id"] = sid_;
+    (*jsonroot)["tmc"]["encryption_info"]["encryption_id"] = encid_;
+    (*jsonroot)["tmc"]["system_info"]["location_table"] = ltn_;
 
   // Tuning information
   } else if (t) {
@@ -490,7 +488,7 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
       ps_.set(pos+3, RDSChar(Bits(z, 0, 8)));
 
       if (ps_.complete())
-        (*jsroot)["tmc"]["service_provider"] = ps_.last_complete_string();
+        (*jsonroot)["tmc"]["service_provider"] = ps_.last_complete_string();
 
     } else if (variant == 9) {
 
@@ -499,15 +497,15 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
       uint16_t on_mgs = Bits(y, 6, 4);
       uint16_t on_ltn = Bits(y, 10, 6);
 
-      (*jsroot)["tmc"]["other_network"]["pi"] = HexString(on_pi, 4);
-      (*jsroot)["tmc"]["other_network"]["service_id"] = on_sid;
-      (*jsroot)["tmc"]["other_network"]["location_table"] = on_ltn;
+      (*jsonroot)["tmc"]["other_network"]["pi"] = HexString(on_pi, 4);
+      (*jsonroot)["tmc"]["other_network"]["service_id"] = on_sid;
+      (*jsonroot)["tmc"]["other_network"]["location_table"] = on_ltn;
 
       for (std::string s : ScopeStrings(on_mgs))
-        (*jsroot)["tmc"]["other_network"]["scope"].append(s);
+        (*jsonroot)["tmc"]["other_network"]["scope"].append(s);
 
     } else {
-      (*jsroot)["debug"].append("TODO: TMC tuning info variant " +
+      (*jsonroot)["debug"].append("TODO: TMC tuning info variant " +
           std::to_string(variant));
     }
 
@@ -528,8 +526,8 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
         message.Decrypt(service_key_table_[encid_]);
 
       if (!message.json().empty()) {
-        (*jsroot)["tmc"]["message"] = message.json();
-        DecodeLocation(g_location_database, ltn_, jsroot);
+        (*jsonroot)["tmc"]["message"] = message.json();
+        DecodeLocation(g_location_database, ltn_, jsonroot);
       }
 
     // Part of multi-group message
@@ -541,8 +539,8 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
         /* Message changed; print previous unfinished message
          * TODO 15-second limit */
         if (!message_.json().empty()) {
-          (*jsroot)["tmc"]["message"] = message_.json();
-          DecodeLocation(g_location_database, ltn_, jsroot);
+          (*jsonroot)["tmc"]["message"] = message_.json();
+          DecodeLocation(g_location_database, ltn_, jsonroot);
         }
         message_ = Message(is_encrypted_);
       }
@@ -554,8 +552,8 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsroot) {
           message_.Decrypt(service_key_table_[encid_]);
 
         if (!message_.json().empty()) {
-          (*jsroot)["tmc"]["message"] = message_.json();
-          DecodeLocation(g_location_database, ltn_, jsroot);
+          (*jsonroot)["tmc"]["message"] = message_.json();
+          DecodeLocation(g_location_database, ltn_, jsonroot);
         }
         message_ = Message(is_encrypted_);
       }
@@ -571,7 +569,7 @@ Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
     has_length_affected_(false),
     length_affected_(0), has_time_until_(false), time_until_(0),
     has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
-    speed_limit_(0), directionality_(DIR_SINGLE), urgency_(URGENCY_NONE),
+    speed_limit_(0), directionality_(kSingleDirection), urgency_(kUrgencyNone),
     continuity_index_(0), parts_(5) {
 }
 
@@ -602,11 +600,11 @@ void Message::PushSingle(uint16_t x, uint16_t y, uint16_t z) {
 
 void Message::PushMulti(uint16_t x, uint16_t y, uint16_t z) {
 
-  uint16_t new_ci = Bits(x, 0, 3);
-  if (continuity_index_ != new_ci && continuity_index_ != 0) {
+  uint16_t new_continuity_index = Bits(x, 0, 3);
+  if (continuity_index_ != new_continuity_index && continuity_index_ != 0) {
     //*stream_ << jsonVal("debug", "ERR: wrong continuity index!");
   }
-  continuity_index_ = new_ci;
+  continuity_index_ = new_continuity_index;
   bool is_first_group = Bits(y, 15, 1);
   int current_group;
   int group_sequence_indicator = -1;
@@ -653,46 +651,41 @@ void Message::DecodeMulti() {
   // Subsequent parts
   if (parts_[1].is_received) {
     for (FreeformField field : getFreeformFields(parts_)) {
-      // Duration
-      if (field.label == 0) {
+      if (field.label == kLabelDuration) {
         duration_ = field.data;
 
-        // Control code
-      } else if (field.label == 1) {
-        if (field.data == 0) {
+      } else if (field.label == kLabelControlCode) {
+        if (field.data == kControlIncreaseUrgency) {
           urgency_ = (urgency_ + 1) % 3;
-        } else if (field.data == 1) {
-          if (urgency_ == URGENCY_NONE)
-            urgency_ = URGENCY_X;
+        } else if (field.data == kControlReduceUrgency) {
+          if (urgency_ == kUrgencyNone)
+            urgency_ = kUrgencyX;
           else
             urgency_--;
-        } else if (field.data == 2) {
+        } else if (field.data == kControlChangeDirectionality) {
           directionality_ ^= 1;
-        } else if (field.data == 3) {
+        } else if (field.data == kControlChangeDurationType) {
           duration_type_ ^= 1;
-        } else if (field.data == 5) {
+        } else if (field.data == kControlSetDiversion) {
           divertadv_ = true;
-        } else if (field.data == 6) {
+        } else if (field.data == kControlIncreaseExtent8) {
           extent_ += 8;
-        } else if (field.data == 7) {
+        } else if (field.data == kControlIncreaseExtent16) {
           extent_ += 16;
         } else {
           // *stream_ << jsonVal("debug", "TODO: TMC control code " +
           //    std::to_string(field_data));
         }
 
-        // Length of route affected
-      } else if (field.label == 2) {
+      } else if (field.label == kLabelAffectedLength) {
         length_affected_ = field.data;
         has_length_affected_ = true;
 
-        // speed limit advice
-      } else if (field.label == 3) {
+      } else if (field.label == kLabelSpeedLimit) {
         speed_limit_ = field.data * 5;
         has_speed_limit_ = true;
 
-        // 5-bit quantifier
-      } else if (field.label == 4) {
+      } else if (field.label == kLabelQuanfifier5bit) {
         if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
             getEvent(events_.back()).allows_quantifier &&
             QuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
@@ -701,8 +694,7 @@ void Message::DecodeMulti() {
           // *stream_ << jsonVal("debug", "invalid quantifier");
         }
 
-        // 8-bit quantifier
-      } else if (field.label == 5) {
+      } else if (field.label == kLabelQuantifier8bit) {
         if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
             getEvent(events_.back()).allows_quantifier &&
             QuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
@@ -711,29 +703,24 @@ void Message::DecodeMulti() {
           // *stream_ << jsonVal("debug", "invalid quantifier");
         }
 
-        // Supplementary info
-      } else if (field.label == 6) {
+      } else if (field.label == kLabelSupplementary) {
         supplementary_.push_back(field.data);
 
-        // Start / stop time
-      } else if (field.label == 7) {
+      } else if (field.label == kLabelStartTime) {
         time_starts_ = field.data;
         has_time_starts_ = true;
 
-      } else if (field.label == 8) {
+      } else if (field.label == kLabelStopTime) {
         time_until_ = field.data;
         has_time_until_ = true;
 
-        // Multi-event message
-      } else if (field.label == 9) {
+      } else if (field.label == kLabelAdditionalEvent) {
         events_.push_back(field.data);
 
-        // Detailed diversion
-      } else if (field.label == 10) {
+      } else if (field.label == kLabelDetailedDiversion) {
         diversion_.push_back(field.data);
 
-        // Separator
-      } else if (field.label == 14) {
+      } else if (field.label == kLabelSeparator) {
 
       } else {
         //printf(",\"debug\":\"TODO label=%d data=0x%04x\"", label, field_data);
@@ -802,7 +789,7 @@ Json::Value Message::json() const {
     json["location"] = location_;
 
   json["direction"] =
-      directionality_ == DIR_SINGLE ? "single" : "both";
+      directionality_ == kSingleDirection ? "single" : "both";
 
   json["extent"] = (direction_ ? "-" : "+") +
       std::to_string(extent_);

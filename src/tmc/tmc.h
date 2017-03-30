@@ -19,24 +19,52 @@ namespace redsea {
 namespace tmc {
 
 enum eDirection {
-  DIR_POSITIVE, DIR_NEGATIVE
+  kPositiveDirection, kNegativeDirection
 };
 enum eEventNature {
-  EVENT_INFO, EVENT_FORECAST, EVENT_SILENT
+  kInfoEvent, kForecastEvent, kSilentEvent,
 };
 enum eEventDirectionality {
-  DIR_SINGLE, DIR_BOTH
+  kSingleDirection, kBothDirections
 };
 enum eEventUrgency {
-  URGENCY_NONE, URGENCY_U, URGENCY_X
+  kUrgencyNone, kUrgencyU, kUrgencyX
 };
 enum eDurationType {
-  DURATION_DYNAMIC, DURATION_LASTING
+  kDurationDynamic, kDurationLongerLasting
 };
 enum eQuantifierType {
-  Q_SMALL_NUMBER, Q_NUMBER, Q_LESS_THAN_METRES, Q_PERCENT, Q_UPTO_KMH,
-  Q_UPTO_TIME, Q_DEG_CELSIUS, Q_TIME, Q_TONNES, Q_METRES, Q_UPTO_MILLIMETRES,
-  Q_MHZ, Q_KHZ
+  kQuantifierSmallNumber, kQuantifierNumber, kQuantifierLessThanMetres,
+  kQuantifierPercent, kQuantifierUptoKmh, kQuantifierUptoTime,
+  kQuantifierDegreesCelsius, kQuantifierTime, kQuantifierTonnes,
+  kQuantifierMetres, kQuantifierUptoMillimetres, kQuantifierMHz, kQuantifierkHz
+};
+
+enum eFieldLabel {
+  kLabelDuration = 0,
+  kLabelControlCode = 1,
+  kLabelAffectedLength = 2,
+  kLabelSpeedLimit = 3,
+  kLabelQuanfifier5bit = 4,
+  kLabelQuantifier8bit = 5,
+  kLabelSupplementary = 6,
+  kLabelStartTime = 7,
+  kLabelStopTime = 8,
+  kLabelAdditionalEvent = 9,
+  kLabelDetailedDiversion = 10,
+  kLabelDestination= 11,
+  kLabelCrossLinkage = 13,
+  kLabelSeparator = 14
+};
+
+enum eControlCode {
+  kControlIncreaseUrgency = 0,
+  kControlReduceUrgency = 1,
+  kControlChangeDirectionality = 2,
+  kControlChangeDurationType = 3,
+  kControlSetDiversion = 5,
+  kControlIncreaseExtent8 = 6,
+  kControlIncreaseExtent16 = 7
 };
 
 struct FreeformField {
