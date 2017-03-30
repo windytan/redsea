@@ -651,78 +651,106 @@ void Message::DecodeMulti() {
   // Subsequent parts
   if (parts_[1].is_received) {
     for (FreeformField field : GetFreeformFields(parts_)) {
-      if (field.label == kLabelDuration) {
-        duration_ = field.data;
+      switch (field.label) {
+        case kLabelDuration :
+          duration_ = field.data;
+          break;
 
-      } else if (field.label == kLabelControlCode) {
-        if (field.data == kControlIncreaseUrgency) {
-          urgency_ = (urgency_ + 1) % 3;
-        } else if (field.data == kControlReduceUrgency) {
-          if (urgency_ == kUrgencyNone)
-            urgency_ = kUrgencyX;
-          else
-            urgency_--;
-        } else if (field.data == kControlChangeDirectionality) {
-          directionality_ ^= 1;
-        } else if (field.data == kControlChangeDurationType) {
-          duration_type_ ^= 1;
-        } else if (field.data == kControlSetDiversion) {
-          divertadv_ = true;
-        } else if (field.data == kControlIncreaseExtent8) {
-          extent_ += 8;
-        } else if (field.data == kControlIncreaseExtent16) {
-          extent_ += 16;
-        } else {
-          // *stream_ << jsonVal("debug", "TODO: TMC control code " +
-          //    std::to_string(field_data));
-        }
+        case kLabelControlCode :
+          switch (field.data) {
+            case kControlIncreaseUrgency :
+              urgency_ = (urgency_ + 1) % 3;
+              break;
 
-      } else if (field.label == kLabelAffectedLength) {
-        length_affected_ = field.data;
-        has_length_affected_ = true;
+            case kControlReduceUrgency :
+              if (urgency_ == kUrgencyNone)
+                urgency_ = kUrgencyX;
+              else
+                urgency_--;
+              break;
 
-      } else if (field.label == kLabelSpeedLimit) {
-        speed_limit_ = field.data * 5;
-        has_speed_limit_ = true;
+            case kControlChangeDirectionality :
+              directionality_ ^= 1;
+              break;
 
-      } else if (field.label == kLabelQuanfifier5bit) {
-        if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
-            getEvent(events_.back()).allows_quantifier &&
-            QuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
-          quantifiers_.insert({events_.size()-1, field.data});
-        } else {
-          // *stream_ << jsonVal("debug", "invalid quantifier");
-        }
+            case kControlChangeDurationType :
+              duration_type_ ^= 1;
+              break;
 
-      } else if (field.label == kLabelQuantifier8bit) {
-        if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
-            getEvent(events_.back()).allows_quantifier &&
-            QuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
-          quantifiers_.insert({events_.size()-1, field.data});
-        } else {
-          // *stream_ << jsonVal("debug", "invalid quantifier");
-        }
+            case kControlSetDiversion :
+              divertadv_ = true;
+              break;
 
-      } else if (field.label == kLabelSupplementary) {
-        supplementary_.push_back(field.data);
+            case kControlIncreaseExtent8 :
+              extent_ += 8;
+              break;
 
-      } else if (field.label == kLabelStartTime) {
-        time_starts_ = field.data;
-        has_time_starts_ = true;
+            case kControlIncreaseExtent16 :
+              extent_ += 16;
+              break;
 
-      } else if (field.label == kLabelStopTime) {
-        time_until_ = field.data;
-        has_time_until_ = true;
+            // default :
+            // *stream_ << jsonVal("debug", "TODO: TMC control code " +
+            //    std::to_string(field_data));
+          }
+          break;
 
-      } else if (field.label == kLabelAdditionalEvent) {
-        events_.push_back(field.data);
+        case kLabelAffectedLength :
+          length_affected_ = field.data;
+          has_length_affected_ = true;
+          break;
 
-      } else if (field.label == kLabelDetailedDiversion) {
-        diversion_.push_back(field.data);
+        case kLabelSpeedLimit :
+          speed_limit_ = field.data * 5;
+          has_speed_limit_ = true;
+          break;
 
-      } else if (field.label == kLabelSeparator) {
+        case kLabelQuantifier5bit :
+          if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
+              getEvent(events_.back()).allows_quantifier &&
+              QuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
+            quantifiers_.insert({events_.size()-1, field.data});
+          } else {
+            // *stream_ << jsonVal("debug", "invalid quantifier");
+          }
+          break;
 
-      } else {
+        case kLabelQuantifier8bit :
+          if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
+              getEvent(events_.back()).allows_quantifier &&
+              QuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
+            quantifiers_.insert({events_.size()-1, field.data});
+          } else {
+            // *stream_ << jsonVal("debug", "invalid quantifier");
+          }
+          break;
+
+        case kLabelSupplementary :
+          supplementary_.push_back(field.data);
+          break;
+
+        case kLabelStartTime :
+          time_starts_ = field.data;
+          has_time_starts_ = true;
+          break;
+
+        case kLabelStopTime :
+          time_until_ = field.data;
+          has_time_until_ = true;
+          break;
+
+        case kLabelAdditionalEvent :
+          events_.push_back(field.data);
+          break;
+
+        case kLabelDetailedDiversion :
+          diversion_.push_back(field.data);
+          break;
+
+        case kLabelSeparator :
+          break;
+
+        //default :
         //printf(",\"debug\":\"TODO label=%d data=0x%04x\"", label, field_data);
       }
     }

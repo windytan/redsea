@@ -45,7 +45,7 @@ enum eFieldLabel {
   kLabelControlCode = 1,
   kLabelAffectedLength = 2,
   kLabelSpeedLimit = 3,
-  kLabelQuanfifier5bit = 4,
+  kLabelQuantifier5bit = 4,
   kLabelQuantifier8bit = 5,
   kLabelSupplementary = 6,
   kLabelStartTime = 7,
