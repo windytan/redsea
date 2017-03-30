@@ -19,7 +19,7 @@ namespace redsea {
 namespace tmc {
 
 enum eDirection {
-  kPositiveDirection, kNegativeDirection
+  kPositiveDirection = 0, kNegativeDirection = 1
 };
 enum eEventNature {
   kInfoEvent, kForecastEvent, kSilentEvent,
