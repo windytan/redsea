@@ -58,7 +58,7 @@ struct LocationDatabase {
   std::map<uint16_t, AdminArea> admin_areas;
 };
 
-LocationDatabase LoadLocationDatabase(std::string directory);
+LocationDatabase LoadLocationDatabase(const std::string& directory);
 std::ostream& operator<<(std::ostream& strm, const LocationDatabase& locdb);
 
 }  // namespace tmc

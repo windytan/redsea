@@ -30,7 +30,7 @@ std::string to_utf8(std::string input, iconvpp::converter* conv) {
 
 }  // namespace
 
-LocationDatabase LoadLocationDatabase(std::string directory) {
+LocationDatabase LoadLocationDatabase(const std::string& directory) {
   LocationDatabase locdb;
   std::string encoding("UTF-8");
 

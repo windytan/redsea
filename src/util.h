@@ -10,8 +10,8 @@ namespace redsea {
 
 uint16_t Bits(uint16_t word, int starting_at, int len);
 
-std::string Join(std::vector<std::string> strings, std::string);
-std::string Join(std::vector<uint16_t> strings, std::string);
+std::string Join(std::vector<std::string> strings, const std::string& d);
+std::string Join(std::vector<uint16_t> strings, const std::string& d);
 
 std::string HexString(int value, int numybbles);
 
