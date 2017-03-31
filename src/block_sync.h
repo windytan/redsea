@@ -18,7 +18,7 @@ uint32_t CorrectBurstErrors(uint32_t block, eOffset offset);
 
 class BlockStream {
  public:
-  explicit BlockStream(Options options);
+  explicit BlockStream(const Options& options);
   Group NextGroup();
   bool eof() const;
 #ifdef DEBUG

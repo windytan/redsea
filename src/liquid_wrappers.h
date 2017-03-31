@@ -74,6 +74,17 @@ class Modem {
   modem object_;
 };
 
+class Resampler {
+ public:
+  explicit Resampler(float ratio, int length);
+  unsigned int execute(std::complex<float> in, std::complex<float>* out);
+  ~Resampler();
+
+ private:
+  resamp_crcf object_;
+  std::complex<float> outbuffer_[2];
+};
+
 }  // namespace liquid
 
 #endif // HAVE_LIQUID

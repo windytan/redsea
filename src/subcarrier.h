@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "config.h"
+#include "src/common.h"
 #include "src/liquid_wrappers.h"
 
 #ifdef HAVE_LIQUID
@@ -38,7 +39,7 @@ class DeltaDecoder {
 
 class Subcarrier {
  public:
-  explicit Subcarrier(bool feed_thru = false);
+  explicit Subcarrier(const Options& options);
   ~Subcarrier();
   int NextBit();
   bool eof() const;
@@ -50,6 +51,7 @@ class Subcarrier {
   void DemodulateMoreBits();
   int  numsamples_;
   bool feed_thru_;
+  const float resample_ratio_;
 
   std::deque<int> bit_buffer_;
 
@@ -59,6 +61,7 @@ class Subcarrier {
   liquid::NCO nco_exact_;
   liquid::SymSync symsync_;
   liquid::Modem modem_;
+  liquid::Resampler resampler_;
 
   bool is_eof_;
 

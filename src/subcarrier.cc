@@ -8,33 +8,33 @@
 #include <iostream>
 #include <tuple>
 
+#include "src/common.h"
 #include "src/liquid_wrappers.h"
 
 namespace redsea {
 
 namespace {
 
-const float kFs_Hz               = 171000.0f;
-const float kFc_0_Hz             = 57000.0f;
-const float kBitsPerSecond       = 1187.5f;
-const int   kInputBufferSize     = 4096;
-const int   kSamplesPerSymbol    = 3;
-const float kAGCBandwidth_Hz     = 500.0f;
-const float kAGCInitialGain      = 0.0077f;
-const float kLowpassCutoff_Hz    = 2400.0f;
-const float kSymsyncBandwidth_Hz = 2400.0f;
-const int   kSymsyncDelay        = 2;
-const float kSymsyncBeta         = 0.8f;
-const float kPLLBandwidth_Hz     = 0.3f;
-const float kPLLMultiplier       = 9.0f;
+const float kCarrierFrequency_Hz  = 57000.0f;
+const float kBitsPerSecond        = 1187.5f;
+const int   kInputBufferSize      = 4096;
+const int   kSamplesPerSymbol     = 3;
+const float kAGCBandwidth_Hz      = 500.0f;
+const float kAGCInitialGain       = 0.0077f;
+const float kLowpassCutoff_Hz     = 2400.0f;
+const float kSymsyncBandwidth_Hz  = 2400.0f;
+const int   kSymsyncDelay         = 2;
+const float kSymsyncBeta          = 0.8f;
+const float kPLLBandwidth_Hz      = 0.3f;
+const float kPLLMultiplier        = 9.0f;
 
 float hertz2step(float Hz) {
-  return Hz * 2.0f * M_PI / kFs_Hz;
+  return Hz * 2.0f * M_PI / kTargetSampleRate_Hz;
 }
 
 #ifdef DEBUG
 float step2hertz(float step) {
-  return step * kFs_Hz / (2.0f * M_PI);
+  return step * kTargetSampleRate_Hz / (2.0f * M_PI);
 }
 #endif
 
@@ -94,19 +94,22 @@ unsigned DeltaDecoder::Decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier(bool feed_thru) : numsamples_(0),
-    feed_thru_(feed_thru), bit_buffer_(),
-    fir_lpf_(256, kLowpassCutoff_Hz / kFs_Hz),
-    agc_(kAGCBandwidth_Hz / kFs_Hz, kAGCInitialGain),
-    nco_approx_(hertz2step(kFc_0_Hz)),
-    nco_exact_(hertz2step(kFc_0_Hz)),
+Subcarrier::Subcarrier(const Options& options) : numsamples_(0),
+    feed_thru_(options.feed_thru),
+    resample_ratio_(kTargetSampleRate_Hz / options.samplerate),
+    bit_buffer_(),
+    fir_lpf_(256, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
+    agc_(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain),
+    nco_approx_(hertz2step(kCarrierFrequency_Hz)),
+    nco_exact_(hertz2step(kCarrierFrequency_Hz)),
     symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
              kSymsyncBeta, 32),
-    modem_(LIQUID_MODEM_PSK2), is_eof_(false),
-    delta_decoder_() {
-  symsync_.set_bandwidth(kSymsyncBandwidth_Hz / kFs_Hz);
+    modem_(LIQUID_MODEM_PSK2),
+    resampler_(resample_ratio_, 13),
+    is_eof_(false), delta_decoder_() {
+  symsync_.set_bandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
   symsync_.set_output_rate(1);
-  nco_exact_.set_pll_bandwidth(kPLLBandwidth_Hz / kFs_Hz);
+  nco_exact_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
 }
 
 Subcarrier::~Subcarrier() {
@@ -115,6 +118,7 @@ Subcarrier::~Subcarrier() {
 /** MPX to bits
  */
 void Subcarrier::DemodulateMoreBits() {
+  // Read from MPX source
   int16_t inbuffer[kInputBufferSize];
   int samplesread = fread(inbuffer, sizeof(inbuffer[0]), kInputBufferSize,
       stdin);
@@ -127,9 +131,37 @@ void Subcarrier::DemodulateMoreBits() {
     return;
   }
 
-  const int decimate_ratio = kFs_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol;
+  // Resample if needed
+  int num_samples = 0;
 
-  for (int16_t sample : inbuffer) {
+  std::vector<std::complex<float>> csamples(
+      resample_ratio_ <= 1.0f ? kInputBufferSize :
+                                kInputBufferSize * resample_ratio_);
+
+  if (resample_ratio_ == 1.0f) {
+    for (int i = 0; i < kInputBufferSize; i++)
+      csamples[i] = inbuffer[i];
+    num_samples = kInputBufferSize;
+  } else {
+    int i_resampled = 0;
+    for (int i = 0; i < kInputBufferSize; i++) {
+      std::complex<float> buf[2];
+      int num_resampled = resampler_.execute(inbuffer[i], buf);
+
+      for (int j = 0; j < num_resampled; j++) {
+        csamples[i_resampled] = buf[j];
+        i_resampled++;
+      }
+    }
+    num_samples = i_resampled;
+  }
+
+  const int decimate_ratio = kTargetSampleRate_Hz / kBitsPerSecond / 2 /
+                             kSamplesPerSymbol;
+
+  for (int i = 0; i < num_samples; i++) {
+    std::complex<float> sample = csamples[i];
+
     // Mix RDS to baseband for filtering purposes
     std::complex<float> sample_baseband = nco_approx_.MixDown(sample);
 
@@ -148,7 +180,7 @@ void Subcarrier::DemodulateMoreBits() {
       for (std::complex<float> symbol : symbols) {
 #ifdef DEBUG
         printf("sy:%f,%f,%f\n",
-            numsamples_ / kFs_Hz,
+            numsamples_ / kTargetSampleRate_Hz,
             symbol.real(),
             symbol.imag());
 #endif
@@ -167,7 +199,7 @@ void Subcarrier::DemodulateMoreBits() {
                 biphase.real() >= 0));
 #ifdef DEBUG
           printf("bi:%f,%f,%f\n",
-              numsamples_ / kFs_Hz,
+              numsamples_ / kTargetSampleRate_Hz,
               biphase.real(),
               biphase.imag());
 #endif
@@ -175,7 +207,7 @@ void Subcarrier::DemodulateMoreBits() {
       }
 #ifdef DEBUG
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
-          numsamples_ / kFs_Hz,
+          numsamples_ / kTargetSampleRate_Hz,
           static_cast<float>(sample),
           step2hertz(nco_exact_.frequency()),
           modem_.phase_error(),
@@ -212,7 +244,7 @@ bool Subcarrier::eof() const {
 
 #ifdef DEBUG
 float Subcarrier::t() const {
-  return numsamples_ / kFs_Hz;
+  return numsamples_ / kTargetSampleRate_Hz;
 }
 #endif
 

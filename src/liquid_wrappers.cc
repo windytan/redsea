@@ -140,6 +140,23 @@ float Modem::phase_error() {
   return modem_get_demodulator_phase_error(object_);
 }
 
+Resampler::Resampler(float ratio, int length) :
+    object_(resamp_crcf_create(ratio, length, 0.4f, 60.0f, 32)) {
+  assert(ratio <= 2.0f);
+}
+
+Resampler::~Resampler() {
+  resamp_crcf_destroy(object_);
+}
+
+unsigned int Resampler::execute(std::complex<float> in,
+                                std::complex<float>* out) {
+  unsigned int num_written;
+  resamp_crcf_execute(object_, in, out, &num_written);
+
+  return num_written;
+}
+
 }  // namespace liquid
 
 #endif

@@ -37,6 +37,8 @@ void PrintUsage() {
      "-x, --output-hex       Output is hex groups in the RDS Spy format\n"
      "-p, --show-partial     Display PS and RadioText before completely\n"
      "                       received (as partial_ps, partial_radiotext)\n"
+     "-r, --samplerate       Set input sample frequency - will resample\n"
+     "                       (slow) if this differs from 171000 Hz\n"
      "-u, --rbds             Use RBDS (North American) program types\n"
      "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
      "                       Exchange format\n"
@@ -60,6 +62,7 @@ Options GetOptions(int argc, char** argv) {
     { "input-hex",     no_argument, 0, 'h'},
     { "output-hex",    no_argument, 0, 'x'},
     { "show-partial",  no_argument, 0, 'p'},
+    { "samplerate",    1,           0, 'r'},
     { "rbds",          no_argument, 0, 'u'},
     { "help",          no_argument, 0, '?'},
     { "loctable",      1,           0, 'l'},
@@ -69,7 +72,7 @@ Options GetOptions(int argc, char** argv) {
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "behpxvul:", long_options,
+  while ((option_char = getopt_long(argc, argv, "behl:pr:uvx", long_options,
          &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
@@ -86,6 +89,14 @@ Options GetOptions(int argc, char** argv) {
         break;
       case 'p':
         options.show_partial = true;
+        break;
+      case 'r':
+        options.samplerate = std::atoi(optarg);
+        if (options.samplerate < 128000.f) {
+          std::cerr << "error: sample rate must be 128000 Hz or higher"
+                    << std::endl;
+          options.just_exit = true;
+        }
         break;
       case 'u':
         options.rbds = true;
@@ -114,7 +125,7 @@ int main(int argc, char** argv) {
   redsea::Options options = redsea::GetOptions(argc, argv);
 
   if (options.just_exit)
-    exit(EXIT_SUCCESS);
+    return EXIT_FAILURE;
 
 #ifndef HAVE_LIQUID
   if (options.input_type == redsea::INPUT_MPX) {
@@ -164,4 +175,6 @@ int main(int argc, char** argv) {
                              &std::cerr : &std::cout);
     }
   }
+
+  return EXIT_SUCCESS;
 }
