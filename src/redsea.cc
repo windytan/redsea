@@ -114,6 +114,8 @@ Options GetOptions(int argc, char** argv) {
         options.just_exit = true;
         break;
     }
+    if (options.just_exit)
+      break;
   }
 
   return options;
