@@ -311,12 +311,4 @@ std::string DICodeString(uint16_t di) {
   return di_codes[di];
 }
 
-eOpenDataApp getODApp(uint16_t aid) {
-  if (aid == 0xCD46 || aid == 0xCD47)
-    return ODA_TMC;
-  if (aid == 0x4BD7)
-    return ODA_RTPLUS;
-  return ODA_UNKNOWN;
-}
-
 }  // namespace redsea
