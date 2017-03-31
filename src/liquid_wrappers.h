@@ -16,7 +16,7 @@ class AGC {
   AGC(float bw, float initial_gain);
   ~AGC();
   std::complex<float> execute(std::complex<float> s);
-  float getGain();
+  float gain();
 
  private:
   agc_crcf object_;
@@ -35,16 +35,16 @@ class FIRFilter {
 
 class NCO {
  public:
-  NCO(float freq);
+  explicit NCO(float freq);
   ~NCO();
-  std::complex<float> mixDown(std::complex<float> s);
-  std::complex<float> mixUp(std::complex<float> s);
-  void mixBlockDown(std::complex<float>* x, std::complex<float>* y,
+  std::complex<float> MixDown(std::complex<float> s);
+  std::complex<float> MixUp(std::complex<float> s);
+  void MixBlockDown(std::complex<float>* x, std::complex<float>* y,
       int n);
-  void step();
-  void setPLLBandwidth(float);
-  void stepPLL(float dphi);
-  float getFrequency();
+  void Step();
+  void set_pll_bandwidth(float);
+  void StepPLL(float dphi);
+  float frequency();
 
  private:
   nco_crcf object_;
@@ -55,8 +55,8 @@ class SymSync {
   SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
           float beta, unsigned num_filters);
   ~SymSync();
-  void setBandwidth(float);
-  void setOutputRate(unsigned);
+  void set_bandwidth(float);
+  void set_output_rate(unsigned);
   std::vector<std::complex<float>> execute(std::complex<float> in);
 
  private:
@@ -65,10 +65,10 @@ class SymSync {
 
 class Modem {
  public:
-  Modem(modulation_scheme scheme);
+  explicit Modem(modulation_scheme scheme);
   ~Modem();
-  unsigned int demodulate(std::complex<float> sample);
-  float getPhaseError();
+  unsigned int Demodulate(std::complex<float> sample);
+  float phase_error();
 
  private:
   modem object_;

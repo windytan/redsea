@@ -1,6 +1,12 @@
 # redsea changelog
 
+## 0.9.2 (2017-03-30)
+
+* Fix location table info being sometimes printed into the wrong stream
+* Fix conflicting compiler optimization flags
+
 ## 0.9.1 (2017-02-11)
+
 * Add support for type 14B EON groups
 * Change rtl-rx.sh to run redsea installed in $PATH
 

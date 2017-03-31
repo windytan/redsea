@@ -33,7 +33,7 @@ tools (`xcode-select --install`).
 
         $ make install
 
-Updating with the newest changes later:
+It is also simple to later pull the latest updates and recompile:
 
         $ git pull
         $ ./autogen.sh && ./configure && make clean && make

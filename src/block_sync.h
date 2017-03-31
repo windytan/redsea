@@ -11,29 +11,29 @@
 
 namespace redsea {
 
-uint32_t calcSyndrome(uint32_t vec);
-eOffset offsetForSyndrome(uint16_t syndrome);
-eOffset nextOffsetFor(eOffset o);
-uint32_t correctBurstErrors(uint32_t block, eOffset offset);
+uint32_t CalcSyndrome(uint32_t vec);
+eOffset OffsetForSyndrome(uint16_t syndrome);
+eOffset NextOffsetFor(eOffset o);
+uint32_t CorrectBurstErrors(uint32_t block, eOffset offset);
 
 class BlockStream {
  public:
-  BlockStream(Options options);
-  Group getNextGroup();
-  bool isEOF() const;
+  explicit BlockStream(Options options);
+  Group NextGroup();
+  bool eof() const;
 #ifdef DEBUG
-  float getT() const;
+  float t() const;
 #endif
 
  private:
-  int getNextBit();
-  void uncorrectable();
-  bool acquireSync();
+  int NextBit();
+  void Uncorrectable();
+  bool AcquireSync();
 
   unsigned bitcount_;
   unsigned prevbitcount_;
   int left_to_read_;
-  uint32_t wideblock_;
+  uint32_t padded_block_;
   unsigned prevsync_;
   unsigned block_counter_;
   eOffset expected_offset_;

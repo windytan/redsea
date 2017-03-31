@@ -88,7 +88,7 @@ DeltaDecoder::DeltaDecoder() : prev_(0) {
 DeltaDecoder::~DeltaDecoder() {
 }
 
-unsigned DeltaDecoder::decode(unsigned d) {
+unsigned DeltaDecoder::Decode(unsigned d) {
   unsigned bit = (d != prev_);
   prev_ = d;
   return bit;
@@ -104,10 +104,9 @@ Subcarrier::Subcarrier(bool feed_thru) : numsamples_(0),
              kSymsyncBeta, 32),
     modem_(LIQUID_MODEM_PSK2), is_eof_(false),
     delta_decoder_() {
-
-  symsync_.setBandwidth(kSymsyncBandwidth_Hz / kFs_Hz);
-  symsync_.setOutputRate(1);
-  nco_exact_.setPLLBandwidth(kPLLBandwidth_Hz / kFs_Hz);
+  symsync_.set_bandwidth(kSymsyncBandwidth_Hz / kFs_Hz);
+  symsync_.set_output_rate(1);
+  nco_exact_.set_pll_bandwidth(kPLLBandwidth_Hz / kFs_Hz);
 }
 
 Subcarrier::~Subcarrier() {
@@ -115,7 +114,7 @@ Subcarrier::~Subcarrier() {
 
 /** MPX to bits
  */
-void Subcarrier::demodulateMoreBits() {
+void Subcarrier::DemodulateMoreBits() {
   int16_t inbuffer[kInputBufferSize];
   int samplesread = fread(inbuffer, sizeof(inbuffer[0]), kInputBufferSize,
       stdin);
@@ -128,21 +127,20 @@ void Subcarrier::demodulateMoreBits() {
     return;
   }
 
-  const int decimate = kFs_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol;
+  const int decimate_ratio = kFs_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol;
 
   for (int16_t sample : inbuffer) {
-
     // Mix RDS to baseband for filtering purposes
-    std::complex<float> sample_baseband = nco_approx_.mixDown(sample);
+    std::complex<float> sample_baseband = nco_approx_.MixDown(sample);
 
     fir_lpf_.push(sample_baseband);
 
-    if (numsamples_ % decimate == 0) {
+    if (numsamples_ % decimate_ratio == 0) {
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
       // PLL-controlled 57 kHz mixdown - aliasing is intentional so we don't
       // have to mix it back up first
-      sample_lopass = nco_exact_.mixDown(sample_lopass);
+      sample_lopass = nco_exact_.MixDown(sample_lopass);
 
       std::vector<std::complex<float>> symbols =
         symsync_.execute(sample_lopass);
@@ -156,8 +154,8 @@ void Subcarrier::demodulateMoreBits() {
 #endif
 
         // Modem here is only used to track PLL phase error
-        modem_.demodulate(symbol);
-        nco_exact_.stepPLL(modem_.getPhaseError() * kPLLMultiplier);
+        modem_.Demodulate(symbol);
+        nco_exact_.StepPLL(modem_.phase_error() * kPLLMultiplier);
 
         bool is_clock;
         std::complex<float> biphase;
@@ -165,7 +163,7 @@ void Subcarrier::demodulateMoreBits() {
 
         // One biphase symbol received for every 2 PSK symbols
         if (is_clock) {
-          bit_buffer_.push_back(delta_decoder_.decode(
+          bit_buffer_.push_back(delta_decoder_.Decode(
                 biphase.real() >= 0));
 #ifdef DEBUG
           printf("bi:%f,%f,%f\n",
@@ -174,30 +172,29 @@ void Subcarrier::demodulateMoreBits() {
               biphase.imag());
 #endif
         }
-
       }
 #ifdef DEBUG
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
           numsamples_ / kFs_Hz,
-          (float)sample,
-          step2hertz(nco_exact_.getFrequency()),
-          modem_.getPhaseError(),
-          agc_.getGain(),
+          static_cast<float>(sample),
+          step2hertz(nco_exact_.frequency()),
+          modem_.phase_error(),
+          agc_.gain(),
           sample_lopass.real(),
           sample_lopass.imag());
 #endif
     }
 
-    nco_exact_.step();
-    nco_approx_.step();
+    nco_exact_.Step();
+    nco_approx_.Step();
 
     numsamples_++;
   }
 }
 
-int Subcarrier::getNextBit() {
-  while (bit_buffer_.size() < 1 && !isEOF())
-    demodulateMoreBits();
+int Subcarrier::NextBit() {
+  while (bit_buffer_.size() < 1 && !eof())
+    DemodulateMoreBits();
 
   int bit = 0;
 
@@ -209,12 +206,12 @@ int Subcarrier::getNextBit() {
   return bit;
 }
 
-bool Subcarrier::isEOF() const {
+bool Subcarrier::eof() const {
   return is_eof_;
 }
 
 #ifdef DEBUG
-float Subcarrier::getT() const {
+float Subcarrier::t() const {
   return numsamples_ / kFs_Hz;
 }
 #endif

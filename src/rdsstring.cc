@@ -16,33 +16,33 @@ std::string rtrim(std::string s) {
 
 }
 
-LCDchar::LCDchar() : code_(0), codetable_(G0) {
+RDSChar::RDSChar() : code_(0), codetable_(G0) {
 }
 
-LCDchar::LCDchar(uint8_t _code) : code_(_code) {
+RDSChar::RDSChar(uint8_t _code) : code_(_code) {
 }
 
-void LCDchar::setCodeTable(eCodeTable codetable) {
+void RDSChar::set_codetable(eCodeTable codetable) {
   codetable_ = codetable;
 }
 
-uint8_t LCDchar::code() const {
+uint8_t RDSChar::code() const {
   return code_;
 }
 
-std::string LCDchar::toString() const {
-  return getLCDchar(code_, codetable_);
+std::string RDSChar::str() const {
+  return RDSCharString(code_, codetable_);
 }
 
 RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
-  prev_pos_(-1), last_complete_string_(getString()) {
+  prev_pos_(-1), last_complete_string_(str()) {
 }
 
-void RDSString::setAt(int pos, LCDchar chr) {
+void RDSString::set(int pos, RDSChar chr) {
   if (pos < 0 || pos >= static_cast<int>(chars_.size()))
     return;
 
-  chr.setCodeTable(repertoireAt(pos));
+  chr.set_codetable(repertoire_at(pos));
 
   chars_.at(pos) = chr;
 
@@ -53,33 +53,33 @@ void RDSString::setAt(int pos, LCDchar chr) {
 
   is_char_sequential_.at(pos) = true;
 
-  if (isComplete()) {
-    last_complete_string_ = getString();
-    last_complete_chars_ = getChars();
+  if (complete()) {
+    last_complete_string_ = str();
+    last_complete_chars_ = chars();
   }
 
   prev_pos_ = pos;
 }
 
-void RDSString::setAt(int pos, LCDchar chr1, LCDchar chr2) {
+void RDSString::set(int pos, RDSChar chr1, RDSChar chr2) {
   if (chr1.code() == 0x0F && chr2.code() == 0x0F) {
-    setRepertoire(pos, G0);
+    set_repertoire(pos, G0);
   } else if (chr1.code() == 0x0E && chr2.code() == 0x0E) {
-    setRepertoire(pos, G1);
+    set_repertoire(pos, G1);
   } else if (chr1.code() == 0x1B && chr2.code() == 0x6E) {
-    setRepertoire(pos, G2);
+    set_repertoire(pos, G2);
   } else {
-    setAt(pos, chr1);
-    setAt(pos + 1, chr2);
+    set(pos, chr1);
+    set(pos + 1, chr2);
   }
 }
 
-void RDSString::setRepertoire(int pos, eCodeTable codetable) {
+void RDSString::set_repertoire(int pos, eCodeTable codetable) {
   if (pos >= 0)
     repertoire_[pos] = codetable;
 }
 
-eCodeTable RDSString::repertoireAt(int pos) const {
+eCodeTable RDSString::repertoire_at(int pos) const {
   eCodeTable codetable = G0;
   for (std::pair<int, eCodeTable> r : repertoire_)
     if (pos >= r.first)
@@ -87,12 +87,7 @@ eCodeTable RDSString::repertoireAt(int pos) const {
   return codetable;
 }
 
-std::string RDSString::charAt(int pos) const {
-  return (pos < static_cast<int>(last_complete_chars_.size()) ?
-      last_complete_chars_[pos].toString() : " ");
-}
-
-size_t RDSString::lengthReceived() const {
+size_t RDSString::length_received() const {
   size_t result = 0;
   for (size_t i=0; i < is_char_sequential_.size(); i++) {
     if (!is_char_sequential_[i])
@@ -103,7 +98,7 @@ size_t RDSString::lengthReceived() const {
   return result;
 }
 
-size_t RDSString::lengthExpected() const {
+size_t RDSString::length_expected() const {
   size_t result = chars_.size();
 
   for (size_t i=0; i < chars_.size(); i++) {
@@ -117,68 +112,68 @@ size_t RDSString::lengthExpected() const {
 }
 
 void RDSString::resize(int n) {
-  chars_.resize(n, 0x20);
+  chars_.resize(n, RDSChar(0x20));
 }
 
-std::string RDSString::getString() const {
+std::string RDSString::str() const {
   std::string result;
-  std::vector<LCDchar> chars = getChars();
-  for (size_t pos=0; pos < chars.size(); pos++) {
-    result += chars[pos].toString();
+  std::vector<RDSChar> _chars = chars();
+  for (size_t pos=0; pos < _chars.size(); pos++) {
+    result += _chars[pos].str();
   }
 
   return result;
 }
 
-std::vector<LCDchar> RDSString::getChars() const {
-  std::vector<LCDchar> result;
-  size_t len = lengthExpected();
+std::vector<RDSChar> RDSString::chars() const {
+  std::vector<RDSChar> result;
+  size_t len = length_expected();
   for (size_t i=0; i < len; i++) {
-    result.push_back(is_char_sequential_[i] ? chars_[i] : 0x20);
+    result.push_back(is_char_sequential_[i] ? chars_[i] : RDSChar(0x20));
   }
 
   return result;
 }
 
-std::string RDSString::getTrimmedString() const {
-  return rtrim(getString());
+std::string RDSString::trimmed_string() const {
+  return rtrim(str());
 }
 
-std::string RDSString::getLastCompleteString() const {
+std::string RDSString::last_complete_string() const {
   return last_complete_string_;
 }
 
-std::string RDSString::getLastCompleteString(int start, int len) const {
+std::string RDSString::last_complete_string(int start, int len) const {
   std::string result;
   for (int i=start; i < start+len; i++) {
     result += (i < static_cast<int>(last_complete_chars_.size()) ?
-        last_complete_chars_[i].toString() : " ");
+        last_complete_chars_[i].str() : " ");
   }
 
   return result;
 }
 
-std::string RDSString::getLastCompleteStringTrimmed() const {
+std::string RDSString::last_complete_string_trimmed() const {
   return rtrim(last_complete_string_);
 }
 
-std::string RDSString::getLastCompleteStringTrimmed(int start, int len) const {
-  return rtrim(getLastCompleteString(start, len));
+std::string RDSString::last_complete_string_trimmed(int start, int len) const {
+  return rtrim(last_complete_string(start, len));
 }
 
-bool RDSString::hasChars(int start, int len) const {
+bool RDSString::has_chars(int start, int len) const {
   return start+len <= static_cast<int>(last_complete_chars_.size());
 }
 
-bool RDSString::isComplete() const {
-  return lengthReceived() >= lengthExpected();
+bool RDSString::complete() const {
+  return length_received() >= length_expected();
 }
 
 void RDSString::clear() {
   for (size_t i=0; i < chars_.size(); i++) {
     is_char_sequential_[i] = false;
   }
-  last_complete_string_ = getString();
+  last_complete_string_ = str();
   last_complete_chars_.clear();
   repertoire_.clear();
 }

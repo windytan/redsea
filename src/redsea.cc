@@ -26,7 +26,7 @@
 
 namespace redsea {
 
-void printUsage() {
+void PrintUsage() {
   std::cout <<
      "radio_command | ./src/redsea [OPTIONS]\n"
      "\n"
@@ -35,7 +35,7 @@ void printUsage() {
      "                       decoded groups to stderr\n"
      "-h, --input-hex        Input is hex groups in the RDS Spy format\n"
      "-x, --output-hex       Output is hex groups in the RDS Spy format\n"
-     "-p. --show-partial     Display PS and RadioText before completely\n"
+     "-p, --show-partial     Display PS and RadioText before completely\n"
      "                       received (as partial_ps, partial_radiotext)\n"
      "-u, --rbds             Use RBDS (North American) program types\n"
      "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
@@ -43,7 +43,7 @@ void printUsage() {
      "-v, --version          Print version\n";
 }
 
-void printVersion() {
+void PrintVersion() {
 #ifdef DEBUG
   std::cout << PACKAGE_STRING << "-debug by OH2EIQ" << std::endl;
 #else
@@ -51,7 +51,7 @@ void printVersion() {
 #endif
 }
 
-Options getOptions(int argc, char** argv) {
+Options GetOptions(int argc, char** argv) {
   redsea::Options options;
 
   static struct option long_options[] = {
@@ -94,12 +94,12 @@ Options getOptions(int argc, char** argv) {
         options.loctable_dir = std::string(optarg);
         break;
       case 'v':
-        printVersion();
+        PrintVersion();
         options.just_exit = true;
         break;
       case '?':
       default:
-        printUsage();
+        PrintUsage();
         options.just_exit = true;
         break;
     }
@@ -111,8 +111,7 @@ Options getOptions(int argc, char** argv) {
 }  // namespace redsea
 
 int main(int argc, char** argv) {
-
-  redsea::Options options = redsea::getOptions(argc, argv);
+  redsea::Options options = redsea::GetOptions(argc, argv);
 
   if (options.just_exit)
     exit(EXIT_SUCCESS);
@@ -125,12 +124,9 @@ int main(int argc, char** argv) {
   }
 #endif
 
+  uint16_t pi = 0x0000, prev_new_pi = 0x0000, new_pi = 0x0000;
   redsea::BlockStream block_stream(options);
-  redsea::Station station(0, options);
-
-  uint16_t pi = 0, prev_new_pi = 0, new_pi = 0;
-
-  bool is_eof = false;
+  redsea::Station station(pi, options);
 
   // Line buffering
   if (options.feed_thru)
@@ -138,35 +134,33 @@ int main(int argc, char** argv) {
   else
     setvbuf(stdout, NULL, _IOLBF, 2048);
 
-  while (!is_eof) {
+  while (!(std::cin.eof() || block_stream.eof())) {
     redsea::Group group = (options.input_type == redsea::INPUT_RDSSPY ?
-        redsea::getNextGroupRSpy(options.feed_thru) :
-        block_stream.getNextGroup());
+        redsea::NextGroupRSpy(options.feed_thru) :
+        block_stream.NextGroup());
 
-    is_eof = (std::cin.eof() || block_stream.isEOF());
-
-    if (group.hasPi()) {
+    if (group.has_pi()) {
       // Repeated PI confirms change
       prev_new_pi = new_pi;
-      new_pi = group.get(redsea::BLOCK1);
+      new_pi = group.block(redsea::BLOCK1);
 
       if (new_pi == prev_new_pi || options.input_type == redsea::INPUT_RDSSPY) {
+        if (new_pi != pi)
+          station = redsea::Station(new_pi, options);
         pi = new_pi;
-        if (pi != station.getPI())
-          station = redsea::Station(pi, options);
-      } else if (new_pi != pi) {
+      } else {
         continue;
       }
     }
 
 #ifdef DEBUG
-    printf("b:%f,", block_stream.getT());
+    printf("b:%f,", block_stream.t());
 #endif
 
     if (options.output_type == redsea::OUTPUT_HEX) {
-      redsea::printHexGroup(group, options.feed_thru ? &std::cerr : &std::cout);
+      redsea::PrintHexGroup(group, options.feed_thru ? &std::cerr : &std::cout);
     } else {
-      station.updateAndPrint(group, options.feed_thru ?
+      station.UpdateAndPrint(group, options.feed_thru ?
                              &std::cerr : &std::cout);
     }
   }

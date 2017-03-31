@@ -15,7 +15,7 @@ AsciiBits::AsciiBits(bool feed_thru) : is_eof_(false), feed_thru_(feed_thru) {
 AsciiBits::~AsciiBits() {
 }
 
-int AsciiBits::getNextBit() {
+int AsciiBits::NextBit() {
   int result = 0;
   while (result != '0' && result != '1' && result != EOF) {
     result = getchar();
@@ -31,11 +31,11 @@ int AsciiBits::getNextBit() {
   return (result == '1');
 }
 
-bool AsciiBits::isEOF() const {
+bool AsciiBits::eof() const {
   return is_eof_;
 }
 
-Group getNextGroupRSpy(bool feed_thru) {
+Group NextGroupRSpy(bool feed_thru) {
   Group group;
 
   bool finished = false;

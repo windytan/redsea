@@ -7,14 +7,13 @@
 
 namespace redsea {
 
-std::string getLCDchar(uint8_t code, eCodeTable codetable=G0);
-std::string getPTYname(int pty, bool is_rbds=false);
-std::string getCountryString(uint16_t pi, uint16_t ecc);
-std::string getLanguageString(uint16_t code);
-std::string getAppName(uint16_t aid);
-std::string getRTPlusContentTypeName(uint16_t content_type);
-std::string getDICode(uint16_t di);
-eOpenDataApp getODApp(uint16_t aid);
+std::string RDSCharString(uint8_t code, eCodeTable codetable = G0);
+std::string PTYNameString(int pty, bool is_rbds = false);
+std::string CountryString(uint16_t pi, uint16_t ecc);
+std::string LanguageString(uint16_t code);
+std::string AppNameString(uint16_t aid);
+std::string RTPlusContentTypeString(uint16_t content_type);
+std::string DICodeString(uint16_t di);
 
 }  // namespace redsea
 #endif  // DATA_H_
