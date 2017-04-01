@@ -1,7 +1,7 @@
 # redsea
 
 redsea is a lightweight command-line
-[RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/OSX.
+[RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/macOS.
 It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio
 stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream, the hex
 format used by RDS Spy, and multiplex signals (MPX).
@@ -9,15 +9,12 @@ format used by RDS Spy, and multiplex signals (MPX).
 RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`).
 
-Redsea has been successfully compiled on Linux (Ubuntu 14.04, Raspbian Jessie)
-and OSX (10.10).
-
 [![Build Status](https://travis-ci.org/windytan/redsea.svg?branch=master)](https://travis-ci.org/windytan/redsea)
 
 ## Compiling
 
 You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
-library, and GNU autotools. On OSX/macOS you will also need XCode command-line
+library, and GNU autotools. On macOS (OSX) you will also need XCode command-line
 tools (`xcode-select --install`).
 
 1. Clone the repository (unless you downloaded a release zip file):
