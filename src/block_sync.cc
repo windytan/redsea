@@ -223,14 +223,6 @@ Group BlockStream::NextGroup() {
         }
       }
 
-      /*} else {
-        block = correctBurstErrors(block);
-        if (calcSyndrome(block) == 0x000) {
-          message = block >> 10;
-          received_offset_ = expected_offset_;
-        }*/
-      //}
-
       // Still no valid syndrome
       if (received_offset_ != expected_offset_)
         Uncorrectable();
