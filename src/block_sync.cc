@@ -242,9 +242,8 @@ Group BlockStream::NextGroup() {
 
     expected_offset_ = nextOffsetFor(expected_offset_);
 
-    if (expected_offset_ == OFFSET_A) {
+    if (expected_offset_ == OFFSET_A)
       break;
-    }
   }
 
   return group;
