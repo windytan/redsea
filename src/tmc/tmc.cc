@@ -92,8 +92,7 @@ std::string TimeString(uint16_t field_data) {
   std::stringstream ss;
 
   if (field_data <= 95) {
-    ss << std::setfill('0') << std::setw(2) << (field_data / 4) << ":" <<
-       (15 * (field_data % 4));
+    ss << HoursMinutesString(field_data / 4, 15 * (field_data % 4));
 
   } else if (field_data <= 200) {
     int days = (field_data - 96) / 24;
@@ -209,9 +208,7 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       int hour = minute / 60;
       minute = minute % 60;
 
-      char buffer[6];
-      std::snprintf(buffer, sizeof(buffer), "%02d:%02d", minute, hour);
-      text = std::string(buffer);
+      text = HoursMinutesString(hour, minute);
       break;
     }
     case kQuantifierTonnes: {
