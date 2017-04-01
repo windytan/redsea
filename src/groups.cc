@@ -19,16 +19,6 @@
 
 namespace redsea {
 
-namespace {
-
-std::string HoursMinutesString(int hour, int minute) {
-  std::stringstream ss;
-  ss << std::setfill('0') << std::setw(2) << hour << ":" << minute;
-  return ss.str();
-}
-
-}  // namespace
-
 void PrintHexGroup(const Group& group, std::ostream* stream) {
   stream->fill('0');
   stream->setf(std::ios_base::uppercase);

@@ -12,6 +12,12 @@ uint16_t Bits(uint16_t word, int starting_at, int len) {
   return ((word >> starting_at) & ((1 << len) - 1));
 }
 
+std::string HoursMinutesString(int hour, int minute) {
+  std::stringstream ss;
+  ss << std::setfill('0') << std::setw(2) << hour << ":" << minute;
+  return ss.str();
+}
+
 std::string Join(std::vector<std::string> strings, const std::string& d) {
   std::string result("");
   for (size_t i=0; i < strings.size(); i++) {
