@@ -69,12 +69,17 @@ std::string RDSCharString(uint8_t code, eCodeTable codetable) {
   int col = code >> 4;
   int idx = row * 14 + (col - 2);
   if (col >= 2 && idx >= 0 && idx < static_cast<int>(codetable_G0.size())) {
-    if (codetable == G0)
-      result = codetable_G0[idx];
-    else if (codetable == G1)
-      result = codetable_G1[idx];
-    else if (codetable == G2)
-      result = codetable_G2[idx];
+    switch (codetable) {
+      case G0 :
+        result = codetable_G0[idx];
+        break;
+      case G1 :
+        result = codetable_G1[idx];
+        break;
+      case G2 :
+        result = codetable_G2[idx];
+        break;
+    }
   }
 
   return result;
