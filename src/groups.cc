@@ -263,9 +263,9 @@ void Station::DecodeBasics(const Group& group) {
 
 // Group 0: Basic tuning and switching information
 void Station::DecodeType0(const Group& group) {
-  uint16_t seg_address = Bits(group.block(BLOCK2), 0, 2);
+  uint16_t segment_address = Bits(group.block(BLOCK2), 0, 2);
   bool is_di = Bits(group.block(BLOCK2), 2, 1);
-  json_["di"][DICodeString(seg_address)] = is_di;
+  json_["di"][DICodeString(segment_address)] = is_di;
 
   is_ta_    = Bits(group.block(BLOCK2), 4, 1);
   is_music_ = Bits(group.block(BLOCK2), 3, 1);
@@ -290,7 +290,7 @@ void Station::DecodeType0(const Group& group) {
   if (!group.has(BLOCK4))
     return;
 
-  UpdatePS(seg_address * 2,
+  UpdatePS(segment_address * 2,
            Bits(group.block(BLOCK4), 8, 8),
            Bits(group.block(BLOCK4), 0, 8));
 }

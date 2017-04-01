@@ -134,13 +134,13 @@ void Subcarrier::DemodulateMoreBits() {
   // Resample if needed
   int num_samples = 0;
 
-  std::vector<std::complex<float>> csamples(
+  std::vector<std::complex<float>> complex_samples(
       resample_ratio_ <= 1.0f ? kInputBufferSize :
                                 kInputBufferSize * resample_ratio_);
 
   if (resample_ratio_ == 1.0f) {
     for (int i = 0; i < kInputBufferSize; i++)
-      csamples[i] = inbuffer[i];
+      complex_samples[i] = inbuffer[i];
     num_samples = kInputBufferSize;
   } else {
     int i_resampled = 0;
@@ -149,7 +149,7 @@ void Subcarrier::DemodulateMoreBits() {
       int num_resampled = resampler_.execute(inbuffer[i], buf);
 
       for (int j = 0; j < num_resampled; j++) {
-        csamples[i_resampled] = buf[j];
+        complex_samples[i_resampled] = buf[j];
         i_resampled++;
       }
     }
@@ -160,7 +160,7 @@ void Subcarrier::DemodulateMoreBits() {
                              kSamplesPerSymbol;
 
   for (int i = 0; i < num_samples; i++) {
-    std::complex<float> sample = csamples[i];
+    std::complex<float> sample = complex_samples[i];
 
     // Mix RDS to baseband for filtering purposes
     std::complex<float> sample_baseband = nco_approx_.MixDown(sample);
