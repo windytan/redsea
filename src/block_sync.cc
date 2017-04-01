@@ -104,7 +104,7 @@ uint32_t CorrectBurstErrors(uint32_t block, eOffset offset) {
 BlockStream::BlockStream(const Options& options) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), padded_block_(0), prevsync_(0),
   block_counter_(0), expected_offset_(OFFSET_A),
-  received_offset_(OFFSET_INVALID), pi_(0), is_in_sync_(false),
+  received_offset_(OFFSET_INVALID), pi_(0x0000), is_in_sync_(false),
   block_has_errors_(50),
 #ifdef HAVE_LIQUID
   subcarrier_(options),
@@ -204,12 +204,12 @@ Group BlockStream::NextGroup() {
       block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
 
       // Detect & correct clock slips (Section C.1.2)
-      if (expected_offset_ == OFFSET_A && pi_ != 0 &&
+      if (expected_offset_ == OFFSET_A && pi_ != 0x0000 &&
           ((padded_block_ >> 12) & kBitmask16) == pi_) {
         message = pi_;
         padded_block_ >>= 1;
         received_offset_ = OFFSET_A;
-      } else if (expected_offset_ == OFFSET_A && pi_ != 0 &&
+      } else if (expected_offset_ == OFFSET_A && pi_ != 0x0000 &&
           ((padded_block_ >> 10) & kBitmask16) == pi_) {
         message = pi_;
         padded_block_ = (padded_block_ << 1) + NextBit();
