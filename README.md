@@ -109,6 +109,8 @@ radio_command | redsea [OPTIONS]
 -x, --output-hex       Output is hex groups in the RDS Spy format
 -p. --show-partial     Display PS and RadioText before completely received (as
                        partial_ps, partial_radiotext)
+-r, --samplerate       Set input sample frequency - will resample
+                       (slow) if this differs from 171000 Hz
 -u, --rbds             Use RBDS (North American) program types
 -l, --loctable DIR     Load TMC location table from a directory in TMC Exchange
                        format
