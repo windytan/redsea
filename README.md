@@ -122,7 +122,7 @@ mono samples at 171 kHz. The output format defaults to newline-delimited JSON.
 
 ## Requirements
 
-* Linux/OSX
+* Linux or macOS
 * C++11 compiler
 * GNU autotools
 * libiconv
