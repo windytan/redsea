@@ -182,13 +182,12 @@ Subcarrier::Subcarrier(const Options& options) : numsamples_(0),
 #ifdef HAVE_SNDFILE
   if (options.input_type == INPUT_MPX_SNDFILE)
     mpx_ = new SndfileReader(options);
-  else if (options.input_type == INPUT_MPX_STDIN)
+  else
 #endif
     mpx_ = new StdinReader(options);
 
   resample_ratio_ = kTargetSampleRate_Hz / mpx_->samplerate();
   resampler_.set_rate(resample_ratio_);
-  printf("ratio = %f\n",resample_ratio_);
 }
 
 Subcarrier::~Subcarrier() {
