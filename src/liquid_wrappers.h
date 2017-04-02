@@ -77,8 +77,9 @@ class Modem {
 class Resampler {
  public:
   explicit Resampler(float ratio, int length);
-  unsigned int execute(std::complex<float> in, std::complex<float>* out);
   ~Resampler();
+  unsigned int execute(std::complex<float> in, std::complex<float>* out);
+  void set_rate(float rate);
 
  private:
   resamp_crcf object_;

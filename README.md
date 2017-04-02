@@ -2,9 +2,9 @@
 
 redsea is a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/macOS.
-It works with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio
-stick using the `rtl_fm` tool. It can also decode raw ASCII bitstream, the hex
-format used by RDS Spy, and multiplex signals (MPX).
+It can be used with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB
+radio stick with the `rtl_fm` tool. It can also decode raw ASCII bitstream, the
+hex format used by RDS Spy, and audio files containing multiplex signals (MPX).
 
 RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`).
@@ -14,8 +14,9 @@ or, optionally, undecoded hex blocks (`-x`).
 ## Compiling
 
 You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
-library, and GNU autotools. On macOS (OSX) you will also need XCode command-line
-tools (`xcode-select --install`).
+library, and GNU autotools. Audio files can be decoded if libsndfile is
+installed. On macOS (OSX) you will also need XCode command-line tools
+(`xcode-select --install`).
 
 1. Clone the repository (unless you downloaded a release zip file):
 
@@ -68,14 +69,14 @@ avoid the DC spike.
 
 ### Decoding MPX from a file or via sound card
 
-If you have `sox` installed, it's easy to decode audio files containing a
-demodulated FM carrier. Note that the file must have around 128k samples per
-second or more.
+It's easy to decode audio files containing a demodulated FM carrier. Note that
+the file must have around 128k samples per second or more.
 
-    $ sox multiplex.wav -t .s16 -r 171k -c 1 - | redsea
+    $ redsea -f multiplex.wav
 
-If your sound card supports recording at high sample rates (e.g. 192 kHz) you
-can also decode the MPX output of an FM tuner or RDS encoder:
+If you have `sox` installed and your sound card supports recording at high sample
+rates (e.g. 192 kHz) you can also decode the MPX output of an FM tuner or RDS
+encoder:
 
     $ rec -t .s16 -r 171k -c 1 - | redsea
 
@@ -126,6 +127,7 @@ mono samples at 171 kHz. The output format defaults to newline-delimited JSON.
 * C++11 compiler
 * GNU autotools
 * libiconv
+* libsndfile (optional)
 * [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals

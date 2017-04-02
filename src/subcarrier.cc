@@ -4,9 +4,14 @@
 
 #include <cmath>
 #include <complex>
+#include <cstdio>
 #include <deque>
 #include <iostream>
 #include <tuple>
+
+#ifdef HAVE_SNDFILE
+#include <sndfile.h>
+#endif
 
 #include "src/common.h"
 #include "src/liquid_wrappers.h"
@@ -39,6 +44,70 @@ float step2hertz(float step) {
 #endif
 
 }  // namespace
+
+bool MPXReader::eof() const {
+  return is_eof_;
+}
+
+StdinReader::StdinReader(const Options& options) :
+    samplerate_(options.samplerate),
+    buffer_(new (std::nothrow) int16_t[kInputBufferSize]),
+    feed_thru_(options.feed_thru) {
+  is_eof_ = false;
+}
+
+StdinReader::~StdinReader() {
+  delete[] buffer_;
+}
+
+std::vector<float> StdinReader::ReadBlock() {
+  int num_read = fread(buffer_, sizeof(buffer_[0]), kInputBufferSize,
+      stdin);
+
+  if (feed_thru_)
+    fwrite(buffer_, sizeof(buffer_[0]), num_read, stdout);
+
+  if (num_read < kInputBufferSize)
+    is_eof_ = true;
+
+  std::vector<float> result(num_read);
+  for (int i = 0; i < num_read; i++)
+    result[i] = buffer_[i];
+
+  return result;
+}
+
+float StdinReader::samplerate() const {
+  return samplerate_;
+}
+
+#ifdef HAVE_SNDFILE
+SndfileReader::SndfileReader(const Options& options) :
+    info_({0, 0, 0, 0, 0, 0}),
+    file_(sf_open(options.sndfilename.c_str(), SFM_READ, &info_)),
+    buffer_(new (std::nothrow) float[info_.channels * kInputBufferSize]) {
+  is_eof_ = false;
+}
+
+SndfileReader::~SndfileReader() {
+  sf_close(file_);
+  delete[] buffer_;
+}
+
+std::vector<float> SndfileReader::ReadBlock() {
+  sf_count_t num_read = sf_readf_float(file_, buffer_, kInputBufferSize);
+  if (num_read != kInputBufferSize)
+    is_eof_ = true;
+
+  // TODO(windytan): downmix channels
+  std::vector<float> result(buffer_, buffer_ + num_read);
+  return result;
+}
+
+float SndfileReader::samplerate() const {
+  return info_.samplerate;
+}
+#endif
 
 BiphaseDecoder::BiphaseDecoder() : prev_psk_symbol_(0.0f),
   clock_history_(48), clock_(0), clock_polarity_(0) {
@@ -95,7 +164,6 @@ unsigned DeltaDecoder::Decode(unsigned d) {
 }
 
 Subcarrier::Subcarrier(const Options& options) : numsamples_(0),
-    feed_thru_(options.feed_thru),
     resample_ratio_(kTargetSampleRate_Hz / options.samplerate),
     bit_buffer_(),
     fir_lpf_(256, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
@@ -110,6 +178,17 @@ Subcarrier::Subcarrier(const Options& options) : numsamples_(0),
   symsync_.set_bandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
   symsync_.set_output_rate(1);
   nco_exact_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
+
+#ifdef HAVE_SNDFILE
+  if (options.input_type == INPUT_MPX_SNDFILE)
+    mpx_ = new SndfileReader(options);
+  else if (options.input_type == INPUT_MPX_STDIN)
+#endif
+    mpx_ = new StdinReader(options);
+
+  resample_ratio_ = kTargetSampleRate_Hz / mpx_->samplerate();
+  resampler_.set_rate(resample_ratio_);
+  printf("ratio = %f\n",resample_ratio_);
 }
 
 Subcarrier::~Subcarrier() {
@@ -119,33 +198,24 @@ Subcarrier::~Subcarrier() {
  */
 void Subcarrier::DemodulateMoreBits() {
   // Read from MPX source
-  int16_t inbuffer[kInputBufferSize];
-  int samplesread = fread(inbuffer, sizeof(inbuffer[0]), kInputBufferSize,
-      stdin);
-
-  if (feed_thru_)
-    fwrite(inbuffer, sizeof(inbuffer[0]), samplesread, stdout);
-
-  if (samplesread < kInputBufferSize) {
-    is_eof_ = true;
-    return;
-  }
+  std::vector<float> inbuffer = mpx_->ReadBlock();
+  is_eof_ = mpx_->eof();
 
   // Resample if needed
   int num_samples = 0;
 
   std::vector<std::complex<float>> complex_samples(
-      resample_ratio_ <= 1.0f ? kInputBufferSize :
-                                kInputBufferSize * resample_ratio_);
+      resample_ratio_ <= 1.0f ? inbuffer.size() :
+                                inbuffer.size() * resample_ratio_);
 
   if (resample_ratio_ == 1.0f) {
-    for (int i = 0; i < kInputBufferSize; i++)
+    for (size_t i = 0; i < inbuffer.size(); i++)
       complex_samples[i] = inbuffer[i];
-    num_samples = kInputBufferSize;
+    num_samples = inbuffer.size();
   } else {
     int i_resampled = 0;
-    for (int i = 0; i < kInputBufferSize; i++) {
-      std::complex<float> buf[2];
+    for (size_t i = 0; i < inbuffer.size(); i++) {
+      std::complex<float> buf[4];
       int num_resampled = resampler_.execute(inbuffer[i], buf);
 
       for (int j = 0; j < num_resampled; j++) {

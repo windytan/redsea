@@ -8,7 +8,7 @@ namespace redsea {
 const float kTargetSampleRate_Hz  = 171000.0f;
 
 enum eInputType {
-  INPUT_MPX, INPUT_ASCIIBITS, INPUT_RDSSPY
+  INPUT_MPX_STDIN, INPUT_MPX_SNDFILE, INPUT_ASCIIBITS, INPUT_RDSSPY
 };
 
 enum eOutputType {
@@ -26,7 +26,7 @@ enum eOpenDataApp {
 struct Options {
   Options() : rbds(false), feed_thru(false), show_partial(false),
               just_exit(false), samplerate(kTargetSampleRate_Hz),
-              input_type(INPUT_MPX), output_type(OUTPUT_JSON) {}
+              input_type(INPUT_MPX_STDIN), output_type(OUTPUT_JSON) {}
   bool rbds;
   bool feed_thru;
   bool show_partial;
@@ -35,6 +35,7 @@ struct Options {
   eInputType input_type;
   eOutputType output_type;
   std::string loctable_dir;
+  std::string sndfilename;
 };
 
 }  // namespace redsea

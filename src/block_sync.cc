@@ -39,7 +39,7 @@ uint32_t CalcSyndrome(uint32_t vec) {
   return MatrixMultiply(vec, parity_check_matrix);
 }
 
-eOffset nextOffsetFor(eOffset this_offset) {
+eOffset NextOffsetFor(eOffset this_offset) {
   static const std::map<eOffset, eOffset> next_offset({
       {OFFSET_A, OFFSET_B}, {OFFSET_B, OFFSET_C},
       {OFFSET_C, OFFSET_D}, {OFFSET_C_PRIME, OFFSET_D},
@@ -116,7 +116,7 @@ BlockStream::BlockStream(const Options& options) : bitcount_(0),
 int BlockStream::NextBit() {
   int result = 0;
 #ifdef HAVE_LIQUID
-  if (input_type_ == INPUT_MPX) {
+  if (input_type_ == INPUT_MPX_STDIN || input_type_ == INPUT_MPX_SNDFILE) {
     result = subcarrier_.NextBit();
     is_eof_ = subcarrier_.eof();
   }
@@ -178,9 +178,8 @@ Group BlockStream::NextGroup() {
     bitcount_ += 26 - left_to_read_;
 
     // Read from radio
-    for (int i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++) {
+    for (int i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++)
       padded_block_ = (padded_block_ << 1) + NextBit();
-    }
 
     left_to_read_ = 26;
     padded_block_ &= kBitmask28;
@@ -240,7 +239,7 @@ Group BlockStream::NextGroup() {
         pi_ = group.pi();
     }
 
-    expected_offset_ = nextOffsetFor(expected_offset_);
+    expected_offset_ = NextOffsetFor(expected_offset_);
 
     if (expected_offset_ == OFFSET_A)
       break;

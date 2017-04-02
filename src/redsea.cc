@@ -33,6 +33,7 @@ void PrintUsage() {
      "-b, --input-ascii      Input is ASCII bit stream (011010110...)\n"
      "-e, --feed-through     Echo the input signal to stdout and print\n"
      "                       decoded groups to stderr\n"
+     "-f, --file             Input is an audio file\n"
      "-h, --input-hex        Input is hex groups in the RDS Spy format\n"
      "-x, --output-hex       Output is hex groups in the RDS Spy format\n"
      "-p, --show-partial     Display PS and RadioText before completely\n"
@@ -59,6 +60,7 @@ Options GetOptions(int argc, char** argv) {
   static struct option long_options[] = {
     { "input-binary",  no_argument, 0, 'b'},
     { "feed-through",  no_argument, 0, 'e'},
+    { "file",          1,           0, 'f'},
     { "input-hex",     no_argument, 0, 'h'},
     { "output-hex",    no_argument, 0, 'x'},
     { "show-partial",  no_argument, 0, 'p'},
@@ -72,7 +74,7 @@ Options GetOptions(int argc, char** argv) {
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "behl:pr:uvx", long_options,
+  while ((option_char = getopt_long(argc, argv, "bef:hl:pr:uvx", long_options,
          &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
@@ -80,6 +82,16 @@ Options GetOptions(int argc, char** argv) {
         break;
       case 'e':
         options.feed_thru = true;
+        break;
+      case 'f':
+#ifdef HAVE_SNDFILE
+        options.sndfilename = std::string(optarg);
+        options.input_type = redsea::INPUT_MPX_SNDFILE;
+#else
+        std::cerr << "Sorry, redsea was built without libsndfile."
+                  << std::endl;
+        options.just_exit = true;
+#endif
         break;
       case 'h':
         options.input_type = redsea::INPUT_RDSSPY;
@@ -118,6 +130,12 @@ Options GetOptions(int argc, char** argv) {
       break;
   }
 
+  if (options.feed_thru && options.input_type == INPUT_MPX_SNDFILE) {
+    std::cerr << "error: feed-thru is not supported for audio file inputs"
+              << std::endl;
+    options.just_exit = true;
+  }
+
   return options;
 }
 
@@ -133,7 +151,7 @@ int main(int argc, char** argv) {
   if (options.input_type == redsea::INPUT_MPX) {
     std::cerr << "can't demodulate MPX: redsea was compiled without liquid-dsp"
               << std::endl;
-    return 0;
+    return EXIT_FAILURE;
   }
 #endif
 

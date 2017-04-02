@@ -1,5 +1,5 @@
-#ifndef MPX2BITS_H_
-#define MPX2BITS_H_
+#ifndef SUBCARRIER_H_
+#define SUBCARRIER_H_
 
 #include <deque>
 #include <complex>
@@ -7,6 +7,11 @@
 #include <vector>
 
 #include "config.h"
+
+#ifdef HAVE_SNDFILE
+#include <sndfile.h>
+#endif
+
 #include "src/common.h"
 #include "src/liquid_wrappers.h"
 
@@ -37,6 +42,44 @@ class DeltaDecoder {
   unsigned prev_;
 };
 
+class MPXReader {
+ public:
+  bool eof() const;
+  virtual std::vector<float> ReadBlock() = 0;
+  virtual float samplerate() const = 0;
+
+ protected:
+  bool is_eof_;
+};
+
+class StdinReader : public MPXReader {
+ public:
+  explicit StdinReader(const Options& options);
+  ~StdinReader();
+  std::vector<float> ReadBlock() override;
+  float samplerate() const override;
+
+ private:
+  float samplerate_;
+  int16_t* buffer_;
+  bool feed_thru_;
+};
+
+#ifdef HAVE_SNDFILE
+class SndfileReader : public MPXReader {
+ public:
+  explicit SndfileReader(const Options& options);
+  ~SndfileReader();
+  std::vector<float> ReadBlock() override;
+  float samplerate() const override;
+
+ private:
+  SF_INFO info_;
+  SNDFILE* file_;
+  float* buffer_;
+};
+#endif
+
 class Subcarrier {
  public:
   explicit Subcarrier(const Options& options);
@@ -50,8 +93,7 @@ class Subcarrier {
  private:
   void DemodulateMoreBits();
   int  numsamples_;
-  bool feed_thru_;
-  const float resample_ratio_;
+  float resample_ratio_;
 
   std::deque<int> bit_buffer_;
 
@@ -69,9 +111,11 @@ class Subcarrier {
   BiphaseDecoder biphase_decoder_;
 
   std::complex<float> prev_sym_;
+
+  MPXReader* mpx_;
 };
 
 }  // namespace redsea
 
 #endif  // HAVE_LIQUID
-#endif  // MPX2BITS_H_
+#endif  // SUBCARRIER_H_

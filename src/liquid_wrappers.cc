@@ -149,6 +149,10 @@ Resampler::~Resampler() {
   resamp_crcf_destroy(object_);
 }
 
+void Resampler::set_rate(float rate) {
+  resamp_crcf_set_rate(object_, rate);
+}
+
 unsigned int Resampler::execute(std::complex<float> in,
                                 std::complex<float>* out) {
   unsigned int num_written;
