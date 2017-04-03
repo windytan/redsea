@@ -87,6 +87,10 @@ SndfileReader::SndfileReader(const Options& options) :
     file_(sf_open(options.sndfilename.c_str(), SFM_READ, &info_)),
     buffer_(new (std::nothrow) float[info_.channels * kInputBufferSize]) {
   is_eof_ = false;
+  if (info_.frames == 0) {
+    std::cerr << "Couldn't open " << options.sndfilename << std::endl;
+    is_eof_ = true;
+  }
 }
 
 SndfileReader::~SndfileReader() {
@@ -197,8 +201,11 @@ Subcarrier::~Subcarrier() {
  */
 void Subcarrier::DemodulateMoreBits() {
   // Read from MPX source
-  std::vector<float> inbuffer = mpx_->ReadBlock();
   is_eof_ = mpx_->eof();
+  if (is_eof_)
+    return;
+
+  std::vector<float> inbuffer = mpx_->ReadBlock();
 
   // Resample if needed
   int num_samples = 0;
