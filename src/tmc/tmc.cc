@@ -254,8 +254,6 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       break;
     }
     default: {
-      //*stream_ << jsonVal("debug", "q_value =" + std::to_string(q_value) +
-      //    ", q_type=" + std::to_string(event.quantifier_type));
       text = "TODO";
     }
   }
@@ -273,7 +271,6 @@ std::string ucfirst(std::string in) {
 
 void LoadEventData() {
   for (CSVRow row : ReadCSVWithTitles(tmc_data_events, ';')) {
-
     try {
       uint16_t code = std::stoi(row.at("Code"));
       Event event;
@@ -308,11 +305,9 @@ void LoadEventData() {
       event.update_class = std::stoi(row.at("C"));
 
       g_event_data[code] = event;
-
     } catch (std::exception& e) {
       continue;
     }
-
   }
 
   for (std::vector<std::string> fields : ReadCSV(tmc_data_suppl, ';')) {
@@ -349,7 +344,6 @@ std::map<uint16_t, ServiceKey> LoadServiceKeyTable() {
 
 void DecodeLocation(const LocationDatabase& db, uint16_t ltn,
                     Json::Value* jsonroot) {
-
   if (db.ltn != ltn || db.ltn == 0 ||
       !(*jsonroot)["tmc"]["message"].isMember("location"))
     return;
@@ -454,7 +448,6 @@ void TMC::SystemGroup(uint16_t message, Json::Value* jsonroot) {
 }
 
 void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
-
   if (!is_initialized_)
     return;
 
@@ -488,7 +481,6 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
         (*jsonroot)["tmc"]["service_provider"] = ps_.last_complete_string();
 
     } else if (variant == 9) {
-
       uint16_t on_pi = z;
       uint16_t on_sid = Bits(y, 0, 6);
       uint16_t on_mgs = Bits(y, 6, 4);
