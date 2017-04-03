@@ -194,4 +194,8 @@ std::string CSVRow::at(std::string title) const {
   return values_.at(titles_.at(title));
 }
 
+std::string rtrim(std::string s) {
+  return s.erase(s.find_last_not_of(' ') + 1);
+}
+
 }  // namespace redsea

@@ -433,9 +433,9 @@ void Station::DecodeType2(const Group& group) {
   }
 
   if (radiotext_.complete())
-    json_["radiotext"] = radiotext_.last_complete_string_trimmed();
-  else if (options_.show_partial && radiotext_.trimmed_string().length() > 0)
-    json_["partial_radiotext"] = radiotext_.trimmed_string();
+    json_["radiotext"] = rtrim(radiotext_.last_complete_string());
+  else if (options_.show_partial && rtrim(radiotext_.str()).length() > 0)
+    json_["partial_radiotext"] = rtrim(radiotext_.str());
 }
 
 // Group 3A: Application identification for Open Data
@@ -683,7 +683,7 @@ void Station::ParseRadioTextPlus(const Group& group) {
 
   for (RTPlusTag tag : tags) {
     std::string text =
-      radiotext_.last_complete_string_trimmed(tag.start, tag.length);
+      rtrim(radiotext_.last_complete_string(tag.start, tag.length));
 
     if (radiotext_.has_chars(tag.start, tag.length) && text.length() > 0 &&
         tag.content_type != 0)

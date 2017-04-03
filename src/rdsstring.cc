@@ -8,14 +8,6 @@
 
 namespace redsea {
 
-namespace {
-
-std::string rtrim(std::string s) {
-  return s.erase(s.find_last_not_of(' ')+1);
-}
-
-}
-
 RDSChar::RDSChar() : code_(0), codetable_(G0) {
 }
 
@@ -135,10 +127,6 @@ std::vector<RDSChar> RDSString::chars() const {
   return result;
 }
 
-std::string RDSString::trimmed_string() const {
-  return rtrim(str());
-}
-
 std::string RDSString::last_complete_string() const {
   return last_complete_string_;
 }
@@ -151,14 +139,6 @@ std::string RDSString::last_complete_string(int start, int len) const {
   }
 
   return result;
-}
-
-std::string RDSString::last_complete_string_trimmed() const {
-  return rtrim(last_complete_string_);
-}
-
-std::string RDSString::last_complete_string_trimmed(int start, int len) const {
-  return rtrim(last_complete_string(start, len));
 }
 
 bool RDSString::has_chars(int start, int len) const {

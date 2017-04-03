@@ -54,5 +54,7 @@ class CarrierFrequency {
   bool is_lf_mf_;
 };
 
+std::string rtrim(std::string s);
+
 }  // namespace redsea
 #endif  // UTIL_H_

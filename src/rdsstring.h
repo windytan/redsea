@@ -33,11 +33,8 @@ class RDSString {
   size_t length_expected() const;
   std::vector<RDSChar> chars() const;
   std::string str() const;
-  std::string trimmed_string() const;
   std::string last_complete_string() const;
   std::string last_complete_string(int start, int len) const;
-  std::string last_complete_string_trimmed() const;
-  std::string last_complete_string_trimmed(int start, int len) const;
   bool has_chars(int start, int len) const;
   bool complete() const;
   void clear();
