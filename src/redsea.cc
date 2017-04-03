@@ -148,7 +148,8 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
 
 #ifndef HAVE_LIQUID
-  if (options.input_type == redsea::INPUT_MPX) {
+  if (options.input_type == redsea::INPUT_MPX_STDIN ||
+      options.input_type == redsea::INPUT_MPX_SNDFILE) {
     std::cerr << "can't demodulate MPX: redsea was compiled without liquid-dsp"
               << std::endl;
     return EXIT_FAILURE;
