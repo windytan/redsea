@@ -103,8 +103,14 @@ std::vector<float> SndfileReader::ReadBlock() {
   if (num_read != kInputBufferSize)
     is_eof_ = true;
 
-  // TODO(windytan): downmix channels
-  std::vector<float> result(buffer_, buffer_ + num_read);
+  std::vector<float> result;
+  if (info_.channels == 1) {
+    result = std::vector<float>(buffer_, buffer_ + num_read);
+  } else {
+    result = std::vector<float>(num_read / info_.channels);
+    for (size_t i = 0; i < result.size(); i++)
+      result[i] = buffer_[i * info_.channels];
+  }
   return result;
 }
 
