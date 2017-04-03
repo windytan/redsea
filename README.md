@@ -104,17 +104,18 @@ ts` and `man strftime`.
 radio_command | redsea [OPTIONS]
 
 -b, --input-ascii      Input is ASCII bit stream (011010110...)
--e, --feed-through     Echo the input signal to stdout and print decoded groups
-                       to stderr
+-e, --feed-through     Echo the input signal to stdout and print
+                       decoded groups to stderr
+-f, --file             Input is an audio file
 -h, --input-hex        Input is hex groups in the RDS Spy format
 -x, --output-hex       Output is hex groups in the RDS Spy format
--p. --show-partial     Display PS and RadioText before completely received (as
-                       partial_ps, partial_radiotext)
+-p, --show-partial     Display PS and RadioText before completely
+                       received (as partial_ps, partial_radiotext)
 -r, --samplerate       Set input sample frequency - will resample
                        (slow) if this differs from 171000 Hz
 -u, --rbds             Use RBDS (North American) program types
--l, --loctable DIR     Load TMC location table from a directory in TMC Exchange
-                       format
+-l, --loctable DIR     Load TMC location table from a directory in TMC
+                       Exchange format
 -v, --version          Print version
 ```
 
