@@ -33,7 +33,7 @@ void PrintUsage() {
      "-b, --input-ascii      Input is ASCII bit stream (011010110...)\n"
      "-e, --feed-through     Echo the input signal to stdout and print\n"
      "                       decoded groups to stderr\n"
-     "-f, --file             Input is an audio file\n"
+     "-f, --file             Use an audio file as input\n"
      "-h, --input-hex        Input is hex groups in the RDS Spy format\n"
      "-x, --output-hex       Output is hex groups in the RDS Spy format\n"
      "-p, --show-partial     Display PS and RadioText before completely\n"

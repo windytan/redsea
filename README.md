@@ -106,7 +106,7 @@ radio_command | redsea [OPTIONS]
 -b, --input-ascii      Input is ASCII bit stream (011010110...)
 -e, --feed-through     Echo the input signal to stdout and print
                        decoded groups to stderr
--f, --file             Input is an audio file
+-f, --file             Use an audio file as input
 -h, --input-hex        Input is hex groups in the RDS Spy format
 -x, --output-hex       Output is hex groups in the RDS Spy format
 -p, --show-partial     Display PS and RadioText before completely
