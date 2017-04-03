@@ -1,5 +1,11 @@
 # redsea changelog
 
+## 0.10.0 (2017-04-03)
+
+* Add support for non-default sample rates (`-r` option) using an internal
+  resampler
+* Add support for reading audio files (`libsndfile` dependency, can be disabled)
+
 ## 0.9.2 (2017-03-30)
 
 * Fix location table info being sometimes printed into the wrong stream
