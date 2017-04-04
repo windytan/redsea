@@ -14,7 +14,9 @@ uint16_t Bits(uint16_t word, int starting_at, int len) {
 
 std::string HoursMinutesString(int hour, int minute) {
   std::stringstream ss;
-  ss << std::setfill('0') << std::setw(2) << hour << ":" << minute;
+  ss << std::setfill('0') <<
+        std::setw(2) << hour << ":" <<
+        std::setw(2) << minute;
   return ss.str();
 }
 
