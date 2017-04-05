@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
     if (group.has_pi()) {
       // Repeated PI confirms change
       prev_new_pi = new_pi;
-      new_pi = group.block(redsea::BLOCK1);
+      new_pi = group.pi();
 
       if (new_pi == prev_new_pi || options.input_type == redsea::INPUT_RDSSPY) {
         if (new_pi != pi)

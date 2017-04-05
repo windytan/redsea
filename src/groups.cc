@@ -183,6 +183,9 @@ Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
 }
 
 void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
+  if (group.empty())
+    return;
+
   // Allow 1 group with missed PI
   if (group.has_pi()) {
     last_block_had_pi_ = true;
@@ -193,7 +196,7 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
   }
 
   json_.clear();
-  json_["pi"] = "0x" + HexString(group.pi(), 4);
+  json_["pi"] = "0x" + HexString(pi(), 4);
 
   DecodeBasics(group);
 
@@ -350,7 +353,7 @@ void Station::DecodeType1(const Group& group) {
       }
 
       ecc_ = Bits(group.block(BLOCK3),  0, 8);
-      cc_  = Bits(group.block(BLOCK1), 12, 4);
+      cc_  = Bits(pi_, 12, 4);
 
       if (ecc_ != 0x00) {
         has_country_ = true;
