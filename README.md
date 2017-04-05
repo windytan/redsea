@@ -70,7 +70,8 @@ avoid the DC spike.
 ### Decoding MPX from a file or via sound card
 
 It's easy to decode audio files containing a demodulated FM carrier. Note that
-the file must have around 128k samples per second or more.
+the file must have around 128k samples per second or more; 171k will work
+fastest.
 
     $ redsea -f multiplex.wav
 
