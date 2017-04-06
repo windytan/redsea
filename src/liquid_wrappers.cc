@@ -69,7 +69,8 @@ std::complex<float> FIRFilter::execute() {
   return result;
 }
 
-NCO::NCO(float freq) : object_(nco_crcf_create(LIQUID_VCO)) {
+NCO::NCO(liquid_ncotype type, float freq) :
+    object_(nco_crcf_create(type)) {
   nco_crcf_set_frequency(object_, freq);
 }
 

@@ -51,7 +51,7 @@ class FIRFilter {
 
 class NCO {
  public:
-  explicit NCO(float freq);
+  explicit NCO(liquid_ncotype type, float freq);
   ~NCO();
   std::complex<float> MixDown(std::complex<float> s);
   std::complex<float> MixUp(std::complex<float> s);
