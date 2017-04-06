@@ -31,11 +31,12 @@ std::string HoursMinutesString(int hour, int minute);
 std::string Join(std::vector<std::string> strings, const std::string& d);
 std::string Join(std::vector<uint16_t> strings, const std::string& d);
 
-std::string HexString(int value, int numybbles);
+std::string HexString(int value, int num_nybbles);
 
 class CSVRow {
  public:
-  CSVRow(std::map<std::string, int> titles, std::vector<std::string> values);
+  CSVRow(const std::map<std::string, int>& titles,
+         const std::vector<std::string>& values);
   std::string at(std::string title) const;
 
  private:

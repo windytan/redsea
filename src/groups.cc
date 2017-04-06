@@ -58,9 +58,6 @@ void PrintHexGroup(const Group& group, std::ostream* stream) {
 GroupType::GroupType(uint16_t type_code) :
   number((type_code >> 1) & 0xF),
   version((type_code & 0x1) == 0 ? VERSION_A : VERSION_B) {}
-GroupType::GroupType(const GroupType& type) :
-  number(type.number),
-  version(type.version) {}
 
 std::string GroupType::str() const {
   return std::string(std::to_string(number) +
@@ -76,8 +73,9 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
          (type1.number == type2.number && type1.version < type2.version);
 }
 
-Group::Group() : has_block_({false, false, false, false, false}), block_(5),
-                 has_type_(false), has_pi_(false), has_c_prime_(false) {
+Group::Group() : pi_(0x0000), has_block_({false, false, false, false, false}),
+                 block_(5), has_type_(false), has_pi_(false),
+                 has_c_prime_(false) {
 }
 
 uint16_t Group::block(eBlockNumber block_num) const {
@@ -179,11 +177,13 @@ void AltFreqList::clear() {
 Station::Station() : Station(0x0000, Options()) {
 }
 
-Station::Station(uint16_t _pi, Options options) : pi_(_pi), options_(options),
-  ps_(8), radiotext_(64), radiotext_ab_(0), pty_(0), is_tp_(false),
-  is_ta_(false), is_music_(false), pin_(0), ecc_(0), cc_(0),
+Station::Station(uint16_t _pi, const Options& options) : pi_(_pi),
+  options_(options), ps_(8), radiotext_(64), radiotext_ab_(0), pty_(0),
+  is_tp_(false), is_ta_(false), is_music_(false), pin_(0), ecc_(0), cc_(0),
   tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
   has_country_(false), oda_app_for_group_(), has_radiotext_plus_(false),
+  radiotext_plus_cb_(false), radiotext_plus_scb_(0),
+  radiotext_plus_template_num_(0),
   radiotext_plus_toggle_(false), radiotext_plus_item_running_(false),
   last_block_had_pi_(false), alt_freq_list_(), pager_pac_(0), pager_opc_(0),
   pager_tng_(0), pager_ecc_(0), pager_ccf_(0), pager_interval_(0),

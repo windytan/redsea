@@ -203,8 +203,8 @@ std::vector<CSVRow> ReadCSVWithTitles(std::string filename, char delimiter) {
   return ReadCSVWithTitles(lines, delimiter);
 }
 
-CSVRow::CSVRow(std::map<std::string, int> titles,
-               std::vector<std::string> values) :
+CSVRow::CSVRow(const std::map<std::string, int>& titles,
+               const std::vector<std::string>& values) :
     titles_(titles), values_(values) {
 }
 

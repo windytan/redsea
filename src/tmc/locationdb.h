@@ -33,8 +33,8 @@ namespace redsea {
 namespace tmc {
 
 struct Point {
-  Point() : lcd(0), name1(""), road_name(""), roa_lcd(0), neg_off(0),
-            pos_off(0), lon(0), lat(0) {}
+  Point() : lcd(0), name1(""), road_name(""), roa_lcd(0), seg_lcd(0),
+            neg_off(0), pos_off(0), lon(0), lat(0) {}
   uint16_t lcd;
   std::string name1;
   std::string road_name;

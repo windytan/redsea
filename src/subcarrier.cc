@@ -149,7 +149,7 @@ BiphaseDecoder::~BiphaseDecoder() {
 //   is_clock: true if symbol valid
 //   symbol:   binary symbol in constellation {-1,0} => 0, {1,0} => 1
 std::pair<bool, std::complex<float>> BiphaseDecoder::push(
-    std::complex<float> psk_symbol) {
+    const std::complex<float>& psk_symbol) {
 
   std::complex<float> biphase = (psk_symbol - prev_psk_symbol_) * 0.5f;
   bool is_clock = (clock_ % 2 == clock_polarity_);
@@ -276,7 +276,7 @@ void Subcarrier::DemodulateMoreBits() {
       sample_lopass = nco_exact_.MixDown(sample_lopass);
 
       std::vector<std::complex<float>> symbols =
-        symsync_.execute(sample_lopass);
+        symsync_.execute(&sample_lopass);
 
       for (std::complex<float> symbol : symbols) {
 #ifdef DEBUG

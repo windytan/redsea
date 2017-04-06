@@ -39,7 +39,8 @@ class BiphaseDecoder {
  public:
   BiphaseDecoder();
   ~BiphaseDecoder();
-  std::pair<bool, std::complex<float>> push(std::complex<float> psk_symbol);
+  std::pair<bool, std::complex<float>> push(
+      const std::complex<float>& psk_symbol);
 
  private:
   std::complex<float> prev_psk_symbol_;

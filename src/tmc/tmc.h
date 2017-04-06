@@ -89,7 +89,7 @@ struct FreeformField {
 };
 
 struct ServiceKey {
-  ServiceKey() {}
+  ServiceKey() : xorval(0), xorstart(0), nrot(0) {}
   ServiceKey(uint8_t _xorval, uint8_t _xorstart, uint8_t _nrot) :
     xorval(_xorval), xorstart(_xorstart), nrot(_nrot) {}
   uint8_t xorval;
@@ -120,7 +120,7 @@ const bool kMessagePartIsReceived = true;
 
 struct MessagePart {
   MessagePart() : is_received(false), data() {}
-  MessagePart(bool _is_received, std::vector<uint16_t> _data) :
+  MessagePart(bool _is_received, const std::vector<uint16_t>& _data) :
     is_received(_is_received), data(_data) {}
   bool is_received;
   std::vector<uint16_t> data;
@@ -169,7 +169,7 @@ class Message {
 
 class TMC {
  public:
-  TMC(Options options);
+  explicit TMC(const Options& options);
   void SystemGroup(uint16_t message, Json::Value*);
   void UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value*);
 

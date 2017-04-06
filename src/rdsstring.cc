@@ -27,7 +27,7 @@ namespace redsea {
 RDSChar::RDSChar() : code_(0), codetable_(G0) {
 }
 
-RDSChar::RDSChar(uint8_t _code) : code_(_code) {
+RDSChar::RDSChar(uint8_t _code) : code_(_code), codetable_(G0) {
 }
 
 void RDSChar::set_codetable(eCodeTable codetable) {

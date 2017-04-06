@@ -327,6 +327,9 @@ void LoadEventData() {
   }
 
   for (std::vector<std::string> fields : ReadCSV(tmc_data_suppl, ';')) {
+    if (fields.size() < 2)
+      continue;
+
     uint16_t code = std::stoi(fields[0]);
     std::string desc = fields[1];
 
@@ -339,6 +342,9 @@ std::map<uint16_t, ServiceKey> LoadServiceKeyTable() {
 
   for (std::vector<std::string> fields :
        ReadCSV("service_key_table.csv", ',')) {
+    if (fields.size() < 4)
+      continue;
+
     uint16_t encid;
 
     std::vector<uint8_t> nums(3);
@@ -424,7 +430,7 @@ Event getEvent(uint16_t code) {
     return Event();
 }
 
-TMC::TMC(Options options) : is_initialized_(false), is_encrypted_(false),
+TMC::TMC(const Options& options) : is_initialized_(false), is_encrypted_(false),
     has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
     service_key_table_(LoadServiceKeyTable()), ps_(8) {
   if (!options.loctable_dir.empty() && g_location_database.ltn == 0) {
@@ -485,7 +491,6 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
     uint16_t variant = Bits(x, 0, 4);
 
     if (variant == 4 || variant == 5) {
-
       int pos = 4 * (variant - 4);
 
       ps_.set(pos,   RDSChar(Bits(y, 8, 8)));
@@ -516,7 +521,6 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
 
   // User message
   } else {
-
     if (is_encrypted_ && !has_encid_)
       return;
 
@@ -537,7 +541,6 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
 
     // Part of multi-group message
     } else {
-
       uint16_t continuity_index = Bits(x, 0, 3);
 
       if (continuity_index != message_.continuity_index()) {
@@ -552,7 +555,6 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
 
       message_.PushMulti(x, y, z);
       if (message_.complete()) {
-
         if (is_encrypted_ && service_key_table_.count(encid_) > 0)
           message_.Decrypt(service_key_table_[encid_]);
 
@@ -604,7 +606,6 @@ void Message::PushSingle(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 void Message::PushMulti(uint16_t x, uint16_t y, uint16_t z) {
-
   uint16_t new_continuity_index = Bits(x, 0, 3);
   if (continuity_index_ != new_continuity_index && continuity_index_ != 0) {
     //*stream_ << jsonVal("debug", "ERR: wrong continuity index!");

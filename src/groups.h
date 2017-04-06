@@ -49,7 +49,7 @@ enum eOffset {
 class AltFreqList {
  public:
   AltFreqList();
-  void insert(uint8_t code);
+  void insert(uint8_t af_code);
   bool complete() const;
   std::set<CarrierFrequency> get() const;
   void clear();
@@ -62,8 +62,7 @@ class AltFreqList {
 
 class GroupType {
  public:
-  GroupType(uint16_t type_code = 0x00);
-  GroupType(const GroupType& obj);
+  explicit GroupType(uint16_t type_code = 0x00);
 
   bool operator==(const GroupType& other);
 
@@ -73,19 +72,19 @@ class GroupType {
   eGroupTypeVersion version;
 };
 
-bool operator<(const GroupType& obj1, const GroupType& obj2);
+bool operator<(const GroupType& type1, const GroupType& type2);
 
 class Group {
  public:
   Group();
-  uint16_t block(eBlockNumber blocknum) const;
-  bool has(eBlockNumber blocknum) const;
+  uint16_t block(eBlockNumber block_num) const;
+  bool has(eBlockNumber block_num) const;
   bool empty() const;
   GroupType type() const;
   bool has_type() const;
   uint16_t pi() const;
   bool has_pi() const;
-  void set(eBlockNumber blocknum, uint16_t data);
+  void set(eBlockNumber block_num, uint16_t data);
   void set_c_prime(uint16_t data);
 
  private:
@@ -101,7 +100,7 @@ class Group {
 class Station {
  public:
   Station();
-  Station(uint16_t pi, Options options);
+  Station(uint16_t _pi, const Options& options);
   void UpdateAndPrint(const Group& group, std::ostream* stream);
   uint16_t pi() const;
 
@@ -117,8 +116,8 @@ class Station {
   void DecodeType15B(const Group& group);
   void DecodeODAGroup(const Group& group);
   void AddAltFreq(uint8_t);
-  void UpdatePS(int pos, int chr1, int chr2);
-  void UpdateRadioText(int pos, int chr1, int chr2);
+  void UpdatePS(int pos, int char1, int char2);
+  void UpdateRadioText(int pos, int char1, int char2);
   void ParseRadioTextPlus(const Group& group);
   uint16_t pi_;
   Options options_;

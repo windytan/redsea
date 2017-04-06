@@ -127,10 +127,10 @@ void SymSync::set_output_rate(unsigned r) {
   symsync_crcf_set_output_rate(object_, r);
 }
 
-std::vector<std::complex<float>> SymSync::execute(std::complex<float> s_in) {
+std::vector<std::complex<float>> SymSync::execute(std::complex<float>* in) {
   std::complex<float> s_out[8];
   unsigned n_out = 0;
-  symsync_crcf_execute(object_, &s_in, 1, &s_out[0], &n_out);
+  symsync_crcf_execute(object_, in, 1, &s_out[0], &n_out);
 
   std::vector<std::complex<float>> result(std::begin(s_out), std::end(s_out));
   result.resize(n_out);

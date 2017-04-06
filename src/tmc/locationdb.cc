@@ -52,6 +52,9 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
 
   for (std::vector<std::string> fields :
        ReadCSV(directory + "/README.DAT", ';')) {
+    if (fields.size() < 5)
+      continue;
+
     try {
       encoding = fields.at(4);
     } catch (const std::exception& e) {
@@ -110,7 +113,7 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
       point.lcd = std::stoi(row.at("LCD"));
       int n1id = 0;
       if (!row.at("N1ID").empty())
-        std::stoi(row.at("N1ID"));
+        n1id = std::stoi(row.at("N1ID"));
       if (locdb.names.count(n1id) > 0)
         point.name1 = locdb.names[n1id];
       if (!row.at("XCOORD").empty())
