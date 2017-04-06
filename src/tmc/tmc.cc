@@ -293,18 +293,18 @@ void LoadEventData() {
       event.description = row.at("Description");
       event.description_with_quantifier = row.at("Description with Q");
 
-      if (row.at("N").compare("F") == 0)
+      if (row.at("N") == "F")
         event.nature = kForecastEvent;
-      else if (row.at("N").compare("S") == 0)
+      else if (row.at("N") == "S")
         event.nature = kSilentEvent;
 
       if (!row.at("Q").empty())
         event.quantifier_type = std::stoi(row.at("Q"));
       event.allows_quantifier = !event.description_with_quantifier.empty();
 
-      if (row.at("U").compare("U") == 0)
+      if (row.at("U") == "U")
         event.urgency = kUrgencyU;
-      else if (row.at("U").compare("X") == 0)
+      else if (row.at("U") == "X")
         event.urgency = kUrgencyX;
 
       if (std::regex_match(row.at("T"), std::regex(".?D.?")))

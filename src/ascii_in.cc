@@ -78,7 +78,7 @@ Group NextGroupRSpy(bool feed_thru) {
 
         std::string single = line.substr(0, 1);
 
-        if (single.compare(" ") != 0) {
+        if (single != " ") {
           try {
             int nval = std::stoi(std::string(single), nullptr, 16);
             block_data = (block_data << 4) + nval;
