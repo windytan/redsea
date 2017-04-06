@@ -197,8 +197,8 @@ Subcarrier::Subcarrier(const Options& options) : numsamples_(0),
     bit_buffer_(),
     fir_lpf_(256, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
     agc_(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain),
-    nco_approx_(hertz2step(kCarrierFrequency_Hz)),
-    nco_exact_(hertz2step(kCarrierFrequency_Hz)),
+    oscillator_approx_(LIQUID_VCO, hertz2step(kCarrierFrequency_Hz)),
+    oscillator_exact_(LIQUID_VCO, hertz2step(kCarrierFrequency_Hz)),
     symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
              kSymsyncBeta, 32),
     modem_(LIQUID_MODEM_PSK2),
@@ -206,7 +206,7 @@ Subcarrier::Subcarrier(const Options& options) : numsamples_(0),
     is_eof_(false), delta_decoder_() {
   symsync_.set_bandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
   symsync_.set_output_rate(1);
-  nco_exact_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
+  oscillator_exact_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
 
 #ifdef HAVE_SNDFILE
   if (options.input_type == INPUT_MPX_SNDFILE)
@@ -264,7 +264,7 @@ void Subcarrier::DemodulateMoreBits() {
     std::complex<float> sample = complex_samples[i];
 
     // Mix RDS to baseband for filtering purposes
-    std::complex<float> sample_baseband = nco_approx_.MixDown(sample);
+    std::complex<float> sample_baseband = oscillator_approx_.MixDown(sample);
 
     fir_lpf_.push(sample_baseband);
 
@@ -273,7 +273,7 @@ void Subcarrier::DemodulateMoreBits() {
 
       // PLL-controlled 57 kHz mixdown - aliasing is intentional so we don't
       // have to mix it back up first
-      sample_lopass = nco_exact_.MixDown(sample_lopass);
+      sample_lopass = oscillator_exact_.MixDown(sample_lopass);
 
       std::vector<std::complex<float>> symbols =
         symsync_.execute(&sample_lopass);
@@ -288,7 +288,7 @@ void Subcarrier::DemodulateMoreBits() {
 
         // Modem here is only used to track PLL phase error
         modem_.Demodulate(symbol);
-        nco_exact_.StepPLL(modem_.phase_error() * kPLLMultiplier);
+        oscillator_exact_.StepPLL(modem_.phase_error() * kPLLMultiplier);
 
         bool is_clock;
         std::complex<float> biphase;
@@ -310,7 +310,7 @@ void Subcarrier::DemodulateMoreBits() {
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
           numsamples_ / kTargetSampleRate_Hz,
           static_cast<float>(sample),
-          step2hertz(nco_exact_.frequency()),
+          step2hertz(oscillator_exact_.frequency()),
           modem_.phase_error(),
           agc_.gain(),
           sample_lopass.real(),
@@ -318,8 +318,8 @@ void Subcarrier::DemodulateMoreBits() {
 #endif
     }
 
-    nco_exact_.Step();
-    nco_approx_.Step();
+    oscillator_exact_.Step();
+    oscillator_approx_.Step();
 
     numsamples_++;
   }
