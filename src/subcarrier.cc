@@ -115,11 +115,14 @@ SndfileReader::~SndfileReader() {
 }
 
 std::vector<float> SndfileReader::ReadBlock() {
+  std::vector<float> result;
+  if (is_eof_)
+    return result;
+
   sf_count_t num_read = sf_readf_float(file_, buffer_, kInputBufferSize);
   if (num_read != kInputBufferSize)
     is_eof_ = true;
 
-  std::vector<float> result;
   if (info_.channels == 1) {
     result = std::vector<float>(buffer_, buffer_ + num_read);
   } else {
