@@ -667,8 +667,10 @@ void Station::DecodeODAGroup(const Group& group) {
 
   if (app_id == 0xCD46 || app_id == 0xCD47) {
 #ifdef ENABLE_TMC
-    tmc_.UserGroup(Bits(group.block(BLOCK2), 0, 5), group.block(BLOCK3),
-        group.block(BLOCK4), &json_);
+
+    if (group.has(BLOCK2) && group.has(BLOCK3) && group.has(BLOCK4))
+      tmc_.UserGroup(Bits(group.block(BLOCK2), 0, 5), group.block(BLOCK3),
+                     group.block(BLOCK4), &json_);
 #endif
   } else if (app_id == 0x4BD7) {
     ParseRadioTextPlus(group);
