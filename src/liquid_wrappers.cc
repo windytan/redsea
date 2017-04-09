@@ -158,7 +158,7 @@ float Modem::phase_error() {
 }
 
 Resampler::Resampler(float ratio, int length) :
-    object_(resamp_crcf_create(ratio, length, 0.4f, 60.0f, 32)) {
+    object_(resamp_crcf_create(ratio, length, 0.47f, 60.0f, 32)) {
   assert(ratio <= 2.0f);
 }
 
