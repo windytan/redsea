@@ -1,5 +1,16 @@
 # redsea changelog
 
+## 0.10.1 (xxxx-xx-xx)
+
+* Improve noise performance by adjusting PLL bandwidth and lowpass cutoff
+  frequency
+* Improve resampler by adjusting anti-alias cutoff frequency
+* Fix missing zero-padding in PIN time string
+* Fix uninitialized PI field occasionally getting printed when the actual PI
+  is missed
+* Fix some names not getting read properly from the location database
+* Fix grammar in some TMC event descriptions
+
 ## 0.10.0 (2017-04-03)
 
 * Add support for non-default sample rates (`-r` option) using an internal
