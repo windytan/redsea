@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.10.1 (xxxx-xx-xx)
+## 0.11.0 (xxxx-xx-xx)
 
 * Add support for TMC alternative frequencies (tuning info variant 6)
 * Improve noise performance by adjusting PLL bandwidth and lowpass cutoff
