@@ -2,6 +2,7 @@
 
 ## 0.10.1 (xxxx-xx-xx)
 
+* Add support for TMC alternative frequencies (tuning info variant 6)
 * Improve noise performance by adjusting PLL bandwidth and lowpass cutoff
   frequency
 * Improve resampler by adjusting anti-alias cutoff frequency

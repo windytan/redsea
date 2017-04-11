@@ -490,33 +490,59 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
   } else if (t) {
     uint16_t variant = Bits(x, 0, 4);
 
-    if (variant == 4 || variant == 5) {
-      int pos = 4 * (variant - 4);
+    switch (variant) {
+      case 4:
+      case 5: {
+        int pos = 4 * (variant - 4);
 
-      ps_.set(pos,   RDSChar(Bits(y, 8, 8)));
-      ps_.set(pos+1, RDSChar(Bits(y, 0, 8)));
-      ps_.set(pos+2, RDSChar(Bits(z, 8, 8)));
-      ps_.set(pos+3, RDSChar(Bits(z, 0, 8)));
+        ps_.set(pos,   RDSChar(Bits(y, 8, 8)));
+        ps_.set(pos+1, RDSChar(Bits(y, 0, 8)));
+        ps_.set(pos+2, RDSChar(Bits(z, 8, 8)));
+        ps_.set(pos+3, RDSChar(Bits(z, 0, 8)));
 
-      if (ps_.complete())
-        (*jsonroot)["tmc"]["service_provider"] = ps_.last_complete_string();
+        if (ps_.complete())
+          (*jsonroot)["tmc"]["service_provider"] = ps_.last_complete_string();
+        break;
+      }
 
-    } else if (variant == 9) {
-      uint16_t on_pi = z;
-      uint16_t on_sid = Bits(y, 0, 6);
-      uint16_t on_mgs = Bits(y, 6, 4);
-      uint16_t on_ltn = Bits(y, 10, 6);
+      case 6: {
+        uint16_t on_pi = z;
+        if (other_network_freqs_.count(on_pi) == 0)
+          other_network_freqs_.insert({on_pi, AltFreqList()});
 
-      (*jsonroot)["tmc"]["other_network"]["pi"] = HexString(on_pi, 4);
-      (*jsonroot)["tmc"]["other_network"]["service_id"] = on_sid;
-      (*jsonroot)["tmc"]["other_network"]["location_table"] = on_ltn;
+        other_network_freqs_.at(on_pi).insert(Bits(y, 8, 8));
+        other_network_freqs_.at(on_pi).insert(Bits(y, 0, 8));
 
-      for (std::string s : ScopeStrings(on_mgs))
-        (*jsonroot)["tmc"]["other_network"]["scope"].append(s);
+        /* Here, the alternative frequencies are printed out right away -
+           DKULTUR, for example, does not transmit information about the total
+           length of the list */
+        (*jsonroot)["tmc"]["other_network"]["pi"] = "0x" + HexString(on_pi, 4);
+        for (CarrierFrequency f : other_network_freqs_.at(on_pi).get())
+          (*jsonroot)["tmc"]["other_network"]["frequencies"].append(f.str());
+        other_network_freqs_.clear();
+        break;
+      }
 
-    } else {
-      (*jsonroot)["debug"].append("TODO: TMC tuning info variant " +
-          std::to_string(variant));
+      case 9: {
+        uint16_t on_pi = z;
+        uint16_t on_sid = Bits(y, 0, 6);
+        uint16_t on_mgs = Bits(y, 6, 4);
+        uint16_t on_ltn = Bits(y, 10, 6);
+
+        (*jsonroot)["tmc"]["other_network"]["pi"] = HexString(on_pi, 4);
+        (*jsonroot)["tmc"]["other_network"]["service_id"] = on_sid;
+        (*jsonroot)["tmc"]["other_network"]["location_table"] = on_ltn;
+
+        for (std::string s : ScopeStrings(on_mgs))
+          (*jsonroot)["tmc"]["other_network"]["scope"].append(s);
+        break;
+      }
+
+      default: {
+        (*jsonroot)["debug"].append("TODO: TMC tuning info variant " +
+            std::to_string(variant));
+        break;
+      }
     }
 
   // User message
