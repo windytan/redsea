@@ -3,14 +3,17 @@
 ## 0.11.0 (xxxx-xx-xx)
 
 * Add support for TMC alternative frequencies (tuning info variant 6)
-* Improve noise performance by adjusting PLL bandwidth and lowpass cutoff
-  frequency
-* Improve resampler by adjusting anti-alias cutoff frequency
+* Change PLL bandwidth and lowpass cutoff frequency to improve noise performance
+* Change resampler anti-alias cutoff frequency to allow for lower sample rates
 * Fix missing zero-padding in PIN time string
 * Fix uninitialized PI field occasionally getting printed when the actual PI
   is missed
 * Fix some names not getting read properly from the location database
 * Fix grammar in some TMC event descriptions
+* Fix potentially uninitialized data printout when a type 6B group was not fully
+  received
+* Fix potentially uninitialized RadioText+ tags when the group was not fully
+  received
 
 ## 0.10.0 (2017-04-03)
 

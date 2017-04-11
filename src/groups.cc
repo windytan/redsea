@@ -526,7 +526,7 @@ void Station::DecodeType6(const Group& group) {
       }
     }
   } else {
-    if (group.has(BLOCK3)) {
+    if (group.has(BLOCK4)) {
       json_["in_house_data"].append(Bits(group.block(BLOCK4), 0, 16));
     }
   }
@@ -655,17 +655,22 @@ void Station::ParseRadioTextPlus(const Group& group) {
 
   json_["radiotext_plus"]["item_running"] = item_running;
 
-  std::vector<RTPlusTag> tags(2);
+  int num_tags = group.has(BLOCK3) ? (group.has(BLOCK4) ? 2 : 1) : 0;
+  std::vector<RTPlusTag> tags(num_tags);
 
-  tags[0].content_type = (Bits(group.block(BLOCK2), 0, 3) << 3) +
-                          Bits(group.block(BLOCK3), 13, 3);
-  tags[0].start  = Bits(group.block(BLOCK3), 7, 6);
-  tags[0].length = Bits(group.block(BLOCK3), 1, 6) + 1;
+  if (num_tags > 0) {
+    tags[0].content_type = (Bits(group.block(BLOCK2), 0, 3) << 3) +
+                            Bits(group.block(BLOCK3), 13, 3);
+    tags[0].start  = Bits(group.block(BLOCK3), 7, 6);
+    tags[0].length = Bits(group.block(BLOCK3), 1, 6) + 1;
 
-  tags[1].content_type = (Bits(group.block(BLOCK3), 0, 1) << 5) +
-                          Bits(group.block(BLOCK4), 11, 5);
-  tags[1].start  = Bits(group.block(BLOCK4), 5, 6);
-  tags[1].length = Bits(group.block(BLOCK4), 0, 5) + 1;
+    if (num_tags == 2) {
+      tags[1].content_type = (Bits(group.block(BLOCK3), 0, 1) << 5) +
+                              Bits(group.block(BLOCK4), 11, 5);
+      tags[1].start  = Bits(group.block(BLOCK4), 5, 6);
+      tags[1].length = Bits(group.block(BLOCK4), 0, 5) + 1;
+    }
+  }
 
   for (RTPlusTag tag : tags) {
     std::string text =
