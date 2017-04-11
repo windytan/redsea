@@ -46,7 +46,7 @@ std::string Join(std::vector<std::string> strings, const std::string& d) {
   return result;
 }
 
-std::string Join(std::vector<std::uint16_t> nums, const std::string& d) {
+std::string Join(std::vector<uint16_t> nums, const std::string& d) {
   std::string result("");
   for (size_t i=0; i < nums.size(); i++) {
     result += std::to_string(nums[i]);
