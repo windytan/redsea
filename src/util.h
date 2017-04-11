@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -69,6 +70,20 @@ class CarrierFrequency {
  private:
   uint16_t code_;
   bool is_lf_mf_;
+};
+
+class AltFreqList {
+ public:
+  AltFreqList();
+  void insert(uint8_t af_code);
+  bool complete() const;
+  std::set<CarrierFrequency> get() const;
+  void clear();
+
+ private:
+  std::set<CarrierFrequency> alt_freqs_;
+  int num_alt_freqs_;
+  bool lf_mf_follows_;
 };
 
 std::string rtrim(std::string s);

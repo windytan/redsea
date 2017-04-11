@@ -139,41 +139,6 @@ void Group::set_c_prime(uint16_t data) {
   set(BLOCK3, data);
 }
 
-AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0),
-                             lf_mf_follows_(false) {
-}
-
-void AltFreqList::insert(uint8_t af_code) {
-  CarrierFrequency frequency(af_code, lf_mf_follows_);
-  lf_mf_follows_ = false;
-
-  if (frequency.valid()) {
-    alt_freqs_.insert(frequency);
-  } else if (af_code == 205) {
-    // filler
-  } else if (af_code == 224) {
-    // no AF exists
-  } else if (af_code >= 225 && af_code <= 249) {
-    num_alt_freqs_ = af_code - 224;
-  } else if (af_code == 250) {
-    // AM/LF freq follows
-    lf_mf_follows_ = true;
-  }
-}
-
-bool AltFreqList::complete() const {
-  return (static_cast<int>(alt_freqs_.size()) == num_alt_freqs_ &&
-          num_alt_freqs_ > 0);
-}
-
-std::set<CarrierFrequency> AltFreqList::get() const {
-  return alt_freqs_;
-}
-
-void AltFreqList::clear() {
-  alt_freqs_.clear();
-}
-
 Station::Station() : Station(0x0000, Options()) {
 }
 

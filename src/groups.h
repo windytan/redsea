@@ -46,20 +46,6 @@ enum eOffset {
   OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_C_PRIME, OFFSET_D, OFFSET_INVALID
 };
 
-class AltFreqList {
- public:
-  AltFreqList();
-  void insert(uint8_t af_code);
-  bool complete() const;
-  std::set<CarrierFrequency> get() const;
-  void clear();
-
- private:
-  std::set<CarrierFrequency> alt_freqs_;
-  int num_alt_freqs_;
-  bool lf_mf_follows_;
-};
-
 class GroupType {
  public:
   explicit GroupType(uint16_t type_code = 0x00);
