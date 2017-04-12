@@ -147,6 +147,7 @@ Redsea decodes the following basic info from RDS:
 * Alternative Frequencies (AF)
 * Clock Time and Date (CT)
 * Program Item Number (PIN)
+* Decoder Identification (DI)
 * Enhanced Other Networks (EON) information
 
 And also these Open Data Applications:
