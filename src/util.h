@@ -30,7 +30,7 @@ uint16_t Bits(uint16_t word, int starting_at, int len);
 std::string HoursMinutesString(int hour, int minute);
 
 std::string Join(std::vector<std::string> strings, const std::string& d);
-std::string Join(std::vector<uint16_t> strings, const std::string& d);
+std::string Join(std::vector<uint16_t> nums, const std::string& d);
 
 std::string HexString(int value, int num_nybbles);
 
