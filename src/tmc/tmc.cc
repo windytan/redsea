@@ -431,8 +431,8 @@ Event getEvent(uint16_t code) {
 }
 
 TMC::TMC(const Options& options) : is_initialized_(false), is_encrypted_(false),
-    has_encid_(false), ltn_(0), sid_(0), encid_(0), message_(is_encrypted_),
-    service_key_table_(LoadServiceKeyTable()), ps_(8) {
+    has_encid_(false), is_enhanced_mode_(false), ltn_(0), sid_(0), encid_(0),
+    message_(is_encrypted_), service_key_table_(LoadServiceKeyTable()), ps_(8) {
   if (!options.loctable_dir.empty() && g_location_database.ltn == 0) {
     g_location_database = LoadLocationDatabase(options.loctable_dir);
     if (options.feed_thru)
@@ -443,7 +443,9 @@ TMC::TMC(const Options& options) : is_initialized_(false), is_encrypted_(false),
 }
 
 void TMC::SystemGroup(uint16_t message, Json::Value* jsonroot) {
-  if (Bits(message, 14, 1) == 0) {
+  uint16_t variant = Bits(message, 14, 2);
+
+  if (variant == 0) {
     if (g_event_data.empty())
       LoadEventData();
 
@@ -459,13 +461,30 @@ void TMC::SystemGroup(uint16_t message, Json::Value* jsonroot) {
     }
 
     bool afi   = Bits(message, 5, 1);
-    //bool m     = Bits(message, 4, 1);
     bool mgs   = Bits(message, 0, 4);
+    is_enhanced_mode_ = Bits(message, 4, 1);
 
     (*jsonroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
 
     for (std::string s : ScopeStrings(mgs))
       (*jsonroot)["tmc"]["system_info"]["scope"].append(s);
+  } else if (variant == 1) {
+    sid_ = Bits(message, 6, 6);
+    (*jsonroot)["tmc"]["system_info"]["service_id"] = sid_;
+
+    uint16_t g = Bits(message, 12, 2);
+    static const int gap_values[4] = {3, 5, 8, 11};
+    (*jsonroot)["tmc"]["system_info"]["gap"] = gap_values[g];
+
+    if (is_enhanced_mode_) {
+      uint16_t t_d = Bits(message, 0, 2);
+      uint16_t t_w = Bits(message, 2, 2);
+      uint16_t t_a = Bits(message, 4, 2);
+
+      (*jsonroot)["tmc"]["system_info"]["delay_time"] = t_d;
+      (*jsonroot)["tmc"]["system_info"]["activity_time"] = 1 << t_a;
+      (*jsonroot)["tmc"]["system_info"]["window_time"] = 1 << t_w;
+    }
   }
 }
 

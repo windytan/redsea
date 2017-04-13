@@ -178,6 +178,7 @@ class TMC {
   bool is_initialized_;
   bool is_encrypted_;
   bool has_encid_;
+  bool is_enhanced_mode_;
   uint16_t ltn_;
   uint16_t sid_;
   uint16_t encid_;
