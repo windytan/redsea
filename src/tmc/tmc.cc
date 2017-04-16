@@ -588,15 +588,8 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
     } else {
       uint16_t continuity_index = Bits(x, 0, 3);
 
-      if (continuity_index != message_.continuity_index()) {
-        /* Message changed; print previous unfinished message
-         * TODO 15-second limit */
-        if (!message_.json().empty()) {
-          (*jsonroot)["tmc"]["message"] = message_.json();
-          DecodeLocation(g_location_database, ltn_, jsonroot);
-        }
-        message_ = Message(is_encrypted_);
-      }
+      if (continuity_index != message_.continuity_index())
+       message_ = Message(is_encrypted_);
 
       message_.PushMulti(x, y, z);
       if (message_.complete()) {
