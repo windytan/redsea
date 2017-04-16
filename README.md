@@ -1,4 +1,4 @@
-# redsea
+# redsea RDS decoder
 
 redsea is a lightweight command-line
 [RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/macOS.
