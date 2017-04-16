@@ -38,7 +38,7 @@ namespace tmc {
 
 namespace {
 
-std::string to_utf8(std::string input, iconvpp::converter* conv) {
+std::string to_utf8(const std::string& input, iconvpp::converter* conv) {
   std::string converted;
   conv->convert(input, converted);
   return converted;
