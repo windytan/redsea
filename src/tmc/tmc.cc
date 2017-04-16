@@ -573,14 +573,14 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
 
     // Single-group message
     if (f) {
-      Message message(is_encrypted_);
-      message.PushSingle(x, y, z);
+      Message single_message(is_encrypted_);
+      single_message.PushSingle(x, y, z);
 
       if (is_encrypted_ && service_key_table_.count(encid_) > 0)
-        message.Decrypt(service_key_table_[encid_]);
+        single_message.Decrypt(service_key_table_[encid_]);
 
-      if (!message.json().empty()) {
-        (*jsonroot)["tmc"]["message"] = message.json();
+      if (!single_message.json().empty()) {
+        (*jsonroot)["tmc"]["message"] = single_message.json();
         DecodeLocation(g_location_database, ltn_, jsonroot);
       }
 
