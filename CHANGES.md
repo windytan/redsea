@@ -4,6 +4,7 @@
 
 * Add support for TMC alternative frequencies (tuning info variant 6)
 * Add support for TMC gap parameter and enhanced mode (3A group variant 1)
+* Change JSON schema for TMC: `encryption_id` is now under `system_info`
 * Change PLL bandwidth and lowpass cutoff frequency to improve noise performance
 * Change resampler anti-alias cutoff frequency to allow for lower sample rates
 * Fix missing zero-padding in PIN time string

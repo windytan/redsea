@@ -501,8 +501,8 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
     ltn_   = Bits(z, 10, 6);
     has_encid_ = true;
 
-    (*jsonroot)["tmc"]["encryption_info"]["service_id"] = sid_;
-    (*jsonroot)["tmc"]["encryption_info"]["encryption_id"] = encid_;
+    (*jsonroot)["tmc"]["system_info"]["service_id"] = sid_;
+    (*jsonroot)["tmc"]["system_info"]["encryption_id"] = encid_;
     (*jsonroot)["tmc"]["system_info"]["location_table"] = ltn_;
 
   // Tuning information

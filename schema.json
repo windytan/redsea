@@ -120,27 +120,6 @@
     "tmc": {
       "type": "object",
       "oneOf": [{
-        "encryption_info": {
-          "type": "object",
-          "properties": {
-            "encryption_id": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 31
-            },
-            "location_table": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 63
-            },
-            "service_id": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 63
-            }
-          },
-          "additionalProperties": false
-        },
         "system_info": {
           "type": "object",
           "properties": {
@@ -154,6 +133,11 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 63
+            },
+            "encryption_id": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 31
             },
             "scope": {
               "type": "array",
