@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.11.0 (xxxx-xx-xx)
+## 0.11.0 (2017-04-17)
 
 * Add support for TMC alternative frequencies (tuning info variant 6)
 * Add support for TMC gap parameter and enhanced mode (3A group variant 1)
