@@ -75,7 +75,7 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
 
 Group::Group() : pi_(0x0000), has_block_({false, false, false, false, false}),
                  block_(5), has_type_(false), has_pi_(false),
-                 has_c_prime_(false) {
+                 has_c_prime_(false), no_offsets_(false) {
 }
 
 uint16_t Group::block(eBlockNumber block_num) const {
@@ -106,6 +106,10 @@ bool Group::has_type() const {
   return has_type_;
 }
 
+void Group::disable_offsets() {
+  no_offsets_ = true;
+}
+
 void Group::set(eBlockNumber block_num, uint16_t data) {
   block_[block_num] = data;
   has_block_[block_num] = true;
@@ -130,13 +134,18 @@ void Group::set(eBlockNumber block_num, uint16_t data) {
 
   if (block_num == BLOCK2) {
     type_ = GroupType(Bits(data, 11, 5));
-    has_type_ = true;
+    if (type_.version == VERSION_A)
+      has_type_ = true;
+    else
+      has_type_ = (has_c_prime_ || no_offsets_);
   }
 }
 
 void Group::set_c_prime(uint16_t data) {
   has_c_prime_ = true;
   set(BLOCK3, data);
+  if (has(BLOCK2))
+    has_type_ = (type_.version == VERSION_B);
 }
 
 Station::Station() : Station(0x0000, Options()) {
@@ -231,7 +240,8 @@ void Station::DecodeBasics(const Group& group) {
     is_tp_ = Bits(group.block(BLOCK2), 10, 1);
     pty_   = Bits(group.block(BLOCK2),  5, 5);
 
-    json_["group"] = group.type().str();
+    if (group.has_type())
+      json_["group"] = group.type().str();
     json_["tp"] = is_tp_;
     json_["prog_type"] = PTYNameString(pty_, options_.rbds);
   } else if (group.type().number == 15 && group.type().version == VERSION_B &&

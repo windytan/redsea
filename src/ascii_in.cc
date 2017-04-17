@@ -53,6 +53,7 @@ bool AsciiBits::eof() const {
 
 Group NextGroupRSpy(bool feed_thru) {
   Group group;
+  group.disable_offsets();
 
   bool finished = false;
 

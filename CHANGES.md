@@ -16,6 +16,7 @@
   received
 * Fix potentially uninitialized RadioText+ tags when the group was not fully
   received
+* Fix spurious printouts of "version B" groups when the C' offset was not seen
 
 ## 0.10.0 (2017-04-03)
 

@@ -72,6 +72,7 @@ class Group {
   bool has_pi() const;
   void set(eBlockNumber block_num, uint16_t data);
   void set_c_prime(uint16_t data);
+  void disable_offsets();
 
  private:
   GroupType type_;
@@ -81,6 +82,7 @@ class Group {
   bool has_type_;
   bool has_pi_;
   bool has_c_prime_;
+  bool no_offsets_;
 };
 
 class Station {
