@@ -29,7 +29,7 @@ void PrintUsage() {
   std::cout <<
      "radio_command | ./src/redsea [OPTIONS]\n"
      "\n"
-     "-b, --input-ascii      Input is ASCII bit stream (011010110...)\n"
+     "-b, --input-bits       Input is ASCII bit stream (011010110...)\n"
      "-e, --feed-through     Echo the input signal to stdout and print\n"
      "                       decoded groups to stderr\n"
      "-f, --file             Use an audio file as input\n"
@@ -57,7 +57,7 @@ Options GetOptions(int argc, char** argv) {
   redsea::Options options;
 
   static struct option long_options[] = {
-    { "input-binary",  no_argument, 0, 'b'},
+    { "input-bits",    no_argument, 0, 'b'},
     { "feed-through",  no_argument, 0, 'e'},
     { "file",          1,           0, 'f'},
     { "input-hex",     no_argument, 0, 'h'},

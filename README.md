@@ -104,7 +104,7 @@ ts` and `man strftime`.
 ```
 radio_command | redsea [OPTIONS]
 
--b, --input-ascii      Input is ASCII bit stream (011010110...)
+-b, --input-bits       Input is ASCII bit stream (011010110...)
 -e, --feed-through     Echo the input signal to stdout and print
                        decoded groups to stderr
 -f, --file             Use an audio file as input

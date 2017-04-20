@@ -1,5 +1,9 @@
 # redsea changelog
 
+## 0.11.1 (xxxx-xx-xx)
+* Change the long option for `-b` to `--input-bits` and fix the incorrect
+  option in the usage help
+
 ## 0.11.0 (2017-04-17)
 
 * Add support for TMC alternative frequencies (tuning info variant 6)
