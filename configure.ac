@@ -43,15 +43,6 @@ MACPORTS_CF=
 AC_CHECK_FILE(/opt/local/lib,
   [AC_SUBST([MACPORTS_CF], ["-I/opt/local/include"])])
 
-AS_IF([test "x$with_sndfile" != xno],
-  [AC_CHECK_LIB([sndfile], [main],
-    [AC_SUBST([SNDFILE], ["-lsndfile"])
-     AC_DEFINE([HAVE_SNDFILE], [1],
-               [Define if you have libsndfile])
-    ],
-    [AC_MSG_FAILURE(
-       [Could not find libsndfile (use --without-sndfile to disable)])])])
-
 SNDFILE=
 AS_IF([test "x$with_sndfile" != xno],
   [AC_CHECK_LIB([sndfile], [main],
