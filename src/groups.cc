@@ -35,6 +35,17 @@
 
 namespace redsea {
 
+std::string TimePointToString(
+    const std::chrono::time_point<std::chrono::system_clock>& timepoint,
+    const std::string& format) {
+  std::time_t t = std::chrono::system_clock::to_time_t(timepoint);
+  std::tm tm = *std::localtime(&t);
+
+  std::stringstream ss;
+  ss << std::put_time(&tm, format.c_str());
+  return ss.str();
+}
+
 void PrintHexGroup(const Group& group, std::ostream* stream) {
   stream->fill('0');
   stream->setf(std::ios_base::uppercase);
@@ -106,6 +117,10 @@ bool Group::has_type() const {
   return has_type_;
 }
 
+std::chrono::time_point<std::chrono::system_clock> Group::rx_time() const {
+  return time_received_;
+}
+
 void Group::disable_offsets() {
   no_offsets_ = true;
 }
@@ -148,6 +163,10 @@ void Group::set_c_prime(uint16_t data) {
     has_type_ = (type_.version == VERSION_B);
 }
 
+void Group::set_time(std::chrono::time_point<std::chrono::system_clock> t) {
+  time_received_ = t;
+}
+
 Station::Station() : Station(0x0000, Options()) {
 }
 
@@ -187,6 +206,8 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
 
   json_.clear();
   json_["pi"] = "0x" + HexString(pi(), 4);
+  if (options_.timestamp)
+    json_["rx_time"] = TimePointToString(group.rx_time(), options_.time_format);
 
   DecodeBasics(group);
 

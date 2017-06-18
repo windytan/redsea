@@ -41,17 +41,20 @@ enum eOpenDataApp {
 
 struct Options {
   Options() : rbds(false), feed_thru(false), show_partial(false),
-              just_exit(false), samplerate(kTargetSampleRate_Hz),
+              just_exit(false), timestamp(false),
+              samplerate(kTargetSampleRate_Hz),
               input_type(INPUT_MPX_STDIN), output_type(OUTPUT_JSON) {}
   bool rbds;
   bool feed_thru;
   bool show_partial;
   bool just_exit;
+  bool timestamp;
   float samplerate;
   eInputType input_type;
   eOutputType output_type;
   std::string loctable_dir;
   std::string sndfilename;
+  std::string time_format;
 };
 
 }  // namespace redsea

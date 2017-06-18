@@ -1,6 +1,7 @@
 # redsea changelog
 
-## 0.11.1 (xxxx-xx-xx)
+## 0.12.0 (xxxx-xx-xx)
+* Add support for time-of-demodulation timestamps (`-t`, `--timestamp`)
 * Change the long option for `-b` to `--input-bits` and fix the incorrect
   option in the usage help
 

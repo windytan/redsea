@@ -92,13 +92,6 @@ type:
 
     $ ./rtl-rx.sh -f 87.9M | jq '.prog_type'
 
-The output can be timestamped using `ts`, found in `moreutils`:
-
-    $ ./rtl-rx.sh -f 87.9M | ts
-
-This timestamp can be formatted using `strftime` style format strings, see `man
-ts` and `man strftime`.
-
 ### Full usage
 
 ```
@@ -114,6 +107,9 @@ radio_command | redsea [OPTIONS]
                        received (as partial_ps, partial_radiotext)
 -r, --samplerate       Set input sample frequency - will resample
                        (slow) if this differs from 171000 Hz
+-t, --timestamp FORMAT Add time of decoding to JSON groups, see
+                       man strftime for formatting options (or
+                       try "%c")
 -u, --rbds             Use RBDS (North American) program types
 -l, --loctable DIR     Load TMC location table from a directory in TMC
                        Exchange format

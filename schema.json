@@ -374,6 +374,10 @@
         "type": "string",
         "pattern": "^....-..-..T..:..:..((\\+|-)..:..|Z)$"
       },
+      "rx_time": {
+        "description": "Time of demodulation/decoding",
+        "type": "string"
+      },
       "in_house_data": {
         "description": "The contents of these bits are defined by the operator",
         "type": "array",

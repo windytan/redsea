@@ -39,6 +39,9 @@ void PrintUsage() {
      "                       received (as partial_ps, partial_radiotext)\n"
      "-r, --samplerate       Set input sample frequency - will resample\n"
      "                       (slow) if this differs from 171000 Hz\n"
+     "-t, --timestamp FORMAT Add time of decoding to JSON groups, see\n"
+     "                       man strftime for formatting options (or\n"
+     "                       try \"%c\")\n"
      "-u, --rbds             Use RBDS (North American) program types\n"
      "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
      "                       Exchange format\n"
@@ -64,6 +67,7 @@ Options GetOptions(int argc, char** argv) {
     { "output-hex",    no_argument, 0, 'x'},
     { "show-partial",  no_argument, 0, 'p'},
     { "samplerate",    1,           0, 'r'},
+    { "timestamp",     1,           0, 't'},
     { "rbds",          no_argument, 0, 'u'},
     { "help",          no_argument, 0, '?'},
     { "loctable",      1,           0, 'l'},
@@ -73,7 +77,7 @@ Options GetOptions(int argc, char** argv) {
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "bef:hl:pr:uvx", long_options,
+  while ((option_char = getopt_long(argc, argv, "bef:hl:pr:t:uvx", long_options,
          &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
@@ -108,6 +112,10 @@ Options GetOptions(int argc, char** argv) {
                     << std::endl;
           options.just_exit = true;
         }
+        break;
+      case 't':
+        options.timestamp = true;
+        options.time_format = std::string(optarg);
         break;
       case 'u':
         options.rbds = true;

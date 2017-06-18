@@ -261,6 +261,8 @@ Group BlockStream::NextGroup() {
       break;
   }
 
+  group.set_time(std::chrono::system_clock::now());
+
   return group;
 }
 

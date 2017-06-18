@@ -17,6 +17,7 @@
 #ifndef GROUPS_H_
 #define GROUPS_H_
 
+#include <chrono>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -70,15 +71,18 @@ class Group {
   bool has_type() const;
   uint16_t pi() const;
   bool has_pi() const;
+  std::chrono::time_point<std::chrono::system_clock> rx_time() const;
   void set(eBlockNumber block_num, uint16_t data);
   void set_c_prime(uint16_t data);
   void disable_offsets();
+  void set_time(std::chrono::time_point<std::chrono::system_clock> t);
 
  private:
   GroupType type_;
   uint16_t pi_;
   std::vector<bool> has_block_;
   std::vector<uint16_t> block_;
+  std::chrono::time_point<std::chrono::system_clock> time_received_;
   bool has_type_;
   bool has_pi_;
   bool has_c_prime_;
