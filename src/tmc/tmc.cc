@@ -809,17 +809,17 @@ void Message::clear() {
 }
 
 Json::Value Message::json() const {
-  Json::Value json;
+  Json::Value element;
 
   if (!is_complete_ || events_.empty())
-    return json;
+    return element;
 
   for (uint16_t code : events_)
-    json["event_codes"].append(code);
+    element["event_codes"].append(code);
 
   if (supplementary_.size() > 0)
     for (uint16_t code : supplementary_)
-      json["supplementary_codes"].append(code);
+      element["supplementary_codes"].append(code);
 
   std::vector<std::string> sentences;
   for (size_t i=0; i < events_.size(); i++) {
@@ -836,7 +836,7 @@ Json::Value Message::json() const {
   }
 
   if (IsValidEventCode(events_[0]))
-    json["update_class"] = getEvent(events_[0]).update_class;
+    element["update_class"] = getEvent(events_[0]).update_class;
 
   for (uint16_t code : supplementary_) {
     if (IsValidSupplementaryCode(code))
@@ -844,36 +844,36 @@ Json::Value Message::json() const {
   }
 
   if (!sentences.empty())
-    json["description"] = Join(sentences, ". ") + ".";
+    element["description"] = Join(sentences, ". ") + ".";
 
   if (!diversion_.empty())
     for (uint16_t code : diversion_)
-      json["diversion_route"].append(code);
+      element["diversion_route"].append(code);
 
   if (has_speed_limit_)
-    json["speed_limit"] =
+    element["speed_limit"] =
         std::to_string(speed_limit_) + " km/h";
 
   if (was_encrypted_)
-    json["encrypted_location"] = encrypted_location_;
+    element["encrypted_location"] = encrypted_location_;
 
   if (!is_encrypted_)
-    json["location"] = location_;
+    element["location"] = location_;
 
-  json["direction"] =
+  element["direction"] =
       directionality_ == kSingleDirection ? "single" : "both";
 
-  json["extent"] = (direction_ == kNegativeDirection ? "-" : "+") +
+  element["extent"] = (direction_ == kNegativeDirection ? "-" : "+") +
       std::to_string(extent_);
 
   if (has_time_starts_)
-    json["starts"] = TimeString(time_starts_);
+    element["starts"] = TimeString(time_starts_);
   if (has_time_until_)
-    json["until"] = TimeString(time_until_);
+    element["until"] = TimeString(time_until_);
 
-  json["urgency"] = urgency_;
+  element["urgency"] = urgency_;
 
-  return json;
+  return element;
 }
 
 void Message::Decrypt(const ServiceKey& key) {
