@@ -1,15 +1,6 @@
 language: cpp
 
 sudo: required
-script:
-  - gcc --version
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-5
-      - g++-5
 
 dist: trusty
 
@@ -17,4 +8,4 @@ compiler:
   - clang
   - gcc
 
-script: sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc && ./autogen.sh && ./configure --without-liquid --without-sndfile && make
+script: ./autogen.sh && ./configure --without-liquid --without-sndfile && make

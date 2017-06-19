@@ -41,9 +41,15 @@ std::string TimePointToString(
   std::time_t t = std::chrono::system_clock::to_time_t(timepoint);
   std::tm tm = *std::localtime(&t);
 
-  std::stringstream ss;
-  ss << std::put_time(&tm, format.c_str());
-  return ss.str();
+  std::string result;
+  char buffer[64];
+  if (strftime(buffer, sizeof(buffer), format.c_str(), &tm) > 0) {
+    result = std::string(buffer);
+  } else {
+    result = "(format error)";
+  }
+
+  return result;
 }
 
 void PrintHexGroup(const Group& group, std::ostream* stream) {
