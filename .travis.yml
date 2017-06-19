@@ -2,7 +2,6 @@ language: cpp
 
 sudo: required
 script:
-  - sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc
   - gcc --version
 addons:
   apt:
@@ -18,4 +17,4 @@ compiler:
   - clang
   - gcc
 
-script: ./autogen.sh && ./configure --without-liquid --without-sndfile && make
+script: sudo unlink /usr/bin/gcc && sudo ln -s /usr/bin/gcc-5 /usr/bin/gcc && ./autogen.sh && ./configure --without-liquid --without-sndfile && make
