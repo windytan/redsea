@@ -1,12 +1,13 @@
 # redsea RDS decoder
 
-redsea is a lightweight command-line
-[RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/macOS.
-It can be used with any [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB
-radio stick with the `rtl_fm` tool. It can also decode raw ASCII bitstream, the
-hex format used by RDS Spy, and audio files containing multiplex signals (MPX).
+redsea is a free, fast, and lightweight command-line
+[RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/macOS,
+written by Oona Räisänen. It can be used with any
+[RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio stick with the
+`rtl_fm` tool. It can also decode raw ASCII bitstream, the hex format used by
+RDS Spy, and audio files containing multiplex signals (MPX).
 
-RDS groups are printed to the terminal as line-delimited JSON objects
+Decoded RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`).
 
 [![Build Status](https://travis-ci.org/windytan/redsea.svg?branch=master)](https://travis-ci.org/windytan/redsea)
@@ -55,16 +56,16 @@ There's a shorthand shell script called `rtl-rx.sh`:
 
     $ ./rtl-rx.sh -f 87.9M
 
-Command line options to this script are passed on to `rtl_fm`. Station frequency
-(`-f`) is mandatory. It may also be helpful to set `-p` to the ppm error in the
-crystal. Gain is set to 40 dB by default. The script can be modified to include
-additional parameters to redsea as well.
+Command line options to this script are passed on to `rtl_fm`. (These are not
+options for redsea.) Station frequency,
+`-f`, is mandatory. It may also be helpful to set the ppm error in the
+crystal using `-p`. Gain is set to 40 dB by default. The script can be modified
+to include additional parameters to redsea as well.
 
 For Raspberry Pi 1 it's necessary to change `-A std` to `-A fast`. This
-changes the arctan calculation in the FM demodulator to a fast integer
-approximation, so that more cycles will be left to redsea.
+way more more CPU cycles will be left to redsea.
 
-Note that `rtl_fm` will tune a bit off; this is expected behavior and is done to
+Note that `rtl_fm` will tune a bit off; this is normal and is done to
 avoid the DC spike.
 
 ### Decoding MPX from a file or via sound card
@@ -75,13 +76,50 @@ fastest.
 
     $ redsea -f multiplex.wav
 
-If you have `sox` installed and your sound card supports recording at high sample
-rates (e.g. 192 kHz) you can also decode the MPX output of an FM tuner or RDS
-encoder:
+If your sound card supports recording at high sample rates (e.g. 192 kHz) you
+can also decode the MPX output of an FM tuner or RDS encoder, for instance
+with this `sox` command:
 
     $ rec -t .s16 -r 171k -c 1 - | redsea
 
-### Tips for output formatting
+By default, the raw MPX input is assumed to be 16-bit signed-integer
+single-channel samples at 171 kHz.
+
+### Full usage
+
+```
+radio_command | redsea [OPTIONS]
+
+-b, --input-bits       Input is ASCII bit stream (011010110...)
+
+-e, --feed-through     Echo the input signal to stdout and print
+                       decoded groups to stderr
+
+-f, --file             Use an audio file as input
+
+-h, --input-hex        Input is hex groups in the RDS Spy format
+
+-x, --output-hex       Output is hex groups in the RDS Spy format
+
+-p, --show-partial     Display PS and RadioText before completely
+                       received (as partial_ps, partial_radiotext)
+
+-r, --samplerate       Set input sample frequency - will resample
+                       (slow) if this differs from 171000 Hz
+
+-t, --timestamp FORMAT Add time of decoding to JSON groups, see
+                       man strftime for formatting options (or
+                       try "%c")
+
+-u, --rbds             Use RBDS (North American) program types
+
+-l, --loctable DIR     Load TMC location table from a directory in TMC
+                       Exchange format
+
+-v, --version          Print version
+```
+
+## Tips for output formatting
 
 The JSON output can be tidied and/or colored using `jq`:
 
@@ -91,33 +129,6 @@ It can also be used to extract only certain fields, for instance the program
 type:
 
     $ ./rtl-rx.sh -f 87.9M | jq '.prog_type'
-
-### Full usage
-
-```
-radio_command | redsea [OPTIONS]
-
--b, --input-bits       Input is ASCII bit stream (011010110...)
--e, --feed-through     Echo the input signal to stdout and print
-                       decoded groups to stderr
--f, --file             Use an audio file as input
--h, --input-hex        Input is hex groups in the RDS Spy format
--x, --output-hex       Output is hex groups in the RDS Spy format
--p, --show-partial     Display PS and RadioText before completely
-                       received (as partial_ps, partial_radiotext)
--r, --samplerate       Set input sample frequency - will resample
-                       (slow) if this differs from 171000 Hz
--t, --timestamp FORMAT Add time of decoding to JSON groups, see
-                       man strftime for formatting options (or
-                       try "%c")
--u, --rbds             Use RBDS (North American) program types
--l, --loctable DIR     Load TMC location table from a directory in TMC
-                       Exchange format
--v, --version          Print version
-```
-
-By default, the input (via stdin) is demodulated FM multiplex (MPX) with 16-bit
-mono samples at 171 kHz. The output format defaults to newline-delimited JSON.
 
 ## Requirements
 
