@@ -99,7 +99,8 @@ radio_command | redsea [OPTIONS]
 
 -h, --input-hex        Input is hex groups in the RDS Spy format
 
--x, --output-hex       Output is hex groups in the RDS Spy format
+-l, --loctable DIR     Load TMC location table from a directory in TMC
+                       Exchange format
 
 -p, --show-partial     Display PS and RadioText before completely
                        received (as partial_ps, partial_radiotext)
@@ -113,10 +114,9 @@ radio_command | redsea [OPTIONS]
 
 -u, --rbds             Use RBDS (North American) program types
 
--l, --loctable DIR     Load TMC location table from a directory in TMC
-                       Exchange format
-
 -v, --version          Print version
+
+-x, --output-hex       Output is hex groups in the RDS Spy format
 ```
 
 ## Tips for output formatting

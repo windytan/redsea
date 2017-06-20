@@ -34,7 +34,8 @@ void PrintUsage() {
      "                       decoded groups to stderr\n\n"
      "-f, --file             Use an audio file as input\n\n"
      "-h, --input-hex        Input is hex groups in the RDS Spy format\n\n"
-     "-x, --output-hex       Output is hex groups in the RDS Spy format\n\n"
+     "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
+     "                       Exchange format\n\n"
      "-p, --show-partial     Display PS and RadioText before completely\n"
      "                       received (as partial_ps, partial_radiotext)\n\n"
      "-r, --samplerate       Set input sample frequency - will resample\n"
@@ -43,9 +44,8 @@ void PrintUsage() {
      "                       man strftime for formatting options (or\n"
      "                       try \"%c\")\n\n"
      "-u, --rbds             Use RBDS (North American) program types\n\n"
-     "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
-     "                       Exchange format\n\n"
-     "-v, --version          Print version\n";
+     "-v, --version          Print version\n\n"
+     "-x, --output-hex       Output is hex groups in the RDS Spy format\n";
 }
 
 void PrintVersion() {
