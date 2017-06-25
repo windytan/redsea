@@ -69,7 +69,7 @@ eOffset NextOffsetFor(eOffset this_offset) {
 std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
   std::map<std::pair<uint16_t, eOffset>, uint32_t> result;
 
-  const std::vector<uint16_t> offset_words =
+  const uint16_t offset_words[] =
       {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
 
   for (eOffset offset : {OFFSET_A, OFFSET_B, OFFSET_C,
@@ -101,7 +101,7 @@ eOffset OffsetForSyndrome(uint16_t syndrome) {
     return OFFSET_INVALID;
 }
 
-std::map<std::pair<uint16_t, eOffset>, uint32_t> kErrorLookup =
+const std::map<std::pair<uint16_t, eOffset>, uint32_t> kErrorLookup =
     MakeErrorLookupTable();
 
 // Section B.2.2
