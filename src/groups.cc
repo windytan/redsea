@@ -138,27 +138,21 @@ void Group::set(eBlockNumber block_num, uint16_t data) {
   if (block_num == BLOCK1) {
     pi_ = data;
     has_pi_ = true;
-  }
-
-  if (block_num == BLOCK3 && has_c_prime_ && !has_pi_) {
-    pi_ = data;
-    has_pi_ = true;
-  }
-
-  if (block_num == BLOCK4 && has_c_prime_ && !has_type_) {
-    GroupType potential_type(Bits(data, 11, 5));
-    if (potential_type.number == 15 && potential_type.version == VERSION_B) {
-      type_ = potential_type;
-      has_type_ = true;
-    }
-  }
-
-  if (block_num == BLOCK2) {
+  } else if (block_num == BLOCK2) {
     type_ = GroupType(Bits(data, 11, 5));
     if (type_.version == VERSION_A)
       has_type_ = true;
     else
       has_type_ = (has_c_prime_ || no_offsets_);
+  } else if (block_num == BLOCK3 && has_c_prime_ && !has_pi_) {
+    pi_ = data;
+    has_pi_ = true;
+  } else if (block_num == BLOCK4 && has_c_prime_ && !has_type_) {
+    GroupType potential_type(Bits(data, 11, 5));
+    if (potential_type.number == 15 && potential_type.version == VERSION_B) {
+      type_ = potential_type;
+      has_type_ = true;
+    }
   }
 }
 
