@@ -501,13 +501,9 @@ void Station::DecodeType4A(const Group& group) {
 
   int modified_julian_date = (Bits(group.block(BLOCK2), 0, 2) << 15) +
              Bits(group.block(BLOCK3), 1, 15);
-  double local_offset = 0.0;
-
-  if (group.has(BLOCK4)) {
-    local_offset = (Bits(group.block(BLOCK4), 5, 1) ? -1 : 1) *
-           Bits(group.block(BLOCK4), 0, 5) / 2.0;
-    modified_julian_date += local_offset / 24.0;
-  }
+  double local_offset = (Bits(group.block(BLOCK4), 5, 1) ? -1 : 1) *
+         Bits(group.block(BLOCK4), 0, 5) / 2.0;
+  modified_julian_date += local_offset / 24.0;
 
   int year = (modified_julian_date - 15078.2) / 365.25;
   int month = (modified_julian_date - 14956.1 -
@@ -521,33 +517,31 @@ void Station::DecodeType4A(const Group& group) {
   year += 1900;
   month -= 1;
 
-  if (group.has(BLOCK4)) {
-    int local_offset_min = (local_offset - std::trunc(local_offset)) * 60;
+  int local_offset_min = (local_offset - std::trunc(local_offset)) * 60;
 
-    int hour = static_cast<int>((Bits(group.block(BLOCK3), 0, 1) << 4) +
-        Bits(group.block(BLOCK4), 12, 14) + local_offset) % 24;
-    int minute = Bits(group.block(BLOCK4), 6, 6) + local_offset_min;
+  int hour = static_cast<int>((Bits(group.block(BLOCK3), 0, 1) << 4) +
+      Bits(group.block(BLOCK4), 12, 14) + local_offset) % 24;
+  int minute = Bits(group.block(BLOCK4), 6, 6) + local_offset_min;
 
-    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 &&
-        hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 &&
-        fabs(std::trunc(local_offset)) <= 13.0) {
-      char buffer[100];
-      int local_offset_hour = fabs(std::trunc(local_offset));
+  if (month >= 1 && month <= 12 && day >= 1 && day <= 31 &&
+      hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 &&
+      fabs(std::trunc(local_offset)) <= 13.0) {
+    char buffer[100];
+    int local_offset_hour = fabs(std::trunc(local_offset));
 
-      if (local_offset_hour == 0 && local_offset_min == 0) {
-        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00Z",
-                 year, month, day, hour, minute);
-      } else {
-        snprintf(buffer, sizeof(buffer),
-                 "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
-                 year, month, day, hour, minute, local_offset > 0 ? "+" : "-",
-                 local_offset_hour, abs(local_offset_min));
-      }
-      clock_time_ = std::string(buffer);
-      json_["clock_time"] = clock_time_;
+    if (local_offset_hour == 0 && local_offset_min == 0) {
+      snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00Z",
+               year, month, day, hour, minute);
     } else {
-      json_["debug"].append("invalid date/time");
+      snprintf(buffer, sizeof(buffer),
+               "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
+               year, month, day, hour, minute, local_offset > 0 ? "+" : "-",
+               local_offset_hour, abs(local_offset_min));
     }
+    clock_time_ = std::string(buffer);
+    json_["clock_time"] = clock_time_;
+  } else {
+    json_["debug"].append("invalid date/time");
   }
 }
 
