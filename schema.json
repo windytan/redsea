@@ -370,7 +370,7 @@
         "additionalProperties": false
       },
       "clock_time": {
-        "description": "Time and date at transmitter (RFC 3339, section 5.6)",
+        "description": "Time and date at transmitter (formatted to RFC 3339, section 5.6)",
         "type": "string",
         "pattern": "^....-..-..T..:..:..((\\+|-)..:..|Z)$"
       },
