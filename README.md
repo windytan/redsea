@@ -95,7 +95,7 @@ radio_command | redsea [OPTIONS]
 -e, --feed-through     Echo the input signal to stdout and print
                        decoded groups to stderr
 
--f, --file             Use an audio file as input
+-f, --file FILENAME    Use an audio file as input
 
 -h, --input-hex        Input is hex groups in the RDS Spy format
 
@@ -105,7 +105,7 @@ radio_command | redsea [OPTIONS]
 -p, --show-partial     Display PS and RadioText before completely
                        received (as partial_ps, partial_radiotext)
 
--r, --samplerate       Set input sample frequency - will resample
+-r, --samplerate RATE  Set input sample frequency - will resample
                        (slow) if this differs from 171000 Hz
 
 -t, --timestamp FORMAT Add time of decoding to JSON groups, see
