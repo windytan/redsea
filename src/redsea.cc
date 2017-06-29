@@ -149,6 +149,12 @@ Options GetOptions(int argc, char** argv) {
     options.just_exit = true;
   }
 
+  if (options.bler && options.input_type == INPUT_RDSSPY) {
+    std::cerr << "error: block error rate is not supported for hex input"
+              << std::endl;
+    options.just_exit = true;
+  }
+
   return options;
 }
 
