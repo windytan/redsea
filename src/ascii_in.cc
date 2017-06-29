@@ -100,6 +100,9 @@ Group NextGroupRSpy(const Options& options) {
     }
   }
 
+  if (options.timestamp)
+    group.set_time(std::chrono::system_clock::now());
+
   return group;
 }
 
