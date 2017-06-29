@@ -91,8 +91,8 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
 }
 
 Group::Group() : pi_(0x0000), has_block_({false, false, false, false, false}),
-                 block_(5), has_type_(false), has_pi_(false),
-                 has_c_prime_(false), no_offsets_(false) {
+                 block_(5), bler_(0), has_type_(false), has_pi_(false),
+                 has_c_prime_(false), has_bler_(false), no_offsets_(false) {
 }
 
 uint16_t Group::block(eBlockNumber block_num) const {
@@ -111,6 +111,10 @@ uint16_t Group::pi() const {
   return pi_;
 }
 
+uint8_t Group::bler() const {
+  return bler_;
+}
+
 bool Group::has_pi() const {
   return has_pi_;
 }
@@ -121,6 +125,10 @@ GroupType Group::type() const {
 
 bool Group::has_type() const {
   return has_type_;
+}
+
+bool Group::has_bler() const {
+  return has_bler_;
 }
 
 std::chrono::time_point<std::chrono::system_clock> Group::rx_time() const {
@@ -167,6 +175,11 @@ void Group::set_time(std::chrono::time_point<std::chrono::system_clock> t) {
   time_received_ = t;
 }
 
+void Group::set_bler(uint8_t bler) {
+  bler_ = bler;
+  has_bler_ = true;
+}
+
 Station::Station() : Station(0x0000, Options()) {
 }
 
@@ -208,6 +221,9 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
   json_["pi"] = "0x" + HexString(pi(), 4);
   if (options_.timestamp)
     json_["rx_time"] = TimePointToString(group.rx_time(), options_.time_format);
+
+  if (group.has_bler())
+    json_["bler"] = group.bler();
 
   DecodeBasics(group);
 

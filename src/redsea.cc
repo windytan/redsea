@@ -32,6 +32,7 @@ void PrintUsage() {
      "-b, --input-bits       Input is ASCII bit stream (011010110...)\n\n"
      "-e, --feed-through     Echo the input signal to stdout and print\n"
      "                       decoded groups to stderr\n\n"
+     "-E, --bler             Display average block error rate (%)\n\n"
      "-f, --file FILENAME    Use an audio file as input\n\n"
      "-h, --input-hex        Input is hex groups in the RDS Spy format\n\n"
      "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
@@ -62,22 +63,24 @@ Options GetOptions(int argc, char** argv) {
   static struct option long_options[] = {
     { "input-bits",    no_argument, 0, 'b'},
     { "feed-through",  no_argument, 0, 'e'},
+    { "bler",          no_argument, 0, 'E'},
     { "file",          1,           0, 'f'},
     { "input-hex",     no_argument, 0, 'h'},
-    { "output-hex",    no_argument, 0, 'x'},
+    { "loctable",      1,           0, 'l'},
     { "show-partial",  no_argument, 0, 'p'},
     { "samplerate",    1,           0, 'r'},
     { "timestamp",     1,           0, 't'},
     { "rbds",          no_argument, 0, 'u'},
-    { "help",          no_argument, 0, '?'},
-    { "loctable",      1,           0, 'l'},
     { "version",       no_argument, 0, 'v'},
+    { "output-hex",    no_argument, 0, 'x'},
+    { "help",          no_argument, 0, '?'},
     {0,                0,           0,  0}};
 
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "bef:hl:pr:t:uvx", long_options,
+  while ((option_char = getopt_long(argc, argv, "beEf:hl:pr:t:uvx",
+                                    long_options,
          &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
@@ -85,6 +88,9 @@ Options GetOptions(int argc, char** argv) {
         break;
       case 'e':
         options.feed_thru = true;
+        break;
+      case 'E':
+        options.bler = true;
         break;
       case 'f':
 #ifdef HAVE_SNDFILE

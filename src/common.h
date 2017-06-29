@@ -41,7 +41,7 @@ enum eOpenDataApp {
 
 struct Options {
   Options() : rbds(false), feed_thru(false), show_partial(false),
-              just_exit(false), timestamp(false),
+              just_exit(false), timestamp(false), bler(false),
               samplerate(kTargetSampleRate_Hz),
               input_type(INPUT_MPX_STDIN), output_type(OUTPUT_JSON) {}
   bool rbds;
@@ -49,6 +49,7 @@ struct Options {
   bool show_partial;
   bool just_exit;
   bool timestamp;
+  bool bler;
   float samplerate;
   eInputType input_type;
   eOutputType output_type;

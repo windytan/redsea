@@ -327,6 +327,12 @@
         "description": "Program Item number (start time)",
         "$ref": "#/definitions/pin"
       },
+      "bler": {
+        "description": "Block Error Rate (averaged percentage of erroneous blocks)",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100
+      },
       "debug": {
         "description": "Debug messages from redsea",
         "type": "array",

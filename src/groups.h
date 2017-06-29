@@ -70,12 +70,15 @@ class Group {
   GroupType type() const;
   bool has_type() const;
   uint16_t pi() const;
+  uint8_t bler() const;
   bool has_pi() const;
+  bool has_bler() const;
   std::chrono::time_point<std::chrono::system_clock> rx_time() const;
   void set(eBlockNumber block_num, uint16_t data);
   void set_c_prime(uint16_t data);
   void disable_offsets();
   void set_time(std::chrono::time_point<std::chrono::system_clock> t);
+  void set_bler(uint8_t bler);
 
  private:
   GroupType type_;
@@ -83,9 +86,11 @@ class Group {
   std::vector<bool> has_block_;
   std::vector<uint16_t> block_;
   std::chrono::time_point<std::chrono::system_clock> time_received_;
+  uint8_t bler_;
   bool has_type_;
   bool has_pi_;
   bool has_c_prime_;
+  bool has_bler_;
   bool no_offsets_;
 };
 

@@ -262,7 +262,17 @@ Group BlockStream::NextGroup() {
       break;
   }
 
-  group.set_time(std::chrono::system_clock::now());
+  if (options_.timestamp)
+    group.set_time(std::chrono::system_clock::now());
+
+  if (options_.bler) {
+    int num_errors = 0;
+    for (bool b : block_has_errors_)
+      if (b)
+        num_errors++;
+
+    group.set_bler(1.0f * num_errors / block_has_errors_.size() * 100);
+  }
 
   return group;
 }

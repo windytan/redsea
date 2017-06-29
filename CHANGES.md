@@ -2,6 +2,7 @@
 
 ## 0.12.0 (xxxx-xx-xx)
 * Add support for time-of-demodulation timestamps (`-t`, `--timestamp`)
+* Add support for average block error rate (BLER) estimation (`-E`, `--bler`)
 * Change the long option for `-b` to `--input-bits` and fix the incorrect
   option in the usage help
 
