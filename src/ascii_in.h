@@ -26,7 +26,7 @@ namespace redsea {
 
 class AsciiBits {
  public:
-  explicit AsciiBits(bool feed_thru = false);
+  explicit AsciiBits(const Options& options);
   ~AsciiBits();
   int NextBit();
   bool eof() const;
@@ -36,7 +36,7 @@ class AsciiBits {
   bool feed_thru_;
 };
 
-Group NextGroupRSpy(bool feed_thru = false);
+Group NextGroupRSpy(const Options& options);
 
 }  // namespace redsea
 #endif // ASCII_IN_H_

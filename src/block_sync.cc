@@ -125,7 +125,8 @@ BlockStream::BlockStream(const Options& options) : bitcount_(0),
 #ifdef HAVE_LIQUID
   subcarrier_(options),
 #endif
-  ascii_bits_(options.feed_thru),
+  options_(options),
+  ascii_bits_(options),
   input_type_(options.input_type), is_eof_(false) {
 }
 

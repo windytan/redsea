@@ -25,7 +25,8 @@
 
 namespace redsea {
 
-AsciiBits::AsciiBits(bool feed_thru) : is_eof_(false), feed_thru_(feed_thru) {
+AsciiBits::AsciiBits(const Options& options) :
+    is_eof_(false), feed_thru_(options.feed_thru) {
 }
 
 AsciiBits::~AsciiBits() {
@@ -51,7 +52,7 @@ bool AsciiBits::eof() const {
   return is_eof_;
 }
 
-Group NextGroupRSpy(bool feed_thru) {
+Group NextGroupRSpy(const Options& options) {
   Group group;
   group.disable_offsets();
 
@@ -60,7 +61,7 @@ Group NextGroupRSpy(bool feed_thru) {
   while (!(finished || std::cin.eof())) {
     std::string line;
     std::getline(std::cin, line);
-    if (feed_thru)
+    if (options.feed_thru)
       std::cout << line << std::endl;
 
     if (line.length() < 16)

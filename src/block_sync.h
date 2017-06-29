@@ -60,6 +60,7 @@ class BlockStream {
 #ifdef HAVE_LIQUID
   Subcarrier subcarrier_;
 #endif
+  const Options options_;
   AsciiBits ascii_bits_;
   const eInputType input_type_;
   bool is_eof_;

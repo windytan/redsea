@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
 
   while (!(std::cin.eof() || block_stream.eof())) {
     redsea::Group group = (options.input_type == redsea::INPUT_RDSSPY ?
-        redsea::NextGroupRSpy(options.feed_thru) :
+        redsea::NextGroupRSpy(options) :
         block_stream.NextGroup());
 
     if (group.has_pi()) {
