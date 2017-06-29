@@ -95,6 +95,8 @@ radio_command | redsea [OPTIONS]
 -e, --feed-through     Echo the input signal to stdout and print
                        decoded groups to stderr
 
+-E, --bler             Display average block error rate (%)
+
 -f, --file FILENAME    Use an audio file as input
 
 -h, --input-hex        Input is hex groups in the RDS Spy format
