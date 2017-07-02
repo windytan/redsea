@@ -209,7 +209,8 @@ int main(int argc, char** argv) {
 #endif
 
     if (options.output_type == redsea::OUTPUT_HEX) {
-      redsea::PrintHexGroup(group, options.feed_thru ? &std::cerr : &std::cout);
+      redsea::PrintHexGroup(group, options.feed_thru ? &std::cerr : &std::cout,
+                            options.time_format);
     } else {
       station.UpdateAndPrint(group, options.feed_thru ?
                              &std::cerr : &std::cout);

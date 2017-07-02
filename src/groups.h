@@ -73,6 +73,7 @@ class Group {
   uint8_t bler() const;
   bool has_pi() const;
   bool has_bler() const;
+  bool has_time() const;
   std::chrono::time_point<std::chrono::system_clock> rx_time() const;
   void set(eBlockNumber block_num, uint16_t data);
   void set_c_prime(uint16_t data);
@@ -91,6 +92,7 @@ class Group {
   bool has_pi_;
   bool has_c_prime_;
   bool has_bler_;
+  bool has_time_;
   bool no_offsets_;
 };
 
@@ -168,7 +170,8 @@ struct RTPlusTag {
   uint16_t length;
 };
 
-void PrintHexGroup(const Group& group, std::ostream* stream);
+void PrintHexGroup(const Group& group, std::ostream* stream,
+                   const std::string& time_format);
 
 }  // namespace redsea
 #endif  // GROUPS_H_

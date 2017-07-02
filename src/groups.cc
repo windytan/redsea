@@ -51,7 +51,8 @@ std::string TimePointToString(
   return result;
 }
 
-void PrintHexGroup(const Group& group, std::ostream* stream) {
+void PrintHexGroup(const Group& group, std::ostream* stream,
+                   const std::string& time_format) {
   stream->fill('0');
   stream->setf(std::ios_base::uppercase);
 
@@ -67,6 +68,9 @@ void PrintHexGroup(const Group& group, std::ostream* stream) {
     if (block_num != BLOCK4)
       *stream << " ";
   }
+
+  if (group.has_time())
+    *stream << " " << TimePointToString(group.rx_time(), time_format);
 
   *stream << std::endl;
 }
@@ -91,7 +95,8 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
 
 Group::Group() : pi_(0x0000), has_block_({false, false, false, false, false}),
                  block_(5), bler_(0), has_type_(false), has_pi_(false),
-                 has_c_prime_(false), has_bler_(false), no_offsets_(false) {
+                 has_c_prime_(false), has_bler_(false), has_time_(false),
+                 no_offsets_(false) {
 }
 
 uint16_t Group::block(eBlockNumber block_num) const {
@@ -128,6 +133,10 @@ bool Group::has_type() const {
 
 bool Group::has_bler() const {
   return has_bler_;
+}
+
+bool Group::has_time() const {
+  return has_time_;
 }
 
 std::chrono::time_point<std::chrono::system_clock> Group::rx_time() const {
@@ -172,6 +181,7 @@ void Group::set_c_prime(uint16_t data) {
 
 void Group::set_time(std::chrono::time_point<std::chrono::system_clock> t) {
   time_received_ = t;
+  has_time_ = true;
 }
 
 void Group::set_bler(uint8_t bler) {
