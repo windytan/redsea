@@ -16,7 +16,6 @@
  */
 #include "src/groups.h"
 
-#include <cassert>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
