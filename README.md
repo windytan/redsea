@@ -95,7 +95,8 @@ radio_command | redsea [OPTIONS]
 -e, --feed-through     Echo the input signal to stdout and print
                        decoded groups to stderr
 
--E, --bler             Display average block error rate (%)
+-E, --bler             Display average block error rate (percentage of blocks
+                       that had errors)
 
 -f, --file FILENAME    Use an audio file as input
 
@@ -162,7 +163,7 @@ Redsea decodes the following basic info from RDS:
 And also these Open Data Applications:
 
 * RadioText Plus (RT+)
-* Traffic Message Channel (TMC)
+* Traffic Message Channel (RDS-TMC)
 
 ## Contributing
 

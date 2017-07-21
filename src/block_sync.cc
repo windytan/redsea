@@ -244,7 +244,7 @@ Group BlockStream::NextGroup() {
         Uncorrectable();
     }
 
-    // Error-free block received
+    // Error-free block received or errors successfully corrected
 
     if (received_offset_ == expected_offset_) {
       if (expected_offset_ == OFFSET_C_PRIME)
