@@ -103,7 +103,7 @@ Options GetOptions(int argc, char** argv) {
 #endif
         break;
       case 'h':
-        options.input_type = redsea::INPUT_RDSSPY;
+        options.input_type = redsea::INPUT_HEX;
         break;
       case 'x':
         options.output_type = redsea::OUTPUT_HEX;
@@ -149,7 +149,7 @@ Options GetOptions(int argc, char** argv) {
     options.just_exit = true;
   }
 
-  if (options.bler && options.input_type == INPUT_RDSSPY) {
+  if (options.bler && options.input_type == INPUT_HEX) {
     std::cerr << "error: block error rate is not supported for hex input"
               << std::endl;
     options.just_exit = true;
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IOLBF, 2048);
 
   while (!(std::cin.eof() || block_stream.eof())) {
-    redsea::Group group = (options.input_type == redsea::INPUT_RDSSPY ?
+    redsea::Group group = (options.input_type == redsea::INPUT_HEX ?
         redsea::NextGroupRSpy(options) :
         block_stream.NextGroup());
 
@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
       prev_new_pi = new_pi;
       new_pi = group.pi();
 
-      if (new_pi == prev_new_pi || options.input_type == redsea::INPUT_RDSSPY) {
+      if (new_pi == prev_new_pi || options.input_type == redsea::INPUT_HEX) {
         if (new_pi != pi)
           station = redsea::Station(new_pi, options);
         pi = new_pi;

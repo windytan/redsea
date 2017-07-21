@@ -24,7 +24,7 @@ namespace redsea {
 const float kTargetSampleRate_Hz  = 171000.0f;
 
 enum eInputType {
-  INPUT_MPX_STDIN, INPUT_MPX_SNDFILE, INPUT_ASCIIBITS, INPUT_RDSSPY
+  INPUT_MPX_STDIN, INPUT_MPX_SNDFILE, INPUT_ASCIIBITS, INPUT_HEX
 };
 
 enum eOutputType {
