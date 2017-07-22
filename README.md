@@ -21,7 +21,7 @@ or, optionally, undecoded hex blocks (`-x`).
     * [Full usage](#full-usage)
   * [Tips for output formatting](#tips-for-output-formatting)
   * [Requirements](#requirements)
-  * [Features](#features)
+  * [Supported RDS features](#supported-rds-features)
   * [Troubleshooting](#troubleshooting)
     * [Can't find liquid-dsp on macOS](#cant-find-liquid-dsp-on-macos)
   * [Contributing](#contributing)
@@ -163,7 +163,7 @@ type:
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals
 
-## Features
+## Supported RDS features
 
 Redsea decodes the following basic info from RDS:
 
