@@ -27,7 +27,7 @@ AS_IF([test "x$enable_tmc" != xno],
 
 LIQUID=
 AS_IF([test "x$with_liquid" != xno],
-  [AC_CHECK_LIB([liquid], [main],
+  [AC_CHECK_LIB([liquid], [nco_crcf_mix_down],
     [AC_SUBST([LIQUID], ["-lliquid"])
      AC_DEFINE([HAVE_LIQUID], [1],
                [Define if you have liquid])
