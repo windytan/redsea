@@ -67,16 +67,6 @@ The full command is:
 
     $ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M | redsea
 
-There's a shorthand shell script called `rtl-rx.sh`:
-
-    $ ./rtl-rx.sh -f 87.9M
-
-Command line options to this script are passed on to `rtl_fm`. (These are not
-options for redsea.) Station frequency,
-`-f`, is mandatory. It may also be helpful to set the ppm error in the
-crystal using `-p`. Gain is set to 40 dB by default. The script can be modified
-to include additional parameters to redsea as well.
-
 For Raspberry Pi 1 it's necessary to change `-A std` to `-A fast`. This
 way more more CPU cycles will be left to redsea.
 
