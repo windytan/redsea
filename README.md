@@ -105,36 +105,40 @@ single-channel samples at 171 kHz.
 ```
 radio_command | redsea [OPTIONS]
 
--b, --input-bits       Input is ASCII bit stream (011010110...)
+-b, --input-bits       Input is an ASCII bit stream (011010110...).
 
 -e, --feed-through     Echo the input signal to stdout and print
-                       decoded groups to stderr
+                       decoded groups to stderr.
 
--E, --bler             Display average block error rate (percentage of blocks
-                       that had errors)
+-E, --bler             Display the average block error rate, or the
+                       percentage of blocks that had errors before
+                       error correction was applied. Averaged over
+                       the last 12 groups. For hex input, this is
+                       the percentage of missed blocks.
 
--f, --file FILENAME    Use an audio file as input
+-f, --file FILENAME    Use an audio file as input. All formats
+                       readable by libsndfile should work.
 
--h, --input-hex        Input is hex groups in the RDS Spy format
+-h, --input-hex        The input is in the RDS Spy hex format.
 
 -l, --loctable DIR     Load TMC location table from a directory in TMC
-                       Exchange format
+                       Exchange format.
 
 -p, --show-partial     Display PS and RadioText before completely
-                       received (as partial_ps, partial_radiotext)
+                       received (as partial_ps, partial_radiotext).
 
--r, --samplerate RATE  Set input sample frequency - will resample
-                       (slow) if this differs from 171000 Hz
+-r, --samplerate RATE  Set input sample frequency. Will resample
+                       (slow) if this differs from 171000 Hz.
 
 -t, --timestamp FORMAT Add time of decoding to JSON groups, see
                        man strftime for formatting options (or
-                       try "%c")
+                       try "%c").
 
--u, --rbds             Use RBDS (North American) program types
+-u, --rbds             Use RBDS (North American) program types.
 
--v, --version          Print version
+-v, --version          Print version string.
 
--x, --output-hex       Output is hex groups in the RDS Spy format
+-x, --output-hex       Output is hex groups in the RDS Spy format.
 ```
 
 ## Tips for output formatting
