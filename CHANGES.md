@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.12.0 (xxxx-xx-xx)
+## 0.12.0 (2017-07-22)
 * Add support for time-of-demodulation timestamps (`-t`, `--timestamp`)
 * Add support for average block error rate (BLER) estimation (`-E`, `--bler`)
 * Change the long option for `-b` to `--input-bits` and fix the incorrect
