@@ -19,8 +19,6 @@
 #include <utility>
 #include <vector>
 
-#include "src/util.h"
-
 namespace redsea {
 
 const unsigned kBitmask16 = 0x000FFFF;
@@ -121,13 +119,13 @@ BlockStream::BlockStream(const Options& options) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), padded_block_(0), prevsync_(0),
   block_counter_(0), expected_offset_(OFFSET_A),
   received_offset_(OFFSET_INVALID), pi_(0x0000), is_in_sync_(false),
-  block_has_errors_(50),
+  block_error_history_(50),
 #ifdef HAVE_LIQUID
   subcarrier_(options),
 #endif
   options_(options),
   ascii_bits_(options),
-  input_type_(options.input_type), is_eof_(false) {
+  input_type_(options.input_type), is_eof_(false), bler_average_(12) {
 }
 
 int BlockStream::NextBit() {
@@ -148,10 +146,10 @@ int BlockStream::NextBit() {
 
 // A block can't be decoded
 void BlockStream::Uncorrectable() {
-  block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
+  block_error_history_[block_counter_ % block_error_history_.size()] = true;
 
   unsigned num_erroneous_blocks = 0;
-  for (bool e : block_has_errors_) {
+  for (bool e : block_error_history_) {
     if (e)
       num_erroneous_blocks++;
   }
@@ -159,8 +157,8 @@ void BlockStream::Uncorrectable() {
   // Sync is lost when >45 out of last 50 blocks are erroneous (Section C.1.2)
   if (is_in_sync_ && num_erroneous_blocks > 45) {
     is_in_sync_ = false;
-    for (size_t i=0; i < block_has_errors_.size(); i++)
-      block_has_errors_[i] = false;
+    for (size_t i=0; i < block_error_history_.size(); i++)
+      block_error_history_[i] = false;
     pi_ = 0x0000;
   }
 }
@@ -214,10 +212,12 @@ Group BlockStream::NextGroup() {
     if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_C_PRIME)
       expected_offset_ = OFFSET_C_PRIME;
 
-    block_has_errors_[block_counter_ % block_has_errors_.size()] = false;
+    block_error_history_[block_counter_ % block_error_history_.size()] = false;
 
-    if (received_offset_ != expected_offset_) {
-      block_has_errors_[block_counter_ % block_has_errors_.size()] = true;
+    bool block_had_errors = (received_offset_ != expected_offset_);
+
+    if (block_had_errors) {
+      block_error_history_[block_counter_ % block_error_history_.size()] = true;
 
       // Detect & correct clock slips (Section C.1.2)
       if (expected_offset_ == OFFSET_A && pi_ != 0x0000 &&
@@ -248,9 +248,10 @@ Group BlockStream::NextGroup() {
 
     if (received_offset_ == expected_offset_) {
       if (expected_offset_ == OFFSET_C_PRIME)
-        group.set_c_prime(message);
+        group.set_c_prime(message, block_had_errors);
       else
-        group.set(g_block_number_for_offset[expected_offset_], message);
+        group.set(g_block_number_for_offset[expected_offset_], message,
+                  block_had_errors);
 
       if (group.has_pi())
         pi_ = group.pi();
@@ -260,18 +261,6 @@ Group BlockStream::NextGroup() {
 
     if (expected_offset_ == OFFSET_A)
       break;
-  }
-
-  if (options_.timestamp)
-    group.set_time(std::chrono::system_clock::now());
-
-  if (options_.bler) {
-    int num_errors = 0;
-    for (bool b : block_has_errors_)
-      if (b)
-        num_errors++;
-
-    group.set_bler(1.0f * num_errors / block_has_errors_.size() * 100);
   }
 
   return group;

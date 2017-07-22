@@ -71,12 +71,13 @@ class Group {
   bool has_type() const;
   uint16_t pi() const;
   uint8_t bler() const;
+  uint8_t num_errors() const;
   bool has_pi() const;
   bool has_bler() const;
   bool has_time() const;
   std::chrono::time_point<std::chrono::system_clock> rx_time() const;
-  void set(eBlockNumber block_num, uint16_t data);
-  void set_c_prime(uint16_t data);
+  void set(eBlockNumber block_num, uint16_t data, bool had_errors = false);
+  void set_c_prime(uint16_t data, bool had_errors = false);
   void disable_offsets();
   void set_time(std::chrono::time_point<std::chrono::system_clock> t);
   void set_bler(uint8_t bler);
@@ -86,6 +87,7 @@ class Group {
   uint16_t pi_;
   std::vector<bool> has_block_;
   std::vector<uint16_t> block_;
+  std::vector<bool> block_had_errors_;
   std::chrono::time_point<std::chrono::system_clock> time_received_;
   uint8_t bler_;
   bool has_type_;

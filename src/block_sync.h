@@ -56,7 +56,7 @@ class BlockStream {
   eOffset received_offset_;
   uint16_t pi_;
   bool is_in_sync_;
-  std::vector<bool> block_has_errors_;
+  std::vector<bool> block_error_history_;
 #ifdef HAVE_LIQUID
   Subcarrier subcarrier_;
 #endif
@@ -64,6 +64,7 @@ class BlockStream {
   AsciiBits ascii_bits_;
   const eInputType input_type_;
   bool is_eof_;
+  RunningAverage bler_average_;
 };
 
 } // namespace redsea

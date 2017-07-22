@@ -94,9 +94,9 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
 }
 
 Group::Group() : pi_(0x0000), has_block_({false, false, false, false, false}),
-                 block_(5), bler_(0), has_type_(false), has_pi_(false),
-                 has_c_prime_(false), has_bler_(false), has_time_(false),
-                 no_offsets_(false) {
+                 block_(5), block_had_errors_(4), bler_(0), has_type_(false),
+                 has_pi_(false), has_c_prime_(false), has_bler_(false),
+                 has_time_(false), no_offsets_(false) {
 }
 
 uint16_t Group::block(eBlockNumber block_num) const {
@@ -117,6 +117,13 @@ uint16_t Group::pi() const {
 
 uint8_t Group::bler() const {
   return bler_;
+}
+
+uint8_t Group::num_errors() const {
+  int n_err = 0;
+  for (eBlockNumber b : {BLOCK1, BLOCK2, BLOCK3, BLOCK4})
+    n_err += (block_had_errors_[b] || !has(b));
+  return n_err;
 }
 
 bool Group::has_pi() const {
@@ -147,9 +154,10 @@ void Group::disable_offsets() {
   no_offsets_ = true;
 }
 
-void Group::set(eBlockNumber block_num, uint16_t data) {
+void Group::set(eBlockNumber block_num, uint16_t data, bool had_errors) {
   block_[block_num] = data;
   has_block_[block_num] = true;
+  block_had_errors_[block_num] = had_errors;
 
   if (block_num == BLOCK1) {
     pi_ = data;
@@ -172,8 +180,10 @@ void Group::set(eBlockNumber block_num, uint16_t data) {
   }
 }
 
-void Group::set_c_prime(uint16_t data) {
+void Group::set_c_prime(uint16_t data, bool had_errors) {
   has_c_prime_ = true;
+  block_had_errors_[BLOCK3] = had_errors;
+
   set(BLOCK3, data);
   if (has(BLOCK2))
     has_type_ = (type_.version == VERSION_B);

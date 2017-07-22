@@ -86,6 +86,18 @@ class AltFreqList {
   bool lf_mf_follows_;
 };
 
+class RunningAverage {
+ public:
+  RunningAverage(int length);
+  void push(int value);
+  float average() const;
+
+ private:
+  std::vector<int> history_;
+  int sum_;
+  int ptr_;
+};
+
 std::string rtrim(std::string s);
 
 }  // namespace redsea

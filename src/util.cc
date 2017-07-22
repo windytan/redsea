@@ -148,7 +148,6 @@ void AltFreqList::clear() {
   alt_freqs_.clear();
 }
 
-
 std::vector<std::string> SplitLine(std::string line, char delimiter) {
   std::stringstream ss(line);
   std::vector<std::string> result;
@@ -250,6 +249,20 @@ std::string CSVRow::at(std::string title) const {
 
 std::string rtrim(std::string s) {
   return s.erase(s.find_last_not_of(' ') + 1);
+}
+
+RunningAverage::RunningAverage(int length) :
+  history_(length < 1 ? 1 : length), sum_(0), ptr_(0) {}
+
+void RunningAverage::push(int value) {
+  sum_ -= history_[ptr_];
+  history_[ptr_] = value;
+  sum_ += value;
+  ptr_ = (ptr_ + 1) % history_.size();
+}
+
+float RunningAverage::average() const {
+  return 1.0f * sum_ / history_.size();
 }
 
 }  // namespace redsea

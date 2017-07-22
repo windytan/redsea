@@ -149,12 +149,6 @@ Options GetOptions(int argc, char** argv) {
     options.just_exit = true;
   }
 
-  if (options.bler && options.input_type == INPUT_HEX) {
-    std::cerr << "error: block error rate is not supported for hex input"
-              << std::endl;
-    options.just_exit = true;
-  }
-
   return options;
 }
 
@@ -178,6 +172,7 @@ int main(int argc, char** argv) {
   uint16_t pi = 0x0000, prev_new_pi = 0x0000, new_pi = 0x0000;
   redsea::BlockStream block_stream(options);
   redsea::Station station(pi, options);
+  redsea::RunningAverage bler_average(redsea::kNumBlerAverageGroups);
 
   // Line buffering
   if (options.feed_thru)
@@ -189,6 +184,9 @@ int main(int argc, char** argv) {
     redsea::Group group = (options.input_type == redsea::INPUT_HEX ?
         redsea::NextGroupRSpy(options) :
         block_stream.NextGroup());
+
+    if (options.timestamp)
+      group.set_time(std::chrono::system_clock::now());
 
     if (group.has_pi()) {
       // Repeated PI confirms change
@@ -207,6 +205,11 @@ int main(int argc, char** argv) {
 #ifdef DEBUG
     printf("b:%f,", block_stream.t());
 #endif
+
+    if (options.bler) {
+      bler_average.push(100.0f * group.num_errors() / 4);
+      group.set_bler(bler_average.average());
+    }
 
     if (options.output_type == redsea::OUTPUT_HEX) {
       redsea::PrintHexGroup(group, options.feed_thru ? &std::cerr : &std::cout,
