@@ -12,7 +12,22 @@ or, optionally, undecoded hex blocks (`-x`).
 
 [![Build Status](https://travis-ci.org/windytan/redsea.svg?branch=master)](https://travis-ci.org/windytan/redsea)
 
-## Compiling
+## Contents
+
+  * [Installation](#installation)
+  * [Usage](#usage)
+    * [Live decoding with rtl_fm](#live-decoding-with-rtl_fm)
+    * [Decoding MPX from a file or via sound card](#decoding-mpx-from-a-file-or-via-sound-card)
+    * [Full usage](#full-usage)
+  * [Tips for output formatting](#tips-for-output-formatting)
+  * [Requirements](#requirements)
+  * [Features](#features)
+  * [Troubleshooting](#troubleshooting)
+    * [Can't find liquid-dsp on macOS](#cant-find-liquid-dsp-on-macos)
+  * [Contributing](#contributing)
+  * [Licensing](#licensing)
+
+## Installation
 
 You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
 library, and GNU autotools. Audio files can be decoded if libsndfile is
@@ -164,6 +179,16 @@ And also these Open Data Applications:
 
 * RadioText Plus (RT+)
 * Traffic Message Channel (RDS-TMC)
+
+## Troubleshooting
+
+### Can't find liquid-dsp on macOS
+
+If you've installed [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) yet
+`configure` can't find it, it's possible that XCode command line tools aren't
+installed. Run this command to fix it:
+
+    xcode-select --install
 
 ## Contributing
 
