@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
 
   while (!(std::cin.eof() || block_stream.eof())) {
     redsea::Group group = (options.input_type == redsea::INPUT_HEX ?
-        redsea::NextGroupRSpy(options) :
+        redsea::ReadNextHexGroup(options) :
         block_stream.NextGroup());
 
     if (options.timestamp)

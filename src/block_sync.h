@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 
-#include "src/ascii_in.h"
+#include "src/input.h"
 #include "config.h"
 #include "src/groups.h"
 #include "src/subcarrier.h"

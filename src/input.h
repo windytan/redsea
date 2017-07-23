@@ -14,15 +14,59 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#ifndef ASCII_IN_H_
-#define ASCII_IN_H_
+#ifndef INPUT_H_
+#define INPUT_H_
 
 #include <cstdint>
 #include <vector>
 
+#include "config.h"
+
+#ifdef HAVE_SNDFILE
+#include <sndfile.h>
+#endif
+
 #include "src/groups.h"
 
 namespace redsea {
+
+class MPXReader {
+ public:
+  bool eof() const;
+  virtual std::vector<float> ReadBlock() = 0;
+  virtual float samplerate() const = 0;
+
+ protected:
+  bool is_eof_;
+};
+
+class StdinReader : public MPXReader {
+ public:
+  explicit StdinReader(const Options& options);
+  ~StdinReader();
+  std::vector<float> ReadBlock() override;
+  float samplerate() const override;
+
+ private:
+  float samplerate_;
+  int16_t* buffer_;
+  bool feed_thru_;
+};
+
+#ifdef HAVE_SNDFILE
+class SndfileReader : public MPXReader {
+ public:
+  explicit SndfileReader(const Options& options);
+  ~SndfileReader();
+  std::vector<float> ReadBlock() override;
+  float samplerate() const override;
+
+ private:
+  SF_INFO info_;
+  SNDFILE* file_;
+  float* buffer_;
+};
+#endif
 
 class AsciiBits {
  public:
@@ -36,7 +80,7 @@ class AsciiBits {
   bool feed_thru_;
 };
 
-Group NextGroupRSpy(const Options& options);
+Group ReadNextHexGroup(const Options& options);
 
 }  // namespace redsea
-#endif // ASCII_IN_H_
+#endif  // INPUT_H_

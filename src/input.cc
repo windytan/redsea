@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/ascii_in.h"
+#include "src/input.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -24,6 +24,94 @@
 #include "src/util.h"
 
 namespace redsea {
+
+namespace {
+
+const int kInputBufferSize = 4096;
+
+}
+
+bool MPXReader::eof() const {
+  return is_eof_;
+}
+
+StdinReader::StdinReader(const Options& options) :
+    samplerate_(options.samplerate),
+    buffer_(new (std::nothrow) int16_t[kInputBufferSize]),
+    feed_thru_(options.feed_thru) {
+  is_eof_ = false;
+}
+
+StdinReader::~StdinReader() {
+  delete[] buffer_;
+}
+
+std::vector<float> StdinReader::ReadBlock() {
+  int num_read = fread(buffer_, sizeof(buffer_[0]), kInputBufferSize,
+      stdin);
+
+  if (feed_thru_)
+    fwrite(buffer_, sizeof(buffer_[0]), num_read, stdout);
+
+  if (num_read < kInputBufferSize)
+    is_eof_ = true;
+
+  std::vector<float> result(num_read);
+  for (int i = 0; i < num_read; i++)
+    result[i] = buffer_[i];
+
+  return result;
+}
+
+float StdinReader::samplerate() const {
+  return samplerate_;
+}
+
+#ifdef HAVE_SNDFILE
+SndfileReader::SndfileReader(const Options& options) :
+    info_({0, 0, 0, 0, 0, 0}),
+    file_(sf_open(options.sndfilename.c_str(), SFM_READ, &info_)),
+    buffer_(new (std::nothrow) float[info_.channels * kInputBufferSize]) {
+  is_eof_ = false;
+  if (info_.frames == 0) {
+    std::cerr << "error: couldn't open " << options.sndfilename << std::endl;
+    is_eof_ = true;
+  }
+  if (info_.samplerate < 128000.f) {
+    std::cerr << "error: sample rate must be 128000 Hz or higher" << std::endl;
+    is_eof_ = true;
+  }
+}
+
+SndfileReader::~SndfileReader() {
+  sf_close(file_);
+  delete[] buffer_;
+}
+
+std::vector<float> SndfileReader::ReadBlock() {
+  std::vector<float> result;
+  if (is_eof_)
+    return result;
+
+  sf_count_t num_read = sf_readf_float(file_, buffer_, kInputBufferSize);
+  if (num_read != kInputBufferSize)
+    is_eof_ = true;
+
+  if (info_.channels == 1) {
+    result = std::vector<float>(buffer_, buffer_ + num_read);
+  } else {
+    result = std::vector<float>(num_read);
+    for (size_t i = 0; i < result.size(); i++)
+      result[i] = buffer_[i * info_.channels];
+  }
+  return result;
+}
+
+float SndfileReader::samplerate() const {
+  return info_.samplerate;
+}
+#endif
+
 
 AsciiBits::AsciiBits(const Options& options) :
     is_eof_(false), feed_thru_(options.feed_thru) {
@@ -52,7 +140,7 @@ bool AsciiBits::eof() const {
   return is_eof_;
 }
 
-Group NextGroupRSpy(const Options& options) {
+Group ReadNextHexGroup(const Options& options) {
   Group group;
   group.disable_offsets();
 
