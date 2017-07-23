@@ -95,18 +95,19 @@ single-channel samples at 171 kHz.
 ```
 radio_command | redsea [OPTIONS]
 
--b, --input-bits       Input is an ASCII bit stream (011010110...).
+-b, --input-bits       Input is an unsynchronized ASCII bit stream
+                       (011010110...).
 
 -e, --feed-through     Echo the input signal to stdout and print
                        decoded groups to stderr.
 
 -E, --bler             Display the average block error rate, or the
                        percentage of blocks that had errors before
-                       error correction was applied. Averaged over
-                       the last 12 groups. For hex input, this is
-                       the percentage of missed blocks.
+                       error correction. Averaged over the last 12
+                       groups. For hex input, this is the percentage
+                       of missing blocks.
 
--f, --file FILENAME    Use an audio file as input. All formats
+-f, --file FILENAME    Use an audio file as MPX input. All formats
                        readable by libsndfile should work.
 
 -h, --input-hex        The input is in the RDS Spy hex format.
@@ -117,10 +118,10 @@ radio_command | redsea [OPTIONS]
 -p, --show-partial     Display PS and RadioText before completely
                        received (as partial_ps, partial_radiotext).
 
--r, --samplerate RATE  Set input sample frequency. Will resample
+-r, --samplerate RATE  Set stdin sample frequency in Hz. Will resample
                        (slow) if this differs from 171000 Hz.
 
--t, --timestamp FORMAT Add time of decoding to JSON groups, see
+-t, --timestamp FORMAT Add time of decoding to JSON groups; see
                        man strftime for formatting options (or
                        try "%c").
 
@@ -128,7 +129,8 @@ radio_command | redsea [OPTIONS]
 
 -v, --version          Print version string.
 
--x, --output-hex       Output is hex groups in the RDS Spy format.
+-x, --output-hex       Output hex groups in the RDS Spy format,
+                       suppressing JSON output.
 ```
 
 ## Tips for output formatting
