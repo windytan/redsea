@@ -29,29 +29,31 @@ void PrintUsage() {
   std::cout <<
      "radio_command | ./src/redsea [OPTIONS]\n"
      "\n"
-     "-b, --input-bits       Input is an ASCII bit stream (011010110...).\n\n"
+     "-b, --input-bits       Input is an unsynchronized ASCII bit stream\n"
+     "                       (011010110...).\n\n"
      "-e, --feed-through     Echo the input signal to stdout and print\n"
      "                       decoded groups to stderr.\n\n"
      "-E, --bler             Display the average block error rate, or the\n"
      "                       percentage of blocks that had errors before\n"
-     "                       error correction was applied. Averaged over\n"
-     "                       the last 12 groups. For hex input, this is\n"
-     "                       the percentage of missed blocks.\n\n"
-     "-f, --file FILENAME    Use an audio file as input. All formats\n"
+     "                       error correction. Averaged over the last 12\n"
+     "                       groups. For hex input, this is the percentage\n"
+     "                       of missing blocks.\n\n"
+     "-f, --file FILENAME    Use an audio file as MPX input. All formats\n"
      "                       readable by libsndfile should work.\n\n"
      "-h, --input-hex        The input is in the RDS Spy hex format.\n\n"
      "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
      "                       Exchange format.\n\n"
      "-p, --show-partial     Display PS and RadioText before completely\n"
      "                       received (as partial_ps, partial_radiotext).\n\n"
-     "-r, --samplerate RATE  Set input sample frequency. Will resample\n"
+     "-r, --samplerate RATE  Set stdin sample frequency in Hz. Will resample\n"
      "                       (slow) if this differs from 171000 Hz.\n\n"
-     "-t, --timestamp FORMAT Add time of decoding to JSON groups, see\n"
+     "-t, --timestamp FORMAT Add time of decoding to JSON groups; see\n"
      "                       man strftime for formatting options (or\n"
      "                       try \"%c\").\n\n"
      "-u, --rbds             Use RBDS (North American) program types.\n\n"
      "-v, --version          Print version string.\n\n"
-     "-x, --output-hex       Output is hex groups in the RDS Spy format.\n";
+     "-x, --output-hex       Output hex groups in the RDS Spy format,\n"
+     "                       suppressing JSON output.\n";
 }
 
 void PrintVersion() {
@@ -102,7 +104,7 @@ Options GetOptions(int argc, char** argv) {
         options.sndfilename = std::string(optarg);
         options.input_type = redsea::INPUT_MPX_SNDFILE;
 #else
-        std::cerr << "Sorry, redsea was built without libsndfile."
+        std::cerr << "error: redsea was compiled without libsndfile"
                   << std::endl;
         options.just_exit = true;
 #endif
@@ -168,7 +170,7 @@ int main(int argc, char** argv) {
 #ifndef HAVE_LIQUID
   if (options.input_type == redsea::INPUT_MPX_STDIN ||
       options.input_type == redsea::INPUT_MPX_SNDFILE) {
-    std::cerr << "can't demodulate MPX: redsea was compiled without liquid-dsp"
+    std::cerr << "error: redsea was compiled without liquid-dsp"
               << std::endl;
     return EXIT_FAILURE;
   }
