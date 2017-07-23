@@ -104,7 +104,11 @@ SndfileReader::SndfileReader(const Options& options) :
     buffer_(new (std::nothrow) float[info_.channels * kInputBufferSize]) {
   is_eof_ = false;
   if (info_.frames == 0) {
-    std::cerr << "Couldn't open " << options.sndfilename << std::endl;
+    std::cerr << "error: couldn't open " << options.sndfilename << std::endl;
+    is_eof_ = true;
+  }
+  if (info_.samplerate < 128000.f) {
+    std::cerr << "error: sample rate must be 128000 Hz or higher" << std::endl;
     is_eof_ = true;
   }
 }
