@@ -88,7 +88,7 @@ class AltFreqList {
 
 class RunningAverage {
  public:
-  RunningAverage(int length);
+  explicit RunningAverage(int length);
   void push(int value);
   float average() const;
 
