@@ -115,7 +115,7 @@ unsigned DeltaDecoder::Decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier(const Options& options) : numsamples_(0),
+Subcarrier::Subcarrier(const Options& options) : sample_num_(0),
     resample_ratio_(kTargetSampleRate_Hz / options.samplerate),
     bit_buffer_(),
     fir_lpf_(256, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
@@ -191,7 +191,7 @@ void Subcarrier::DemodulateMoreBits() {
 
     fir_lpf_.push(sample_baseband);
 
-    if (numsamples_ % decimate_ratio == 0) {
+    if (sample_num_ % decimate_ratio == 0) {
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
       // PLL-controlled 57 kHz mixdown - aliasing is intentional so we don't
@@ -204,7 +204,7 @@ void Subcarrier::DemodulateMoreBits() {
       for (std::complex<float> symbol : symbols) {
 #ifdef DEBUG
         printf("sy:%f,%f,%f\n",
-            numsamples_ / kTargetSampleRate_Hz,
+            sample_num_ / kTargetSampleRate_Hz,
             symbol.real(),
             symbol.imag());
 #endif
@@ -223,7 +223,7 @@ void Subcarrier::DemodulateMoreBits() {
                 biphase.real() >= 0));
 #ifdef DEBUG
           printf("bi:%f,%f,%f\n",
-              numsamples_ / kTargetSampleRate_Hz,
+              sample_num_ / kTargetSampleRate_Hz,
               biphase.real(),
               biphase.imag());
 #endif
@@ -231,7 +231,7 @@ void Subcarrier::DemodulateMoreBits() {
       }
 #ifdef DEBUG
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
-          numsamples_ / kTargetSampleRate_Hz,
+          sample_num_ / kTargetSampleRate_Hz,
           static_cast<float>(sample),
           step2hertz(oscillator_exact_.frequency()),
           modem_.phase_error(),
@@ -244,7 +244,7 @@ void Subcarrier::DemodulateMoreBits() {
     oscillator_exact_.Step();
     oscillator_approx_.Step();
 
-    numsamples_++;
+    sample_num_++;
   }
 }
 
@@ -268,7 +268,7 @@ bool Subcarrier::eof() const {
 
 #ifdef DEBUG
 float Subcarrier::t() const {
-  return numsamples_ / kTargetSampleRate_Hz;
+  return sample_num_ / kTargetSampleRate_Hz;
 }
 #endif
 

@@ -68,7 +68,7 @@ class Subcarrier {
 
  private:
   void DemodulateMoreBits();
-  int  numsamples_;
+  int  sample_num_;
   float resample_ratio_;
 
   std::deque<int> bit_buffer_;
