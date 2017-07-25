@@ -1,7 +1,7 @@
 # redsea RDS decoder
 
-redsea is a free, fast, and lightweight command-line
-[RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/macOS,
+redsea is a lightweight command-line
+[FM-RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/macOS,
 written by Oona Räisänen. It can be used with any
 [RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio stick with the
 `rtl_fm` tool. It can also decode raw ASCII bitstream, the hex format used by
@@ -17,9 +17,10 @@ or, optionally, undecoded hex blocks (`-x`).
   * [Installation](#installation)
   * [Usage](#usage)
     * [Live decoding with rtl_fm](#live-decoding-with-rtl_fm)
+    * [Listening and decoding live](#listening-and-decoding-live)
     * [Decoding MPX from a file or via sound card](#decoding-mpx-from-a-file-or-via-sound-card)
+    * [Formatting and filtering the JSON output](#formatting-and-filtering-the-json-output)
     * [Full usage](#full-usage)
-  * [Tips for output formatting](#tips-for-output-formatting)
   * [Requirements](#requirements)
   * [Supported RDS features](#supported-rds-features)
   * [Troubleshooting](#troubleshooting)
@@ -73,6 +74,16 @@ way more more CPU cycles will be left to redsea.
 Note that `rtl_fm` will tune a bit off; this is normal and is done to
 avoid the DC spike.
 
+### Listening and decoding live
+
+The `--feed-through` option allows you to use both the original signal and
+the decoded RDS via different streams. For example, the signal can be listened
+to using `sox`, while RDS groups are printed to stderr:
+
+    $ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M |\
+    > redsea --feed-through |\
+    > play -t .s16 -r 171k -c 1 -
+
 ### Decoding MPX from a file or via sound card
 
 It's easy to decode audio files containing a demodulated FM carrier. Note that
@@ -81,7 +92,7 @@ fastest.
 
     $ redsea -f multiplex.wav
 
-If your sound card supports recording at high sample rates (e.g. 192 kHz) you
+If your sound card supports recording at high sample rates (192 kHz) you
 can also decode the MPX output of an FM tuner or RDS encoder, for instance
 with this `sox` command:
 
@@ -90,13 +101,27 @@ with this `sox` command:
 By default, the raw MPX input is assumed to be 16-bit signed-integer
 single-channel samples at 171 kHz.
 
+## Formatting and filtering the JSON output
+
+The JSON output can be tidied and/or colored using `jq`:
+
+    $ rtl_fm ... | redsea | jq
+
+It can also be used to extract only certain fields, for instance the program
+type:
+
+    $ rtl_fm ... | redsea | jq '.prog_type'
+
+Details of the output format are described in the schema file (schema.json).
+
 ### Full usage
 
 ```
 radio_command | redsea [OPTIONS]
 
 -b, --input-bits       Input is an unsynchronized ASCII bit stream
-                       (011010110...).
+                       (011010110...). All characters but '0' and '1'
+                       are ignored.
 
 -e, --feed-through     Echo the input signal to stdout and print
                        decoded groups to stderr.
@@ -133,20 +158,11 @@ radio_command | redsea [OPTIONS]
                        suppressing JSON output.
 ```
 
-## Tips for output formatting
-
-The JSON output can be tidied and/or colored using `jq`:
-
-    $ ./rtl-rx.sh -f 87.9M | jq
-
-It can also be used to extract only certain fields, for instance the program
-type:
-
-    $ ./rtl-rx.sh -f 87.9M | jq '.prog_type'
-
 ## Requirements
 
 * Linux or macOS
+* For realtime decoding, a 700 MHz ARMv6 CPU or faster
+* ~8 MB of free memory (~128 MB for RDS-TMC)
 * C++11 compiler
 * GNU autotools
 * libiconv
