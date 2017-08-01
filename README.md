@@ -101,7 +101,7 @@ with this `sox` command:
 By default, the raw MPX input is assumed to be 16-bit signed-integer
 single-channel samples at 171 kHz.
 
-## Formatting and filtering the JSON output
+### Formatting and filtering the JSON output
 
 The JSON output can be tidied and/or colored using `jq`:
 
