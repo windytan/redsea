@@ -10,6 +10,9 @@ RDS Spy, and audio files containing multiplex signals (MPX).
 Decoded RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`).
 
+Note that in the 0.x versions the names and formats of the JSON fields and
+command line options may still change.
+
 [![Build Status](https://travis-ci.org/windytan/redsea.svg?branch=master)](https://travis-ci.org/windytan/redsea)
 
 ## Contents
