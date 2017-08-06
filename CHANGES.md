@@ -1,5 +1,11 @@
 # redsea changelog
 
+## 0.13.0 (xxxx-xx-xx)
+
+* Change the JSON structure in `rtplus`: RT+ tags are now displayed as an array
+  of objects with content-type and data (`"tags":[{"content-type":"item.artist",
+  "data":"SeeB feat. Neev"},{"content-type":"item.title","data":"Breathe"}]`)
+
 ## 0.12.0 (2017-07-22)
 * Add support for time-of-demodulation timestamps (`-t`, `--timestamp`)
 * Add support for average block error rate (BLER) estimation (`-E`, `--bler`)

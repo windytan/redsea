@@ -714,6 +714,7 @@ void Station::ParseRadioTextPlus(const Group& group) {
   }
 
   json_["radiotext_plus"]["item_running"] = item_running;
+  json_["radiotext_plus"]["item_toggle"] = item_toggle ? 1 : 0;
 
   int num_tags = group.has(BLOCK3) ? (group.has(BLOCK4) ? 2 : 1) : 0;
   std::vector<RTPlusTag> tags(num_tags);
@@ -737,9 +738,12 @@ void Station::ParseRadioTextPlus(const Group& group) {
       rtrim(radiotext_.last_complete_string(tag.start, tag.length));
 
     if (radiotext_.has_chars(tag.start, tag.length) && text.length() > 0 &&
-        tag.content_type != 0)
-      json_["radiotext_plus"][RTPlusContentTypeString(tag.content_type)] =
-          text;
+        tag.content_type != 0) {
+      Json::Value tag_json;
+      tag_json["content-type"] = RTPlusContentTypeString(tag.content_type);
+      tag_json["data"] = text;
+      json_["radiotext_plus"]["tags"].append(tag_json);
+    }
   }
 }
 
