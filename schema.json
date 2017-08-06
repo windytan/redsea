@@ -12,10 +12,6 @@
       "type": "string",
       "pattern": "^([0-9]|1[0-5])[AB]$"
     },
-    "carrierfreq": {
-      "type": "string",
-      "pattern": "^((8[7-9]|9[0-9]|10[0-7])\\.[0-9] MHz|[0-9]{3,4} kHz)$"
-    },
     "di": {
       "type": "object",
       "properties": {
@@ -292,11 +288,11 @@
         "description": "Traffic Message Channel",
         "$ref": "#/definitions/tmc"
       },
-      "alt_freqs": {
+      "alt_kilohertz": {
         "description": "Alternative Frequencies",
         "type": "array",
         "items": {
-          "$ref": "#/definitions/carrierfreq"
+          "type": "integer"
         }
       },
       "prog_item_started": {
@@ -388,14 +384,14 @@
           "prog_type": {
             "type": "string"
           },
-          "alt_freqs": {
+          "alt_kilohertz": {
             "type": "array",
             "items": {
-              "$ref": "#/definitions/carrierfreq"
+              "type": "integer"
             }
           },
-          "frequency": {
-            "$ref": "#/definitions/carrierfreq"
+          "kilohertz": {
+            "type": "integer"
           },
           "has_linkage": {
             "type": "boolean"

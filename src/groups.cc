@@ -332,7 +332,7 @@ void Station::DecodeType0(const Group& group) {
 
     if (alt_freq_list_.complete()) {
       for (CarrierFrequency f : alt_freq_list_.get())
-        json_["alt_freqs"].append(f.str());
+        json_["alt_kilohertz"].append(f.kHz());
       alt_freq_list_.clear();
     }
   }
@@ -634,7 +634,7 @@ void Station::DecodeType14(const Group& group) {
 
     if (eon_alt_freqs_[on_pi].complete()) {
       for (CarrierFrequency freq : eon_alt_freqs_[on_pi].get())
-        json_["other_network"]["alt_freqs"].append(freq.str());
+        json_["other_network"]["alt_kilohertz"].append(freq.kHz());
       eon_alt_freqs_[on_pi].clear();
     }
 
@@ -642,7 +642,7 @@ void Station::DecodeType14(const Group& group) {
     CarrierFrequency freq_other(Bits(group.block(BLOCK3), 0, 8));
 
     if (freq_other.valid())
-      json_["other_network"]["frequency"] = freq_other.str();
+      json_["other_network"]["kilohertz"] = freq_other.kHz();
 
   } else if (eon_variant == 12) {
     bool has_linkage = Bits(group.block(BLOCK3), 15, 1);
