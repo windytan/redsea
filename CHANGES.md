@@ -16,6 +16,7 @@
 ```
 * Change the way frequencies are displayed for better machine readability, from
   `"frequency":"87.9 MHz"` to `"kilohertz":87900`
+* Update jsoncpp from version 1.7.7 to 1.8.1
 
 ## 0.12.0 (2017-07-22)
 

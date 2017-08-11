@@ -218,7 +218,7 @@ Station::Station(uint16_t _pi, const Options& options) : pi_(_pi),
 #endif
 {
   writer_builder_["indentation"] = "";
-  writer_builder_["precision"] = 5;
+  writer_builder_["precision"] = 7;
   writer_ =
       std::unique_ptr<Json::StreamWriter>(writer_builder_.newStreamWriter());
 }
