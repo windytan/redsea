@@ -205,6 +205,13 @@ installed. Run this command to fix it:
 
     xcode-select --install
 
+### Can't find liquid-dsp on Linux
+
+Try running this in the terminal:
+
+    sudo ldconfig
+
+
 ## Contributing
 
 [Bug reports](https://github.com/windytan/redsea/issues) are welcome. Also, if a
