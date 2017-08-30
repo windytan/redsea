@@ -28,6 +28,7 @@ command line options may still change.
   * [Supported RDS features](#supported-rds-features)
   * [Troubleshooting](#troubleshooting)
     * [Can't find liquid-dsp on macOS](#cant-find-liquid-dsp-on-macos)
+    * [Can't find liquid-dsp on Linux](#cant-find-liquid-dsp-on-linux)
   * [Contributing](#contributing)
   * [Licensing](#licensing)
 
