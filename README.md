@@ -215,10 +215,12 @@ Try running this in the terminal:
 
 ## Contributing
 
-[Bug reports](https://github.com/windytan/redsea/issues) are welcome. Also, if a
-station in your area is transmitting an interesting Open Data application that
-should be implemented in redsea, I would be happy to see a minute or two's worth
-of hex data using the `-x` switch.
+[Bug reports](https://github.com/windytan/redsea/issues) are welcome. Be
+prepared to check back with GitHub occasionally for clarifying questions.
+
+Also, if a station in your area is transmitting an interesting RDS feature
+that should be implemented in redsea, I would be happy to see a minute or
+two's worth of hex data using the `-x` switch.
 
 ## Licensing
 
