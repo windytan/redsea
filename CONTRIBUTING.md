@@ -6,9 +6,9 @@ Bug reports are very useful for the development of redsea.
 
 * When creating a new bug report ("issue"), be sure to include basic
   information about your system:
-  ** Operating system version
-  ** CPU architecture
-  ** Did you compile the libraries (liquid-dsp, sndfile) yourself or are they
+  * Operating system version
+  * CPU architecture
+  * Did you compile the libraries (liquid-dsp, sndfile) yourself or are they
    from package repositories?
 * If there is an error message, please include the error message in the bug
   report.
