@@ -111,7 +111,7 @@ float NCO::frequency() {
   return nco_crcf_get_frequency(object_);
 }
 
-SymSync::SymSync(int ftype, unsigned k, unsigned m,
+SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
     float beta, unsigned num_filters) :
   object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)) {
 }
