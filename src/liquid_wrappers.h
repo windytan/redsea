@@ -68,7 +68,7 @@ class NCO {
 
 class SymSync {
  public:
-  SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
+  SymSync(int ftype, unsigned k, unsigned m,
           float beta, unsigned num_filters);
   ~SymSync();
   void set_bandwidth(float);
