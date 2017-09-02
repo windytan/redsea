@@ -10,8 +10,8 @@ Bug reports are very useful for the development of redsea.
   * CPU architecture
   * Did you compile the libraries (liquid-dsp, sndfile) yourself or are they
    from package repositories?
-* If there is an error message, please include the error message in the bug
-  report.
+* If there is an error message, please include the error message verbatim in
+  the bug report.
 * Be sure to check back with GitHub afterwards to see if I've asked any
   clarifying questions. I may not have access to an environment similar to
   yours and can't necessarily reproduce the bug myself.
