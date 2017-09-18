@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.13.0 (xxxx-xx-xx)
+## 0.13.0 (2017-09-19)
 
 * Change the JSON structure in `radiotext_plus`: RT+ tags are now displayed as
   an array of objects with content-type and data:
