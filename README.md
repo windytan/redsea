@@ -75,8 +75,9 @@ The full command is:
 For Raspberry Pi 1 it's necessary to change `-A std` to `-A fast`. This
 way more more CPU cycles will be left to redsea.
 
-Note that `rtl_fm` will tune a bit off; this is normal and is done to
-avoid the DC spike.
+Note that `rtl_fm` will tune the receiver a bit off-center; this is normal and
+is done to avoid the DC spike. See the `rtl_fm` FAQ for more about this
+behavior.
 
 ### Listening and decoding live
 
@@ -116,7 +117,7 @@ type:
 
     $ rtl_fm ... | redsea | jq '.prog_type'
 
-Details of the output format are described in the schema file (schema.json).
+Details of the output format are described in [the schema file](schema.json).
 
 ### Full usage
 
