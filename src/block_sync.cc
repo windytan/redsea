@@ -118,11 +118,33 @@ uint32_t CorrectBurstErrors(uint32_t block, eOffset offset) {
   return corrected_block;
 }
 
+RunningSum::RunningSum(int length) :
+  history_(length), pointer_(0) {
+}
+
+void RunningSum::push(int number) {
+  history_[pointer_] = number;
+  pointer_ = (pointer_ + 1) % history_.size();
+}
+
+int RunningSum::sum() const {
+  int result = 0;
+  for (int number : history_)
+    result += number;
+
+  return result;
+}
+
+void RunningSum::clear() {
+  for (size_t i = 0; i < history_.size(); i++)
+    history_[i] = 0;
+}
+
 BlockStream::BlockStream(const Options& options) : bitcount_(0),
   prevbitcount_(0), left_to_read_(0), padded_block_(0), prevsync_(0),
-  block_counter_(0), expected_offset_(OFFSET_A),
+  expected_offset_(OFFSET_A),
   received_offset_(OFFSET_INVALID), pi_(0x0000), is_in_sync_(false),
-  block_error_history_(50),
+  block_error_sum_(50),
 #ifdef HAVE_LIQUID
   subcarrier_(options),
 #endif
@@ -132,36 +154,27 @@ BlockStream::BlockStream(const Options& options) : bitcount_(0),
 }
 
 int BlockStream::NextBit() {
-  int result = 0;
+  int bit = 0;
 #ifdef HAVE_LIQUID
   if (input_type_ == INPUT_MPX_STDIN || input_type_ == INPUT_MPX_SNDFILE) {
-    result = subcarrier_.NextBit();
+    bit = subcarrier_.NextBit();
     is_eof_ = subcarrier_.eof();
   }
 #endif
   if (input_type_ == INPUT_ASCIIBITS) {
-    result = ascii_bits_.NextBit();
+    bit = ascii_bits_.NextBit();
     is_eof_ = ascii_bits_.eof();
   }
 
-  return result;
+  return bit;
 }
 
 // A block can't be decoded
 void BlockStream::Uncorrectable() {
-  block_error_history_[block_counter_ % block_error_history_.size()] = true;
-
-  unsigned num_erroneous_blocks = 0;
-  for (bool e : block_error_history_) {
-    if (e)
-      num_erroneous_blocks++;
-  }
-
   // Sync is lost when >45 out of last 50 blocks are erroneous (Section C.1.2)
-  if (is_in_sync_ && num_erroneous_blocks > 45) {
+  if (is_in_sync_ && block_error_sum_.sum() > 45) {
     is_in_sync_ = false;
-    for (size_t i=0; i < block_error_history_.size(); i++)
-      block_error_history_[i] = false;
+    block_error_sum_.clear();
     pi_ = 0x0000;
   }
 }
@@ -205,23 +218,18 @@ Group BlockStream::NextGroup() {
     uint32_t block = (padded_block_ >> 1) & kBitmask26;
     uint16_t message = block >> 10;
 
-    received_offset_ = OffsetForSyndrome(CalcSyndrome(block));
+    received_offset_ = OffsetForSyndrome(CalculateSyndrome(block));
 
     if (!AcquireSync())
       continue;
 
-    block_counter_++;
-
     if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_C_PRIME)
       expected_offset_ = OFFSET_C_PRIME;
 
-    block_error_history_[block_counter_ % block_error_history_.size()] = false;
-
     bool block_had_errors = (received_offset_ != expected_offset_);
+    block_error_sum_.push(block_had_errors);
 
     if (block_had_errors) {
-      block_error_history_[block_counter_ % block_error_history_.size()] = true;
-
       // Detect & correct clock slips (Section C.1.2)
       if (expected_offset_ == OFFSET_A && pi_ != 0x0000 &&
           ((padded_block_ >> 12) & kBitmask16) == pi_) {

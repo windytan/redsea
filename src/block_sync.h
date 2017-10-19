@@ -32,6 +32,18 @@ eOffset OffsetForSyndrome(uint16_t syndrome);
 eOffset NextOffsetFor(eOffset this_offset);
 uint32_t CorrectBurstErrors(uint32_t block, eOffset offset);
 
+class RunningSum {
+ public:
+  explicit RunningSum(int length);
+  int sum() const;
+  void push(int num);
+  void clear();
+
+ private:
+  std::vector<int> history_;
+  int pointer_;
+};
+
 class BlockStream {
  public:
   explicit BlockStream(const Options& options);
@@ -51,12 +63,11 @@ class BlockStream {
   int left_to_read_;
   uint32_t padded_block_;
   unsigned prevsync_;
-  unsigned block_counter_;
   eOffset expected_offset_;
   eOffset received_offset_;
   uint16_t pi_;
   bool is_in_sync_;
-  std::vector<bool> block_error_history_;
+  RunningSum block_error_sum_;
 #ifdef HAVE_LIQUID
   Subcarrier subcarrier_;
 #endif
