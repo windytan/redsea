@@ -27,7 +27,7 @@
 
 namespace redsea {
 
-uint32_t CalcSyndrome(uint32_t vec);
+uint32_t CalculateSyndrome(uint32_t vec);
 eOffset OffsetForSyndrome(uint16_t syndrome);
 eOffset NextOffsetFor(eOffset this_offset);
 uint32_t CorrectBurstErrors(uint32_t block, eOffset offset);

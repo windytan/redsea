@@ -33,7 +33,7 @@ namespace redsea {
 class MPXReader {
  public:
   bool eof() const;
-  virtual std::vector<float> ReadBlock() = 0;
+  virtual std::vector<float> ReadChunk() = 0;
   virtual float samplerate() const = 0;
 
  protected:
@@ -44,7 +44,7 @@ class StdinReader : public MPXReader {
  public:
   explicit StdinReader(const Options& options);
   ~StdinReader();
-  std::vector<float> ReadBlock() override;
+  std::vector<float> ReadChunk() override;
   float samplerate() const override;
 
  private:
@@ -58,7 +58,7 @@ class SndfileReader : public MPXReader {
  public:
   explicit SndfileReader(const Options& options);
   ~SndfileReader();
-  std::vector<float> ReadBlock() override;
+  std::vector<float> ReadChunk() override;
   float samplerate() const override;
 
  private:

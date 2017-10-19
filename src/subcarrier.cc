@@ -153,7 +153,7 @@ void Subcarrier::DemodulateMoreBits() {
   if (is_eof_)
     return;
 
-  std::vector<float> inbuffer = mpx_->ReadBlock();
+  std::vector<float> inbuffer = mpx_->ReadChunk();
 
   // Resample if needed
   int num_samples = 0;

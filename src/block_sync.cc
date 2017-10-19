@@ -42,7 +42,7 @@ uint32_t MatrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
 
 // Section B.2.1: 'The calculation of the syndromes -- can easily be done by
 // multiplying each word with the parity matrix H.'
-uint32_t CalcSyndrome(uint32_t vec) {
+uint32_t CalculateSyndrome(uint32_t vec) {
   static const std::vector<uint32_t> parity_check_matrix({
       0x200, 0x100, 0x080, 0x040, 0x020, 0x010, 0x008, 0x004,
       0x002, 0x001, 0x2dc, 0x16e, 0x0b7, 0x287, 0x39f, 0x313,
@@ -65,7 +65,7 @@ eOffset NextOffsetFor(eOffset this_offset) {
 // Precompute mapping of syndromes to error vectors
 
 std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
-  std::map<std::pair<uint16_t, eOffset>, uint32_t> result;
+  std::map<std::pair<uint16_t, eOffset>, uint32_t> lookup_table;
 
   const uint16_t offset_words[] =
       {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
@@ -80,18 +80,21 @@ std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
       for (int shift=0; shift < 26; shift++) {
         uint32_t error_vector = ((error_bits << shift) & kBitmask26);
 
-        uint32_t syndrome = CalcSyndrome(error_vector ^ offset_words[offset]);
-        result.insert({{syndrome, offset}, error_vector});
+        uint32_t syndrome = CalculateSyndrome(error_vector ^ offset_words[offset]);
+        lookup_table.insert({{syndrome, offset}, error_vector});
       }
     }
   }
-  return result;
+  return lookup_table;
 }
 
 eOffset OffsetForSyndrome(uint16_t syndrome) {
   static const std::map<uint16_t, eOffset> offset_syndromes =
-    {{0x3D8, OFFSET_A},  {0x3D4, OFFSET_B}, {0x25C, OFFSET_C},
-     {0x3CC, OFFSET_C_PRIME}, {0x258, OFFSET_D}};
+    {{0x3D8, OFFSET_A},
+     {0x3D4, OFFSET_B},
+     {0x25C, OFFSET_C},
+     {0x3CC, OFFSET_C_PRIME},
+     {0x258, OFFSET_D}};
 
   if (offset_syndromes.count(syndrome) > 0)
     return offset_syndromes.at(syndrome);
@@ -104,7 +107,7 @@ const std::map<std::pair<uint16_t, eOffset>, uint32_t> kErrorLookup =
 
 // Section B.2.2
 uint32_t CorrectBurstErrors(uint32_t block, eOffset offset) {
-  uint16_t syndrome = CalcSyndrome(block);
+  uint16_t syndrome = CalculateSyndrome(block);
   uint32_t corrected_block = block;
 
   if (kErrorLookup.count({syndrome, offset}) > 0) {
@@ -167,7 +170,7 @@ bool BlockStream::AcquireSync() {
   if (is_in_sync_)
     return true;
 
-  // Try to find the repeating offset sequence
+  // Try to find a repeating offset sequence
   if (received_offset_ != OFFSET_INVALID) {
     int dist = bitcount_ - prevbitcount_;
 

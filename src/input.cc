@@ -46,7 +46,7 @@ StdinReader::~StdinReader() {
   delete[] buffer_;
 }
 
-std::vector<float> StdinReader::ReadBlock() {
+std::vector<float> StdinReader::ReadChunk() {
   int num_read = fread(buffer_, sizeof(buffer_[0]), kInputBufferSize,
       stdin);
 
@@ -56,11 +56,11 @@ std::vector<float> StdinReader::ReadBlock() {
   if (num_read < kInputBufferSize)
     is_eof_ = true;
 
-  std::vector<float> result(num_read);
+  std::vector<float> chunk(num_read);
   for (int i = 0; i < num_read; i++)
-    result[i] = buffer_[i];
+    chunk[i] = buffer_[i];
 
-  return result;
+  return chunk;
 }
 
 float StdinReader::samplerate() const {
@@ -88,23 +88,23 @@ SndfileReader::~SndfileReader() {
   delete[] buffer_;
 }
 
-std::vector<float> SndfileReader::ReadBlock() {
-  std::vector<float> result;
+std::vector<float> SndfileReader::ReadChunk() {
+  std::vector<float> chunk;
   if (is_eof_)
-    return result;
+    return chunk;
 
   sf_count_t num_read = sf_readf_float(file_, buffer_, kInputBufferSize);
   if (num_read != kInputBufferSize)
     is_eof_ = true;
 
   if (info_.channels == 1) {
-    result = std::vector<float>(buffer_, buffer_ + num_read);
+    chunk = std::vector<float>(buffer_, buffer_ + num_read);
   } else {
-    result = std::vector<float>(num_read);
-    for (size_t i = 0; i < result.size(); i++)
-      result[i] = buffer_[i * info_.channels];
+    chunk = std::vector<float>(num_read);
+    for (size_t i = 0; i < chunk.size(); i++)
+      chunk[i] = buffer_[i * info_.channels];
   }
-  return result;
+  return chunk;
 }
 
 float SndfileReader::samplerate() const {
@@ -121,19 +121,19 @@ AsciiBits::~AsciiBits() {
 }
 
 int AsciiBits::NextBit() {
-  int result = 0;
-  while (result != '0' && result != '1' && result != EOF) {
-    result = getchar();
+  int chr = 0;
+  while (chr != '0' && chr != '1' && chr != EOF) {
+    chr = getchar();
     if (feed_thru_)
-      putchar(result);
+      putchar(chr);
   }
 
-  if (result == EOF) {
+  if (chr == EOF) {
     is_eof_ = true;
     return 0;
   }
 
-  return (result == '1');
+  return (chr == '1');
 }
 
 bool AsciiBits::eof() const {
