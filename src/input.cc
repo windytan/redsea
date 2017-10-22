@@ -74,11 +74,11 @@ SndfileReader::SndfileReader(const Options& options) :
     buffer_(new (std::nothrow) float[info_.channels * kInputBufferSize]) {
   is_eof_ = false;
   if (info_.frames == 0) {
-    std::cerr << "error: couldn't open " << options.sndfilename << std::endl;
+    std::cerr << "error: couldn't open " << options.sndfilename << '\n';
     is_eof_ = true;
   }
   if (info_.samplerate < 128000.f) {
-    std::cerr << "error: sample rate must be 128000 Hz or higher" << std::endl;
+    std::cerr << "error: sample rate must be 128000 Hz or higher" << '\n';
     is_eof_ = true;
   }
 }
@@ -150,7 +150,7 @@ Group ReadNextHexGroup(const Options& options) {
     std::string line;
     std::getline(std::cin, line);
     if (options.feed_thru)
-      std::cout << line << std::endl;
+      std::cout << line << '\n';
 
     if (line.length() < 16)
       continue;

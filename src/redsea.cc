@@ -59,9 +59,9 @@ void PrintUsage() {
 
 void PrintVersion() {
 #ifdef DEBUG
-  std::cout << PACKAGE_STRING << "-debug by OH2EIQ" << std::endl;
+  std::cout << PACKAGE_STRING << "-debug by OH2EIQ" << '\n';
 #else
-  std::cout << PACKAGE_STRING << " by OH2EIQ" << std::endl;
+  std::cout << PACKAGE_STRING << " by OH2EIQ" << '\n';
 #endif
 }
 
@@ -106,7 +106,7 @@ Options GetOptions(int argc, char** argv) {
         options.input_type = redsea::INPUT_MPX_SNDFILE;
 #else
         std::cerr << "error: redsea was compiled without libsndfile"
-                  << std::endl;
+                  << '\n';
         options.just_exit = true;
 #endif
         break;
@@ -123,7 +123,7 @@ Options GetOptions(int argc, char** argv) {
         options.samplerate = std::atoi(optarg);
         if (options.samplerate < 128000.f) {
           std::cerr << "error: sample rate must be 128000 Hz or higher"
-                    << std::endl;
+                    << '\n';
           options.just_exit = true;
         }
         break;
@@ -153,7 +153,7 @@ Options GetOptions(int argc, char** argv) {
 
   if (options.feed_thru && options.input_type == INPUT_MPX_SNDFILE) {
     std::cerr << "error: feed-thru is not supported for audio file inputs"
-              << std::endl;
+              << '\n';
     options.just_exit = true;
   }
 
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
   if (options.input_type == redsea::INPUT_MPX_STDIN ||
       options.input_type == redsea::INPUT_MPX_SNDFILE) {
     std::cerr << "error: redsea was compiled without liquid-dsp"
-              << std::endl;
+              << '\n';
     return EXIT_FAILURE;
   }
 #endif
