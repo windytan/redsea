@@ -72,8 +72,8 @@ The full command is:
 
     $ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M | redsea
 
-For Raspberry Pi 1 it's necessary to change `-A std` to `-A fast`. This
-way more more CPU cycles will be left to redsea.
+For Raspberry Pi 1 it's necessary to change `-A std` to `-A fast`. This way
+more CPU cycles will be left to redsea.
 
 Note that `rtl_fm` will tune the receiver a bit off-center; this is normal and
 is done to avoid the DC spike. See the `rtl_fm` FAQ for more about this
