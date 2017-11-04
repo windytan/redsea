@@ -552,9 +552,10 @@ void Station::DecodeType4A(const Group& group) {
       Bits(group.block(BLOCK4), 12, 14) + local_offset) % 24;
   int minute = Bits(group.block(BLOCK4), 6, 6) + local_offset_min;
 
-  if (month >= 1 && month <= 12 && day >= 1 && day <= 31 &&
-      hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 &&
-      fabs(std::trunc(local_offset)) <= 13.0) {
+  bool is_date_valid = (month >= 1 && month <= 12 && day >= 1 && day <= 31 &&
+                        hour >= 0 && hour <= 23 && minute >= 0 &&
+                        minute <= 59 && fabs(std::trunc(local_offset)) <= 13.0);
+  if (is_date_valid) {
     char buffer[100];
     int local_offset_hour = fabs(std::trunc(local_offset));
 
