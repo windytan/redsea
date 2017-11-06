@@ -113,14 +113,14 @@ float SndfileReader::samplerate() const {
 #endif
 
 
-AsciiBits::AsciiBits(const Options& options) :
+AsciiBitReader::AsciiBitReader(const Options& options) :
     is_eof_(false), feed_thru_(options.feed_thru) {
 }
 
-AsciiBits::~AsciiBits() {
+AsciiBitReader::~AsciiBitReader() {
 }
 
-int AsciiBits::NextBit() {
+int AsciiBitReader::NextBit() {
   int chr = 0;
   while (chr != '0' && chr != '1' && chr != EOF) {
     chr = getchar();
@@ -136,7 +136,7 @@ int AsciiBits::NextBit() {
   return (chr == '1');
 }
 
-bool AsciiBits::eof() const {
+bool AsciiBitReader::eof() const {
   return is_eof_;
 }
 

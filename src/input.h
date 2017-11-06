@@ -68,10 +68,10 @@ class SndfileReader : public MPXReader {
 };
 #endif
 
-class AsciiBits {
+class AsciiBitReader {
  public:
-  explicit AsciiBits(const Options& options);
-  ~AsciiBits();
+  explicit AsciiBitReader(const Options& options);
+  ~AsciiBitReader();
   int NextBit();
   bool eof() const;
 

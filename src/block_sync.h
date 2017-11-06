@@ -72,7 +72,7 @@ class BlockStream {
   Subcarrier subcarrier_;
 #endif
   const Options options_;
-  AsciiBits ascii_bits_;
+  AsciiBitReader ascii_bit_reader_;
   const eInputType input_type_;
   bool is_eof_;
   RunningAverage bler_average_;

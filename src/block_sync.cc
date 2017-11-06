@@ -149,7 +149,7 @@ BlockStream::BlockStream(const Options& options) : bitcount_(0),
   subcarrier_(options),
 #endif
   options_(options),
-  ascii_bits_(options),
+  ascii_bit_reader_(options),
   input_type_(options.input_type), is_eof_(false), bler_average_(12) {
 }
 
@@ -162,8 +162,8 @@ int BlockStream::NextBit() {
   }
 #endif
   if (input_type_ == INPUT_ASCIIBITS) {
-    bit = ascii_bits_.NextBit();
-    is_eof_ = ascii_bits_.eof();
+    bit = ascii_bit_reader_.NextBit();
+    is_eof_ = ascii_bit_reader_.eof();
   }
 
   return bit;
