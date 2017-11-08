@@ -159,24 +159,37 @@ void Group::set(eBlockNumber block_num, uint16_t data, bool had_errors) {
   has_block_[block_num] = true;
   block_had_errors_[block_num] = had_errors;
 
-  if (block_num == BLOCK1) {
-    pi_ = data;
-    has_pi_ = true;
-  } else if (block_num == BLOCK2) {
-    type_ = GroupType(Bits(data, 11, 5));
-    if (type_.version == VERSION_A)
-      has_type_ = true;
-    else
-      has_type_ = (has_c_prime_ || no_offsets_);
-  } else if (block_num == BLOCK3 && has_c_prime_ && !has_pi_) {
-    pi_ = data;
-    has_pi_ = true;
-  } else if (block_num == BLOCK4 && has_c_prime_ && !has_type_) {
-    GroupType potential_type(Bits(data, 11, 5));
-    if (potential_type.number == 15 && potential_type.version == VERSION_B) {
-      type_ = potential_type;
-      has_type_ = true;
-    }
+  switch (block_num) {
+    case BLOCK1:
+      pi_ = data;
+      has_pi_ = true;
+      break;
+
+    case BLOCK2:
+      type_ = GroupType(Bits(data, 11, 5));
+      if (type_.version == VERSION_A)
+        has_type_ = true;
+      else
+        has_type_ = (has_c_prime_ || no_offsets_);
+      break;
+
+    case BLOCK3:
+      if (has_c_prime_ && !has_pi_) {
+        pi_ = data;
+        has_pi_ = true;
+      }
+      break;
+
+    case BLOCK4:
+      if (has_c_prime_ && !has_type_) {
+        GroupType potential_type(Bits(data, 11, 5));
+        if (potential_type.number == 15 &&
+            potential_type.version == VERSION_B) {
+          type_ = potential_type;
+          has_type_ = true;
+        }
+      }
+      break;
   }
 }
 
@@ -372,83 +385,88 @@ void Station::DecodeType1(const Group& group) {
     linkage_la_ = Bits(group.block(BLOCK3), 15, 1);
     json_["has_linkage"] = linkage_la_;
 
-    int slc_variant = Bits(group.block(BLOCK3), 12, 3);
+    int slow_label_variant = Bits(group.block(BLOCK3), 12, 3);
 
-    if (slc_variant == 0) {
-      if (pager_tng_ != 0) {
-        pager_opc_ = Bits(group.block(BLOCK3), 8, 4);
-      }
+    switch (slow_label_variant) {
+      case 0:
+        if (pager_tng_ != 0)
+          pager_opc_ = Bits(group.block(BLOCK3), 8, 4);
 
-      // No PIN, section M.3.2.4.3
-      if (group.has(BLOCK4) && (group.block(BLOCK4) >> 11) == 0) {
-        int subtype = Bits(group.block(BLOCK4), 10, 1);
-        if (subtype == 0) {
-          if (pager_tng_ != 0) {
-            pager_pac_ = Bits(group.block(BLOCK4), 4, 6);
-            pager_opc_ = Bits(group.block(BLOCK4), 0, 4);
-          }
-        } else if (subtype == 1) {
-          if (pager_tng_ != 0) {
-            int b = Bits(group.block(BLOCK4), 8, 2);
-            if (b == 0) {
-              pager_ecc_ = Bits(group.block(BLOCK4), 0, 6);
-            } else if (b == 3) {
-              pager_ccf_ = Bits(group.block(BLOCK4), 0, 4);
+        // No PIN, section M.3.2.4.3
+        if (group.has(BLOCK4) && (group.block(BLOCK4) >> 11) == 0) {
+          int subtype = Bits(group.block(BLOCK4), 10, 1);
+          if (subtype == 0) {
+            if (pager_tng_ != 0) {
+              pager_pac_ = Bits(group.block(BLOCK4), 4, 6);
+              pager_opc_ = Bits(group.block(BLOCK4), 0, 4);
+            }
+          } else if (subtype == 1) {
+            if (pager_tng_ != 0) {
+              int b = Bits(group.block(BLOCK4), 8, 2);
+              if (b == 0) {
+                pager_ecc_ = Bits(group.block(BLOCK4), 0, 6);
+              } else if (b == 3) {
+                pager_ccf_ = Bits(group.block(BLOCK4), 0, 4);
+              }
             }
           }
         }
-      }
 
-      ecc_ = Bits(group.block(BLOCK3),  0, 8);
-      cc_  = Bits(pi_, 12, 4);
+        ecc_ = Bits(group.block(BLOCK3),  0, 8);
+        cc_  = Bits(pi_, 12, 4);
 
-      if (ecc_ != 0x00) {
-        has_country_ = true;
+        if (ecc_ != 0x00) {
+          has_country_ = true;
+          json_["country"] = CountryString(pi_, ecc_);
+        }
+        break;
 
-        json_["country"] = CountryString(pi_, ecc_);
-      }
+      case 1:
+        tmc_id_ = Bits(group.block(BLOCK3), 0, 12);
+        json_["tmc_id"] = tmc_id_;
+        break;
 
-    } else if (slc_variant == 1) {
-      tmc_id_ = Bits(group.block(BLOCK3), 0, 12);
-      json_["tmc_id"] = tmc_id_;
+      case 2:
+        if (pager_tng_ != 0) {
+          pager_pac_ = Bits(group.block(BLOCK3), 0, 6);
+          pager_opc_ = Bits(group.block(BLOCK3), 8, 4);
+        }
 
-    } else if (slc_variant == 2) {
-      if (pager_tng_ != 0) {
-        pager_pac_ = Bits(group.block(BLOCK3), 0, 6);
-        pager_opc_ = Bits(group.block(BLOCK3), 8, 4);
-      }
-
-      // No PIN, section M.3.2.4.3
-      if (group.has(BLOCK4) && (group.block(BLOCK4) >> 11) == 0) {
-        int subtype = Bits(group.block(BLOCK4), 10, 1);
-        if (subtype == 0) {
-          if (pager_tng_ != 0) {
-            pager_pac_ = Bits(group.block(BLOCK4), 4, 6);
-            pager_opc_ = Bits(group.block(BLOCK4), 0, 4);
-          }
-        } else if (subtype == 1) {
-          if (pager_tng_ != 0) {
-            int b = Bits(group.block(BLOCK4), 8, 2);
-            if (b == 0) {
-              pager_ecc_ = Bits(group.block(BLOCK4), 0, 6);
-            } else if (b == 3) {
-              pager_ccf_ = Bits(group.block(BLOCK4), 0, 4);
+        // No PIN, section M.3.2.4.3
+        if (group.has(BLOCK4) && (group.block(BLOCK4) >> 11) == 0) {
+          int subtype = Bits(group.block(BLOCK4), 10, 1);
+          if (subtype == 0) {
+            if (pager_tng_ != 0) {
+              pager_pac_ = Bits(group.block(BLOCK4), 4, 6);
+              pager_opc_ = Bits(group.block(BLOCK4), 0, 4);
+            }
+          } else if (subtype == 1) {
+            if (pager_tng_ != 0) {
+              int b = Bits(group.block(BLOCK4), 8, 2);
+              if (b == 0) {
+                pager_ecc_ = Bits(group.block(BLOCK4), 0, 6);
+              } else if (b == 3) {
+                pager_ccf_ = Bits(group.block(BLOCK4), 0, 4);
+              }
             }
           }
         }
-      }
+        break;
 
-    } else if (slc_variant == 3) {
-      lang_ = Bits(group.block(BLOCK3), 0, 8);
-      json_["language"] = LanguageString(lang_);
+      case 3:
+        lang_ = Bits(group.block(BLOCK3), 0, 8);
+        json_["language"] = LanguageString(lang_);
+        break;
 
-    } else if (slc_variant == 7) {
-      ews_channel_ = Bits(group.block(BLOCK3), 0, 12);
-      json_["ews"] = ews_channel_;
+      case 7:
+        ews_channel_ = Bits(group.block(BLOCK3), 0, 12);
+        json_["ews"] = ews_channel_;
+        break;
 
-    } else {
-      json_["debug"].append("TODO: SLC variant " +
-          std::to_string(slc_variant));
+      default:
+        json_["debug"].append("TODO: SLC variant " +
+            std::to_string(slow_label_variant));
+        break;
     }
   }
 }
@@ -505,21 +523,28 @@ void Station::DecodeType3A(const Group& group) {
   json_["open_data_app"]["oda_group"] = oda_group_type.str();
   json_["open_data_app"]["app_name"] = AppNameString(oda_app_id);
 
-  if (oda_app_id == 0xCD46 || oda_app_id == 0xCD47) {
+  switch (oda_app_id) {
+    case 0xCD46:
+    case 0xCD47:
 #ifdef ENABLE_TMC
-    tmc_.SystemGroup(group.block(BLOCK3), &json_);
+      tmc_.SystemGroup(group.block(BLOCK3), &json_);
 #else
-    json_["debug"].append("redsea compiled without TMC support");
+      json_["debug"].append("redsea compiled without TMC support");
 #endif
-  } else if (oda_app_id == 0x4BD7) {
-    has_radiotext_plus_ = true;
-    radiotext_plus_cb_ = Bits(group.block(BLOCK3), 12, 1);
-    radiotext_plus_scb_ = Bits(group.block(BLOCK3), 8, 4);
-    radiotext_plus_template_num_ = Bits(group.block(BLOCK3), 0, 8);
-  } else {
-    json_["debug"].append("TODO: Unimplemented ODA app " +
-        std::to_string(oda_app_id));
-    json_["open_data_app"]["message"] = oda_message;
+      break;
+
+    case 0x4BD7:
+      has_radiotext_plus_ = true;
+      radiotext_plus_cb_ = Bits(group.block(BLOCK3), 12, 1);
+      radiotext_plus_scb_ = Bits(group.block(BLOCK3), 8, 4);
+      radiotext_plus_template_num_ = Bits(group.block(BLOCK3), 0, 8);
+      break;
+
+    default:
+      json_["debug"].append("TODO: Unimplemented ODA app " +
+          std::to_string(oda_app_id));
+      json_["open_data_app"]["message"] = oda_message;
+      break;
   }
 }
 
@@ -615,61 +640,84 @@ void Station::DecodeType14(const Group& group) {
     return;
 
   uint16_t eon_variant = Bits(group.block(BLOCK2), 0, 4);
+  switch (eon_variant) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+      if (eon_ps_names_.count(on_pi) == 0)
+        eon_ps_names_[on_pi] = RDSString(8);
 
-  if (eon_variant <= 3) {
-    if (eon_ps_names_.count(on_pi) == 0)
-      eon_ps_names_[on_pi] = RDSString(8);
+      eon_ps_names_[on_pi].set(2 * eon_variant,
+          RDSChar(Bits(group.block(BLOCK3), 8, 8)));
+      eon_ps_names_[on_pi].set(2 * eon_variant+1,
+          RDSChar(Bits(group.block(BLOCK3), 0, 8)));
 
-    eon_ps_names_[on_pi].set(2 * eon_variant,
-        RDSChar(Bits(group.block(BLOCK3), 8, 8)));
-    eon_ps_names_[on_pi].set(2 * eon_variant+1,
-        RDSChar(Bits(group.block(BLOCK3), 0, 8)));
+      if (eon_ps_names_[on_pi].complete())
+        json_["other_network"]["ps"] =
+            eon_ps_names_[on_pi].last_complete_string();
+      break;
 
-    if (eon_ps_names_[on_pi].complete())
-      json_["other_network"]["ps"] =
-          eon_ps_names_[on_pi].last_complete_string();
+    case 4:
+      eon_alt_freqs_[on_pi].insert(Bits(group.block(BLOCK3), 8, 8));
+      eon_alt_freqs_[on_pi].insert(Bits(group.block(BLOCK3), 0, 8));
 
-  } else if (eon_variant == 4) {
-    eon_alt_freqs_[on_pi].insert(Bits(group.block(BLOCK3), 8, 8));
-    eon_alt_freqs_[on_pi].insert(Bits(group.block(BLOCK3), 0, 8));
+      if (eon_alt_freqs_[on_pi].complete()) {
+        for (CarrierFrequency freq : eon_alt_freqs_[on_pi].get())
+          json_["other_network"]["alt_kilohertz"].append(freq.kHz());
+        eon_alt_freqs_[on_pi].clear();
+      }
+      break;
 
-    if (eon_alt_freqs_[on_pi].complete()) {
-      for (CarrierFrequency freq : eon_alt_freqs_[on_pi].get())
-        json_["other_network"]["alt_kilohertz"].append(freq.kHz());
-      eon_alt_freqs_[on_pi].clear();
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    {
+      CarrierFrequency freq_other(Bits(group.block(BLOCK3), 0, 8));
+
+      if (freq_other.valid())
+        json_["other_network"]["kilohertz"] = freq_other.kHz();
+
+      break;
     }
 
-  } else if (eon_variant >= 5 && eon_variant <= 9) {
-    CarrierFrequency freq_other(Bits(group.block(BLOCK3), 0, 8));
-
-    if (freq_other.valid())
-      json_["other_network"]["kilohertz"] = freq_other.kHz();
-
-  } else if (eon_variant == 12) {
-    bool has_linkage = Bits(group.block(BLOCK3), 15, 1);
-    uint16_t lsn = Bits(group.block(BLOCK3), 0, 12);
-    json_["other_network"]["has_linkage"] = has_linkage;
-    if (has_linkage && lsn != 0)
-      json_["other_network"]["linkage_set"] = lsn;
-
-  } else if (eon_variant == 13) {
-    uint16_t pty = Bits(group.block(BLOCK3), 11, 5);
-    bool ta      = Bits(group.block(BLOCK3), 0, 1);
-    json_["other_network"]["prog_type"] = PTYNameString(pty, options_.rbds);
-    json_["other_network"]["ta"] = ta;
-
-  } else if (eon_variant == 14) {
-    uint16_t pin = group.block(BLOCK3);
-
-    if (pin != 0x0000) {
-      json_["other_network"]["prog_item_started"]["day"] = Bits(pin, 11, 5);
-      json_["other_network"]["prog_item_started"]["time"] =
-          HoursMinutesString(Bits(pin, 6, 5), Bits(pin, 0, 6));
+    case 12:
+    {
+      bool has_linkage = Bits(group.block(BLOCK3), 15, 1);
+      uint16_t lsn = Bits(group.block(BLOCK3), 0, 12);
+      json_["other_network"]["has_linkage"] = has_linkage;
+      if (has_linkage && lsn != 0)
+        json_["other_network"]["linkage_set"] = lsn;
+      break;
     }
 
-  } else {
-    json_["debug"].append("TODO: EON variant " +
-        std::to_string(Bits(group.block(BLOCK2), 0, 4)));
+    case 13:
+    {
+      uint16_t pty = Bits(group.block(BLOCK3), 11, 5);
+      bool ta      = Bits(group.block(BLOCK3), 0, 1);
+      json_["other_network"]["prog_type"] = PTYNameString(pty, options_.rbds);
+      json_["other_network"]["ta"] = ta;
+      break;
+    }
+
+    case 14:
+    {
+      uint16_t pin = group.block(BLOCK3);
+
+      if (pin != 0x0000) {
+        json_["other_network"]["prog_item_started"]["day"] = Bits(pin, 11, 5);
+        json_["other_network"]["prog_item_started"]["time"] =
+            HoursMinutesString(Bits(pin, 6, 5), Bits(pin, 0, 6));
+      }
+      break;
+    }
+
+    default:
+      json_["debug"].append("TODO: EON variant " +
+          std::to_string(Bits(group.block(BLOCK2), 0, 4)));
+      break;
   }
 }
 
