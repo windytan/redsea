@@ -1,5 +1,9 @@
 # redsea changelog
 
+## 0.14.0 (2017-11-14)
+* Add support for decoding call sign letters from North American (RBDS)
+  stations - activated by the `-u` switch
+
 ## 0.13.0 (2017-09-19)
 
 * Change the JSON structure in `radiotext_plus`: RT+ tags are now displayed as

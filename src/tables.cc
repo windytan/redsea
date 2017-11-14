@@ -332,4 +332,87 @@ std::string DICodeString(uint16_t di) {
   return di_codes[di];
 }
 
+// NRSC-4-B (2011), page 18, D.7
+std::string PiToCallSign(uint16_t pi) {
+  static const std::map<uint16_t, std::string> three_letter_codes({
+      {0x99A5, "KBW"}, {0x9992, "KOY"}, {0x9978, "WHO"}, {0x99A6, "KCY"},
+      {0x9993, "KPQ"}, {0x999C, "WHP"}, {0x9990, "KDB"}, {0x9964, "KQV"},
+      {0x999D, "WIL"}, {0x99A7, "KDF"}, {0x9994, "KSD"}, {0x997A, "WIP"},
+      {0x9950, "KEX"}, {0x9965, "KSL"}, {0x99B3, "WIS"}, {0x9951, "KFH"},
+      {0x9966, "KUJ"}, {0x997B, "WJR"}, {0x9952, "KFI"}, {0x9995, "KUT"},
+      {0x99B4, "WJW"}, {0x9953, "KGA"}, {0x9967, "KVI"}, {0x99B5, "WJZ"},
+      {0x9991, "KGB"}, {0x9968, "KWG"}, {0x997C, "WKY"}, {0x9954, "KGO"},
+      {0x9996, "KXL"}, {0x997D, "WLS"}, {0x9955, "KGU"}, {0x9997, "KXO"},
+      {0x997E, "WLW"}, {0x9956, "KGW"}, {0x996B, "KYW"}, {0x999E, "WMC"},
+      {0x9957, "KGY"}, {0x9999, "WBT"}, {0x999F, "WMT"}, {0x99AA, "KHQ"},
+      {0x996D, "WBZ"}, {0x9981, "WOC"}, {0x9958, "KID"}, {0x996E, "WDZ"},
+      {0x99A0, "WOI"}, {0x9959, "KIT"}, {0x996F, "WEW"}, {0x9983, "WOL"},
+      {0x995A, "KJR"}, {0x999A, "WGH"}, {0x9984, "WOR"}, {0x995B, "KLO"},
+      {0x9971, "WGL"}, {0x99A1, "WOW"}, {0x995C, "KLZ"}, {0x9972, "WGN"},
+      {0x99B9, "WRC"}, {0x995D, "KMA"}, {0x9973, "WGR"}, {0x99A2, "WRR"},
+      {0x995E, "KMJ"}, {0x999B, "WGY"}, {0x99A3, "WSB"}, {0x995F, "KNX"},
+      {0x9975, "WHA"}, {0x99A4, "WSM"}, {0x9960, "KOA"}, {0x9976, "WHB"},
+      {0x9988, "WWJ"}, {0x99AB, "KOB"}, {0x9977, "WHK"}, {0x9989, "WWL"} });
+
+  static const std::map<uint16_t, std::string> linked_station_codes({
+      {0xB01, "NPR-1"},
+      {0xB02, "CBC English - Radio One"}, {0xB03, "CBC English - Radio Two"},
+      {0xB04, "CBC French => Radio-Canada - Première Chaîne"},
+      {0xB05, "CBC French => Radio-Canada - Espace Musique"},
+      {0xB06, "CBC"},   {0xB07, "CBC"},   {0xB08, "CBC"},   {0xB09, "CBC"},
+      {0xB0A, "NPR-2"}, {0xB0B, "NPR-3"}, {0xB0C, "NPR-4"}, {0xB0D, "NPR-5"},
+      {0xB0E, "NPR-6"} });
+
+  std::string callsign = "";
+
+  // Exceptions for zero nybbles
+
+  // P1 0 0 0 --> A F A P1
+  if (pi >> 4 == 0xAFA && (pi & 0xF) < 0xA) {
+    pi <<= 12;
+
+  // P1 P2 0 0 --> A F P1 P2
+  } else if (pi >> 8 == 0xAF) {
+    pi <<= 8;
+
+  // P1 0 P3 P4 --> A P1 P3 P4
+  } else if (pi >> 12 == 0xA) {
+    pi = ((pi >> 8) << 12) +
+         (pi & 0xFF);
+  }
+
+  // Three-letter only
+  if (pi >= 0x9950 && pi <= 0x9EFF) {
+    if (three_letter_codes.count(pi) > 0)
+      callsign = three_letter_codes.at(pi);
+
+  // Nationally-linked stations
+  } else if (pi >> 12 >= 0xB && pi >> 12 <= 0xE) {
+    pi = ((pi >> 12) << 8) + (pi & 0xFF);
+
+    if (linked_station_codes.count(pi) > 0)
+      callsign = linked_station_codes.at(pi);
+
+  // Decode four-letter call sign
+  } else if (pi >= 0x1000 && pi <= 0x994F) {
+
+    char last_letters[] = "___";
+    if (pi <= 0x54A7) {
+      pi -= 0x1000;
+      last_letters[0] = 0x41 + (pi / 676) % 26;
+      last_letters[1] = 0x41 + (pi / 26) % 26;
+      last_letters[2] = 0x41 + pi % 26;
+      callsign = "K" + std::string(last_letters);
+    } else {
+      pi -= 0x54A8;
+      last_letters[0] = 0x41 + (pi / 676) % 26;
+      last_letters[1] = 0x41 + (pi / 26) % 26;
+      last_letters[2] = 0x41 + pi % 26;
+      callsign = "W" + std::string(last_letters);
+    }
+  }
+
+  return callsign;
+}
+
 }  // namespace redsea

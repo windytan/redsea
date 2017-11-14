@@ -241,6 +241,10 @@
         "description": "Program Identification code",
         "$ref": "#/definitions/pi"
       },
+      "callsign": {
+        "description": "Call sign letters for a North American (RBDS) station",
+        "type": "string",
+      },
       "prog_type": {
         "description": "Program Type",
         "type": "string"

@@ -30,6 +30,7 @@ std::string LanguageString(uint16_t code);
 std::string AppNameString(uint16_t aid);
 std::string RTPlusContentTypeString(uint16_t content_type);
 std::string DICodeString(uint16_t di);
+std::string PiToCallSign(uint16_t pi);
 
 }  // namespace redsea
 #endif  // DATA_H_

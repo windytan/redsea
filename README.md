@@ -155,7 +155,8 @@ radio_command | redsea [OPTIONS]
                        man strftime for formatting options (or
                        try "%c").
 
--u, --rbds             Use RBDS (North American) program types.
+-u, --rbds             Use RBDS (North American) program type names and
+                       decode the station's call sign from its PI code.
 
 -v, --version          Print version string.
 
@@ -181,6 +182,7 @@ radio_command | redsea [OPTIONS]
 Redsea decodes the following basic info from RDS:
 
 * Program Identification code (PI)
+* Call sign letters for a North American station
 * Program Service name (PS)
 * RadioText (RT)
 * Traffic Program (TP) and Traffic Announcement (TA) flags

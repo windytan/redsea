@@ -251,6 +251,12 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
 
   json_.clear();
   json_["pi"] = "0x" + HexString(pi(), 4);
+  if (options_.rbds) {
+    std::string callsign = PiToCallSign(pi());
+    if (!callsign.empty())
+      json_["callsign"] = callsign;
+  }
+
   if (options_.timestamp)
     json_["rx_time"] = TimePointToString(group.rx_time(), options_.time_format);
 
