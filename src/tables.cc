@@ -355,13 +355,13 @@ std::string PiToCallSign(uint16_t pi) {
       {0x9988, "WWJ"}, {0x99AB, "KOB"}, {0x9977, "WHK"}, {0x9989, "WWL"} });
 
   static const std::map<uint16_t, std::string> linked_station_codes({
-      {0xB01, "NPR-1"},
-      {0xB02, "CBC English - Radio One"}, {0xB03, "CBC English - Radio Two"},
-      {0xB04, "CBC French => Radio-Canada - Première Chaîne"},
-      {0xB05, "CBC French => Radio-Canada - Espace Musique"},
-      {0xB06, "CBC"},   {0xB07, "CBC"},   {0xB08, "CBC"},   {0xB09, "CBC"},
-      {0xB0A, "NPR-2"}, {0xB0B, "NPR-3"}, {0xB0C, "NPR-4"}, {0xB0D, "NPR-5"},
-      {0xB0E, "NPR-6"} });
+      {0xB001, "NPR-1"},
+      {0xB002, "CBC English - Radio One"}, {0xB003, "CBC English - Radio Two"},
+      {0xB004, "CBC French => Radio-Canada - Première Chaîne"},
+      {0xB005, "CBC French => Radio-Canada - Espace Musique"},
+      {0xB006, "CBC"},   {0xB007, "CBC"},   {0xB008, "CBC"},   {0xB009, "CBC"},
+      {0xB00A, "NPR-2"}, {0xB00B, "NPR-3"}, {0xB00C, "NPR-4"},
+      {0xB00D, "NPR-5"}, {0xB00E, "NPR-6"} });
 
   std::string callsign = "";
 
@@ -387,8 +387,8 @@ std::string PiToCallSign(uint16_t pi) {
       callsign = three_letter_codes.at(pi);
 
   // Nationally-linked stations
-  } else if (pi >> 12 >= 0xB && pi >> 12 <= 0xE) {
-    pi = ((pi >> 12) << 8) + (pi & 0xFF);
+  } else if (pi >= 0xB001 && pi <= 0xEFFF) {
+    pi &= 0xF0FF;
 
     if (linked_station_codes.count(pi) > 0)
       callsign = linked_station_codes.at(pi);
