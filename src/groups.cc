@@ -318,7 +318,8 @@ void Station::DecodeBasics(const Group& group) {
     if (group.has_type())
       json_["group"] = group.type().str();
     json_["tp"] = is_tp_;
-    json_["prog_type"] = PTYNameString(pty_, options_.rbds);
+    json_["prog_type"] =
+        options_.rbds ? PTYNameStringRBDS(pty_) : PTYNameString(pty_);
   } else if (group.type().number == 15 && group.type().version == VERSION_B &&
       group.has(BLOCK4)) {
     is_tp_ = Bits(group.block(BLOCK4), 10, 1);
@@ -326,7 +327,8 @@ void Station::DecodeBasics(const Group& group) {
 
     json_["group"] = group.type().str();
     json_["tp"] = is_tp_;
-    json_["prog_type"] = PTYNameString(pty_, options_.rbds);
+    json_["prog_type"] =
+        options_.rbds ? PTYNameStringRBDS(pty_) : PTYNameString(pty_);
   }
 }
 
@@ -703,7 +705,8 @@ void Station::DecodeType14(const Group& group) {
     {
       uint16_t pty = Bits(group.block(BLOCK3), 11, 5);
       bool ta      = Bits(group.block(BLOCK3), 0, 1);
-      json_["other_network"]["prog_type"] = PTYNameString(pty, options_.rbds);
+      json_["other_network"]["prog_type"] =
+        options_.rbds ? PTYNameStringRBDS(pty) : PTYNameString(pty);
       json_["other_network"]["ta"] = ta;
       break;
     }

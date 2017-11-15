@@ -101,10 +101,10 @@ std::string RDSCharString(uint8_t code, eCodeTable codetable) {
   return result;
 }
 
-std::string PTYNameString(int pty, bool is_rbds) {
+// EN 50067:1998, Annex F (pp. 77-78)
+std::string PTYNameString(int pty) {
   assert(pty >= 0 && pty <= 32);
 
-  // EN 50067:1998, Annex F (pp. 77-78)
   static const std::vector<std::string> pty_names({
     "No PTY",         "News",            "Current affairs",    "Information",
     "Sport",          "Education",       "Drama",              "Culture",
@@ -115,7 +115,13 @@ std::string PTYNameString(int pty, bool is_rbds) {
     "Jazz music",     "Country music",   "National music",     "Oldies music",
     "Folk music",     "Documentary",     "Alarm test",         "Alarm" });
 
-  // U.S. RBDS Standard, Annex F (pp. 95-96)
+  return pty_names[pty];
+}
+
+// U.S. RBDS Standard, Annex F (pp. 95-96)
+std::string PTYNameStringRBDS(int pty) {
+  assert(pty >= 0 && pty <= 32);
+
   static const std::vector<std::string> pty_names_rbds({
     "No PTY",           "News",                  "Information",  "Sports",
     "Talk",             "Rock",                  "Classic rock", "Adult hits",
@@ -126,7 +132,7 @@ std::string PTYNameString(int pty, bool is_rbds) {
     "Spanish talk",     "Spanish music",         "Hip hop",      "",
     "",                 "Weather",              "Emergency test", "Emergency"});
 
-  return is_rbds ? pty_names_rbds[pty] : pty_names[pty];
+  return pty_names_rbds[pty];
 }
 
 // EN 50067:1998, Annex D, Table D.1 (p. 71)
