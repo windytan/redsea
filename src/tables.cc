@@ -369,23 +369,24 @@ std::string PiToCallSign(uint16_t pi) {
       {0xB00A, "NPR-2"}, {0xB00B, "NPR-3"}, {0xB00C, "NPR-4"},
       {0xB00D, "NPR-5"}, {0xB00E, "NPR-6"} });
 
-  std::string callsign = "";
-
   // Exceptions for zero nybbles
 
   // P1 0 0 0 --> A F A P1
-  if (pi >> 4 == 0xAFA && (pi & 0xF) < 0xA) {
+  if ((pi & 0xFFF0) == 0xAFA0 &&
+      (pi & 0x000F) < 0x000A) {
     pi <<= 12;
 
   // P1 P2 0 0 --> A F P1 P2
-  } else if (pi >> 8 == 0xAF) {
+  } else if ((pi & 0xFF00) == 0xAF00) {
     pi <<= 8;
 
   // P1 0 P3 P4 --> A P1 P3 P4
-  } else if (pi >> 12 == 0xA) {
-    pi = ((pi >> 8) << 12) +
-         (pi & 0xFF);
+  } else if ((pi & 0xF000) == 0xA000) {
+    pi = ((pi & 0x0F00) << 4) +
+          (pi & 0x00FF);
   }
+
+  std::string callsign = "";
 
   // Three-letter only
   if (pi >= 0x9950 && pi <= 0x9EFF) {
@@ -401,21 +402,14 @@ std::string PiToCallSign(uint16_t pi) {
 
   // Decode four-letter call sign
   } else if (pi >= 0x1000 && pi <= 0x994F) {
+    char four_letters[] = "____";
+    four_letters[0] = (pi <= 0x54A7 ? 'K' : 'W');
+    pi -= (pi <= 0x54A7 ? 0x1000 : 0x54A8);
 
-    char last_letters[] = "___";
-    if (pi <= 0x54A7) {
-      pi -= 0x1000;
-      last_letters[0] = 0x41 + (pi / 676) % 26;
-      last_letters[1] = 0x41 + (pi / 26) % 26;
-      last_letters[2] = 0x41 + pi % 26;
-      callsign = "K" + std::string(last_letters);
-    } else {
-      pi -= 0x54A8;
-      last_letters[0] = 0x41 + (pi / 676) % 26;
-      last_letters[1] = 0x41 + (pi / 26) % 26;
-      last_letters[2] = 0x41 + pi % 26;
-      callsign = "W" + std::string(last_letters);
-    }
+    four_letters[1] = 0x41 + (pi / 676) % 26;
+    four_letters[2] = 0x41 + (pi / 26) % 26;
+    four_letters[3] = 0x41 + pi % 26;
+    callsign = std::string(four_letters);
   }
 
   return callsign;
