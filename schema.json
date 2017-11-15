@@ -245,6 +245,10 @@
         "description": "Call sign letters for a North American (RBDS) station",
         "type": "string",
       },
+      "callsign_uncertain": {
+        "description": "Call sign letters for a North American (RBDS) station - probably erroneous due to a TMC workaround",
+        "type": "string",
+      },
       "prog_type": {
         "description": "Program Type",
         "type": "string"

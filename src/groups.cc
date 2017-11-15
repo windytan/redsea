@@ -253,8 +253,12 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
   json_["pi"] = "0x" + HexString(pi(), 4);
   if (options_.rbds) {
     std::string callsign = PiToCallSign(pi());
-    if (!callsign.empty())
-      json_["callsign"] = callsign;
+    if (!callsign.empty()) {
+      if ((pi() & 0xF000) == 0x1000)
+        json_["callsign_uncertain"] = callsign;
+      else
+        json_["callsign"] = callsign;
+    }
   }
 
   if (options_.timestamp)
