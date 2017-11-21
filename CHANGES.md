@@ -1,6 +1,11 @@
 # redsea changelog
 
+## 0.14.1 (xxxx-xx-xx)
+
+* Don't consider UTC+14 invalid (it's the time zone in Kiribati)
+
 ## 0.14.0 (2017-11-14)
+
 * Add support for decoding call sign letters from North American (RBDS)
   stations - activated by the `-u` switch
 
