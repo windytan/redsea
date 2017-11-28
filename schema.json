@@ -61,7 +61,7 @@
           }
         },
         "data": {
-          "content-type": "string"
+          "type": "string"
         },
         "item_running": {
           "type": "boolean"
@@ -243,11 +243,11 @@
       },
       "callsign": {
         "description": "Call sign letters for a North American (RBDS) station",
-        "type": "string",
+        "type": "string"
       },
       "callsign_uncertain": {
         "description": "Call sign letters for a North American (RBDS) station - probably erroneous due to a TMC workaround",
-        "type": "string",
+        "type": "string"
       },
       "prog_type": {
         "description": "Program Type",
