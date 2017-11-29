@@ -36,7 +36,7 @@ class RunningSum {
  public:
   explicit RunningSum(int length);
   int sum() const;
-  void push(int num);
+  void push(int number);
   void clear();
 
  private:
