@@ -232,7 +232,7 @@ void Subcarrier::DemodulateMoreBits() {
 #ifdef DEBUG
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
           sample_num_ / kTargetSampleRate_Hz,
-          static_cast<float>(sample),
+          sample.real(),
           step2hertz(oscillator_exact_.frequency()),
           modem_.phase_error(),
           agc_.gain(),
