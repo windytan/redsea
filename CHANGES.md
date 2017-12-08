@@ -1,8 +1,11 @@
 # redsea changelog
 
-## 0.14.1 (xxxx-xx-xx)
+## 0.14.1 (2017-12-08)
 
 * Don't consider UTC+14 invalid (it's the time zone in Kiribati)
+* Use JSON object `callsign_uncertain` for call signs of stations whose
+  PI code begins with a 1
+* Fix syntax errors in schema
 
 ## 0.14.0 (2017-11-14)
 

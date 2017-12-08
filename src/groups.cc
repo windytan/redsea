@@ -539,7 +539,7 @@ void Station::DecodeType3A(const Group& group) {
     case 0xCD46:
     case 0xCD47:
 #ifdef ENABLE_TMC
-      tmc_.SystemGroup(group.block(BLOCK3), &json_);
+      tmc_.SystemGroup(oda_message, &json_);
 #else
       json_["debug"].append("redsea compiled without TMC support");
 #endif
@@ -547,9 +547,9 @@ void Station::DecodeType3A(const Group& group) {
 
     case 0x4BD7:
       has_radiotext_plus_ = true;
-      radiotext_plus_cb_ = Bits(group.block(BLOCK3), 12, 1);
-      radiotext_plus_scb_ = Bits(group.block(BLOCK3), 8, 4);
-      radiotext_plus_template_num_ = Bits(group.block(BLOCK3), 0, 8);
+      radiotext_plus_cb_ = Bits(oda_message, 12, 1);
+      radiotext_plus_scb_ = Bits(oda_message, 8, 4);
+      radiotext_plus_template_num_ = Bits(oda_message, 0, 8);
       break;
 
     default:
