@@ -1,19 +1,21 @@
 # redsea RDS decoder
 
-redsea is a lightweight command-line
-[FM-RDS](http://en.wikipedia.org/wiki/Radio_Data_System) decoder for Linux/macOS,
-written by Oona Räisänen. It can be used with any
-[RTL-SDR](http://www.rtl-sdr.com/about-rtl-sdr/) USB radio stick with the
-`rtl_fm` tool. It can also decode raw ASCII bitstream, the hex format used by
-RDS Spy, and audio files containing multiplex signals (MPX).
+redsea is a lightweight command-line [FM-RDS][Wikipedia: RDS] decoder for
+Linux/macOS, written by Oona Räisänen. It can be used with any
+[RTL-SDR][About RTL-SDR] USB radio stick with the `rtl_fm` tool. It can also
+decode raw ASCII bitstream, the hex format used by RDS Spy, and audio files
+containing multiplex signals (MPX).
 
 Decoded RDS groups are printed to the terminal as line-delimited JSON objects
-or, optionally, undecoded hex blocks (`-x`).
-
-Note that in the 0.x versions the names and formats of the JSON fields and
-command line options may still change.
+or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
+[JSON field descriptions][Wiki: JSON] and [input data formats][Wiki: Input].
 
 [![Build Status](https://travis-ci.org/windytan/redsea.svg?branch=master)](https://travis-ci.org/windytan/redsea)
+
+[Wikipedia: RDS]: http://en.wikipedia.org/wiki/Radio_Data_System
+[About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
+[Wiki: JSON]: https://github.com/windytan/redsea/wiki/JSON-field-descriptions
+[Wiki: Input]: https://github.com/windytan/redsea/wiki/Input-formats
 
 ## Contents
 
@@ -34,10 +36,9 @@ command line options may still change.
 
 ## Installation
 
-You will need git, the [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
-library, and GNU autotools. Audio files can be decoded if libsndfile is
-installed. On macOS (OSX) you will also need XCode command-line tools
-(`xcode-select --install`).
+You will need git, the [liquid-dsp][liquid-dsp] library, and GNU autotools.
+Audio files can be decoded if libsndfile is installed. On macOS (OSX) you will
+also need XCode command-line tools (`xcode-select --install`).
 
 1. Clone the repository (unless you downloaded a release zip file):
 
@@ -64,60 +65,14 @@ be disabled (`./configure --disable-tmc`).
 If you only need to decode hex or binary input and don't need demodulation,
 you can compile redsea without liquid-dsp (`./configure --without-liquid`).
 
+[liquid-dsp]: https://github.com/jgaeddert/liquid-dsp
+
 ## Usage
 
-### Live decoding with rtl_fm
+Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 
-The full command is:
+[Wiki: Use cases]: https://github.com/windytan/redsea/wiki/Use-cases
 
-    $ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M | redsea
-
-For Raspberry Pi 1 it's necessary to change `-A std` to `-A fast`. This way
-more CPU cycles will be left to redsea.
-
-Note that `rtl_fm` will tune the receiver a bit off-center; this is normal and
-is done to avoid the DC spike. See the `rtl_fm` FAQ for more about this
-behavior.
-
-### Listening and decoding live
-
-The `--feed-through` option allows you to use both the original signal and
-the decoded RDS via different streams. For example, the signal can be listened
-to using `sox`, while RDS groups are printed to stderr:
-
-    $ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M |\
-    > redsea --feed-through |\
-    > play -t .s16 -r 171k -c 1 -
-
-### Decoding MPX from a file or via sound card
-
-It's easy to decode audio files containing a demodulated FM carrier. Note that
-the file must have around 128k samples per second or more; 171k will work
-fastest.
-
-    $ redsea -f multiplex.wav
-
-If your sound card supports recording at high sample rates (192 kHz) you
-can also decode the MPX output of an FM tuner or RDS encoder, for instance
-with this `sox` command:
-
-    $ rec -t .s16 -r 171k -c 1 - | redsea
-
-By default, the raw MPX input is assumed to be 16-bit signed-integer
-single-channel samples at 171 kHz.
-
-### Formatting and filtering the JSON output
-
-The JSON output can be tidied and/or colored using `jq`:
-
-    $ rtl_fm ... | redsea | jq
-
-It can also be used to extract only certain fields, for instance the program
-type:
-
-    $ rtl_fm ... | redsea | jq '.prog_type'
-
-Details of the output format are described in [the schema file](schema.json).
 
 ### Full usage
 
@@ -166,48 +121,38 @@ radio_command | redsea [OPTIONS]
                        suppressing JSON output.
 ```
 
+### Formatting and filtering the JSON output
+
+The JSON output can be tidied and/or colored using `jq`:
+
+    $ rtl_fm ... | redsea | jq
+
+It can also be used to extract only certain fields, for instance the program
+type:
+
+    $ rtl_fm ... | redsea | jq '.prog_type'
+
+
 ## Requirements
 
 * Linux or macOS
-* For realtime decoding, a 700 MHz ARMv6 CPU or faster
+* For realtime decoding, a Raspberry Pi 1 or faster
 * ~8 MB of free memory (~128 MB for RDS-TMC)
 * C++11 compiler
 * GNU autotools
 * libiconv
 * libsndfile (optional)
-* [liquid-dsp](https://github.com/jgaeddert/liquid-dsp)
+* [liquid-dsp][liquid-dsp]
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals
-
-## Supported RDS features
-
-Redsea decodes the following basic info from RDS:
-
-* Program Identification code (PI)
-* Call sign letters for a North American station
-* Program Service name (PS)
-* RadioText (RT)
-* Traffic Program (TP) and Traffic Announcement (TA) flags
-* Music/Speech (M/S) flag
-* Program Type (PTY)
-* Alternative Frequencies (AF)
-* Clock Time and Date (CT)
-* Program Item Number (PIN)
-* Decoder Identification (DI)
-* Enhanced Other Networks (EON) information
-
-And also these Open Data Applications:
-
-* RadioText Plus (RT+)
-* Traffic Message Channel (RDS-TMC)
 
 ## Troubleshooting
 
 ### Can't find liquid-dsp on macOS
 
-If you've installed [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) yet
-`configure` can't find it, it's possible that XCode command line tools aren't
-installed. Run this command to fix it:
+If you've installed [liquid-dsp][liquid-dsp] yet `configure` can't find it, it's
+possible that XCode command line tools aren't installed. Run this command to fix
+it:
 
     xcode-select --install
 
@@ -216,7 +161,6 @@ installed. Run this command to fix it:
 Try running this in the terminal:
 
     sudo ldconfig
-
 
 ## Contributing
 
