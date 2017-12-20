@@ -75,6 +75,8 @@ Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 ```
 radio_command | redsea [OPTIONS]
 
+By default, a 171 kHz single-channel 16-bit MPX signal is expected via stdin.
+
 -b, --input-bits       Input is an unsynchronized ASCII bit stream
                        (011010110...). All characters but '0' and '1'
                        are ignored.
