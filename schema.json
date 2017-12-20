@@ -303,6 +303,12 @@
           "type": "integer"
         }
       },
+      "prog_item_number": {
+        "description": "A numeric identifier for the currently running program",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535
+      },
       "prog_item_started": {
         "description": "Program Item number (start time)",
         "$ref": "#/definitions/pin"
@@ -408,6 +414,12 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 4095
+          },
+          "prog_item_number": {
+            "description": "A numeric identifier for the currently running program",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
           },
           "prog_item_started": {
             "$ref": "#/definitions/pin"

@@ -382,6 +382,7 @@ void Station::DecodeType1(const Group& group) {
     uint16_t hour   = Bits(pin_, 6, 5);
     uint16_t minute = Bits(pin_, 0, 6);
     if (day >= 1 && hour <= 24 && minute <= 59) {
+      json_["prog_item_number"] = pin_;
       json_["prog_item_started"]["day"] = day;
       json_["prog_item_started"]["time"] = HoursMinutesString(hour, minute);
     } else {
@@ -720,6 +721,7 @@ void Station::DecodeType14(const Group& group) {
       uint16_t pin = group.block(BLOCK3);
 
       if (pin != 0x0000) {
+        json_["other_network"]["prog_item_number"] = pin;
         json_["other_network"]["prog_item_started"]["day"] = Bits(pin, 11, 5);
         json_["other_network"]["prog_item_started"]["time"] =
             HoursMinutesString(Bits(pin, 6, 5), Bits(pin, 0, 6));

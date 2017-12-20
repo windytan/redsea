@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([redsea], [0.14.1], [oona@kapsi.fi], [redsea],
+AC_INIT([redsea], [0.15.0], [oona@kapsi.fi], [redsea],
         [https://github.com/windytan/redsea])
 AM_INIT_AUTOMAKE([1.10 -Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
@@ -63,7 +63,5 @@ esac
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_LANG([C++])
-#AX_CXX_COMPILE_STDCXX_11(,[mandatory])
-#CXXFLAGS='-Wall -std=gnu++11'
 
 AC_OUTPUT
