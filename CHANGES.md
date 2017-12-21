@@ -3,6 +3,8 @@
 ## 0.15.0 (xxxx-xx-xx)
 
 * Print the raw Program Item Number as `prog_item_number`
+* Remove an old shell script that launches `rtl_fm` - instead, there is
+  a mention of `rtl_fm` usage in the readme and wiki
 
 ## 0.14.1 (2017-12-08)
 
