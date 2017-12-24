@@ -72,7 +72,7 @@ void PrintHexGroup(const Group& group, std::ostream* stream,
   if (group.has_time())
     *stream << " " << TimePointToString(group.rx_time(), time_format);
 
-  *stream << '\n';
+  *stream << '\n' << std::flush;
 }
 
 GroupType::GroupType(uint16_t type_code) :
@@ -292,9 +292,11 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
       json_["debug"].append("TODO " + group.type().str());
   }
 
-  writer_->write(json_, stream);
+  std::stringstream ss;
+  writer_->write(json_, &ss);
+  ss << '\n';
 
-  *stream << '\n';
+  *stream << ss.str() << std::flush;
 }
 
 uint16_t Station::pi() const {

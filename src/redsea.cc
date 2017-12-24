@@ -182,12 +182,6 @@ int main(int argc, char** argv) {
   redsea::Station station(pi, options);
   redsea::RunningAverage bler_average(redsea::kNumBlerAverageGroups);
 
-  // Line buffering
-  if (options.feed_thru)
-    setvbuf(stderr, NULL, _IOLBF, 2048);
-  else
-    setvbuf(stdout, NULL, _IOLBF, 2048);
-
   while (!(std::cin.eof() || block_stream.eof())) {
     redsea::Group group = (options.input_type == redsea::INPUT_HEX ?
         redsea::ReadNextHexGroup(options) :
