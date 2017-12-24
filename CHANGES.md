@@ -5,6 +5,7 @@
 * Print the raw Program Item Number as `prog_item_number`
 * Remove an old shell script that launches `rtl_fm` - instead, there is
   a mention of `rtl_fm` usage in the readme and wiki
+* Reduce write calls to output JSON stream using a streamstring (#56)
 
 ## 0.14.1 (2017-12-08)
 
