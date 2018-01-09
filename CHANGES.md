@@ -5,6 +5,8 @@
 * Add `prog_item_number` field containing the raw Program Item Number
 * Add `partial_alt_kilohertz` field containing an incomplete list of
   alternative frequencies when the `--show-partial` option is used
+* Add configure option `--without-macports` to disable directory checks
+  when cross-compiling
 * Reduce write calls to output JSON stream using a streamstring (#56)
 * Remove an old shell script that launches `rtl_fm` - instead, there is
   a mention of `rtl_fm` usage in the readme and wiki

@@ -16,6 +16,10 @@ AC_ARG_WITH([sndfile],
             [AS_HELP_STRING([--without-sndfile],
                [disable support for reading audio files via libsndfile])])
 
+AC_ARG_WITH([macports],
+            [AS_HELP_STRING([--without-macports],
+               [disable check for MacPorts directories when compiling])])
+
 AC_ARG_ENABLE([tmc],
             [AS_HELP_STRING([--disable-tmc],
               [disable support for Traffic Message Channel (TMC)])])
@@ -36,12 +40,14 @@ AS_IF([test "x$with_liquid" != xno],
        [Could not find liquid-dsp (use --without-liquid to disable)])])])
 
 MACPORTS_LD=
-AC_CHECK_FILE(/opt/local/lib,
-  [AC_SUBST([MACPORTS_LD], ["-L/opt/local/lib"])])
+AS_IF([test "x$with_macports" != xno],
+  [AC_CHECK_FILE(/opt/local/lib,
+    [AC_SUBST([MACPORTS_LD], ["-L/opt/local/lib"])])])
 
 MACPORTS_CF=
-AC_CHECK_FILE(/opt/local/lib,
-  [AC_SUBST([MACPORTS_CF], ["-I/opt/local/include"])])
+AS_IF([test "x$with_macports" != xno],
+  [AC_CHECK_FILE(/opt/local/lib,
+    [AC_SUBST([MACPORTS_CF], ["-I/opt/local/include"])])])
 
 SNDFILE=
 AS_IF([test "x$with_sndfile" != xno],
