@@ -2,16 +2,18 @@
 
 ## 0.15.0 (xxxx-xx-xx)
 
-* Print the raw Program Item Number as `prog_item_number`
+* Add `prog_item_number` field containing the raw Program Item Number
+* Add `partial_alt_kilohertz` field containing an incomplete list of
+  alternative frequencies when the `--show-partial` option is used
+* Reduce write calls to output JSON stream using a streamstring (#56)
 * Remove an old shell script that launches `rtl_fm` - instead, there is
   a mention of `rtl_fm` usage in the readme and wiki
-* Reduce write calls to output JSON stream using a streamstring (#56)
 
 ## 0.14.1 (2017-12-08)
 
-* Don't consider UTC+14 invalid (it's the time zone in Kiribati)
-* Use JSON object `callsign_uncertain` for call signs of stations whose
-  PI code begins with a 1
+* Change the `callsign` object name to `callsign_uncertain` when a station's PI
+  code begins with a 1
+* Fix UTC+14 getting marked as invalid (it's the time zone in Kiribati)
 * Fix syntax errors in schema
 
 ## 0.14.0 (2017-11-14)

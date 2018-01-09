@@ -79,7 +79,8 @@ Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 ```
 radio_command | redsea [OPTIONS]
 
-By default, a 171 kHz single-channel 16-bit MPX signal is expected via stdin.
+By default, a 171 kHz single-channel 16-bit MPX signal is expected via
+stdin.
 
 -b, --input-bits       Input is an unsynchronized ASCII bit stream
                        (011010110...). All characters but '0' and '1'
@@ -102,8 +103,12 @@ By default, a 171 kHz single-channel 16-bit MPX signal is expected via stdin.
 -l, --loctable DIR     Load TMC location table from a directory in TMC
                        Exchange format.
 
--p, --show-partial     Display PS and RadioText before completely
-                       received (as partial_ps, partial_radiotext).
+-p, --show-partial     Under noisy conditions, redsea may not be able to
+                       fully receive all information. Multi-group data
+                       such as PS names, RadioText, and alternative
+                       frequencies are especially vulnerable. This option
+                       makes it display them even if not fully received,
+                       as partial_{ps,radiotext,alt_kilohertz}.
 
 -r, --samplerate RATE  Set stdin sample frequency in Hz. Will resample
                        (slow) if this differs from 171000 Hz.
@@ -112,10 +117,11 @@ By default, a 171 kHz single-channel 16-bit MPX signal is expected via stdin.
                        man strftime for formatting options (or
                        try "%c").
 
--u, --rbds             RBDS mode; use North American program type names and
-                       "back-calculate" the station's call sign from its PI
-                       code. Note that this calculation gives an incorrect call
-                       sign for most stations that transmit TMC.
+-u, --rbds             RBDS mode; use North American program type names
+                       and "back-calculate" the station's call sign from
+                       its PI code. Note that this calculation gives an
+                       incorrect call sign for most stations that transmit
+                       TMC.
 
 -v, --version          Print version string.
 

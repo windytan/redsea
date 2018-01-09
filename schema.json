@@ -345,6 +345,13 @@
         "description": "Incompletely received Program Service name",
         "$ref": "#/definitions/ps"
       },
+      "partial_alt_kilohertz": {
+        "description": "Incomplete list of Alternative Frequencies",
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      },
       "open_data_app": {
         "type": "object",
         "properties": {

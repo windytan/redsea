@@ -361,6 +361,10 @@ void Station::DecodeType0(const Group& group) {
       for (CarrierFrequency f : alt_freq_list_.get())
         json_["alt_kilohertz"].append(f.kHz());
       alt_freq_list_.clear();
+
+    } else if (options_.show_partial) {
+      for (CarrierFrequency f : alt_freq_list_.get())
+        json_["partial_alt_kilohertz"].append(f.kHz());
     }
   }
 
