@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.15.0 (xxxx-xx-xx)
+## 0.15.0 (2018-01-31)
 
 * Add `prog_item_number` field containing the raw Program Item Number
 * Add `partial_alt_kilohertz` field containing an incomplete list of
