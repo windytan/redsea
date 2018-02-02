@@ -10,7 +10,7 @@ Decoded RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
 [JSON field descriptions][Wiki: JSON] and [input data formats][Wiki: Input].
 
-[![Build Status](https://travis-ci.org/windytan/redsea.svg?branch=master)](https://travis-ci.org/windytan/redsea)
+[![release](http://github-release-version.herokuapp.com/github/windytan/redsea/release.svg?style=flat)](https://github.com/windytan/redsea/releases/latest)
 
 [Wikipedia: RDS]: http://en.wikipedia.org/wiki/Radio_Data_System
 [About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
