@@ -67,7 +67,7 @@ you can compile redsea without liquid-dsp (`./configure --without-liquid`).
 
 The simplest way to view RDS groups using `rtl_fm` is:
 
-    rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 40 -F 9 -f 87.9M | redsea
+    rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea
 
 Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 
