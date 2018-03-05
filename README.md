@@ -103,15 +103,13 @@ stdin.
 -l, --loctable DIR     Load TMC location table from a directory in TMC
                        Exchange format.
 
--p, --show-partial     Under noisy conditions, redsea may not be able to
-                       fully receive all information. Multi-group data
-                       such as PS names, RadioText, and alternative
-                       frequencies are especially vulnerable. This option
-                       makes it display them even if not fully received,
-                       as partial_{ps,radiotext,alt_kilohertz}.
+-p, --show-partial     Show some multi-group data even before they've been
+                       fully received (PS names, RadioText, alternative
+                       frequencies). partial_ will be prepended to their
+                       names. This is good for noisy conditions.
 
--r, --samplerate RATE  Set stdin sample frequency in Hz. Will resample
-                       (slow) if this differs from 171000 Hz.
+-r, --samplerate RATE  Set sample frequency of the raw input signal in Hz.
+                       Will resample (slow) if this differs from 171000 Hz.
 
 -t, --timestamp FORMAT Add time of decoding to JSON groups; see
                        man strftime for formatting options (or
