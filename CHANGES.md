@@ -1,5 +1,12 @@
 # redsea changelog
 
+## 0.16.0
+
+* Notable speed improvements:
+  * By using a lookup table instead of sinf/cosf to generate the
+    mix-down sinusoid
+  * By only using one mix-down operation instead of two
+
 ## 0.15.0 (2018-01-31)
 
 * Add `prog_item_number` field containing the raw Program Item Number

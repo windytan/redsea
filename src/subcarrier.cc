@@ -41,7 +41,7 @@ const float kCarrierFrequency_Hz  = 57000.0f;
 const float kBitsPerSecond        = 1187.5f;
 const int   kSamplesPerSymbol     = 3;
 const float kAGCBandwidth_Hz      = 500.0f;
-const float kAGCInitialGain       = 0.0077f;
+const float kAGCInitialGain       = 0.01f;
 const float kLowpassCutoff_Hz     = 2600.0f;
 const float kSymsyncBandwidth_Hz  = 2400.0f;
 const int   kSymsyncDelay         = 2;
@@ -120,8 +120,7 @@ Subcarrier::Subcarrier(const Options& options) : sample_num_(0),
     bit_buffer_(),
     fir_lpf_(256, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
     agc_(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain),
-    oscillator_approx_(LIQUID_VCO, hertz2step(kCarrierFrequency_Hz)),
-    oscillator_exact_(LIQUID_VCO, hertz2step(kCarrierFrequency_Hz)),
+    oscillator_(LIQUID_NCO, hertz2step(kCarrierFrequency_Hz)),
     symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
              kSymsyncBeta, 32),
     modem_(LIQUID_MODEM_PSK2),
@@ -129,16 +128,9 @@ Subcarrier::Subcarrier(const Options& options) : sample_num_(0),
     is_eof_(false), delta_decoder_() {
   symsync_.set_bandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
   symsync_.set_output_rate(1);
-  oscillator_exact_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
+  oscillator_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
 
-#ifdef HAVE_SNDFILE
-  if (options.input_type == INPUT_MPX_SNDFILE)
-    mpx_ = new SndfileReader(options);
-  else
-#endif
-    mpx_ = new StdinReader(options);
-
-  resample_ratio_ = kTargetSampleRate_Hz / mpx_->samplerate();
+  resample_ratio_ = kTargetSampleRate_Hz / options.samplerate;
   resampler_.set_rate(resample_ratio_);
 }
 
@@ -187,16 +179,12 @@ void Subcarrier::DemodulateMoreBits() {
     std::complex<float> sample = complex_samples[i];
 
     // Mix RDS to baseband for filtering purposes
-    std::complex<float> sample_baseband = oscillator_approx_.MixDown(sample);
+    std::complex<float> sample_baseband = oscillator_exact_.MixDown(sample);
 
     fir_lpf_.push(sample_baseband);
 
     if (sample_num_ % decimate_ratio == 0) {
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
-
-      // PLL-controlled 57 kHz mixdown - aliasing is intentional so we don't
-      // have to mix it back up first
-      sample_lopass = oscillator_exact_.MixDown(sample_lopass);
 
       std::vector<std::complex<float>> symbols =
         symsync_.execute(&sample_lopass);
@@ -220,7 +208,7 @@ void Subcarrier::DemodulateMoreBits() {
         // One biphase symbol received for every 2 PSK symbols
         if (is_clock) {
           bit_buffer_.push_back(delta_decoder_.Decode(
-                biphase.real() >= 0));
+                                biphase.real() >= 0));
 #ifdef DEBUG
           printf("bi:%f,%f,%f\n",
               sample_num_ / kTargetSampleRate_Hz,

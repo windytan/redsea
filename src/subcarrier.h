@@ -75,8 +75,7 @@ class Subcarrier {
 
   liquid::FIRFilter fir_lpf_;
   liquid::AGC agc_;
-  liquid::NCO oscillator_approx_;
-  liquid::NCO oscillator_exact_;
+  liquid::NCO oscillator_;
   liquid::SymSync symsync_;
   liquid::Modem modem_;
   liquid::Resampler resampler_;
