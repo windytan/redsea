@@ -205,24 +205,10 @@ void BlockStream::PushBit(bool bit) {
     uint16_t message = block >> 10;
 
     if (block_had_errors) {
-      // Detect & correct clock slips (Section C.1.2)
-      if (expected_offset_ == OFFSET_A && pi_ != 0x0000 &&
-          ((padded_block_ >> 12) & kBitmask16) == pi_) {
-        message = pi_;
-        padded_block_ >>= 1;
-        received_offset_ = OFFSET_A;
-      } else if (expected_offset_ == OFFSET_A && pi_ != 0x0000 &&
-          ((padded_block_ >> 10) & kBitmask16) == pi_) {
-        message = pi_;
-        padded_block_ = (padded_block_ << 1) + NextBit();
-        received_offset_ = OFFSET_A;
-        left_to_read_ = 25;
-      } else {
-        uint32_t corrected_block = CorrectBurstErrors(block, expected_offset_);
-        if (corrected_block != block) {
-          message = corrected_block >> 10;
-          received_offset_ = expected_offset_;
-        }
+      uint32_t corrected_block = CorrectBurstErrors(block, expected_offset_);
+      if (corrected_block != block) {
+        message = corrected_block >> 10;
+        received_offset_ = expected_offset_;
       }
 
       // Still no valid syndrome
