@@ -80,7 +80,8 @@ std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
       for (int shift=0; shift < 26; shift++) {
         uint32_t error_vector = ((error_bits << shift) & kBitmask26);
 
-        uint32_t syndrome = CalculateSyndrome(error_vector ^ offset_words[offset]);
+        uint32_t syndrome =
+            CalculateSyndrome(error_vector ^ offset_words[offset]);
         lookup_table.insert({{syndrome, offset}, error_vector});
       }
     }
@@ -141,32 +142,12 @@ void RunningSum::clear() {
 }
 
 BlockStream::BlockStream(const Options& options) : bitcount_(0),
-  prevbitcount_(0), left_to_read_(0), padded_block_(0), prevsync_(0),
+  prevbitcount_(0), left_to_read_(1), input_register_(0), prevsync_(0),
   expected_offset_(OFFSET_A),
   received_offset_(OFFSET_INVALID), pi_(0x0000), is_in_sync_(false),
   block_error_sum_(50),
-#ifdef HAVE_LIQUID
-  subcarrier_(options),
-#endif
   options_(options),
-  ascii_bit_reader_(options),
   input_type_(options.input_type), is_eof_(false), bler_average_(12) {
-}
-
-int BlockStream::NextBit() {
-  int bit = 0;
-#ifdef HAVE_LIQUID
-  if (input_type_ == INPUT_MPX_STDIN || input_type_ == INPUT_MPX_SNDFILE) {
-    bit = subcarrier_.NextBit();
-    is_eof_ = subcarrier_.eof();
-  }
-#endif
-  if (input_type_ == INPUT_ASCIIBITS) {
-    bit = ascii_bit_reader_.NextBit();
-    is_eof_ = ascii_bit_reader_.eof();
-  }
-
-  return bit;
 }
 
 // A block can't be decoded
@@ -192,6 +173,7 @@ bool BlockStream::AcquireSync() {
         g_block_number_for_offset[received_offset_]) {
       is_in_sync_ = true;
       expected_offset_ = received_offset_;
+      current_group_ = Group();
     } else {
       prevbitcount_ = bitcount_;
       prevsync_ = received_offset_;
@@ -201,33 +183,26 @@ bool BlockStream::AcquireSync() {
   return is_in_sync_;
 }
 
-Group BlockStream::NextGroup() {
-  Group group;
+void BlockStream::PushBit(bool bit) {
+  input_register_ = (input_register_ << 1) + bit;
+  left_to_read_--;
+  bitcount_++;
 
-  while (!eof()) {
-    // Compensate for clock slip corrections
-    bitcount_ += 26 - left_to_read_;
+  if (left_to_read_ > 0)
+    return;
 
-    // Read from radio
-    for (int i=0; i < (is_in_sync_ ? left_to_read_ : 1); i++, bitcount_++)
-      padded_block_ = (padded_block_ << 1) + NextBit();
+  uint32_t block = (input_register_ >> 1) & kBitmask26;
 
-    left_to_read_ = 26;
-    padded_block_ &= kBitmask28;
+  received_offset_ = OffsetForSyndrome(CalculateSyndrome(block));
 
-    uint32_t block = (padded_block_ >> 1) & kBitmask26;
-    uint16_t message = block >> 10;
-
-    received_offset_ = OffsetForSyndrome(CalculateSyndrome(block));
-
-    if (!AcquireSync())
-      continue;
-
+  if (AcquireSync()) {
     if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_C_PRIME)
       expected_offset_ = OFFSET_C_PRIME;
 
     bool block_had_errors = (received_offset_ != expected_offset_);
     block_error_sum_.push(block_had_errors);
+
+    uint16_t message = block >> 10;
 
     if (block_had_errors) {
       // Detect & correct clock slips (Section C.1.2)
@@ -256,29 +231,33 @@ Group BlockStream::NextGroup() {
     }
 
     // Error-free block received or errors successfully corrected
-
     if (received_offset_ == expected_offset_) {
       if (expected_offset_ == OFFSET_C_PRIME)
-        group.set_c_prime(message, block_had_errors);
+        current_group_.set_c_prime(message, block_had_errors);
       else
-        group.set(g_block_number_for_offset[expected_offset_], message,
-                  block_had_errors);
+        current_group_.set(g_block_number_for_offset[expected_offset_], message,
+            block_had_errors);
 
-      if (group.has_pi())
-        pi_ = group.pi();
+      if (current_group_.has_pi())
+        pi_ = current_group_.pi();
     }
 
     expected_offset_ = NextOffsetFor(expected_offset_);
 
-    if (expected_offset_ == OFFSET_A)
-      break;
+    if (expected_offset_ == OFFSET_A) {
+      groups_.push_back(current_group_);
+      current_group_ = Group();
+    }
+    left_to_read_ = 26;
+  } else {
+    left_to_read_ = 1;
   }
-
-  return group;
 }
 
-bool BlockStream::eof() const {
-  return is_eof_;
+std::vector<Group> BlockStream::PopGroups() {
+  std::vector<Group> result = groups_;
+  groups_.clear();
+  return result;
 }
 
 #ifdef DEBUG

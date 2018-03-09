@@ -120,7 +120,7 @@ AsciiBitReader::AsciiBitReader(const Options& options) :
 AsciiBitReader::~AsciiBitReader() {
 }
 
-int AsciiBitReader::NextBit() {
+bool AsciiBitReader::NextBit() {
   int chr = 0;
   while (chr != '0' && chr != '1' && chr != EOF) {
     chr = getchar();
@@ -128,10 +128,8 @@ int AsciiBitReader::NextBit() {
       putchar(chr);
   }
 
-  if (chr == EOF) {
+  if (chr == EOF)
     is_eof_ = true;
-    return 0;
-  }
 
   return (chr == '1');
 }

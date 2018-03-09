@@ -139,30 +139,23 @@ Subcarrier::~Subcarrier() {
 
 /** MPX to bits
  */
-void Subcarrier::DemodulateMoreBits() {
-  // Read from MPX source
-  is_eof_ = mpx_->eof();
-  if (is_eof_)
-    return;
-
-  std::vector<float> inbuffer = mpx_->ReadChunk();
-
+void Subcarrier::ProcessChunk(const std::vector<float>& chunk) {
   // Resample if needed
   int num_samples = 0;
 
   std::vector<std::complex<float>> complex_samples(
-      resample_ratio_ <= 1.0f ? inbuffer.size() :
-                                inbuffer.size() * resample_ratio_);
+      resample_ratio_ <= 1.0f ? chunk.size() :
+                                chunk.size() * resample_ratio_);
 
   if (resample_ratio_ == 1.0f) {
-    for (size_t i = 0; i < inbuffer.size(); i++)
-      complex_samples[i] = inbuffer[i];
-    num_samples = inbuffer.size();
+    for (size_t i = 0; i < chunk.size(); i++)
+      complex_samples[i] = chunk[i];
+    num_samples = chunk.size();
   } else {
     int i_resampled = 0;
-    for (size_t i = 0; i < inbuffer.size(); i++) {
+    for (size_t i = 0; i < chunk.size(); i++) {
       std::complex<float> buf[4];
-      int num_resampled = resampler_.execute(inbuffer[i], buf);
+      int num_resampled = resampler_.execute(chunk[i], buf);
 
       for (int j = 0; j < num_resampled; j++) {
         complex_samples[i_resampled] = buf[j];
@@ -179,7 +172,7 @@ void Subcarrier::DemodulateMoreBits() {
     std::complex<float> sample = complex_samples[i];
 
     // Mix RDS to baseband for filtering purposes
-    std::complex<float> sample_baseband = oscillator_exact_.MixDown(sample);
+    std::complex<float> sample_baseband = oscillator_.MixDown(sample);
 
     fir_lpf_.push(sample_baseband);
 
@@ -199,7 +192,7 @@ void Subcarrier::DemodulateMoreBits() {
 
         // Modem here is only used to track PLL phase error
         modem_.Demodulate(symbol);
-        oscillator_exact_.StepPLL(modem_.phase_error() * kPLLMultiplier);
+        oscillator_.StepPLL(modem_.phase_error() * kPLLMultiplier);
 
         bool is_clock;
         std::complex<float> biphase;
@@ -221,7 +214,7 @@ void Subcarrier::DemodulateMoreBits() {
       printf("f:%f,%f,%f,%f,%f,%f,%f\n",
           sample_num_ / kTargetSampleRate_Hz,
           sample.real(),
-          step2hertz(oscillator_exact_.frequency()),
+          step2hertz(oscillator_.frequency()),
           modem_.phase_error(),
           agc_.gain(),
           sample_lopass.real(),
@@ -229,25 +222,16 @@ void Subcarrier::DemodulateMoreBits() {
 #endif
     }
 
-    oscillator_exact_.Step();
-    oscillator_approx_.Step();
+    oscillator_.Step();
 
     sample_num_++;
   }
 }
 
-int Subcarrier::NextBit() {
-  while (bit_buffer_.size() < 1 && !eof())
-    DemodulateMoreBits();
-
-  int bit = 0;
-
-  if (bit_buffer_.size() > 0) {
-    bit = bit_buffer_.front();
-    bit_buffer_.pop_front();
-  }
-
-  return bit;
+std::vector<bool> Subcarrier::PopBits() {
+  std::vector<bool> result = bit_buffer_;
+  bit_buffer_.clear();
+  return result;
 }
 
 bool Subcarrier::eof() const {

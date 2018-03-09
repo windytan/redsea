@@ -72,7 +72,7 @@ class AsciiBitReader {
  public:
   explicit AsciiBitReader(const Options& options);
   ~AsciiBitReader();
-  int NextBit();
+  bool NextBit();
   bool eof() const;
 
  private:

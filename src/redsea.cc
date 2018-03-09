@@ -22,6 +22,7 @@
 #include "src/common.h"
 #include "src/block_sync.h"
 #include "src/groups.h"
+#include "src/subcarrier.h"
 
 namespace redsea {
 
@@ -204,44 +205,88 @@ int main(int argc, char** argv) {
   redsea::Station station(pi, options);
   redsea::RunningAverage bler_average(redsea::kNumBlerAverageGroups);
 
-  while (!(std::cin.eof() || block_stream.eof())) {
-    redsea::Group group = (options.input_type == redsea::INPUT_HEX ?
-        redsea::ReadNextHexGroup(options) :
-        block_stream.NextGroup());
+  redsea::MPXReader* mpx;
 
-    if (options.timestamp)
-      group.set_time(std::chrono::system_clock::now());
+#ifdef HAVE_SNDFILE
+  if (options.input_type == redsea::INPUT_MPX_SNDFILE) {
+    mpx = new redsea::SndfileReader(options);
+    options.samplerate = mpx->samplerate();
+  } else {
+    mpx = new redsea::StdinReader(options);
+  }
+#else
+  mpx = new redsea::StdinReader(options);
+#endif
 
-    if (group.has_pi()) {
-      // Repeated PI confirms change
-      prev_new_pi = new_pi;
-      new_pi = group.pi();
+  redsea::AsciiBitReader ascii_reader(options);
 
-      if (new_pi == prev_new_pi || options.input_type == redsea::INPUT_HEX) {
-        if (new_pi != pi)
-          station = redsea::Station(new_pi, options);
-        pi = new_pi;
+#ifdef HAVE_LIQUID
+  redsea::Subcarrier subcarrier(options);
+#endif
+
+  while (true) {
+    if (options.input_type == redsea::INPUT_MPX_STDIN ||
+        options.input_type == redsea::INPUT_MPX_SNDFILE) {
+      subcarrier.ProcessChunk(mpx->ReadChunk());
+
+      for (bool bit : subcarrier.PopBits())
+        block_stream.PushBit(bit);
+    } else if (options.input_type == redsea::INPUT_ASCIIBITS) {
+      block_stream.PushBit(ascii_reader.NextBit());
+    }
+
+    std::vector<redsea::Group> groups;
+    if (options.input_type == redsea::INPUT_HEX) {
+      groups = std::vector<redsea::Group>({redsea::ReadNextHexGroup(options)});
+    } else {
+      groups = block_stream.PopGroups();
+    }
+
+    for (redsea::Group group : groups) {
+      if (options.timestamp)
+        group.set_time(std::chrono::system_clock::now());
+
+      if (group.has_pi()) {
+        // Repeated PI confirms change
+        prev_new_pi = new_pi;
+        new_pi = group.pi();
+
+        if (new_pi == prev_new_pi || options.input_type == redsea::INPUT_HEX) {
+          if (new_pi != pi)
+            station = redsea::Station(new_pi, options);
+          pi = new_pi;
+        } else {
+          continue;
+        }
+      }
+
+      if (options.bler) {
+        bler_average.push(100.0f * group.num_errors() / 4);
+        group.set_bler(bler_average.average());
+      }
+
+      if (options.output_type == redsea::OUTPUT_HEX) {
+        redsea::PrintHexGroup(group, options.feed_thru ?
+                              &std::cerr : &std::cout,
+                              options.time_format);
       } else {
-        continue;
+        station.UpdateAndPrint(group, options.feed_thru ?
+                               &std::cerr : &std::cout);
       }
     }
 
-#ifdef DEBUG
-    printf("b:%f,", block_stream.t());
-#endif
-
-    if (options.bler) {
-      bler_average.push(100.0f * group.num_errors() / 4);
-      group.set_bler(bler_average.average());
+    bool eof = false;
+    if (options.input_type == redsea::INPUT_MPX_STDIN ||
+        options.input_type == redsea::INPUT_MPX_SNDFILE) {
+      eof = mpx->eof();
+    } else if (options.input_type == redsea::INPUT_ASCIIBITS) {
+      eof = ascii_reader.eof();
+    } else if (options.input_type == redsea::INPUT_HEX) {
+      eof = std::cin.eof();
     }
 
-    if (options.output_type == redsea::OUTPUT_HEX) {
-      redsea::PrintHexGroup(group, options.feed_thru ? &std::cerr : &std::cout,
-                            options.time_format);
-    } else {
-      station.UpdateAndPrint(group, options.feed_thru ?
-                             &std::cerr : &std::cout);
-    }
+    if (eof)
+      break;
   }
 
   return EXIT_SUCCESS;

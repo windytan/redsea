@@ -20,10 +20,8 @@
 #include <map>
 #include <vector>
 
-#include "src/input.h"
 #include "config.h"
 #include "src/groups.h"
-#include "src/subcarrier.h"
 
 namespace redsea {
 
@@ -47,35 +45,33 @@ class RunningSum {
 class BlockStream {
  public:
   explicit BlockStream(const Options& options);
-  Group NextGroup();
+  void PushBit(bool bit);
+  std::vector<Group> PopGroups();
   bool eof() const;
 #ifdef DEBUG
   float t() const;
 #endif
 
  private:
-  int NextBit();
   void Uncorrectable();
   bool AcquireSync();
 
   unsigned bitcount_;
   unsigned prevbitcount_;
   int left_to_read_;
-  uint32_t padded_block_;
+  uint32_t input_register_;
   unsigned prevsync_;
   eOffset expected_offset_;
   eOffset received_offset_;
   uint16_t pi_;
   bool is_in_sync_;
   RunningSum block_error_sum_;
-#ifdef HAVE_LIQUID
-  Subcarrier subcarrier_;
-#endif
   const Options options_;
-  AsciiBitReader ascii_bit_reader_;
   const eInputType input_type_;
   bool is_eof_;
   RunningAverage bler_average_;
+  Group current_group_;
+  std::vector<Group> groups_;
 };
 
 } // namespace redsea

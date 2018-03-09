@@ -60,18 +60,18 @@ class Subcarrier {
  public:
   explicit Subcarrier(const Options& options);
   ~Subcarrier();
-  int NextBit();
+  std::vector<bool> PopBits();
   bool eof() const;
+  void ProcessChunk(const std::vector<float>& chunk);
 #ifdef DEBUG
   float t() const;
 #endif
 
  private:
-  void DemodulateMoreBits();
   int  sample_num_;
   float resample_ratio_;
 
-  std::deque<int> bit_buffer_;
+  std::vector<bool> bit_buffer_;
 
   liquid::FIRFilter fir_lpf_;
   liquid::AGC agc_;
@@ -86,8 +86,6 @@ class Subcarrier {
   BiphaseDecoder biphase_decoder_;
 
   std::complex<float> prev_sym_;
-
-  MPXReader* mpx_;
 };
 
 }  // namespace redsea
