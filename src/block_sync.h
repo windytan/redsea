@@ -48,9 +48,6 @@ class BlockStream {
   void PushBit(bool bit);
   std::vector<Group> PopGroups();
   bool eof() const;
-#ifdef DEBUG
-  float t() const;
-#endif
 
  private:
   void Uncorrectable();

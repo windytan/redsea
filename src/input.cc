@@ -107,7 +107,7 @@ AsciiBitReader::AsciiBitReader(const Options& options) :
 AsciiBitReader::~AsciiBitReader() {
 }
 
-bool AsciiBitReader::NextBit() {
+bool AsciiBitReader::ReadNextBit() {
   int chr = 0;
   while (chr != '0' && chr != '1' && chr != EOF) {
     chr = getchar();

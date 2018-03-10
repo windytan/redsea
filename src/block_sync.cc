@@ -21,7 +21,6 @@
 
 namespace redsea {
 
-const unsigned kBitmask16 = 0x000FFFF;
 const unsigned kBitmask26 = 0x3FFFFFF;
 const unsigned kBitmask28 = 0xFFFFFFF;
 
@@ -245,11 +244,5 @@ std::vector<Group> BlockStream::PopGroups() {
   groups_.clear();
   return result;
 }
-
-#ifdef DEBUG
-float BlockStream::t() const {
-  return subcarrier_.t();
-}
-#endif
 
 }  // namespace redsea
