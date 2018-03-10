@@ -234,6 +234,19 @@ int main(int argc, char** argv) {
   redsea::AsciiBitReader ascii_reader(options);
 
   while (true) {
+    bool eof = false;
+    if (options.input_type == redsea::INPUT_MPX_STDIN ||
+        options.input_type == redsea::INPUT_MPX_SNDFILE) {
+      eof = mpx.eof();
+    } else if (options.input_type == redsea::INPUT_ASCIIBITS) {
+      eof = ascii_reader.eof();
+    } else if (options.input_type == redsea::INPUT_HEX) {
+      eof = std::cin.eof();
+    }
+
+    if (eof)
+      break;
+
     if (options.input_type == redsea::INPUT_MPX_STDIN ||
         options.input_type == redsea::INPUT_MPX_SNDFILE)
       mpx.FillBuffer();
@@ -254,19 +267,6 @@ int main(int argc, char** argv) {
           break;
       }
     }
-
-    bool eof = false;
-    if (options.input_type == redsea::INPUT_MPX_STDIN ||
-        options.input_type == redsea::INPUT_MPX_SNDFILE) {
-      eof = mpx.eof();
-    } else if (options.input_type == redsea::INPUT_ASCIIBITS) {
-      eof = ascii_reader.eof();
-    } else if (options.input_type == redsea::INPUT_HEX) {
-      eof = std::cin.eof();
-    }
-
-    if (eof)
-      break;
   }
 
   return EXIT_SUCCESS;

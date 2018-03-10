@@ -22,7 +22,6 @@
 namespace redsea {
 
 const unsigned kBitmask26 = 0x3FFFFFF;
-const unsigned kBitmask28 = 0xFFFFFFF;
 
 const eBlockNumber g_block_number_for_offset[5] =
     {BLOCK1, BLOCK2, BLOCK3, BLOCK3, BLOCK4};

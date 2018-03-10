@@ -18,7 +18,6 @@
 
 #include <cassert>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 #include "src/groups.h"
@@ -52,12 +51,12 @@ MPXReader::MPXReader(const Options& options) :
     }
 
     if (file_ == nullptr) {
-      int err = sf_error (file_) ;
-      std::cerr << "error: failed to open file: " << sf_error_number(err);
-      is_eof_ = true;
+      std::cerr << "error: failed to open file: " <<
+                sf_error_number(sf_error(file_)) << '\n';
+      exit(EXIT_FAILURE);
     } else if (sfinfo_.samplerate < 128000.f) {
       std::cerr << "error: sample rate must be 128000 Hz or higher" << '\n';
-      is_eof_ = true;
+      exit(EXIT_FAILURE);
     } else {
       assert(sfinfo_.channels < static_cast<int>(buffer_.size()));
       used_buffer_size_ =
