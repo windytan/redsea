@@ -33,8 +33,8 @@ or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
 ## Installation
 
 You will need git, the [liquid-dsp][liquid-dsp] library, and GNU autotools.
-Audio files can be decoded if libsndfile is installed. On macOS (OSX) you will
-also need XCode command-line tools (`xcode-select --install`).
+On macOS (OSX) you will also need XCode command-line tools
+(`xcode-select --install`).
 
 1. Clone the repository (unless you downloaded a release zip file):
 
@@ -147,7 +147,7 @@ type:
 * C++11 compiler
 * GNU autotools
 * libiconv
-* libsndfile (optional)
+* libsndfile
 * [liquid-dsp][liquid-dsp]
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals

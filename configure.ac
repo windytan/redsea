@@ -12,10 +12,6 @@ AC_ARG_WITH([liquid],
             [AS_HELP_STRING([--without-liquid],
               [disable support for demodulation using liquid-dsp])])
 
-AC_ARG_WITH([sndfile],
-            [AS_HELP_STRING([--without-sndfile],
-               [disable support for reading audio files via libsndfile])])
-
 AC_ARG_WITH([macports],
             [AS_HELP_STRING([--without-macports],
                [disable check for MacPorts directories when compiling])])
@@ -49,15 +45,13 @@ AS_IF([test "x$with_macports" != xno],
   [AC_CHECK_FILE(/opt/local/lib,
     [AC_SUBST([MACPORTS_CF], ["-I/opt/local/include"])])])
 
-SNDFILE=
-AS_IF([test "x$with_sndfile" != xno],
-  [AC_CHECK_LIB([sndfile], [main],
-    [AC_SUBST([SNDFILE], ["-lsndfile"])
-     AC_DEFINE([HAVE_SNDFILE], [1],
-               [Define if you have libsndfile])
-    ],
-    [AC_MSG_FAILURE(
-       [Could not find libsndfile (use --without-sndfile to disable)])])])
+AC_CHECK_LIB([sndfile], [main],
+  [AC_SUBST([SNDFILE], ["-lsndfile"])
+   AC_DEFINE([HAVE_SNDFILE], [1],
+             [Define if you have libsndfile])
+  ],
+  [AC_MSG_FAILURE(
+     [Could not find libsndfile])])
 
 AC_CANONICAL_HOST
 case "${host_os}" in

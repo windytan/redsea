@@ -18,55 +18,39 @@
 #define INPUT_H_
 
 #include <cstdint>
+#include <array>
 #include <vector>
 
 #include "config.h"
 
-#ifdef HAVE_SNDFILE
 #include <sndfile.h>
-#endif
 
+#include "src/common.h"
 #include "src/groups.h"
 
 namespace redsea {
 
+const int kInputBufferSize = 4096;
+
 class MPXReader {
  public:
+  explicit MPXReader(const Options& options);
+  ~MPXReader();
   bool eof() const;
-  virtual std::vector<float> ReadChunk() = 0;
-  virtual float samplerate() const = 0;
+  std::vector<float> ReadChunk();
+  float samplerate() const;
 
- protected:
+ private:
+  eInputType input_type_;
   bool is_eof_;
-};
-
-class StdinReader : public MPXReader {
- public:
-  explicit StdinReader(const Options& options);
-  ~StdinReader();
-  std::vector<float> ReadChunk() override;
-  float samplerate() const override;
-
- private:
-  float samplerate_;
-  int16_t* buffer_;
   bool feed_thru_;
-};
-
-#ifdef HAVE_SNDFILE
-class SndfileReader : public MPXReader {
- public:
-  explicit SndfileReader(const Options& options);
-  ~SndfileReader();
-  std::vector<float> ReadChunk() override;
-  float samplerate() const override;
-
- private:
-  SF_INFO info_;
+  std::array<float, kInputBufferSize> buffer_;
+  size_t used_buffer_size_;
+  SF_INFO sfinfo_;
   SNDFILE* file_;
-  float* buffer_;
+  SNDFILE* outfile_;
+  sf_count_t num_read_;
 };
-#endif
 
 class AsciiBitReader {
  public:

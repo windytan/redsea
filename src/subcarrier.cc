@@ -25,9 +25,7 @@
 #include <iostream>
 #include <tuple>
 
-#ifdef HAVE_SNDFILE
 #include <sndfile.h>
-#endif
 
 #include "src/common.h"
 #include "src/input.h"
@@ -41,7 +39,7 @@ const float kCarrierFrequency_Hz  = 57000.0f;
 const float kBitsPerSecond        = 1187.5f;
 const int   kSamplesPerSymbol     = 3;
 const float kAGCBandwidth_Hz      = 500.0f;
-const float kAGCInitialGain       = 0.01f;
+const float kAGCInitialGain       = 0.08f;
 const float kLowpassCutoff_Hz     = 2600.0f;
 const float kSymsyncBandwidth_Hz  = 2400.0f;
 const int   kSymsyncDelay         = 2;

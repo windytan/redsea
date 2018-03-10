@@ -16,6 +16,7 @@
  */
 #include "src/input.h"
 
+#include <cassert>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -25,93 +26,73 @@
 
 namespace redsea {
 
-namespace {
+MPXReader::MPXReader(const Options& options) :
+    input_type_(options.input_type),
+    feed_thru_(options.feed_thru),
+    sfinfo_({0, 0, 0, 0, 0, 0}) {
+  is_eof_ = false;
 
-const int kInputBufferSize = 4096;
+  if (options.input_type == INPUT_MPX_STDIN ||
+      options.input_type == INPUT_MPX_SNDFILE) {
 
+    if (options.input_type == INPUT_MPX_STDIN) {
+      sfinfo_.channels = 1;
+      sfinfo_.format = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
+      sfinfo_.samplerate = options.samplerate;
+      sfinfo_.frames = 0;
+      file_ = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
+
+      outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
+    } else if (options.input_type == INPUT_MPX_SNDFILE) {
+      file_ = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
+    }
+
+    if (file_ == nullptr) {
+      int err = sf_error (file_) ;
+      std::cerr << "error: failed to open file: " << sf_error_number(err);
+      is_eof_ = true;
+    } else if (sfinfo_.samplerate < 128000.f) {
+      std::cerr << "error: sample rate must be 128000 Hz or higher" << '\n';
+      is_eof_ = true;
+    } else {
+      assert(sfinfo_.channels < static_cast<int>(buffer_.size()));
+      used_buffer_size_ =
+          (buffer_.size() / sfinfo_.channels) * sfinfo_.channels;
+    }
+  }
+}
+
+MPXReader::~MPXReader() {
+  sf_close(file_);
 }
 
 bool MPXReader::eof() const {
   return is_eof_;
 }
 
-StdinReader::StdinReader(const Options& options) :
-    samplerate_(options.samplerate),
-    buffer_(new (std::nothrow) int16_t[kInputBufferSize]),
-    feed_thru_(options.feed_thru) {
-  is_eof_ = false;
-}
-
-StdinReader::~StdinReader() {
-  delete[] buffer_;
-}
-
-std::vector<float> StdinReader::ReadChunk() {
-  int num_read = fread(buffer_, sizeof(buffer_[0]), kInputBufferSize,
-      stdin);
-
-  if (feed_thru_)
-    fwrite(buffer_, sizeof(buffer_[0]), num_read, stdout);
-
-  if (num_read < kInputBufferSize)
-    is_eof_ = true;
-
-  std::vector<float> chunk(num_read);
-  for (int i = 0; i < num_read; i++)
-    chunk[i] = buffer_[i];
-
-  return chunk;
-}
-
-float StdinReader::samplerate() const {
-  return samplerate_;
-}
-
-#ifdef HAVE_SNDFILE
-SndfileReader::SndfileReader(const Options& options) :
-    info_({0, 0, 0, 0, 0, 0}),
-    file_(sf_open(options.sndfilename.c_str(), SFM_READ, &info_)),
-    buffer_(new (std::nothrow) float[info_.channels * kInputBufferSize]) {
-  is_eof_ = false;
-  if (info_.frames == 0) {
-    std::cerr << "error: couldn't open " << options.sndfilename << '\n';
-    is_eof_ = true;
-  }
-  if (info_.samplerate < 128000.f) {
-    std::cerr << "error: sample rate must be 128000 Hz or higher" << '\n';
-    is_eof_ = true;
-  }
-}
-
-SndfileReader::~SndfileReader() {
-  sf_close(file_);
-  delete[] buffer_;
-}
-
-std::vector<float> SndfileReader::ReadChunk() {
+std::vector<float> MPXReader::ReadChunk() {
   std::vector<float> chunk;
   if (is_eof_)
     return chunk;
 
-  sf_count_t num_read = sf_readf_float(file_, buffer_, kInputBufferSize);
-  if (num_read != kInputBufferSize)
+  sf_count_t num_read =
+      sf_read_float(file_, buffer_.data(), used_buffer_size_);
+  if (num_read < static_cast<long long>(used_buffer_size_))
     is_eof_ = true;
 
-  if (info_.channels == 1) {
-    chunk = std::vector<float>(buffer_, buffer_ + num_read);
+  if (sfinfo_.channels == 1) {
+    chunk = std::vector<float>(buffer_.begin(), buffer_.end());
   } else {
-    chunk = std::vector<float>(num_read);
+    chunk = std::vector<float>(num_read / sfinfo_.channels);
     for (size_t i = 0; i < chunk.size(); i++)
-      chunk[i] = buffer_[i * info_.channels];
+      chunk[i] = buffer_[i * sfinfo_.channels];
   }
   return chunk;
 }
 
-float SndfileReader::samplerate() const {
-  return info_.samplerate;
+float MPXReader::samplerate() const {
+  return sfinfo_.samplerate;
 }
-#endif
-
 
 AsciiBitReader::AsciiBitReader(const Options& options) :
     is_eof_(false), feed_thru_(options.feed_thru) {

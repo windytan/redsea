@@ -124,14 +124,8 @@ Options GetOptions(int argc, char** argv) {
         options.bler = true;
         break;
       case 'f':
-#ifdef HAVE_SNDFILE
         options.sndfilename = std::string(optarg);
         options.input_type = redsea::INPUT_MPX_SNDFILE;
-#else
-        std::cerr << "error: redsea was compiled without libsndfile"
-                  << '\n';
-        options.just_exit = true;
-#endif
         break;
       case 'h':
         options.input_type = redsea::INPUT_HEX;
@@ -205,18 +199,8 @@ int main(int argc, char** argv) {
   redsea::Station station(pi, options);
   redsea::RunningAverage bler_average(redsea::kNumBlerAverageGroups);
 
-  redsea::MPXReader* mpx;
-
-#ifdef HAVE_SNDFILE
-  if (options.input_type == redsea::INPUT_MPX_SNDFILE) {
-    mpx = new redsea::SndfileReader(options);
-    options.samplerate = mpx->samplerate();
-  } else {
-    mpx = new redsea::StdinReader(options);
-  }
-#else
-  mpx = new redsea::StdinReader(options);
-#endif
+  redsea::MPXReader mpx(options);
+  options.samplerate = mpx.samplerate();
 
   redsea::AsciiBitReader ascii_reader(options);
 
@@ -227,7 +211,7 @@ int main(int argc, char** argv) {
   while (true) {
     if (options.input_type == redsea::INPUT_MPX_STDIN ||
         options.input_type == redsea::INPUT_MPX_SNDFILE) {
-      subcarrier.ProcessChunk(mpx->ReadChunk());
+      subcarrier.ProcessChunk(mpx.ReadChunk());
 
       for (bool bit : subcarrier.PopBits())
         block_stream.PushBit(bit);
@@ -278,7 +262,7 @@ int main(int argc, char** argv) {
     bool eof = false;
     if (options.input_type == redsea::INPUT_MPX_STDIN ||
         options.input_type == redsea::INPUT_MPX_SNDFILE) {
-      eof = mpx->eof();
+      eof = mpx.eof();
     } else if (options.input_type == redsea::INPUT_ASCIIBITS) {
       eof = ascii_reader.eof();
     } else if (options.input_type == redsea::INPUT_HEX) {
