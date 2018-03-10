@@ -43,7 +43,7 @@ enum eOpenDataApp {
 struct Options {
   Options() : rbds(false), feed_thru(false), show_partial(false),
               just_exit(false), timestamp(false), bler(false),
-              samplerate(kTargetSampleRate_Hz),
+              samplerate(kTargetSampleRate_Hz), num_channels(1),
               input_type(INPUT_MPX_STDIN), output_type(OUTPUT_JSON) {}
   bool rbds;
   bool feed_thru;
@@ -52,6 +52,7 @@ struct Options {
   bool timestamp;
   bool bler;
   float samplerate;
+  int num_channels;
   eInputType input_type;
   eOutputType output_type;
   std::string loctable_dir;

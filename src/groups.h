@@ -81,6 +81,7 @@ class Group {
   void disable_offsets();
   void set_time(std::chrono::time_point<std::chrono::system_clock> t);
   void set_bler(uint8_t bler);
+  void set_channel(int which_channel);
 
  private:
   GroupType type_;
@@ -101,7 +102,7 @@ class Group {
 class Station {
  public:
   Station();
-  Station(uint16_t _pi, const Options& options);
+  Station(uint16_t _pi, const Options& options, int which_channel);
   void UpdateAndPrint(const Group& group, std::ostream* stream);
   uint16_t pi() const;
 
@@ -122,6 +123,7 @@ class Station {
   void ParseRadioTextPlus(const Group& group);
   uint16_t pi_;
   Options options_;
+  int which_channel_;
   RDSString ps_;
   RDSString radiotext_;
   int radiotext_ab_;

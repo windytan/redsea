@@ -19,6 +19,7 @@
 #include <iostream>
 
 #include "config.h"
+#include "src/channel.h"
 #include "src/common.h"
 #include "src/block_sync.h"
 #include "src/groups.h"
@@ -36,6 +37,9 @@ void PrintUsage() {
     "-b, --input-bits       Input is an unsynchronized ASCII bit stream\n"
     "                       (011010110...). All characters but '0' and '1'\n"
     "                       are ignored.\n"
+    "\n"
+    "-c, --channels         Number of channels in the raw input signal. Each\n"
+    "                       channel is demodulated independently.\n"
     "\n"
     "-e, --feed-through     Echo the input signal to stdout and print\n"
     "                       decoded groups to stderr.\n"
@@ -93,6 +97,7 @@ Options GetOptions(int argc, char** argv) {
 
   static struct option long_options[] = {
     { "input-bits",    no_argument, 0, 'b'},
+    { "channels",      1,           0, 'c'},
     { "feed-through",  no_argument, 0, 'e'},
     { "bler",          no_argument, 0, 'E'},
     { "file",          1,           0, 'f'},
@@ -110,12 +115,20 @@ Options GetOptions(int argc, char** argv) {
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "beEf:hl:pr:t:uvx",
+  while ((option_char = getopt_long(argc, argv, "bc:eEf:hl:pr:t:uvx",
                                     long_options,
          &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
         options.input_type = redsea::INPUT_ASCIIBITS;
+        break;
+      case 'c':
+        options.num_channels = std::atoi(optarg);
+        if (options.num_channels < 1) {
+          std::cerr << "error: number of channels must be greater than 0"
+                    << '\n';
+          options.just_exit = true;
+        }
         break;
       case 'e':
         options.feed_thru = true;
@@ -170,6 +183,13 @@ Options GetOptions(int argc, char** argv) {
 
   if (options.feed_thru && options.input_type == INPUT_MPX_SNDFILE) {
     std::cerr << "error: feed-thru is not supported for audio file inputs"
+      << '\n';
+    options.just_exit = true;
+  }
+
+  if (options.num_channels > 1 && options.input_type != INPUT_MPX_STDIN &&
+      options.input_type != INPUT_MPX_SNDFILE) {
+    std::cerr << "error: multi-channel input is only supported for MPX signals"
               << '\n';
     options.just_exit = true;
   }
@@ -194,68 +214,44 @@ int main(int argc, char** argv) {
   }
 #endif
 
-  uint16_t pi = 0x0000, prev_new_pi = 0x0000, new_pi = 0x0000;
-  redsea::BlockStream block_stream(options);
-  redsea::Station station(pi, options);
-  redsea::RunningAverage bler_average(redsea::kNumBlerAverageGroups);
-
   redsea::MPXReader mpx(options);
   options.samplerate = mpx.samplerate();
+  options.num_channels = mpx.num_channels();
+
+  /* When we don't have MPX input, there are no channels. But we want at least
+   * 1 Channel anyway. Also, we need a sample rate for the Subcarrier
+   * constructor.
+   */
+  if (options.num_channels == 0) {
+    options.num_channels = 1;
+    options.samplerate = redsea::kTargetSampleRate_Hz;
+  }
+
+  std::vector<redsea::Channel> channels;
+  for (int n_channel = 0; n_channel < options.num_channels; n_channel++)
+    channels.emplace_back(redsea::Channel(options, n_channel));
 
   redsea::AsciiBitReader ascii_reader(options);
 
-#ifdef HAVE_LIQUID
-  redsea::Subcarrier subcarrier(options);
-#endif
-
   while (true) {
     if (options.input_type == redsea::INPUT_MPX_STDIN ||
-        options.input_type == redsea::INPUT_MPX_SNDFILE) {
-      subcarrier.ProcessChunk(mpx.ReadChunk());
+        options.input_type == redsea::INPUT_MPX_SNDFILE)
+      mpx.FillBuffer();
 
-      for (bool bit : subcarrier.PopBits())
-        block_stream.PushBit(bit);
-    } else if (options.input_type == redsea::INPUT_ASCIIBITS) {
-      block_stream.PushBit(ascii_reader.NextBit());
-    }
+    for (int n_channel = 0; n_channel < options.num_channels; n_channel++) {
+      switch(options.input_type) {
+        case redsea::INPUT_MPX_STDIN:
+        case redsea::INPUT_MPX_SNDFILE:
+          channels[n_channel].ProcessChunk(mpx.ReadChunk(n_channel));
+          break;
 
-    std::vector<redsea::Group> groups;
-    if (options.input_type == redsea::INPUT_HEX) {
-      groups = std::vector<redsea::Group>({redsea::ReadNextHexGroup(options)});
-    } else {
-      groups = block_stream.PopGroups();
-    }
+        case redsea::INPUT_ASCIIBITS:
+          channels[n_channel].ProcessBit(ascii_reader.ReadNextBit());
+          break;
 
-    for (redsea::Group group : groups) {
-      if (options.timestamp)
-        group.set_time(std::chrono::system_clock::now());
-
-      if (group.has_pi()) {
-        // Repeated PI confirms change
-        prev_new_pi = new_pi;
-        new_pi = group.pi();
-
-        if (new_pi == prev_new_pi || options.input_type == redsea::INPUT_HEX) {
-          if (new_pi != pi)
-            station = redsea::Station(new_pi, options);
-          pi = new_pi;
-        } else {
-          continue;
-        }
-      }
-
-      if (options.bler) {
-        bler_average.push(100.0f * group.num_errors() / 4);
-        group.set_bler(bler_average.average());
-      }
-
-      if (options.output_type == redsea::OUTPUT_HEX) {
-        redsea::PrintHexGroup(group, options.feed_thru ?
-                              &std::cerr : &std::cout,
-                              options.time_format);
-      } else {
-        station.UpdateAndPrint(group, options.feed_thru ?
-                               &std::cerr : &std::cout);
+        case redsea::INPUT_HEX:
+          channels[n_channel].ProcessGroup(redsea::ReadNextHexGroup(options));
+          break;
       }
     }
 

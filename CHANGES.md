@@ -2,7 +2,9 @@
 
 ## 0.16.0
 
-* Notable speed improvements:
+* Add support for multi-channel signals (`--channels`) - libsndfile is now
+  a required dependency
+* Speed improvements:
   * By using a lookup table instead of sinf/cosf to generate the
     mix-down sinusoid
   * By only using one mix-down operation instead of two

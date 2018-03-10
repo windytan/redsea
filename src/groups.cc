@@ -220,11 +220,17 @@ void Group::set_bler(uint8_t bler) {
   has_bler_ = true;
 }
 
-Station::Station() : Station(0x0000, Options()) {
+/*
+ * A Station represents a single broadcast carrier identified by its RDS PI
+ * code.
+ *
+ */
+Station::Station() : Station(0x0000, Options(), 0) {
 }
 
-Station::Station(uint16_t _pi, const Options& options) : pi_(_pi),
-  options_(options), ps_(8), radiotext_(64), radiotext_ab_(0), pty_(0),
+Station::Station(uint16_t _pi, const Options& options, int which_channel) :
+  pi_(_pi), options_(options), which_channel_(which_channel), ps_(8),
+  radiotext_(64), radiotext_ab_(0), pty_(0),
   is_tp_(false), is_ta_(false), is_music_(false), pin_(0), ecc_(0), cc_(0),
   tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
   has_country_(false), oda_app_for_group_(), has_radiotext_plus_(false),
@@ -274,6 +280,9 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
 
   if (group.has_bler())
     json_["bler"] = group.bler();
+
+  if (options_.num_channels > 1)
+    json_["channel"] = which_channel_;
 
   DecodeBasics(group);
 

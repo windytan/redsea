@@ -249,6 +249,11 @@
         "description": "Call sign letters for a North American (RBDS) station - probably erroneous due to a TMC workaround",
         "type": "string"
       },
+      "channel": {
+        "description": "Which channel of a multi-channel signal this group was received on",
+        "type": "integer",
+        "minimum": 1
+      },
       "prog_type": {
         "description": "Program Type",
         "type": "string"

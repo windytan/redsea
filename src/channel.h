@@ -14,58 +14,39 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#ifndef INPUT_H_
-#define INPUT_H_
-
-#include <cstdint>
-#include <array>
-#include <vector>
+#ifndef CHANNEL_H_
+#define CHANNEL_H_
 
 #include "config.h"
 
-#include <sndfile.h>
-
+#include "src/block_sync.h"
 #include "src/common.h"
-#include "src/groups.h"
+#include "src/subcarrier.h"
 
 namespace redsea {
 
-const int kInputBufferSize = 4096;
-
-class MPXReader {
+class Channel {
  public:
-  explicit MPXReader(const Options& options);
-  ~MPXReader();
-  bool eof() const;
-  void FillBuffer();
-  std::vector<float> ReadChunk(int channel);
-  float samplerate() const;
-  int num_channels() const;
+  Channel(const Options& options, int which_channel);
+  Channel(const Channel& other);
+  void ProcessChunk(const std::vector<float>& chunk);
+  void ProcessBit(bool bit);
+  void ProcessGroup(Group group);
 
  private:
-  bool is_eof_;
-  bool feed_thru_;
-  std::array<float, kInputBufferSize> buffer_;
-  size_t used_buffer_size_;
-  SF_INFO sfinfo_;
-  SNDFILE* file_;
-  SNDFILE* outfile_;
-  sf_count_t num_read_;
+  Options options_;
+  int which_channel_;
+  uint16_t pi_;
+  uint16_t prev_new_pi_;
+  uint16_t new_pi_;
+  BlockStream block_stream_;
+  Station station_;
+#ifdef HAVE_LIQUID
+  Subcarrier subcarrier_;
+#endif
+  RunningAverage bler_average_;
 };
-
-class AsciiBitReader {
- public:
-  explicit AsciiBitReader(const Options& options);
-  ~AsciiBitReader();
-  bool ReadNextBit();
-  bool eof() const;
-
- private:
-  bool is_eof_;
-  bool feed_thru_;
-};
-
-Group ReadNextHexGroup(const Options& options);
 
 }  // namespace redsea
-#endif  // INPUT_H_
+
+#endif  // CHANNEL_H_
