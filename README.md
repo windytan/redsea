@@ -86,7 +86,7 @@ stdin.
                        (011010110...). All characters but '0' and '1'
                        are ignored.
 
--c, --channels         Number of channels in the raw input signal. Each
+-c, --channels CHANS   Number of channels in the raw input signal. Each
                        channel is demodulated independently.
 
 -e, --feed-through     Echo the input signal to stdout and print
