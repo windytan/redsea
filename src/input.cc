@@ -26,6 +26,12 @@
 
 namespace redsea {
 
+/*
+ * An MPXReader deals with reading an FM multiplex signal from an audio file or
+ * raw PCM via stdin, separating it into channels and converting to chunks of
+ * floating-point samples.
+ *
+ */
 MPXReader::MPXReader(const Options& options) :
     input_type_(options.input_type),
     feed_thru_(options.feed_thru),
@@ -119,6 +125,10 @@ bool AsciiBitReader::eof() const {
   return is_eof_;
 }
 
+/*
+ * Read a single line containing an RDS group in the RDS Spy hex format.
+ *
+ */
 Group ReadNextHexGroup(const Options& options) {
   Group group;
   group.disable_offsets();

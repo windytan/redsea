@@ -51,6 +51,10 @@ std::string TimePointToString(
   return result;
 }
 
+/*
+ * Print a group as a single line in the RDS Spy hex format.
+ *
+ */
 void PrintHexGroup(const Group& group, std::ostream* stream,
                    const std::string& time_format) {
   stream->fill('0');
@@ -93,6 +97,10 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
          (type1.number == type2.number && type1.version < type2.version);
 }
 
+/*
+ * A single RDS group transmitted as four 16-bit blocks.
+ *
+ */
 Group::Group() : pi_(0x0000), has_block_({false, false, false, false, false}),
                  block_(5), block_had_errors_(4), bler_(0), has_type_(false),
                  has_pi_(false), has_c_prime_(false), has_bler_(false),
