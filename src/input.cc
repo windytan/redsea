@@ -47,6 +47,7 @@ MPXReader::MPXReader(const Options& options) :
       sfinfo_.samplerate = options.samplerate;
       sfinfo_.frames = 0;
       file_ = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
+      outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
     } else if (options.input_type == INPUT_MPX_SNDFILE) {
       file_ = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
     }
@@ -62,8 +63,6 @@ MPXReader::MPXReader(const Options& options) :
       assert(sfinfo_.channels < static_cast<int>(buffer_.size()));
       used_buffer_size_ =
           (buffer_.size() / sfinfo_.channels) * sfinfo_.channels;
-
-      outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
     }
   }
 }
