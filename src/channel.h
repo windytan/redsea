@@ -21,6 +21,7 @@
 
 #include "src/block_sync.h"
 #include "src/common.h"
+#include "src/options.h"
 #include "src/subcarrier.h"
 
 namespace redsea {

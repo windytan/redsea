@@ -27,6 +27,7 @@
 #include "src/common.h"
 #include "src/input.h"
 #include "src/liquid_wrappers.h"
+#include "src/options.h"
 
 #ifdef HAVE_LIQUID
 

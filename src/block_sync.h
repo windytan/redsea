@@ -22,6 +22,7 @@
 
 #include "config.h"
 #include "src/groups.h"
+#include "src/options.h"
 
 namespace redsea {
 

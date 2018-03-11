@@ -23,6 +23,7 @@
 #include "src/common.h"
 #include "src/block_sync.h"
 #include "src/groups.h"
+#include "src/options.h"
 #include "src/subcarrier.h"
 
 namespace redsea {
@@ -92,115 +93,16 @@ void PrintVersion() {
 #endif
 }
 
-Options GetOptions(int argc, char** argv) {
-  redsea::Options options;
-
-  static struct option long_options[] = {
-    { "input-bits",    no_argument, 0, 'b'},
-    { "channels",      1,           0, 'c'},
-    { "feed-through",  no_argument, 0, 'e'},
-    { "bler",          no_argument, 0, 'E'},
-    { "file",          1,           0, 'f'},
-    { "input-hex",     no_argument, 0, 'h'},
-    { "loctable",      1,           0, 'l'},
-    { "show-partial",  no_argument, 0, 'p'},
-    { "samplerate",    1,           0, 'r'},
-    { "timestamp",     1,           0, 't'},
-    { "rbds",          no_argument, 0, 'u'},
-    { "version",       no_argument, 0, 'v'},
-    { "output-hex",    no_argument, 0, 'x'},
-    { "help",          no_argument, 0, '?'},
-    {0,                0,           0,  0}};
-
-  int option_index = 0;
-  int option_char;
-
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hl:pr:t:uvx",
-                                    long_options,
-         &option_index)) >= 0) {
-    switch (option_char) {
-      case 'b':
-        options.input_type = redsea::INPUT_ASCIIBITS;
-        break;
-      case 'c':
-        options.num_channels = std::atoi(optarg);
-        if (options.num_channels < 1) {
-          std::cerr << "error: number of channels must be greater than 0"
-                    << '\n';
-          options.just_exit = true;
-        }
-        break;
-      case 'e':
-        options.feed_thru = true;
-        break;
-      case 'E':
-        options.bler = true;
-        break;
-      case 'f':
-        options.sndfilename = std::string(optarg);
-        options.input_type = redsea::INPUT_MPX_SNDFILE;
-        break;
-      case 'h':
-        options.input_type = redsea::INPUT_HEX;
-        break;
-      case 'x':
-        options.output_type = redsea::OUTPUT_HEX;
-        break;
-      case 'p':
-        options.show_partial = true;
-        break;
-      case 'r':
-        options.samplerate = std::atoi(optarg);
-        if (options.samplerate < 128000.f) {
-          std::cerr << "error: sample rate must be 128000 Hz or higher"
-                    << '\n';
-          options.just_exit = true;
-        }
-        break;
-      case 't':
-        options.timestamp = true;
-        options.time_format = std::string(optarg);
-        break;
-      case 'u':
-        options.rbds = true;
-        break;
-      case 'l':
-        options.loctable_dir = std::string(optarg);
-        break;
-      case 'v':
-        PrintVersion();
-        options.just_exit = true;
-        break;
-      case '?':
-      default:
-        PrintUsage();
-        options.just_exit = true;
-        break;
-    }
-    if (options.just_exit)
-      break;
-  }
-
-  if (options.feed_thru && options.input_type == INPUT_MPX_SNDFILE) {
-    std::cerr << "error: feed-thru is not supported for audio file inputs"
-      << '\n';
-    options.just_exit = true;
-  }
-
-  if (options.num_channels > 1 && options.input_type != INPUT_MPX_STDIN &&
-      options.input_type != INPUT_MPX_SNDFILE) {
-    std::cerr << "error: multi-channel input is only supported for MPX signals"
-              << '\n';
-    options.just_exit = true;
-  }
-
-  return options;
-}
-
 }  // namespace redsea
 
 int main(int argc, char** argv) {
   redsea::Options options = redsea::GetOptions(argc, argv);
+
+  if (options.print_usage)
+    redsea::PrintUsage();
+
+  if (options.print_version)
+    redsea::PrintVersion();
 
   if (options.just_exit)
     return EXIT_FAILURE;

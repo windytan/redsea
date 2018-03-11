@@ -28,6 +28,7 @@
 #include <json/json.h>
 
 #include "src/common.h"
+#include "src/options.h"
 #include "src/rdsstring.h"
 #include "src/tmc/locationdb.h"
 #include "src/util.h"

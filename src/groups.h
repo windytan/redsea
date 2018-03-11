@@ -29,6 +29,7 @@
 
 #include "config.h"
 #include "src/common.h"
+#include "src/options.h"
 #include "src/rdsstring.h"
 #include "src/tmc/tmc.h"
 #include "src/util.h"
