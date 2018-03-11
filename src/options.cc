@@ -15,15 +15,12 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
+#include "src/options.h"
+
 #include <getopt.h>
 #include <iostream>
 
 #include "config.h"
-#include "src/channel.h"
-#include "src/common.h"
-#include "src/block_sync.h"
-#include "src/groups.h"
-#include "src/subcarrier.h"
 
 namespace redsea {
 
