@@ -32,8 +32,8 @@ or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
 
 ## Installation
 
-You will need git, the [liquid-dsp][liquid-dsp] library, and GNU autotools.
-On macOS (OSX) you will also need XCode command-line tools
+You will need git, the [liquid-dsp][liquid-dsp] library, libsndfile, and GNU
+autotools. On macOS (OSX) you will also need XCode command-line tools
 (`xcode-select --install`).
 
 1. Clone the repository (unless you downloaded a release zip file):
