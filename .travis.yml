@@ -8,4 +8,8 @@ compiler:
   - clang
   - gcc
 
+before_install:
+  - sudo apt-get update -q
+  - sudo apt-get install -y libsndfile-dev
+
 script: ./autogen.sh && ./configure --without-liquid --without-sndfile && make
