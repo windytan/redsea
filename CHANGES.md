@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.16.0
+## 0.16.0 (2018-03-27)
 
 * Add support for multi-channel signals (`--channels`) - libsndfile is now
   a required dependency
