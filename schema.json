@@ -213,9 +213,8 @@
             },
             "urgency": {
               "description": "Message urgency: normal/urgent/extremely urgent",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 2
+              "type": "string",
+              "enum": ["none", "U", "X"]
             },
             "update_class": {
               "description": "Message replaces previous messages of this class",

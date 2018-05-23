@@ -1,5 +1,10 @@
 # redsea changelog
 
+## 0.17
+
+* Change the type of the JSON field for TMC message urgency, from integer
+  (0, 1, 2) to string ("none", "U", "X")
+
 ## 0.16.0 (2018-03-27)
 
 * Add support for multi-channel signals (`--channels`) - libsndfile is now

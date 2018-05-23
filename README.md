@@ -1,16 +1,19 @@
 # redsea RDS decoder
 
 redsea is a lightweight command-line [FM-RDS][Wikipedia: RDS] decoder for
-Linux/macOS, written by Oona Räisänen. It can be used with any
-[RTL-SDR][About RTL-SDR] USB radio stick with the `rtl_fm` tool. It can also
-decode raw ASCII bitstream, the hex format used by RDS Spy, and audio files
-containing multiplex signals (MPX).
+Linux/macOS.
+
+[![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
 
 Decoded RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
 [JSON field descriptions][Wiki: JSON] and [input data formats][Wiki: Input].
 
-[![release](http://github-release-version.herokuapp.com/github/windytan/redsea/release.svg?style=flat)](https://github.com/windytan/redsea/releases/latest)
+Redsea can be used with any [RTL-SDR][About RTL-SDR] USB radio stick with the
+`rtl_fm` tool, or any other SDR via `csdr`, for example. It can also
+decode raw ASCII bitstream, the hex format used by RDS Spy, and audio files
+containing multiplex signals (MPX). These use cases are documented in
+the [wiki][Wiki: Use cases].
 
 [Wikipedia: RDS]: http://en.wikipedia.org/wiki/Radio_Data_System
 [About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
