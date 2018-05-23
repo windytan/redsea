@@ -23,8 +23,12 @@ namespace redsea {
 
 const unsigned kBitmask26 = 0x3FFFFFF;
 
-const eBlockNumber g_block_number_for_offset[5] =
+eBlockNumber BlockNumberForOffset(Offset o) {
+  static const eBlockNumber block_number_for_offset[5] =
     {BLOCK1, BLOCK2, BLOCK3, BLOCK3, BLOCK4};
+
+  return block_number_for_offset[static_cast<int>(o)];
+}
 
 // Section B.1.1: '-- calculated by the modulo-two addition of all the rows of
 // the -- matrix for which the corresponding coefficient in the -- vector is 1.'
@@ -51,25 +55,29 @@ uint32_t CalculateSyndrome(uint32_t vec) {
   return MatrixMultiply(vec, parity_check_matrix);
 }
 
-eOffset NextOffsetFor(eOffset this_offset) {
-  static const std::map<eOffset, eOffset> next_offset({
-      {OFFSET_A, OFFSET_B}, {OFFSET_B, OFFSET_C},
-      {OFFSET_C, OFFSET_D}, {OFFSET_C_PRIME, OFFSET_D},
-      {OFFSET_D, OFFSET_A}, {OFFSET_INVALID, OFFSET_A}
+Offset NextOffsetFor(Offset this_offset) {
+  static const std::map<Offset, Offset> next_offset({
+      {Offset::A, Offset::B}, {Offset::B, Offset::C},
+      {Offset::C, Offset::D}, {Offset::Cprime, Offset::D},
+      {Offset::D, Offset::A}, {Offset::invalid, Offset::A}
   });
   return next_offset.at(this_offset);
 }
 
 // Precompute mapping of syndromes to error vectors
 
-std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
-  std::map<std::pair<uint16_t, eOffset>, uint32_t> lookup_table;
+std::map<std::pair<uint16_t, Offset>, uint32_t> MakeErrorLookupTable() {
+  std::map<std::pair<uint16_t, Offset>, uint32_t> lookup_table;
 
-  const uint16_t offset_words[] =
-      {0x0FC, 0x198, 0x168, 0x350, 0x1B4};
+  const std::map<Offset, uint16_t> offset_words({
+      { Offset::A,      0x0FC },
+      { Offset::B,      0x198 },
+      { Offset::C,      0x168 },
+      { Offset::Cprime, 0x350 },
+      { Offset::D,      0x1B4 }
+  });
 
-  for (eOffset offset : {OFFSET_A, OFFSET_B, OFFSET_C,
-                         OFFSET_C_PRIME, OFFSET_D}) {
+  for (auto offset : offset_words) {
     // "...the error-correction system should be enabled, but should be
     // restricted by attempting to correct bursts of errors spanning one or two
     // bits."
@@ -79,33 +87,33 @@ std::map<std::pair<uint16_t, eOffset>, uint32_t> MakeErrorLookupTable() {
         uint32_t error_vector = ((error_bits << shift) & kBitmask26);
 
         uint32_t syndrome =
-            CalculateSyndrome(error_vector ^ offset_words[offset]);
-        lookup_table.insert({{syndrome, offset}, error_vector});
+            CalculateSyndrome(error_vector ^ offset.second);
+        lookup_table.insert({{syndrome, offset.first}, error_vector});
       }
     }
   }
   return lookup_table;
 }
 
-eOffset OffsetForSyndrome(uint16_t syndrome) {
-  static const std::map<uint16_t, eOffset> offset_syndromes =
-    {{0x3D8, OFFSET_A},
-     {0x3D4, OFFSET_B},
-     {0x25C, OFFSET_C},
-     {0x3CC, OFFSET_C_PRIME},
-     {0x258, OFFSET_D}};
+Offset OffsetForSyndrome(uint16_t syndrome) {
+  static const std::map<uint16_t, Offset> offset_syndromes =
+    {{0x3D8, Offset::A},
+     {0x3D4, Offset::B},
+     {0x25C, Offset::C},
+     {0x3CC, Offset::Cprime},
+     {0x258, Offset::D}};
 
   if (offset_syndromes.count(syndrome) > 0)
     return offset_syndromes.at(syndrome);
   else
-    return OFFSET_INVALID;
+    return Offset::invalid;
 }
 
-const std::map<std::pair<uint16_t, eOffset>, uint32_t> kErrorLookup =
+const std::map<std::pair<uint16_t, Offset>, uint32_t> kErrorLookup =
     MakeErrorLookupTable();
 
 // Section B.2.2
-uint32_t CorrectBurstErrors(uint32_t block, eOffset offset) {
+uint32_t CorrectBurstErrors(uint32_t block, Offset offset) {
   uint16_t syndrome = CalculateSyndrome(block);
   uint32_t corrected_block = block;
 
@@ -140,9 +148,9 @@ void RunningSum::clear() {
 }
 
 BlockStream::BlockStream(const Options& options) : bitcount_(0),
-  prevbitcount_(0), left_to_read_(1), input_register_(0), prevsync_(0),
-  expected_offset_(OFFSET_A),
-  received_offset_(OFFSET_INVALID), pi_(0x0000), is_in_sync_(false),
+  prevbitcount_(0), left_to_read_(1), input_register_(0), prevsync_(Offset::A),
+  expected_offset_(Offset::A),
+  received_offset_(Offset::invalid), pi_(0x0000), is_in_sync_(false),
   block_error_sum_(50),
   options_(options),
   input_type_(options.input_type), is_eof_(false), bler_average_(12) {
@@ -163,12 +171,12 @@ bool BlockStream::AcquireSync() {
     return true;
 
   // Try to find a repeating offset sequence
-  if (received_offset_ != OFFSET_INVALID) {
+  if (received_offset_ != Offset::invalid) {
     int dist = bitcount_ - prevbitcount_;
 
     if (dist % 26 == 0 && dist <= 156 &&
-        (g_block_number_for_offset[prevsync_] + dist/26) % 4 ==
-        g_block_number_for_offset[received_offset_]) {
+        (BlockNumberForOffset(prevsync_) + dist/26) % 4 ==
+         BlockNumberForOffset(received_offset_)) {
       is_in_sync_ = true;
       expected_offset_ = received_offset_;
       current_group_ = Group();
@@ -194,8 +202,8 @@ void BlockStream::PushBit(bool bit) {
   received_offset_ = OffsetForSyndrome(CalculateSyndrome(block));
 
   if (AcquireSync()) {
-    if (expected_offset_ == OFFSET_C && received_offset_ == OFFSET_C_PRIME)
-      expected_offset_ = OFFSET_C_PRIME;
+    if (expected_offset_ == Offset::C && received_offset_ == Offset::Cprime)
+      expected_offset_ = Offset::Cprime;
 
     bool block_had_errors = (received_offset_ != expected_offset_);
     block_error_sum_.push(block_had_errors);
@@ -216,10 +224,10 @@ void BlockStream::PushBit(bool bit) {
 
     // Error-free block received or errors successfully corrected
     if (received_offset_ == expected_offset_) {
-      if (expected_offset_ == OFFSET_C_PRIME)
+      if (expected_offset_ == Offset::Cprime)
         current_group_.set_c_prime(message, block_had_errors);
       else
-        current_group_.set(g_block_number_for_offset[expected_offset_], message,
+        current_group_.set(BlockNumberForOffset(expected_offset_), message,
             block_had_errors);
 
       if (current_group_.has_pi())
@@ -228,7 +236,7 @@ void BlockStream::PushBit(bool bit) {
 
     expected_offset_ = NextOffsetFor(expected_offset_);
 
-    if (expected_offset_ == OFFSET_A) {
+    if (expected_offset_ == Offset::A) {
       groups_.push_back(current_group_);
       current_group_ = Group();
     }

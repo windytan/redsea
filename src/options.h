@@ -23,12 +23,12 @@
 
 namespace redsea {
 
-enum eInputType {
-  INPUT_MPX_STDIN, INPUT_MPX_SNDFILE, INPUT_ASCIIBITS, INPUT_HEX
+enum class InputType {
+  MPX_stdin, MPX_sndfile, ASCIIbits, Hex
 };
 
-enum eOutputType {
-  OUTPUT_HEX, OUTPUT_JSON
+enum class OutputType {
+  Hex, JSON
 };
 
 struct Options {
@@ -36,7 +36,7 @@ struct Options {
               just_exit(false), print_usage(false), print_version(false),
               timestamp(false), bler(false),
               samplerate(kTargetSampleRate_Hz), num_channels(1),
-              input_type(INPUT_MPX_STDIN), output_type(OUTPUT_JSON) {}
+              input_type(InputType::MPX_stdin), output_type(OutputType::JSON) {}
   bool rbds;
   bool feed_thru;
   bool show_partial;
@@ -47,8 +47,8 @@ struct Options {
   bool bler;
   float samplerate;
   int num_channels;
-  eInputType input_type;
-  eOutputType output_type;
+  InputType input_type;
+  OutputType output_type;
   std::string loctable_dir;
   std::string sndfilename;
   std::string time_format;

@@ -40,12 +40,12 @@ enum eBlockNumber {
   BLOCK1, BLOCK2, BLOCK3, BLOCK4
 };
 
-enum eGroupTypeVersion {
-  VERSION_A, VERSION_B
+enum class GroupTypeVersion {
+  A, B
 };
 
-enum eOffset {
-  OFFSET_A, OFFSET_B, OFFSET_C, OFFSET_C_PRIME, OFFSET_D, OFFSET_INVALID
+enum class Offset {
+  A, B, C, Cprime, D, invalid
 };
 
 class GroupType {
@@ -57,7 +57,7 @@ class GroupType {
   std::string str() const;
 
   uint16_t number;
-  eGroupTypeVersion version;
+  GroupTypeVersion version;
 };
 
 bool operator<(const GroupType& type1, const GroupType& type2);

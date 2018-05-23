@@ -27,9 +27,9 @@
 namespace redsea {
 
 uint32_t CalculateSyndrome(uint32_t vec);
-eOffset OffsetForSyndrome(uint16_t syndrome);
-eOffset NextOffsetFor(eOffset this_offset);
-uint32_t CorrectBurstErrors(uint32_t block, eOffset offset);
+Offset OffsetForSyndrome(uint16_t syndrome);
+Offset NextOffsetFor(Offset this_offset);
+uint32_t CorrectBurstErrors(uint32_t block, Offset offset);
 
 class RunningSum {
  public:
@@ -58,14 +58,14 @@ class BlockStream {
   unsigned prevbitcount_;
   int left_to_read_;
   uint32_t input_register_;
-  unsigned prevsync_;
-  eOffset expected_offset_;
-  eOffset received_offset_;
+  Offset prevsync_;
+  Offset expected_offset_;
+  Offset received_offset_;
   uint16_t pi_;
   bool is_in_sync_;
   RunningSum block_error_sum_;
   const Options options_;
-  const eInputType input_type_;
+  const InputType input_type_;
   bool is_eof_;
   RunningAverage bler_average_;
   Group current_group_;

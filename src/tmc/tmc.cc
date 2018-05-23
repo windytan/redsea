@@ -98,10 +98,19 @@ std::vector<FreeformField> GetFreeformFields(
     if (label == 0x00 && field_data == 0x00)
       break;
 
-    result.push_back({label, field_data});
+    if (label <= 14)
+      result.push_back({static_cast<FieldLabel>(label), field_data});
   }
 
   return result;
+}
+
+std::string UrgencyString(EventUrgency u) {
+  switch (u) {
+    case EventUrgency::None : return "none"; break;
+    case EventUrgency::U    : return "U";    break;
+    case EventUrgency::X    : return "X";    break;
+  }
 }
 
 std::string TimeString(uint16_t field_data) {
@@ -159,13 +168,21 @@ std::vector<std::string> ScopeStrings(uint16_t mgs) {
   return scope;
 }
 
-uint16_t QuantifierSize(uint16_t code) {
-  if (code <= 5)
-    return 5;
-  else if (code <= 12)
-    return 8;
-  else
-    return 0;
+uint16_t QuantifierSize(QuantifierType qtype) {
+  switch (qtype) {
+    case QuantifierType::SmallNumber:
+    case QuantifierType::Number:
+    case QuantifierType::LessThanMetres:
+    case QuantifierType::Percent:
+    case QuantifierType::UptoKmh:
+    case QuantifierType::UptoTime:
+      return 5;
+      break;
+
+    default:
+      return 8;
+      break;
+  }
 }
 
 std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
@@ -176,14 +193,14 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
     q_value = 32;
 
   switch (event.quantifier_type) {
-    case kQuantifierSmallNumber: {
+    case QuantifierType::SmallNumber: {
       int num = q_value;
       if (num > 28)
         num += (num - 28);
       text = std::to_string(num);
       break;
     }
-    case kQuantifierNumber: {
+    case QuantifierType::Number: {
       int num;
       if (q_value <= 4)
         num = q_value;
@@ -194,19 +211,19 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       text = std::to_string(num);
       break;
     }
-    case kQuantifierLessThanMetres: {
+    case QuantifierType::LessThanMetres: {
       text = "less than " + std::to_string(q_value * 10) + " metres";
       break;
     }
-    case kQuantifierPercent: {
+    case QuantifierType::Percent: {
       text = std::to_string(q_value == 32 ? 0 : q_value * 5) + " %";
       break;
     }
-    case kQuantifierUptoKmh: {
+    case QuantifierType::UptoKmh: {
       text = "of up to " + std::to_string(q_value * 5) + " km/h";
       break;
     }
-    case kQuantifierUptoTime: {
+    case QuantifierType::UptoTime: {
       if (q_value <= 10)
         text = "of up to " + std::to_string(q_value * 5) + " minutes";
       else if (q_value <= 22)
@@ -215,11 +232,11 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
         text = "of up to " + std::to_string((q_value - 20) * 6) + " hours";
       break;
     }
-    case kQuantifierDegreesCelsius: {
+    case QuantifierType::DegreesCelsius: {
       text = std::to_string(q_value - 51) + " degrees Celsius";
       break;
     }
-    case kQuantifierTime: {
+    case QuantifierType::Time: {
       int minute = (q_value - 1) * 10;
       int hour = minute / 60;
       minute = minute % 60;
@@ -227,7 +244,7 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       text = HoursMinutesString(hour, minute);
       break;
     }
-    case kQuantifierTonnes: {
+    case QuantifierType::Tonnes: {
       int decitonnes;
       if (q_value <= 100)
         decitonnes = q_value;
@@ -241,7 +258,7 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
         " tonnes";
       break;
     }
-    case kQuantifierMetres: {
+    case QuantifierType::Metres: {
       int decimetres;
       if (q_value <= 100)
         decimetres = q_value;
@@ -255,16 +272,16 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
         " metres";
       break;
     }
-    case kQuantifierUptoMillimetres: {
+    case QuantifierType::UptoMillimetres: {
       text = "of up to " + std::to_string(q_value) + " millimetres";
       break;
     }
-    case kQuantifierMHz: {
+    case QuantifierType::MHz: {
       CarrierFrequency freq(q_value);
       text = freq.str();
       break;
     }
-    case kQuantifierkHz: {
+    case QuantifierType::kHz: {
       CarrierFrequency freq(q_value, kFrequencyIsLFMF);
       text = freq.str();
       break;
@@ -294,29 +311,32 @@ void LoadEventData() {
       event.description_with_quantifier = row.at("Description with Q");
 
       if (row.at("N") == "F")
-        event.nature = kForecastEvent;
+        event.nature = EventNature::Forecast;
       else if (row.at("N") == "S")
-        event.nature = kSilentEvent;
+        event.nature = EventNature::Silent;
 
-      if (!row.at("Q").empty())
-        event.quantifier_type = std::stoi(row.at("Q"));
+      if (!row.at("Q").empty()) {
+        int qt = std::stoi(row.at("Q"));
+        if (qt >= 0 && qt <= 12)
+          event.quantifier_type = static_cast<QuantifierType>(qt);
+      }
       event.allows_quantifier = !event.description_with_quantifier.empty();
 
       if (row.at("U") == "U")
-        event.urgency = kUrgencyU;
+        event.urgency = EventUrgency::U;
       else if (row.at("U") == "X")
-        event.urgency = kUrgencyX;
+        event.urgency = EventUrgency::X;
 
       if (std::regex_match(row.at("T"), std::regex(".?D.?")))
-        event.duration_type = kDurationDynamic;
+        event.duration_type = DurationType::Dynamic;
       else if (std::regex_match(row.at("T"), std::regex(".?L.?")))
-        event.duration_type = kDurationLongerLasting;
+        event.duration_type = DurationType::LongerLasting;
 
       if (std::regex_match(row.at("T"), std::regex("\\(")))
         event.show_duration = false;
 
       if (!row.at("D").empty() && std::stoi(row.at("D")) == 2)
-        event.directionality = kBothDirections;
+        event.directionality = EventDirectionality::Both;
 
       event.update_class = std::stoi(row.at("C"));
 
@@ -608,13 +628,15 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
 
 Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
     was_encrypted_(is_encrypted_),
-    duration_(0), duration_type_(0), divertadv_(false), direction_(0),
+    duration_(0), duration_type_(DurationType::Dynamic), divertadv_(false),
+    direction_(Direction::Positive),
     extent_(0), events_(), supplementary_(), quantifiers_(), diversion_(),
     location_(0), encrypted_location_(0), is_complete_(false),
     has_length_affected_(false),
     length_affected_(0), has_time_until_(false), time_until_(0),
     has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
-    speed_limit_(0), directionality_(kSingleDirection), urgency_(kUrgencyNone),
+    speed_limit_(0), directionality_(EventDirectionality::Single),
+    urgency_(EventUrgency::None),
     continuity_index_(0), parts_(5) {
 }
 
@@ -629,7 +651,7 @@ uint16_t Message::continuity_index() const {
 void Message::PushSingle(uint16_t x, uint16_t y, uint16_t z) {
   duration_  = Bits(x, 0, 3);
   divertadv_ = Bits(y, 15, 1);
-  direction_ = Bits(y, 14, 1);
+  direction_ = Bits(y, 14, 1) ? Direction::Negative : Direction::Positive;
   extent_    = Bits(y, 11, 3);
   events_.push_back(Bits(y, 0, 11));
   if (is_encrypted_)
@@ -681,7 +703,8 @@ void Message::DecodeMulti() {
   is_complete_ = true;
 
   // First group
-  direction_ = Bits(parts_[0].data[0], 14, 1);
+  direction_ = Bits(parts_[0].data[0], 14, 1) ? Direction::Negative :
+                                                Direction::Positive;
   extent_    = Bits(parts_[0].data[0], 11, 3);
   events_.push_back(Bits(parts_[0].data[0], 0, 11));
   if (is_encrypted_)
@@ -696,40 +719,53 @@ void Message::DecodeMulti() {
   if (parts_[1].is_received) {
     for (FreeformField field : GetFreeformFields(parts_)) {
       switch (field.label) {
-        case kLabelDuration :
+        case FieldLabel::Duration :
           duration_ = field.data;
           break;
 
-        case kLabelControlCode :
-          switch (field.data) {
-            case kControlIncreaseUrgency :
-              urgency_ = (urgency_ + 1) % 3;
+        case FieldLabel::ControlCode :
+          if (field.data > 7)
+            break;
+          switch (static_cast<ControlCode>(field.data)) {
+            case ControlCode::IncreaseUrgency :
+              switch (urgency_) {
+                case EventUrgency::None : urgency_ = EventUrgency::U;    break;
+                case EventUrgency::U    : urgency_ = EventUrgency::X;    break;
+                case EventUrgency::X    : urgency_ = EventUrgency::None; break;
+              }
               break;
 
-            case kControlReduceUrgency :
-              if (urgency_ == kUrgencyNone)
-                urgency_ = kUrgencyX;
-              else
-                urgency_--;
+            case ControlCode::ReduceUrgency :
+              switch (urgency_) {
+                case EventUrgency::None : urgency_ = EventUrgency::X;    break;
+                case EventUrgency::U    : urgency_ = EventUrgency::None; break;
+                case EventUrgency::X    : urgency_ = EventUrgency::U;    break;
+              }
               break;
 
-            case kControlChangeDirectionality :
-              directionality_ ^= 1;
+            case ControlCode::ChangeDirectionality :
+              directionality_ =
+                (directionality_ == EventDirectionality::Single ?
+                                    EventDirectionality::Both :
+                                    EventDirectionality::Single);
               break;
 
-            case kControlChangeDurationType :
-              duration_type_ ^= 1;
+            case ControlCode::ChangeDurationType :
+              duration_type_ =
+                (duration_type_ == DurationType::Dynamic ?
+                                   DurationType::LongerLasting :
+                                   DurationType::Dynamic);
               break;
 
-            case kControlSetDiversion :
+            case ControlCode::SetDiversion :
               divertadv_ = true;
               break;
 
-            case kControlIncreaseExtent8 :
+            case ControlCode::IncreaseExtentBy8 :
               extent_ += 8;
               break;
 
-            case kControlIncreaseExtent16 :
+            case ControlCode::IncreaseExtentBy16 :
               extent_ += 16;
               break;
 
@@ -739,17 +775,17 @@ void Message::DecodeMulti() {
           }
           break;
 
-        case kLabelAffectedLength :
+        case FieldLabel::AffectedLength :
           length_affected_ = field.data;
           has_length_affected_ = true;
           break;
 
-        case kLabelSpeedLimit :
+        case FieldLabel::SpeedLimit :
           speed_limit_ = field.data * 5;
           has_speed_limit_ = true;
           break;
 
-        case kLabelQuantifier5bit :
+        case FieldLabel::Quantifier5bit :
           if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
               getEvent(events_.back()).allows_quantifier &&
               QuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
@@ -759,7 +795,7 @@ void Message::DecodeMulti() {
           }
           break;
 
-        case kLabelQuantifier8bit :
+        case FieldLabel::Quantifier8bit :
           if (events_.size() > 0 && quantifiers_.count(events_.size()-1) == 0 &&
               getEvent(events_.back()).allows_quantifier &&
               QuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
@@ -769,33 +805,32 @@ void Message::DecodeMulti() {
           }
           break;
 
-        case kLabelSupplementary :
+        case FieldLabel::Supplementary :
           supplementary_.push_back(field.data);
           break;
 
-        case kLabelStartTime :
+        case FieldLabel::StartTime :
           time_starts_ = field.data;
           has_time_starts_ = true;
           break;
 
-        case kLabelStopTime :
+        case FieldLabel::StopTime :
           time_until_ = field.data;
           has_time_until_ = true;
           break;
 
-        case kLabelAdditionalEvent :
+        case FieldLabel::AdditionalEvent :
           events_.push_back(field.data);
           break;
 
-        case kLabelDetailedDiversion :
+        case FieldLabel::DetailedDiversion :
           diversion_.push_back(field.data);
           break;
 
-        case kLabelSeparator :
+        case FieldLabel::Destination :
+        case FieldLabel::CrossLinkage :
+        case FieldLabel::Separator :
           break;
-
-        //default :
-        //printf(",\"debug\":\"TODO label=%d data=0x%04x\"", label, field_data);
       }
     }
   }
@@ -861,9 +896,9 @@ Json::Value Message::json() const {
     element["location"] = location_;
 
   element["direction"] =
-      directionality_ == kSingleDirection ? "single" : "both";
+      directionality_ == EventDirectionality::Single ? "single" : "both";
 
-  element["extent"] = (direction_ == kNegativeDirection ? "-" : "+") +
+  element["extent"] = (direction_ == Direction::Negative ? "-" : "+") +
       std::to_string(extent_);
 
   if (has_time_starts_)
@@ -871,7 +906,7 @@ Json::Value Message::json() const {
   if (has_time_until_)
     element["until"] = TimeString(time_until_);
 
-  element["urgency"] = urgency_;
+  element["urgency"] = UrgencyString(urgency_);
 
   return element;
 }

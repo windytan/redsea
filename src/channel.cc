@@ -74,7 +74,7 @@ void Channel::ProcessGroup(Group group) {
     prev_new_pi_ = new_pi_;
     new_pi_ = group.pi();
 
-    if (new_pi_ == prev_new_pi_ || options_.input_type == INPUT_HEX) {
+    if (new_pi_ == prev_new_pi_ || options_.input_type == InputType::Hex) {
       if (new_pi_ != pi_)
         station_ = Station(new_pi_, options_, which_channel_);
       pi_ = new_pi_;
@@ -88,7 +88,7 @@ void Channel::ProcessGroup(Group group) {
     group.set_bler(bler_average_.average());
   }
 
-  if (options_.output_type == redsea::OUTPUT_HEX) {
+  if (options_.output_type == redsea::OutputType::Hex) {
     redsea::PrintHexGroup(group, options_.feed_thru ?
         &std::cerr : &std::cout,
         options_.time_format);

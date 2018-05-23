@@ -108,8 +108,8 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
 
 #ifndef HAVE_LIQUID
-  if (options.input_type == redsea::INPUT_MPX_STDIN ||
-      options.input_type == redsea::INPUT_MPX_SNDFILE) {
+  if (options.input_type == redsea::InputType::MPX_stdin ||
+      options.input_type == redsea::InputType::MPX_sndfile) {
     std::cerr << "error: redsea was compiled without liquid-dsp"
               << '\n';
     return EXIT_FAILURE;
@@ -137,34 +137,34 @@ int main(int argc, char** argv) {
 
   while (true) {
     bool eof = false;
-    if (options.input_type == redsea::INPUT_MPX_STDIN ||
-        options.input_type == redsea::INPUT_MPX_SNDFILE) {
+    if (options.input_type == redsea::InputType::MPX_stdin ||
+        options.input_type == redsea::InputType::MPX_sndfile) {
       eof = mpx.eof();
-    } else if (options.input_type == redsea::INPUT_ASCIIBITS) {
+    } else if (options.input_type == redsea::InputType::ASCIIbits) {
       eof = ascii_reader.eof();
-    } else if (options.input_type == redsea::INPUT_HEX) {
+    } else if (options.input_type == redsea::InputType::Hex) {
       eof = std::cin.eof();
     }
 
     if (eof)
       break;
 
-    if (options.input_type == redsea::INPUT_MPX_STDIN ||
-        options.input_type == redsea::INPUT_MPX_SNDFILE)
+    if (options.input_type == redsea::InputType::MPX_stdin ||
+        options.input_type == redsea::InputType::MPX_sndfile)
       mpx.FillBuffer();
 
     for (int n_channel = 0; n_channel < options.num_channels; n_channel++) {
       switch(options.input_type) {
-        case redsea::INPUT_MPX_STDIN:
-        case redsea::INPUT_MPX_SNDFILE:
+        case redsea::InputType::MPX_stdin:
+        case redsea::InputType::MPX_sndfile:
           channels[n_channel].ProcessChunk(mpx.ReadChunk(n_channel));
           break;
 
-        case redsea::INPUT_ASCIIBITS:
+        case redsea::InputType::ASCIIbits:
           channels[n_channel].ProcessBit(ascii_reader.ReadNextBit());
           break;
 
-        case redsea::INPUT_HEX:
+        case redsea::InputType::Hex:
           channels[n_channel].ProcessGroup(redsea::ReadNextHexGroup(options));
           break;
       }

@@ -25,7 +25,7 @@
 namespace redsea {
 
 // EN 50067:1998, Annex E (pp. 73-76)
-std::string RDSCharString(uint8_t code, eCodeTable codetable) {
+std::string RDSCharString(uint8_t code, CodeTable codetable) {
   std::string result(" ");
   static const std::vector<std::string> codetable_G0({
       " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Á", "Â", "Ã", "ã",
@@ -86,13 +86,13 @@ std::string RDSCharString(uint8_t code, eCodeTable codetable) {
   int idx = row * 14 + (col - 2);
   if (col >= 2 && idx >= 0 && idx < static_cast<int>(codetable_G0.size())) {
     switch (codetable) {
-      case G0 :
+      case CodeTable::G0 :
         result = codetable_G0[idx];
         break;
-      case G1 :
+      case CodeTable::G1 :
         result = codetable_G1[idx];
         break;
-      case G2 :
+      case CodeTable::G2 :
         result = codetable_G2[idx];
         break;
     }

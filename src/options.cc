@@ -52,7 +52,7 @@ Options GetOptions(int argc, char** argv) {
          &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
-        options.input_type = INPUT_ASCIIBITS;
+        options.input_type = InputType::ASCIIbits;
         break;
       case 'c':
         options.num_channels = std::atoi(optarg);
@@ -70,13 +70,13 @@ Options GetOptions(int argc, char** argv) {
         break;
       case 'f':
         options.sndfilename = std::string(optarg);
-        options.input_type = INPUT_MPX_SNDFILE;
+        options.input_type = InputType::MPX_sndfile;
         break;
       case 'h':
-        options.input_type = INPUT_HEX;
+        options.input_type = InputType::Hex;
         break;
       case 'x':
-        options.output_type = OUTPUT_HEX;
+        options.output_type = OutputType::Hex;
         break;
       case 'p':
         options.show_partial = true;
@@ -113,14 +113,14 @@ Options GetOptions(int argc, char** argv) {
       break;
   }
 
-  if (options.feed_thru && options.input_type == INPUT_MPX_SNDFILE) {
+  if (options.feed_thru && options.input_type == InputType::MPX_sndfile) {
     std::cerr << "error: feed-thru is not supported for audio file inputs"
       << '\n';
     options.just_exit = true;
   }
 
-  if (options.num_channels > 1 && options.input_type != INPUT_MPX_STDIN &&
-      options.input_type != INPUT_MPX_SNDFILE) {
+  if (options.num_channels > 1 && options.input_type != InputType::MPX_stdin &&
+      options.input_type != InputType::MPX_sndfile) {
     std::cerr << "error: multi-channel input is only supported for MPX signals"
               << '\n';
     options.just_exit = true;

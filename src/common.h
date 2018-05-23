@@ -24,12 +24,8 @@ namespace redsea {
 const float kTargetSampleRate_Hz  = 171000.0f;
 const int   kNumBlerAverageGroups = 12;
 
-enum eCodeTable {
+enum class CodeTable {
   G0, G1, G2
-};
-
-enum eOpenDataApp {
-  ODA_UNKNOWN, ODA_TMC, ODA_RTPLUS
 };
 
 }  // namespace redsea

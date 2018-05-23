@@ -36,57 +36,80 @@
 namespace redsea {
 namespace tmc {
 
-enum eDirection {
-  kPositiveDirection = 0, kNegativeDirection = 1
-};
-enum eEventNature {
-  kInfoEvent, kForecastEvent, kSilentEvent,
-};
-enum eEventDirectionality {
-  kSingleDirection, kBothDirections
-};
-enum eEventUrgency {
-  kUrgencyNone, kUrgencyU, kUrgencyX
-};
-enum eDurationType {
-  kDurationDynamic, kDurationLongerLasting
-};
-enum eQuantifierType {
-  kQuantifierSmallNumber, kQuantifierNumber, kQuantifierLessThanMetres,
-  kQuantifierPercent, kQuantifierUptoKmh, kQuantifierUptoTime,
-  kQuantifierDegreesCelsius, kQuantifierTime, kQuantifierTonnes,
-  kQuantifierMetres, kQuantifierUptoMillimetres, kQuantifierMHz, kQuantifierkHz
+enum class Direction {
+  Positive = 0,
+  Negative = 1
 };
 
-enum eFieldLabel {
-  kLabelDuration = 0,
-  kLabelControlCode = 1,
-  kLabelAffectedLength = 2,
-  kLabelSpeedLimit = 3,
-  kLabelQuantifier5bit = 4,
-  kLabelQuantifier8bit = 5,
-  kLabelSupplementary = 6,
-  kLabelStartTime = 7,
-  kLabelStopTime = 8,
-  kLabelAdditionalEvent = 9,
-  kLabelDetailedDiversion = 10,
-  kLabelDestination= 11,
-  kLabelCrossLinkage = 13,
-  kLabelSeparator = 14
+enum class EventNature {
+  Event    = 0,
+  Forecast = 1,
+  Silent   = 2
 };
 
-enum eControlCode {
-  kControlIncreaseUrgency = 0,
-  kControlReduceUrgency = 1,
-  kControlChangeDirectionality = 2,
-  kControlChangeDurationType = 3,
-  kControlSetDiversion = 5,
-  kControlIncreaseExtent8 = 6,
-  kControlIncreaseExtent16 = 7
+enum class EventDirectionality {
+  Single = 0,
+  Both   = 1
+};
+
+enum class EventUrgency {
+  None = 0,
+  U    = 1,
+  X    = 2
+};
+
+enum class DurationType {
+  Dynamic       = 0,
+  LongerLasting = 1
+};
+
+enum class QuantifierType {
+  SmallNumber     = 0,
+  Number          = 1,
+  LessThanMetres  = 2,
+  Percent         = 3,
+  UptoKmh         = 4,
+  UptoTime        = 5,
+  DegreesCelsius  = 6,
+  Time            = 7,
+  Tonnes          = 8,
+  Metres          = 9,
+  UptoMillimetres = 10,
+  MHz             = 11,
+  kHz             = 12
+};
+
+enum class FieldLabel {
+  Duration          = 0,
+  ControlCode       = 1,
+  AffectedLength    = 2,
+  SpeedLimit        = 3,
+  Quantifier5bit    = 4,
+  Quantifier8bit    = 5,
+  Supplementary     = 6,
+  StartTime         = 7,
+  StopTime          = 8,
+  AdditionalEvent   = 9,
+  DetailedDiversion = 10,
+  Destination       = 11,
+  // RFU              12
+  CrossLinkage      = 13,
+  Separator         = 14
+};
+
+enum class ControlCode {
+  IncreaseUrgency      = 0,
+  ReduceUrgency        = 1,
+  ChangeDirectionality = 2,
+  ChangeDurationType   = 3,
+  // Spoken/Unspoken     4
+  SetDiversion         = 5,
+  IncreaseExtentBy8    = 6,
+  IncreaseExtentBy16   = 7
 };
 
 struct FreeformField {
-  uint16_t label;
+  FieldLabel label;
   uint16_t data;
 };
 
@@ -99,18 +122,22 @@ struct ServiceKey {
   uint8_t nrot;
 };
 
-struct Event {
+class Event {
  public:
-  Event() : description(""), description_with_quantifier(""), nature(0),
-            quantifier_type(0), duration_type(0), directionality(0), urgency(0),
+  Event() : description(""), description_with_quantifier(""),
+            nature(EventNature::Event),
+            quantifier_type(QuantifierType::SmallNumber),
+            duration_type(DurationType::Dynamic),
+            directionality(EventDirectionality::Single),
+            urgency(EventUrgency::None),
             update_class(0), allows_quantifier(false), show_duration(true) {}
   std::string description;
   std::string description_with_quantifier;
-  uint16_t nature;
-  uint16_t quantifier_type;
-  uint16_t duration_type;
-  uint16_t directionality;
-  uint16_t urgency;
+  EventNature nature;
+  QuantifierType quantifier_type;
+  DurationType duration_type;
+  EventDirectionality directionality;
+  EventUrgency urgency;
   uint16_t update_class;
   bool allows_quantifier;
   bool show_duration;
@@ -144,9 +171,9 @@ class Message {
   bool is_encrypted_;
   bool was_encrypted_;
   uint16_t duration_;
-  uint16_t duration_type_;
+  DurationType duration_type_;
   bool divertadv_;
-  uint16_t direction_;
+  Direction direction_;
   uint16_t extent_;
   std::vector<uint16_t> events_;
   std::vector<uint16_t> supplementary_;
@@ -163,8 +190,8 @@ class Message {
   uint16_t time_starts_;
   bool has_speed_limit_;
   uint16_t speed_limit_;
-  uint16_t directionality_;
-  uint16_t urgency_;
+  EventDirectionality directionality_;
+  EventUrgency urgency_;
   uint16_t continuity_index_;
   std::vector<MessagePart> parts_;
 };

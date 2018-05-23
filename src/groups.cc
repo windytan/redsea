@@ -81,11 +81,11 @@ void PrintHexGroup(const Group& group, std::ostream* stream,
 
 GroupType::GroupType(uint16_t type_code) :
   number((type_code >> 1) & 0xF),
-  version((type_code & 0x1) == 0 ? VERSION_A : VERSION_B) {}
+  version((type_code & 0x1) == 0 ? GroupTypeVersion::A : GroupTypeVersion::B) {}
 
 std::string GroupType::str() const {
   return std::string(std::to_string(number) +
-         (version == VERSION_A ? "A" : "B"));
+         (version == GroupTypeVersion::A ? "A" : "B"));
 }
 
 bool operator==(const GroupType& type1, const GroupType& type2) {
@@ -175,7 +175,7 @@ void Group::set(eBlockNumber block_num, uint16_t data, bool had_errors) {
 
     case BLOCK2:
       type_ = GroupType(Bits(data, 11, 5));
-      if (type_.version == VERSION_A)
+      if (type_.version == GroupTypeVersion::A)
         has_type_ = true;
       else
         has_type_ = (has_c_prime_ || no_offsets_);
@@ -192,7 +192,7 @@ void Group::set(eBlockNumber block_num, uint16_t data, bool had_errors) {
       if (has_c_prime_ && !has_type_) {
         GroupType potential_type(Bits(data, 11, 5));
         if (potential_type.number == 15 &&
-            potential_type.version == VERSION_B) {
+            potential_type.version == GroupTypeVersion::B) {
           type_ = potential_type;
           has_type_ = true;
         }
@@ -207,7 +207,7 @@ void Group::set_c_prime(uint16_t data, bool had_errors) {
 
   set(BLOCK3, data);
   if (has(BLOCK2))
-    has_type_ = (type_.version == VERSION_B);
+    has_type_ = (type_.version == GroupTypeVersion::B);
 }
 
 void Group::set_time(std::chrono::time_point<std::chrono::system_clock> t) {
@@ -293,13 +293,13 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
       DecodeType1(group);
     else if (group.type().number == 2)
       DecodeType2(group);
-    else if (group.type().number == 3 && group.type().version == VERSION_A)
+    else if (group.type().number == 3 && group.type().version == GroupTypeVersion::A)
       DecodeType3A(group);
-    else if (group.type().number == 4 && group.type().version == VERSION_A)
+    else if (group.type().number == 4 && group.type().version == GroupTypeVersion::A)
       DecodeType4A(group);
     else if (group.type().number == 14)
       DecodeType14(group);
-    else if (group.type().number == 15 && group.type().version == VERSION_B)
+    else if (group.type().number == 15 && group.type().version == GroupTypeVersion::B)
       DecodeType15B(group);
     else if (oda_app_for_group_.count(group.type()) > 0)
       DecodeODAGroup(group);
@@ -343,7 +343,7 @@ void Station::DecodeBasics(const Group& group) {
     json_["tp"] = is_tp_;
     json_["prog_type"] =
         options_.rbds ? PTYNameStringRBDS(pty_) : PTYNameString(pty_);
-  } else if (group.type().number == 15 && group.type().version == VERSION_B &&
+  } else if (group.type().number == 15 && group.type().version == GroupTypeVersion::B &&
       group.has(BLOCK4)) {
     is_tp_ = Bits(group.block(BLOCK4), 10, 1);
     pty_   = Bits(group.block(BLOCK4),  5, 5);
@@ -370,7 +370,7 @@ void Station::DecodeType0(const Group& group) {
   if (!group.has(BLOCK3))
     return;
 
-  if (group.type().version == VERSION_A) {
+  if (group.type().version == GroupTypeVersion::A) {
     alt_freq_list_.insert(Bits(group.block(BLOCK3), 8, 8));
     alt_freq_list_.insert(Bits(group.block(BLOCK3), 0, 8));
 
@@ -413,7 +413,7 @@ void Station::DecodeType1(const Group& group) {
     }
   }
 
-  if (group.type().version == VERSION_A) {
+  if (group.type().version == GroupTypeVersion::A) {
     pager_tng_ = Bits(group.block(BLOCK2), 2, 3);
     if (pager_tng_ != 0) {
       pager_interval_ = Bits(group.block(BLOCK2), 0, 2);
@@ -513,14 +513,14 @@ void Station::DecodeType2(const Group& group) {
     return;
 
   int radiotext_position = Bits(group.block(BLOCK2), 0, 4) *
-    (group.type().version == VERSION_A ? 4 : 2);
+    (group.type().version == GroupTypeVersion::A ? 4 : 2);
   int prev_text_ab = radiotext_ab_;
   radiotext_ab_ = Bits(group.block(BLOCK2), 4, 1);
 
   if (prev_text_ab != radiotext_ab_)
     radiotext_.clear();
 
-  if (group.type().version == VERSION_A) {
+  if (group.type().version == GroupTypeVersion::A) {
     radiotext_.resize(64);
     UpdateRadioText(radiotext_position,
                     Bits(group.block(BLOCK3), 8, 8),
@@ -531,7 +531,7 @@ void Station::DecodeType2(const Group& group) {
 
   if (group.has(BLOCK4)) {
     UpdateRadioText(radiotext_position +
-                    (group.type().version == VERSION_A ? 2 : 0),
+                    (group.type().version == GroupTypeVersion::A ? 2 : 0),
                     Bits(group.block(BLOCK4), 8, 8),
                     Bits(group.block(BLOCK4), 0, 8));
   }
@@ -547,7 +547,7 @@ void Station::DecodeType3A(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  if (group.type().version != VERSION_A)
+  if (group.type().version != GroupTypeVersion::A)
     return;
 
   GroupType oda_group_type(Bits(group.block(BLOCK2), 0, 5));
@@ -640,7 +640,7 @@ void Station::DecodeType4A(const Group& group) {
 void Station::DecodeType6(const Group& group) {
   json_["in_house_data"].append(Bits(group.block(BLOCK2), 0, 5));
 
-  if (group.type().version == VERSION_A) {
+  if (group.type().version == GroupTypeVersion::A) {
     if (group.has(BLOCK3)) {
       json_["in_house_data"].append(Bits(group.block(BLOCK3), 0, 16));
       if (group.has(BLOCK4)) {
@@ -666,7 +666,7 @@ void Station::DecodeType14(const Group& group) {
 
   json_["other_network"]["tp"] = tp;
 
-  if (group.type().version == VERSION_B) {
+  if (group.type().version == GroupTypeVersion::B) {
     bool ta = Bits(group.block(BLOCK2), 3, 1);
     json_["other_network"]["ta"] = ta;
     return;

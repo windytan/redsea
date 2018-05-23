@@ -23,7 +23,7 @@
 
 namespace redsea {
 
-std::string RDSCharString(uint8_t code, eCodeTable codetable = G0);
+std::string RDSCharString(uint8_t code, CodeTable codetable = CodeTable::G0);
 std::string PTYNameString(int pty);
 std::string PTYNameStringRBDS(int pty);
 std::string CountryString(uint16_t pi, uint16_t ecc);

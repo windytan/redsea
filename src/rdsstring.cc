@@ -24,13 +24,13 @@
 
 namespace redsea {
 
-RDSChar::RDSChar() : code_(0), codetable_(G0) {
+RDSChar::RDSChar() : code_(0), codetable_(CodeTable::G0) {
 }
 
-RDSChar::RDSChar(uint8_t _code) : code_(_code), codetable_(G0) {
+RDSChar::RDSChar(uint8_t _code) : code_(_code), codetable_(CodeTable::G0) {
 }
 
-void RDSChar::set_codetable(eCodeTable codetable) {
+void RDSChar::set_codetable(CodeTable codetable) {
   codetable_ = codetable;
 }
 
@@ -71,25 +71,25 @@ void RDSString::set(int pos, RDSChar chr) {
 
 void RDSString::set(int pos, RDSChar chr1, RDSChar chr2) {
   if (chr1.code() == 0x0F && chr2.code() == 0x0F) {
-    set_repertoire(pos, G0);
+    set_repertoire(pos, CodeTable::G0);
   } else if (chr1.code() == 0x0E && chr2.code() == 0x0E) {
-    set_repertoire(pos, G1);
+    set_repertoire(pos, CodeTable::G1);
   } else if (chr1.code() == 0x1B && chr2.code() == 0x6E) {
-    set_repertoire(pos, G2);
+    set_repertoire(pos, CodeTable::G2);
   } else {
     set(pos, chr1);
     set(pos + 1, chr2);
   }
 }
 
-void RDSString::set_repertoire(int pos, eCodeTable codetable) {
+void RDSString::set_repertoire(int pos, CodeTable codetable) {
   if (pos >= 0)
     repertoire_[pos] = codetable;
 }
 
-eCodeTable RDSString::repertoire_at(int pos) const {
-  eCodeTable codetable = G0;
-  for (std::pair<int, eCodeTable> r : repertoire_)
+CodeTable RDSString::repertoire_at(int pos) const {
+  CodeTable codetable = CodeTable::G0;
+  for (std::pair<int, CodeTable> r : repertoire_)
     if (pos >= r.first)
       codetable = r.second;
   return codetable;

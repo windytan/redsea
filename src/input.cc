@@ -36,17 +36,16 @@ MPXReader::MPXReader(const Options& options) :
     sfinfo_({0, 0, 0, 0, 0, 0}) {
   is_eof_ = false;
 
-  if (options.input_type == INPUT_MPX_STDIN ||
-      options.input_type == INPUT_MPX_SNDFILE) {
-
-    if (options.input_type == INPUT_MPX_STDIN) {
+  if (options.input_type == InputType::MPX_stdin ||
+      options.input_type == InputType::MPX_sndfile) {
+    if (options.input_type == InputType::MPX_stdin) {
       sfinfo_.channels = options.num_channels;
       sfinfo_.format = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
       sfinfo_.samplerate = options.samplerate;
       sfinfo_.frames = 0;
       file_ = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
       outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
-    } else if (options.input_type == INPUT_MPX_SNDFILE) {
+    } else if (options.input_type == InputType::MPX_sndfile) {
       file_ = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
     }
 
@@ -80,7 +79,7 @@ bool MPXReader::eof() const {
  */
 void MPXReader::FillBuffer() {
   num_read_ = sf_read_float(file_, buffer_.data(), used_buffer_size_);
-  if (num_read_ < static_cast<long long>(used_buffer_size_))
+  if (num_read_ < static_cast<sf_count_t>(used_buffer_size_))
     is_eof_ = true;
 
   if (feed_thru_)
