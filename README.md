@@ -1,13 +1,13 @@
 # redsea RDS decoder
 
 redsea is a lightweight command-line [FM-RDS][Wikipedia: RDS] decoder for
-Linux/macOS.
+Linux/macOS. It supports a large [subset of RDS features][Wiki: Features].
 
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
 
 Decoded RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
-[JSON field descriptions][Wiki: JSON] and [input data formats][Wiki: Input].
+[input data formats][Wiki: Input].
 
 Redsea can be used with any [RTL-SDR][About RTL-SDR] USB radio stick with the
 `rtl_fm` tool, or any other SDR via `csdr`, for example. It can also
@@ -17,7 +17,7 @@ the [wiki][Wiki: Use cases].
 
 [Wikipedia: RDS]: http://en.wikipedia.org/wiki/Radio_Data_System
 [About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
-[Wiki: JSON]: https://github.com/windytan/redsea/wiki/JSON-field-descriptions
+[Wiki: Features]: https://github.com/windytan/redsea/wiki/Supported-RDS-features
 [Wiki: Input]: https://github.com/windytan/redsea/wiki/Input-formats
 
 ## Contents
@@ -68,6 +68,8 @@ you can compile redsea without liquid-dsp (`./configure --without-liquid`).
 
 ## Usage
 
+By default, a 171 kHz single-channel 16-bit MPX signal is expected via stdin.
+
 The simplest way to view RDS groups using `rtl_fm` is:
 
     rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea
@@ -81,9 +83,7 @@ Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 
 ```
 radio_command | redsea [OPTIONS]
-
-By default, a 171 kHz single-channel 16-bit MPX signal is expected via
-stdin.
+redsea -f WAVFILE
 
 -b, --input-bits       Input is an unsynchronized ASCII bit stream
                        (011010110...). All characters but '0' and '1'
