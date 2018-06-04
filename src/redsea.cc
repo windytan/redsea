@@ -124,7 +124,8 @@ int main(int argc, char** argv) {
    * 1 Channel anyway. Also, we need a sample rate for the Subcarrier
    * constructor.
    */
-  if (options.num_channels == 0) {
+  if (options.input_type != redsea::InputType::MPX_sndfile &&
+      options.input_type != redsea::InputType::MPX_stdin) {
     options.num_channels = 1;
     options.samplerate = redsea::kTargetSampleRate_Hz;
   }
@@ -154,7 +155,7 @@ int main(int argc, char** argv) {
       mpx.FillBuffer();
 
     for (int n_channel = 0; n_channel < options.num_channels; n_channel++) {
-      switch(options.input_type) {
+      switch (options.input_type) {
         case redsea::InputType::MPX_stdin:
         case redsea::InputType::MPX_sndfile:
           channels[n_channel].ProcessChunk(mpx.ReadChunk(n_channel));

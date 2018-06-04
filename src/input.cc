@@ -32,35 +32,41 @@ namespace redsea {
  *
  */
 MPXReader::MPXReader(const Options& options) :
+    num_channels_(options.num_channels),
+    is_eof_(true),
     feed_thru_(options.feed_thru),
-    sfinfo_({0, 0, 0, 0, 0, 0}) {
-  is_eof_ = false;
+    sfinfo_({0, 0, 0, 0, 0, 0}),
+    file_(nullptr) {
 
-  if (options.input_type == InputType::MPX_stdin ||
-      options.input_type == InputType::MPX_sndfile) {
-    if (options.input_type == InputType::MPX_stdin) {
-      sfinfo_.channels = options.num_channels;
-      sfinfo_.format = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
-      sfinfo_.samplerate = options.samplerate;
-      sfinfo_.frames = 0;
-      file_ = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
-      outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
-    } else if (options.input_type == InputType::MPX_sndfile) {
-      file_ = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
-    }
+  if (options.input_type != InputType::MPX_stdin &&
+      options.input_type != InputType::MPX_sndfile)
+    return;
 
-    if (file_ == nullptr) {
-      std::cerr << "error: failed to open file: " <<
-                sf_error_number(sf_error(file_)) << '\n';
-      exit(EXIT_FAILURE);
-    } else if (sfinfo_.samplerate < 128000.f) {
-      std::cerr << "error: sample rate must be 128000 Hz or higher" << '\n';
-      exit(EXIT_FAILURE);
-    } else {
-      assert(sfinfo_.channels < static_cast<int>(buffer_.size()));
-      used_buffer_size_ =
-          (buffer_.size() / sfinfo_.channels) * sfinfo_.channels;
-    }
+  if (options.input_type == InputType::MPX_stdin) {
+    sfinfo_.channels = 1;
+    sfinfo_.format = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
+    sfinfo_.samplerate = options.samplerate;
+    sfinfo_.frames = 0;
+    file_ = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
+    outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
+  } else if (options.input_type == InputType::MPX_sndfile) {
+    file_ = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
+    num_channels_ = sfinfo_.channels;
+  }
+
+  chunk_size_ = (kInputChunkSize / num_channels_) * num_channels_;
+
+  if (!file_) {
+    std::cerr << "error: failed to open file: " <<
+              sf_error_number(sf_error(file_)) << '\n';
+    exit(EXIT_FAILURE);
+  } else if (sfinfo_.samplerate < kMinimumSampleRate_Hz) {
+    std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
+              << " Hz or higher\n";
+    exit(EXIT_FAILURE);
+  } else {
+    assert(num_channels_ < static_cast<int>(buffer_.data.size()));
+    is_eof_ = false;
   }
 }
 
