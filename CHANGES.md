@@ -4,6 +4,7 @@
 
 * Change the type of the JSON field for TMC message urgency, from integer
   (0, 1, 2) to string ("none", "U", "X")
+* Speed improvements by avoiding a few extraneous buffer copies internally
 
 ## 0.16.0 (2018-03-27)
 
