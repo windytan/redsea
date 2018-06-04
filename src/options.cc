@@ -83,9 +83,9 @@ Options GetOptions(int argc, char** argv) {
         break;
       case 'r':
         options.samplerate = std::atoi(optarg);
-        if (options.samplerate < 128000.f) {
-          std::cerr << "error: sample rate must be 128000 Hz or higher"
-                    << '\n';
+        if (options.samplerate < kMinimumSampleRate_Hz) {
+          std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
+                    << " Hz or higher\n";
           options.just_exit = true;
         }
         break;
