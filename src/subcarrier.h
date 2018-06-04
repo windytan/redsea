@@ -63,13 +63,13 @@ class Subcarrier {
   ~Subcarrier();
   std::vector<bool> PopBits();
   bool eof() const;
-  void ProcessChunk(const std::vector<float>& chunk);
+  void ProcessChunk(MPXBuffer<>& chunk);
 #ifdef DEBUG
   float t() const;
 #endif
 
  private:
-  int  sample_num_;
+  int sample_num_;
   float resample_ratio_;
 
   std::vector<bool> bit_buffer_;
@@ -80,6 +80,8 @@ class Subcarrier {
   liquid::SymSync symsync_;
   liquid::Modem modem_;
   liquid::Resampler resampler_;
+
+  MPXBuffer<> resampled_buffer_;
 
   bool is_eof_;
 

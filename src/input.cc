@@ -78,29 +78,31 @@ bool MPXReader::eof() const {
  *
  */
 void MPXReader::FillBuffer() {
-  num_read_ = sf_read_float(file_, buffer_.data(), used_buffer_size_);
-  if (num_read_ < static_cast<sf_count_t>(used_buffer_size_))
+  num_read_ = sf_read_float(file_, buffer_.data.data(), chunk_size_);
+  if (num_read_ < chunk_size_)
     is_eof_ = true;
 
+  buffer_.used_size = num_read_;
+
   if (feed_thru_)
-    sf_write_float(outfile_, buffer_.data(), num_read_);
+    sf_write_float(outfile_, buffer_.data.data(), num_read_);
 }
 
-std::vector<float> MPXReader::ReadChunk(int channel) {
-  assert(channel < sfinfo_.channels);
+MPXBuffer<>& MPXReader::ReadChunk(int channel) {
+  assert(channel >= 0 && channel < num_channels_);
 
-  std::vector<float> chunk;
   if (is_eof_)
-    return chunk;
+    return buffer_;
 
-  if (sfinfo_.channels == 1) {
-    chunk = std::vector<float>(buffer_.begin(), buffer_.end());
+  if (num_channels_ == 1) {
+    return buffer_;
   } else {
-    chunk = std::vector<float>(num_read_ / sfinfo_.channels);
-    for (size_t i = 0; i < chunk.size(); i++)
-      chunk[i] = buffer_[i * sfinfo_.channels + channel];
+    buffer_singlechan_.used_size = buffer_.used_size / num_channels_;
+    for (size_t i = 0; i < buffer_singlechan_.used_size; i++)
+      buffer_singlechan_.data[i] = buffer_.data[i * num_channels_ + channel];
+
+    return buffer_singlechan_;
   }
-  return chunk;
 }
 
 float MPXReader::samplerate() const {
@@ -108,7 +110,7 @@ float MPXReader::samplerate() const {
 }
 
 int MPXReader::num_channels() const {
-  return sfinfo_.channels;
+  return num_channels_;
 }
 
 /*

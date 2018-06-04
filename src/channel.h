@@ -30,7 +30,7 @@ class Channel {
  public:
   Channel(const Options& options, int which_channel);
   Channel(const Channel& other);
-  void ProcessChunk(const std::vector<float>& chunk);
+  void ProcessChunk(MPXBuffer<>& chunk);
   void ProcessBit(bool bit);
   void ProcessGroup(Group group);
 

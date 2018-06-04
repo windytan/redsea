@@ -50,7 +50,7 @@ Channel::Channel(const Channel& other) :
     bler_average_(kNumBlerAverageGroups) {
 }
 
-void Channel::ProcessChunk(const std::vector<float>& chunk) {
+void Channel::ProcessChunk(MPXBuffer<>& chunk) {
 #ifdef HAVE_LIQUID
   subcarrier_.ProcessChunk(chunk);
   for (bool bit : subcarrier_.PopBits())

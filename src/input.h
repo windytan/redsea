@@ -31,7 +31,16 @@
 
 namespace redsea {
 
-const int kInputBufferSize = 4096;
+constexpr int   kInputChunkSize   = 4096;
+constexpr float kMaxResampleRatio = kTargetSampleRate_Hz / kMinimumSampleRate_Hz;
+constexpr int   kBufferSize       = kInputChunkSize * kMaxResampleRatio + 1;
+
+template<int N=kBufferSize>
+class MPXBuffer {
+ public:
+  std::array<float, N> data;
+  size_t used_size;
+};
 
 class MPXReader {
  public:
@@ -39,15 +48,17 @@ class MPXReader {
   ~MPXReader();
   bool eof() const;
   void FillBuffer();
-  std::vector<float> ReadChunk(int channel);
+  MPXBuffer<>& ReadChunk(int channel);
   float samplerate() const;
   int num_channels() const;
 
  private:
+  int num_channels_;
+  sf_count_t chunk_size_;
   bool is_eof_;
   bool feed_thru_;
-  std::array<float, kInputBufferSize> buffer_;
-  size_t used_buffer_size_;
+  MPXBuffer<> buffer_;
+  MPXBuffer<> buffer_singlechan_;
   SF_INFO sfinfo_;
   SNDFILE* file_;
   SNDFILE* outfile_;

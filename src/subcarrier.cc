@@ -137,19 +137,8 @@ Subcarrier::~Subcarrier() {
 
 /** MPX to bits
  */
-void Subcarrier::ProcessChunk(const std::vector<float>& chunk) {
-  // Resample if needed
-  int num_samples = 0;
-
-  std::vector<std::complex<float>> complex_samples(
-      resample_ratio_ <= 1.0f ? chunk.size() :
-                                chunk.size() * resample_ratio_);
-
-  if (resample_ratio_ == 1.0f) {
-    for (size_t i = 0; i < chunk.size(); i++)
-      complex_samples[i] = chunk[i];
-    num_samples = chunk.size();
-  } else {
+void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
+  if (resample_ratio_ != 1.0f) {
     int i_resampled = 0;
     for (size_t i = 0; i < chunk.size(); i++) {
       std::complex<float> buf[4];
@@ -163,14 +152,15 @@ void Subcarrier::ProcessChunk(const std::vector<float>& chunk) {
     num_samples = i_resampled;
   }
 
+  MPXBuffer<>& buf = (resample_ratio_ == 1.0f ? chunk : resampled_buffer_);
+
   const int decimate_ratio = kTargetSampleRate_Hz / kBitsPerSecond / 2 /
                              kSamplesPerSymbol;
 
-  for (int i = 0; i < num_samples; i++) {
-    std::complex<float> sample = complex_samples[i];
-
+  for (size_t i = 0; i < buf.used_size; i++) {
     // Mix RDS to baseband for filtering purposes
-    std::complex<float> sample_baseband = oscillator_.MixDown(sample);
+    std::complex<float> sample_baseband =
+        oscillator_.MixDown(buf.data[i]);
 
     fir_lpf_.push(sample_baseband);
 
