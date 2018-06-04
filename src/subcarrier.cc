@@ -35,17 +35,17 @@ namespace redsea {
 
 namespace {
 
-const float kCarrierFrequency_Hz  = 57000.0f;
-const float kBitsPerSecond        = 1187.5f;
-const int   kSamplesPerSymbol     = 3;
-const float kAGCBandwidth_Hz      = 500.0f;
-const float kAGCInitialGain       = 0.08f;
-const float kLowpassCutoff_Hz     = 2600.0f;
-const float kSymsyncBandwidth_Hz  = 2400.0f;
-const int   kSymsyncDelay         = 2;
-const float kSymsyncBeta          = 0.8f;
-const float kPLLBandwidth_Hz      = 0.01f;
-const float kPLLMultiplier        = 12.0f;
+constexpr float kCarrierFrequency_Hz  = 57000.0f;
+constexpr float kBitsPerSecond        = 1187.5f;
+constexpr int   kSamplesPerSymbol     = 3;
+constexpr float kAGCBandwidth_Hz      = 500.0f;
+constexpr float kAGCInitialGain       = 0.08f;
+constexpr float kLowpassCutoff_Hz     = 2600.0f;
+constexpr float kSymsyncBandwidth_Hz  = 2400.0f;
+constexpr int   kSymsyncDelay         = 2;
+constexpr float kSymsyncBeta          = 0.8f;
+constexpr float kPLLBandwidth_Hz      = 0.01f;
+constexpr float kPLLMultiplier        = 12.0f;
 
 float hertz2step(float Hz) {
   return Hz * 2.0f * M_PI / kTargetSampleRate_Hz;
