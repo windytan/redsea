@@ -94,12 +94,11 @@ class Resampler {
  public:
   explicit Resampler(float ratio, int length);
   ~Resampler();
-  unsigned int execute(std::complex<float> in, std::complex<float>* out);
+  unsigned int execute(float in, float* out);
   void set_rate(float rate);
 
  private:
-  resamp_crcf object_;
-  std::complex<float> outbuffer_[2];
+  resamp_rrrf object_;
 };
 
 }  // namespace liquid

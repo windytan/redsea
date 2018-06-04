@@ -140,16 +140,16 @@ Subcarrier::~Subcarrier() {
 void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
   if (resample_ratio_ != 1.0f) {
     int i_resampled = 0;
-    for (size_t i = 0; i < chunk.size(); i++) {
-      std::complex<float> buf[4];
-      int num_resampled = resampler_.execute(chunk[i], buf);
+    for (size_t i = 0; i < chunk.used_size; i++) {
+      float buf[4];
+      int num_resampled = resampler_.execute(chunk.data[i], buf);
 
       for (int j = 0; j < num_resampled; j++) {
-        complex_samples[i_resampled] = buf[j];
+        resampled_buffer_.data[i_resampled] = buf[j];
         i_resampled++;
       }
     }
-    num_samples = i_resampled;
+    resampled_buffer_.used_size = i_resampled;
   }
 
   MPXBuffer<>& buf = (resample_ratio_ == 1.0f ? chunk : resampled_buffer_);

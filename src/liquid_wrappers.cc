@@ -157,22 +157,22 @@ float Modem::phase_error() {
 }
 
 Resampler::Resampler(float ratio, int length) :
-    object_(resamp_crcf_create(ratio, length, 0.47f, 60.0f, 32)) {
+    object_(resamp_rrrf_create(ratio, length, 0.47f, 60.0f, 32)) {
   assert(ratio <= 2.0f);
 }
 
 Resampler::~Resampler() {
-  resamp_crcf_destroy(object_);
+  resamp_rrrf_destroy(object_);
 }
 
 void Resampler::set_rate(float rate) {
-  resamp_crcf_set_rate(object_, rate);
+  resamp_rrrf_set_rate(object_, rate);
 }
 
-unsigned int Resampler::execute(std::complex<float> in,
-                                std::complex<float>* out) {
+unsigned int Resampler::execute(float in,
+                                float* out) {
   unsigned int num_written;
-  resamp_crcf_execute(object_, in, out, &num_written);
+  resamp_rrrf_execute(object_, in, out, &num_written);
 
   return num_written;
 }
