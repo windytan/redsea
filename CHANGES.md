@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.17
+## 0.17.0 (2018-06-05)
 
 * Change the type of the JSON field for TMC message urgency, from integer
   (0, 1, 2) to string ("none", "U", "X")
