@@ -22,7 +22,7 @@
   alternative frequencies when the `--show-partial` option is used
 * Add configure option `--without-macports` to disable directory checks
   when cross-compiling
-* Reduce write calls to output JSON stream using a streamstring (#56)
+* Reduce write calls to output JSON stream using a stringstream (#56)
 * Remove an old shell script that launches `rtl_fm` - instead, there is
   a mention of `rtl_fm` usage in the readme and wiki
 
