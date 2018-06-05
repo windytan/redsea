@@ -54,9 +54,6 @@ class NCO {
   explicit NCO(liquid_ncotype type, float freq);
   ~NCO();
   std::complex<float> MixDown(std::complex<float> s);
-  std::complex<float> MixUp(std::complex<float> s);
-  void MixBlockDown(std::complex<float>* x, std::complex<float>* y,
-      int n);
   void Step();
   void set_pll_bandwidth(float);
   void StepPLL(float dphi);
