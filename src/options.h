@@ -33,14 +33,16 @@ enum class OutputType {
 
 struct Options {
   Options() : rbds(false), feed_thru(false), show_partial(false),
-              just_exit(false), print_usage(false), print_version(false),
+              exit_success(false), exit_failure(false), print_usage(false),
+              print_version(false),
               timestamp(false), bler(false),
               samplerate(kTargetSampleRate_Hz), num_channels(1),
               input_type(InputType::MPX_stdin), output_type(OutputType::JSON) {}
   bool rbds;
   bool feed_thru;
   bool show_partial;
-  bool just_exit;
+  bool exit_success;
+  bool exit_failure;
   bool print_usage;
   bool print_version;
   bool timestamp;

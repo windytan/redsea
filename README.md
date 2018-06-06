@@ -127,7 +127,7 @@ redsea -f WAVFILE
                        incorrect call sign for most stations that transmit
                        TMC.
 
--v, --version          Print version string.
+-v, --version          Print version string and exit.
 
 -x, --output-hex       Output hex groups in the RDS Spy format,
                        suppressing JSON output.

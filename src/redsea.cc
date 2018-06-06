@@ -79,7 +79,7 @@ void PrintUsage() {
     "                       incorrect call sign for most stations that transmit\n"
     "                       TMC.\n"
     "\n"
-    "-v, --version          Print version string.\n"
+    "-v, --version          Print version string and exit.\n"
     "\n"
     "-x, --output-hex       Output hex groups in the RDS Spy format,\n"
     "                       suppressing JSON output.\n";
@@ -104,8 +104,11 @@ int main(int argc, char** argv) {
   if (options.print_version)
     redsea::PrintVersion();
 
-  if (options.just_exit)
+  if (options.exit_failure)
     return EXIT_FAILURE;
+
+  if (options.exit_success)
+    return EXIT_SUCCESS;
 
 #ifndef HAVE_LIQUID
   if (options.input_type == redsea::InputType::MPX_stdin ||

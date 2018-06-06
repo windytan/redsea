@@ -59,7 +59,7 @@ Options GetOptions(int argc, char** argv) {
         if (options.num_channels < 1) {
           std::cerr << "error: number of channels must be greater than 0"
                     << '\n';
-          options.just_exit = true;
+          options.exit_failure = true;
         }
         break;
       case 'e':
@@ -86,7 +86,7 @@ Options GetOptions(int argc, char** argv) {
         if (options.samplerate < kMinimumSampleRate_Hz) {
           std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
                     << " Hz or higher\n";
-          options.just_exit = true;
+          options.exit_failure = true;
         }
         break;
       case 't':
@@ -101,29 +101,32 @@ Options GetOptions(int argc, char** argv) {
         break;
       case 'v':
         options.print_version = true;
-        options.just_exit = true;
+        options.exit_success = true;
         break;
       case '?':
+        options.print_usage = true;
+        options.exit_success = true;
+        break;
       default:
         options.print_usage = true;
-        options.just_exit = true;
+        options.exit_failure = true;
         break;
     }
-    if (options.just_exit)
+    if (options.exit_success)
       break;
   }
 
   if (options.feed_thru && options.input_type == InputType::MPX_sndfile) {
     std::cerr << "error: feed-thru is not supported for audio file inputs"
       << '\n';
-    options.just_exit = true;
+    options.exit_failure = true;
   }
 
   if (options.num_channels > 1 && options.input_type != InputType::MPX_stdin &&
       options.input_type != InputType::MPX_sndfile) {
     std::cerr << "error: multi-channel input is only supported for MPX signals"
               << '\n';
-    options.just_exit = true;
+    options.exit_failure = true;
   }
 
   return options;
