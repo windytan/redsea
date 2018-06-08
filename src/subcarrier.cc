@@ -41,8 +41,8 @@ constexpr int   kSamplesPerSymbol     = 3;
 constexpr float kAGCBandwidth_Hz      = 500.0f;
 constexpr float kAGCInitialGain       = 0.08f;
 constexpr float kLowpassCutoff_Hz     = 2600.0f;
-constexpr float kSymsyncBandwidth_Hz  = 2400.0f;
-constexpr int   kSymsyncDelay         = 2;
+constexpr float kSymsyncBandwidth_Hz  = 2300.0f;
+constexpr int   kSymsyncDelay         = 3;
 constexpr float kSymsyncBeta          = 0.8f;
 constexpr float kPLLBandwidth_Hz      = 0.01f;
 constexpr float kPLLMultiplier        = 12.0f;
@@ -60,7 +60,7 @@ float step2hertz(float step) {
 }  // namespace
 
 BiphaseDecoder::BiphaseDecoder() : prev_psk_symbol_(0.0f),
-  clock_history_(48), clock_(0), clock_polarity_(0) {
+  clock_history_(128), clock_(0), clock_polarity_(0) {
 }
 
 BiphaseDecoder::~BiphaseDecoder() {
@@ -116,7 +116,7 @@ unsigned DeltaDecoder::Decode(unsigned d) {
 Subcarrier::Subcarrier(const Options& options) : sample_num_(0),
     resample_ratio_(kTargetSampleRate_Hz / options.samplerate),
     bit_buffer_(),
-    fir_lpf_(256, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
+    fir_lpf_(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
     agc_(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain),
     oscillator_(LIQUID_NCO, hertz2step(kCarrierFrequency_Hz)),
     symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,

@@ -51,7 +51,7 @@ class DeltaDecoder {
  public:
   DeltaDecoder();
   ~DeltaDecoder();
-  unsigned Decode(unsigned);
+  unsigned Decode(unsigned d);
 
  private:
   unsigned prev_;
