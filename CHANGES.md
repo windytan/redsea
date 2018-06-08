@@ -2,7 +2,10 @@
 
 ## master
 
-* Return exit value 0 if `--version` or `--help` was requested
+* Fix: Return exit value 0 if `--version` or `--help` was requested
+* Don't open stdout for libsndfile unless `--feed-through` was specified,
+  otherwise json can't be written (this may break the feed-through on Linux
+  temporarily)
 
 ## 0.17.0 (2018-06-05)
 
