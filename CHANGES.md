@@ -1,6 +1,6 @@
 # redsea changelog
 
-## master
+## 0.17.1 (2018-06-08)
 
 * Fix: Return exit value 0 if `--version` or `--help` was requested
 * Don't open stdout for libsndfile unless `--feed-through` was specified,
