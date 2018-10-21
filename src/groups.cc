@@ -610,7 +610,7 @@ void Station::DecodeType4A(const Group& group) {
   int local_offset_min = (local_offset - std::trunc(local_offset)) * 60;
 
   int hour = static_cast<int>((Bits(group.block(BLOCK3), 0, 1) << 4) +
-      Bits(group.block(BLOCK4), 12, 14) + local_offset) % 24;
+      Bits(group.block(BLOCK4), 12, 4) + local_offset) % 24;
   int minute = Bits(group.block(BLOCK4), 6, 6) + local_offset_min;
 
   bool is_date_valid = (month >= 1 && month <= 12 && day >= 1 && day <= 31 &&
