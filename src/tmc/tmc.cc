@@ -480,8 +480,8 @@ void TMC::SystemGroup(uint16_t message, Json::Value* jsonroot) {
       (*jsonroot)["tmc"]["system_info"]["location_table"] = ltn_;
     }
 
-    bool afi   = Bits(message, 5, 1);
-    bool mgs   = Bits(message, 0, 4);
+    bool     afi = Bits(message, 5, 1);
+    uint16_t mgs = Bits(message, 0, 4);
     is_enhanced_mode_ = Bits(message, 4, 1);
 
     (*jsonroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
