@@ -69,8 +69,8 @@ class Subcarrier {
 #endif
 
  private:
-  int sample_num_;
-  float resample_ratio_;
+  int sample_num_ { 0 };
+  const float resample_ratio_;
 
   std::vector<bool> bit_buffer_;
 
@@ -83,7 +83,7 @@ class Subcarrier {
 
   MPXBuffer<> resampled_buffer_;
 
-  bool is_eof_;
+  bool is_eof_ { false };
 
   DeltaDecoder delta_decoder_;
   BiphaseDecoder biphase_decoder_;

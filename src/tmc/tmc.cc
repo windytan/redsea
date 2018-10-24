@@ -46,10 +46,10 @@ std::map<uint16_t, Event> g_event_data;
 std::map<uint16_t, std::string> g_supplementary_data;
 LocationDatabase g_location_database;
 
-uint16_t PopBits(std::deque<int>* bit_deque, int len) {
+uint16_t PopBits(std::deque<int>* bit_deque, size_t len) {
   uint16_t result = 0x00;
-  if (static_cast<int>(bit_deque->size()) >= len) {
-    for (int i=0; i < len; i++) {
+  if (bit_deque->size() >= len) {
+    for (size_t i = 0; i < len; i++) {
       result = (result << 1) | bit_deque->at(0);
       bit_deque->pop_front();
     }
@@ -58,15 +58,15 @@ uint16_t PopBits(std::deque<int>* bit_deque, int len) {
 }
 
 uint16_t rotl16(uint16_t value, unsigned int count) {
-  const unsigned int mask = (CHAR_BIT*sizeof(value)-1);
+  const unsigned int mask = (CHAR_BIT * sizeof(value) - 1);
   count &= mask;
   return (value << count) | (value >> ( (-count) & mask ));
 }
 
 // label, field_data (ISO 14819-1: 5.5)
 std::vector<FreeformField> GetFreeformFields(
-    const std::vector<MessagePart>& parts) {
-  static const std::vector<int> field_size(
+    const std::array<MessagePart, 5>& parts) {
+  static const std::array<size_t, 16> field_size(
       {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
   uint16_t second_gsi = Bits(parts[1].data[0], 12, 2);
@@ -79,10 +79,10 @@ std::vector<FreeformField> GetFreeformFields(
       break;
 
     if (i == 1 || i >= parts.size() - second_gsi) {
-      for (int b=0; b < 12; b++)
-        freeform_data_bits.push_back((parts[i].data[0] >> (11-b)) & 0x1);
-      for (int b=0; b < 16; b++)
-        freeform_data_bits.push_back((parts[i].data[1] >> (15-b)) & 0x1);
+      for (int b = 0; b < 12; b++)
+        freeform_data_bits.push_back((parts[i].data[0] >> (11 - b)) & 0x1);
+      for (int b = 0; b < 16; b++)
+        freeform_data_bits.push_back((parts[i].data[1] >> (15 - b)) & 0x1);
     }
   }
 
@@ -90,7 +90,7 @@ std::vector<FreeformField> GetFreeformFields(
   std::vector<FreeformField> result;
   while (freeform_data_bits.size() > 4) {
     uint16_t label = PopBits(&freeform_data_bits, 4);
-    if (static_cast<int>(freeform_data_bits.size()) < field_size.at(label))
+    if (freeform_data_bits.size() < field_size.at(label))
       break;
 
     uint16_t field_data = PopBits(&freeform_data_bits, field_size.at(label));
@@ -135,15 +135,14 @@ std::string TimeString(uint16_t field_data) {
     ss << "day " << (field_data - 200) << " of the month";
 
   } else {
-    int mo = (field_data-232) / 2;
-    bool end_mid = (field_data-232) % 2;
-    std::vector<std::string> month_names({
-        "January", "February", "March", "April", "May",
-        "June", "July", "August", "September", "October", "November",
-        "December"});
-    if (mo < 12) {
-      ss << (end_mid ? "end of " : "mid-") + month_names.at(mo);
-    }
+    int  month      = (field_data - 232) / 2;
+    bool end_or_mid = (field_data - 232) % 2;
+    static const std::vector<std::string> month_names({
+        "January",   "February", "March",    "April",
+        "May",       "June",     "July",     "August",
+        "September", "October",  "November", "December"});
+    if (month < 12)
+      ss << (end_or_mid ? "end of " : "mid-") + month_names.at(month);
   }
 
   return ss.str();
@@ -255,7 +254,7 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       decitonnes = decitonnes % 10;
 
       text = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes) +
-        " tonnes";
+             " tonnes";
       break;
     }
     case QuantifierType::Metres: {
@@ -269,7 +268,7 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       decimetres = decimetres % 10;
 
       text = std::to_string(whole_metres) + "." + std::to_string(decimetres) +
-        " metres";
+             " metres";
       break;
     }
     case QuantifierType::UptoMillimetres: {
@@ -292,7 +291,7 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
   }
 
   std::string desc = std::regex_replace(event.description_with_quantifier,
-      q_regex, text);
+                                        q_regex, text);
   return desc;
 }
 
@@ -370,7 +369,7 @@ std::map<uint16_t, ServiceKey> LoadServiceKeyTable() {
     std::vector<uint8_t> nums(3);
 
     try {
-      encid = std::stoi(fields.at(0));
+      encid   = std::stoi(fields.at(0));
       nums[0] = std::stoi(fields.at(1));
       nums[1] = std::stoi(fields.at(2));
       nums[2] = std::stoi(fields.at(3));
@@ -392,29 +391,29 @@ void DecodeLocation(const LocationDatabase& db, uint16_t ltn,
 
   uint16_t lcd = (*jsonroot)["tmc"]["message"]["location"].asUInt();
   int extent = std::stoi((*jsonroot)["tmc"]["message"]["extent"].asString());
-  bool is_pos = (extent >= 0);
+  bool is_positive = (extent >= 0);
 
   if (db.points.count(lcd) > 0) {
-    std::vector<Point> pts;
+    std::vector<Point> points;
     int points_left = abs(extent) + 1;
     uint16_t this_lcd = lcd;
     while (points_left > 0 && db.points.count(this_lcd) > 0) {
-      pts.push_back(db.points.at(this_lcd));
-      this_lcd = (is_pos ? db.points.at(this_lcd).pos_off :
-                           db.points.at(this_lcd).neg_off);
+      points.push_back(db.points.at(this_lcd));
+      this_lcd = (is_positive ? db.points.at(this_lcd).pos_off :
+                                db.points.at(this_lcd).neg_off);
       points_left--;
     }
 
-    for (int i=0; i < static_cast<int>(pts.size()); i++) {
+    for (int i=0; i < static_cast<int>(points.size()); i++) {
 //        (*jsonroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
-      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lat"] = pts[i].lat;
-      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lon"] = pts[i].lon;
+      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lat"] = points[i].lat;
+      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lon"] = points[i].lon;
     }
 
-    if (pts.size() > 1 && pts.at(0).name1.length() > 0 &&
-        pts.at(pts.size()-1).name1.length() > 0) {
-      (*jsonroot)["tmc"]["message"]["span_from"] = pts.at(0).name1;
-      (*jsonroot)["tmc"]["message"]["span_to"] = pts.at(pts.size()-1).name1;
+    if (points.size() > 1 && points.at(0).name1.length() > 0 &&
+        points.at(points.size()-1).name1.length() > 0) {
+      (*jsonroot)["tmc"]["message"]["span_from"] = points.at(0).name1;
+      (*jsonroot)["tmc"]["message"]["span_to"] = points.at(points.size()-1).name1;
     }
     uint16_t roa_lcd = db.points.at(lcd).roa_lcd;
 //      uint16_t seg_lcd = db.points.at(lcd).seg_lcd;
@@ -450,9 +449,8 @@ Event getEvent(uint16_t code) {
     return Event();
 }
 
-TMC::TMC(const Options& options) : is_initialized_(false), is_encrypted_(false),
-    has_encid_(false), is_enhanced_mode_(false), ltn_(0), sid_(0), encid_(0),
-    message_(is_encrypted_), service_key_table_(LoadServiceKeyTable()), ps_(8) {
+TMCService::TMCService(const Options& options) : message_(is_encrypted_),
+                       service_key_table_(LoadServiceKeyTable()), ps_(8) {
   if (!options.loctable_dir.empty() && g_location_database.ltn == 0) {
     g_location_database = LoadLocationDatabase(options.loctable_dir);
     if (options.feed_thru)
@@ -462,7 +460,7 @@ TMC::TMC(const Options& options) : is_initialized_(false), is_encrypted_(false),
   }
 }
 
-void TMC::SystemGroup(uint16_t message, Json::Value* jsonroot) {
+void TMCService::ReceiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
   uint16_t variant = Bits(message, 14, 2);
 
   if (variant == 0) {
@@ -508,7 +506,7 @@ void TMC::SystemGroup(uint16_t message, Json::Value* jsonroot) {
   }
 }
 
-void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
+void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
   if (!is_initialized_)
     return;
 
@@ -626,20 +624,6 @@ void TMC::UserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value *jsonroot) {
   }
 }
 
-Message::Message(bool is_loc_encrypted) : is_encrypted_(is_loc_encrypted),
-    was_encrypted_(is_encrypted_),
-    duration_(0), duration_type_(DurationType::Dynamic), divertadv_(false),
-    direction_(Direction::Positive),
-    extent_(0), events_(), supplementary_(), quantifiers_(), diversion_(),
-    location_(0), encrypted_location_(0), is_complete_(false),
-    has_length_affected_(false),
-    length_affected_(0), has_time_until_(false), time_until_(0),
-    has_time_starts_(false), time_starts_(0), has_speed_limit_(false),
-    speed_limit_(0), directionality_(EventDirectionality::Single),
-    urgency_(EventUrgency::None),
-    continuity_index_(0), parts_(5) {
-}
-
 bool Message::complete() const {
   return is_complete_;
 }
@@ -649,10 +633,11 @@ uint16_t Message::continuity_index() const {
 }
 
 void Message::PushSingle(uint16_t x, uint16_t y, uint16_t z) {
-  duration_  = Bits(x, 0, 3);
-  divertadv_ = Bits(y, 15, 1);
-  direction_ = Bits(y, 14, 1) ? Direction::Negative : Direction::Positive;
-  extent_    = Bits(y, 11, 3);
+  duration_          = Bits(x, 0, 3);
+  diversion_advised_ = Bits(y, 15, 1);
+  direction_         = Bits(y, 14, 1) ? Direction::Negative :
+                                        Direction::Positive;
+  extent_            = Bits(y, 11, 3);
   events_.push_back(Bits(y, 0, 11));
   if (is_encrypted_)
     encrypted_location_ = z;
@@ -758,7 +743,7 @@ void Message::DecodeMulti() {
               break;
 
             case ControlCode::SetDiversion :
-              divertadv_ = true;
+              diversion_advised_ = true;
               break;
 
             case ControlCode::IncreaseExtentBy8 :
@@ -873,10 +858,9 @@ Json::Value Message::json() const {
   if (IsValidEventCode(events_[0]))
     element["update_class"] = getEvent(events_[0]).update_class;
 
-  for (uint16_t code : supplementary_) {
+  for (uint16_t code : supplementary_)
     if (IsValidSupplementaryCode(code))
       sentences.push_back(ucfirst(g_supplementary_data.find(code)->second));
-  }
 
   if (!sentences.empty())
     element["description"] = Join(sentences, ". ") + ".";

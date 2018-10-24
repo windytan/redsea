@@ -18,6 +18,8 @@
 #define GROUPS_H_
 
 #include <chrono>
+
+#include <array>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -36,6 +38,7 @@
 
 namespace redsea {
 
+// A scoped enum couldn't readily be used for indexing
 enum eBlockNumber {
   BLOCK1, BLOCK2, BLOCK3, BLOCK4
 };
@@ -46,6 +49,15 @@ enum class GroupTypeVersion {
 
 enum class Offset {
   A, B, C, Cprime, D, invalid
+};
+
+class Block {
+ public:
+  uint32_t raw         { 0 };
+  uint16_t data        { 0 };
+  bool     is_received { false };
+  bool     had_errors  { false };
+  Offset   offset      { Offset::invalid };
 };
 
 class GroupType {
@@ -62,9 +74,56 @@ class GroupType {
 
 bool operator<(const GroupType& type1, const GroupType& type2);
 
+class ProgramServiceName {
+  public:
+   ProgramServiceName() : text(8) {}
+   void Update(int pos, RDSChar char1, RDSChar char2) {
+     text.set(pos, char1, char2);
+   }
+
+   RDSString text;
+};
+
+class RadioText {
+ public:
+  RadioText() : text(64) {}
+  bool is_ab_changed(int new_ab) {
+    bool is = (ab != new_ab);
+    ab = new_ab;
+    return is;
+  }
+  void Update(int pos, RDSChar char1, RDSChar char2) {
+    text.set(pos, char1, char2);
+  }
+
+  RDSString text;
+  int       ab { 0 };
+};
+
+class RadioTextPlus {
+ public:
+  bool     cb           { false };
+  uint16_t scb          { 0 };
+  uint16_t template_num { 0 };
+  bool     toggle       { false };
+  bool     item_running { false };
+};
+
+class Pager {
+ public:
+  int pac         { 0 };
+  int opc         { 0 };
+  int paging_code { 0 };
+  int ecc         { 0 };
+  int ccf         { 0 };
+  int interval    { 0 };
+  void Decode1ABlock4(uint16_t block4);
+};
+
 class Group {
  public:
   Group();
+
   uint16_t block(eBlockNumber block_num) const;
   bool has(eBlockNumber block_num) const;
   bool empty() const;
@@ -77,27 +136,27 @@ class Group {
   bool has_bler() const;
   bool has_time() const;
   std::chrono::time_point<std::chrono::system_clock> rx_time() const;
-  void set(eBlockNumber block_num, uint16_t data, bool had_errors = false);
-  void set_c_prime(uint16_t data, bool had_errors = false);
+  void PrintHex(std::ostream* stream,
+                const std::string& time_format) const;
+
   void disable_offsets();
+  void set_block(eBlockNumber block_num, Block block);
   void set_time(std::chrono::time_point<std::chrono::system_clock> t);
   void set_bler(uint8_t bler);
   void set_channel(int which_channel);
 
  private:
   GroupType type_;
-  uint16_t pi_;
-  std::vector<bool> has_block_;
-  std::vector<uint16_t> block_;
-  std::vector<bool> block_had_errors_;
+  uint16_t pi_      { 0x0000 };
+  std::array<Block, 4> blocks_;
   std::chrono::time_point<std::chrono::system_clock> time_received_;
-  uint8_t bler_;
-  bool has_type_;
-  bool has_pi_;
-  bool has_c_prime_;
-  bool has_bler_;
-  bool has_time_;
-  bool no_offsets_;
+  uint8_t bler_     { 0 };
+  bool has_type_    { false };
+  bool has_pi_      { false };
+  bool has_c_prime_ { false };
+  bool has_bler_    { false };
+  bool has_time_    { false };
+  bool no_offsets_  { false };
 };
 
 class Station {
@@ -119,64 +178,44 @@ class Station {
   void DecodeType15B(const Group& group);
   void DecodeODAGroup(const Group& group);
   void AddAltFreq(uint8_t);
-  void UpdatePS(int pos, int char1, int char2);
-  void UpdateRadioText(int pos, int char1, int char2);
   void ParseRadioTextPlus(const Group& group);
-  uint16_t pi_;
+
+  uint16_t pi_             { 0 };
   Options options_;
-  int which_channel_;
-  RDSString ps_;
-  RDSString radiotext_;
-  int radiotext_ab_;
-  int pty_;
-  bool is_tp_;
-  bool is_ta_;
-  bool is_music_;
-  int pin_;
-  int ecc_;
-  int cc_;
-  int tmc_id_;
-  int ews_channel_;
-  int lang_;
-  bool linkage_la_;
-  std::string clock_time_;
-  bool has_country_;
+  int which_channel_       { 0 };
+  ProgramServiceName ps_;
+  RadioText radiotext_;
+  int pin_                 { 0 };
+  int ecc_                 { 0 };
+  int cc_                  { 0 };
+  int tmc_id_              { 0 };
+  bool linkage_la_         { 0 };
+  std::string clock_time_  { "" };
+  bool has_country_        { false };
   std::map<GroupType, uint16_t> oda_app_for_group_;
-  bool has_radiotext_plus_;
-  bool radiotext_plus_cb_;
-  uint16_t radiotext_plus_scb_;
-  uint16_t radiotext_plus_template_num_;
-  bool radiotext_plus_toggle_;
-  bool radiotext_plus_item_running_;
+  bool has_radiotext_plus_ { false };
+  RadioTextPlus radiotext_plus_;
   std::map<uint16_t, RDSString> eon_ps_names_;
   std::map<uint16_t, AltFreqList> eon_alt_freqs_;
-  bool last_block_had_pi_;
+  bool last_group_had_pi_  { false };
   AltFreqList alt_freq_list_;
-
-  int pager_pac_;
-  int pager_opc_;
-  int pager_tng_;
-  int pager_ecc_;
-  int pager_ccf_;
-  int pager_interval_;
+  Pager pager_;
 
   Json::StreamWriterBuilder writer_builder_;
   std::unique_ptr<Json::StreamWriter> writer_;
   Json::Value json_;
 
 #ifdef ENABLE_TMC
-  tmc::TMC tmc_;
+  tmc::TMCService tmc_;
 #endif
 };
 
-struct RTPlusTag {
+class RTPlusTag {
+ public:
   uint16_t content_type;
   uint16_t start;
   uint16_t length;
 };
-
-void PrintHexGroup(const Group& group, std::ostream* stream,
-                   const std::string& time_format);
 
 }  // namespace redsea
 #endif  // GROUPS_H_

@@ -26,6 +26,12 @@
 
 namespace redsea {
 
+struct CachedPI {
+  uint16_t confirmed        { 0 };
+  uint16_t previous_changed { 0 };
+  uint16_t changed          { 0 };
+};
+
 class Channel {
  public:
   Channel(const Options& options, int which_channel);
@@ -37,15 +43,13 @@ class Channel {
  private:
   Options options_;
   int which_channel_;
-  uint16_t pi_;
-  uint16_t prev_new_pi_;
-  uint16_t new_pi_;
+  CachedPI cached_pi_;
   BlockStream block_stream_;
   Station station_;
 #ifdef HAVE_LIQUID
   Subcarrier subcarrier_;
 #endif
-  RunningAverage bler_average_;
+  RunningAverage<kNumBlerAverageGroups> bler_average_;
 };
 
 }  // namespace redsea

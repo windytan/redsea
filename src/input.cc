@@ -33,7 +33,6 @@ namespace redsea {
  */
 MPXReader::MPXReader(const Options& options) :
     num_channels_(options.num_channels),
-    is_eof_(true),
     feed_thru_(options.feed_thru),
     sfinfo_({0, 0, 0, 0, 0, 0}),
     file_(nullptr) {
@@ -161,9 +160,9 @@ Group ReadNextHexGroup(const Options& options) {
   Group group;
   group.disable_offsets();
 
-  bool finished = false;
+  bool group_complete = false;
 
-  while (!(finished || std::cin.eof())) {
+  while (!(group_complete || std::cin.eof())) {
     std::string line;
     std::getline(std::cin, line);
     if (options.feed_thru)
@@ -173,13 +172,13 @@ Group ReadNextHexGroup(const Options& options) {
       continue;
 
     for (eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
-      uint16_t block_data = 0;
+      Block block;
       bool block_still_valid = true;
 
-      int nyb = 0;
-      while (nyb < 4) {
+      int which_nibble = 0;
+      while (which_nibble < 4) {
         if (line.length() < 1) {
-          finished = true;
+          group_complete = true;
           break;
         }
 
@@ -188,20 +187,20 @@ Group ReadNextHexGroup(const Options& options) {
         if (single != " ") {
           try {
             int nval = std::stoi(std::string(single), nullptr, 16);
-            block_data = (block_data << 4) + nval;
-          } catch (std::invalid_argument) {
+            block.data = (block.data << 4) + nval;
+          } catch (std::exception) {
             block_still_valid = false;
           }
-          nyb++;
+          which_nibble++;
         }
         line = line.substr(1);
       }
 
       if (block_still_valid)
-        group.set(block_num, block_data);
+        group.set_block(block_num, block);
 
       if (block_num == BLOCK4)
-        finished = true;
+        group_complete = true;
     }
   }
 

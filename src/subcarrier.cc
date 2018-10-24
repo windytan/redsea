@@ -47,12 +47,12 @@ constexpr float kSymsyncBeta          = 0.8f;
 constexpr float kPLLBandwidth_Hz      = 0.01f;
 constexpr float kPLLMultiplier        = 12.0f;
 
-float hertz2step(float Hz) {
+constexpr float hertz2step(float Hz) {
   return Hz * 2.0f * M_PI / kTargetSampleRate_Hz;
 }
 
 #ifdef DEBUG
-float step2hertz(float step) {
+constexpr float step2hertz(float step) {
   return step * kTargetSampleRate_Hz / (2.0f * M_PI);
 }
 #endif
@@ -113,23 +113,18 @@ unsigned DeltaDecoder::Decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier(const Options& options) : sample_num_(0),
+Subcarrier::Subcarrier(const Options& options) :
     resample_ratio_(kTargetSampleRate_Hz / options.samplerate),
-    bit_buffer_(),
     fir_lpf_(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
     agc_(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain),
     oscillator_(LIQUID_NCO, hertz2step(kCarrierFrequency_Hz)),
     symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
              kSymsyncBeta, 32),
     modem_(LIQUID_MODEM_PSK2),
-    resampler_(resample_ratio_, 13),
-    is_eof_(false), delta_decoder_() {
+    resampler_(resample_ratio_, 13) {
   symsync_.set_bandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
   symsync_.set_output_rate(1);
   oscillator_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
-
-  resample_ratio_ = kTargetSampleRate_Hz / options.samplerate;
-  resampler_.set_rate(resample_ratio_);
 }
 
 Subcarrier::~Subcarrier() {
@@ -141,7 +136,7 @@ void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
   if (resample_ratio_ != 1.0f) {
     int i_resampled = 0;
     for (size_t i = 0; i < chunk.used_size; i++) {
-      float buf[4];
+      static float buf[4];
       int num_resampled = resampler_.execute(chunk.data[i], buf);
 
       for (int j = 0; j < num_resampled; j++) {
@@ -154,13 +149,13 @@ void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
 
   MPXBuffer<>& buf = (resample_ratio_ == 1.0f ? chunk : resampled_buffer_);
 
-  const int decimate_ratio = kTargetSampleRate_Hz / kBitsPerSecond / 2 /
-                             kSamplesPerSymbol;
+  constexpr int decimate_ratio = kTargetSampleRate_Hz / kBitsPerSecond / 2 /
+                                 kSamplesPerSymbol;
 
   for (size_t i = 0; i < buf.used_size; i++) {
     // Mix RDS to baseband for filtering purposes
     std::complex<float> sample_baseband =
-        oscillator_.MixDown(buf.data[i]);
+        oscillator_.MixDown(std::complex<float>(buf.data[i]));
 
     fir_lpf_.push(sample_baseband);
 

@@ -16,74 +16,124 @@
  */
 #include "src/block_sync.h"
 
+#include <map>
 #include <utility>
 #include <vector>
 
 namespace redsea {
 
-const unsigned kBitmask26 = 0x3FFFFFF;
+constexpr unsigned kBitmask26 = 0x3FFFFFF;
+constexpr unsigned kBlockLength = 26;
 
-eBlockNumber BlockNumberForOffset(Offset o) {
-  static const eBlockNumber block_number_for_offset[5] =
-    {BLOCK1, BLOCK2, BLOCK3, BLOCK3, BLOCK4};
+// Each offset word is associated with one block number
+constexpr eBlockNumber BlockNumberForOffset(Offset offset) {
+  switch (offset) {
+    case Offset::A       : return BLOCK1; break;
+    case Offset::B       : return BLOCK2; break;
+    case Offset::C       : return BLOCK3; break;
+    case Offset::Cprime  : return BLOCK3; break;
+    case Offset::D       : return BLOCK4; break;
 
-  return block_number_for_offset[static_cast<int>(o)];
+    case Offset::invalid : return BLOCK1; break;
+  }
 }
 
-// Section B.1.1: '-- calculated by the modulo-two addition of all the rows of
-// the -- matrix for which the corresponding coefficient in the -- vector is 1.'
-uint32_t MatrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
+// Return the next offset word in sequence
+constexpr Offset NextOffsetFor(Offset this_offset) {
+  switch (this_offset) {
+    case Offset::A       : return Offset::B; break;
+    case Offset::B       : return Offset::C; break;
+    case Offset::C       : return Offset::D; break;
+    case Offset::Cprime  : return Offset::D; break;
+    case Offset::D       : return Offset::A; break;
+
+    case Offset::invalid : return Offset::A; break;
+  }
+}
+
+// IEC 62106:2015 section B.3.1 Table B.1
+constexpr Offset OffsetForSyndrome(uint16_t syndrome) {
+  switch (syndrome) {
+    case 0b1111011000 : return Offset::A;       break;
+    case 0b1111010100 : return Offset::B;       break;
+    case 0b1001011100 : return Offset::C;       break;
+    case 0b1111001100 : return Offset::Cprime;  break;
+    case 0b1001011000 : return Offset::D;       break;
+
+    default           : return Offset::invalid; break;
+  }
+}
+
+// EN 50067:1998, section B.1.1: '-- calculated by the modulo-two addition of
+// all the rows of the -- matrix for which the corresponding coefficient in the
+// -- vector is 1.'
+constexpr uint32_t MatrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
   uint32_t result = 0;
 
-  for (size_t k=0; k < matrix.size(); k++)
-    if ((vec >> k) & 0x01)
+  for (size_t k = 0; k < matrix.size(); k++)
+    if ((vec >> k) & 0b1)
       result ^= matrix[matrix.size() - 1 - k];
 
   return result;
 }
 
-// Section B.2.1: 'The calculation of the syndromes -- can easily be done by
-// multiplying each word with the parity matrix H.'
+// EN 50067:1998, section B.2.1: 'The calculation of the syndromes for the
+// different offset words can easily be done by multiplying each word with the
+// parity matrix H.'
 uint32_t CalculateSyndrome(uint32_t vec) {
   static const std::vector<uint32_t> parity_check_matrix({
-      0x200, 0x100, 0x080, 0x040, 0x020, 0x010, 0x008, 0x004,
-      0x002, 0x001, 0x2dc, 0x16e, 0x0b7, 0x287, 0x39f, 0x313,
-      0x355, 0x376, 0x1bb, 0x201, 0x3dc,
-      0x1ee, 0x0f7, 0x2a7, 0x38f, 0x31b
+    0b1000000000,
+    0b0100000000,
+    0b0010000000,
+    0b0001000000,
+    0b0000100000,
+    0b0000010000,
+    0b0000001000,
+    0b0000000100,
+    0b0000000010,
+    0b0000000001,
+    0b1011011100,
+    0b0101101110,
+    0b0010110111,
+    0b1010000111,
+    0b1110011111,
+    0b1100010011,
+    0b1101010101,
+    0b1101110110,
+    0b0110111011,
+    0b1000000001,
+    0b1111011100,
+    0b0111101110,
+    0b0011110111,
+    0b1010100111,
+    0b1110001111,
+    0b1100011011
   });
 
   return MatrixMultiply(vec, parity_check_matrix);
 }
 
-Offset NextOffsetFor(Offset this_offset) {
-  static const std::map<Offset, Offset> next_offset({
-      {Offset::A, Offset::B}, {Offset::B, Offset::C},
-      {Offset::C, Offset::D}, {Offset::Cprime, Offset::D},
-      {Offset::D, Offset::A}, {Offset::invalid, Offset::A}
-  });
-  return next_offset.at(this_offset);
-}
-
 // Precompute mapping of syndromes to error vectors
-
+// IEC 62106:2015 section B.3.1
 std::map<std::pair<uint16_t, Offset>, uint32_t> MakeErrorLookupTable() {
   std::map<std::pair<uint16_t, Offset>, uint32_t> lookup_table;
 
+  // Table B.1
   const std::map<Offset, uint16_t> offset_words({
-      { Offset::A,      0x0FC },
-      { Offset::B,      0x198 },
-      { Offset::C,      0x168 },
-      { Offset::Cprime, 0x350 },
-      { Offset::D,      0x1B4 }
+      { Offset::A,      0b0011111100 },
+      { Offset::B,      0b0110011000 },
+      { Offset::C,      0b0101101000 },
+      { Offset::Cprime, 0b1101010000 },
+      { Offset::D,      0b0110110100 }
   });
 
   for (auto offset : offset_words) {
+    // Kopitz & Marks 1999: "RDS: The Radio Data System", p. 224:
     // "...the error-correction system should be enabled, but should be
     // restricted by attempting to correct bursts of errors spanning one or two
     // bits."
-    // Kopitz & Marks 1999: "RDS: The Radio Data System", p. 224
-    for (uint32_t error_bits : {0x1, 0x3}) {
-      for (int shift=0; shift < 26; shift++) {
+    for (uint32_t error_bits : {0b1, 0b11}) {
+      for (unsigned shift = 0; shift < kBlockLength; shift++) {
         uint32_t error_vector = ((error_bits << shift) & kBitmask26);
 
         uint32_t syndrome =
@@ -95,94 +145,57 @@ std::map<std::pair<uint16_t, Offset>, uint32_t> MakeErrorLookupTable() {
   return lookup_table;
 }
 
-Offset OffsetForSyndrome(uint16_t syndrome) {
-  static const std::map<uint16_t, Offset> offset_syndromes =
-    {{0x3D8, Offset::A},
-     {0x3D4, Offset::B},
-     {0x25C, Offset::C},
-     {0x3CC, Offset::Cprime},
-     {0x258, Offset::D}};
+// EN 50067:1998, section B.2.2
+ErrorCorrectionResult CorrectBurstErrors(Block block, Offset expected_offset) {
+  static const auto error_lookup_table = MakeErrorLookupTable();
 
-  if (offset_syndromes.count(syndrome) > 0)
-    return offset_syndromes.at(syndrome);
-  else
-    return Offset::invalid;
-}
+  ErrorCorrectionResult result;
 
-const std::map<std::pair<uint16_t, Offset>, uint32_t> kErrorLookup =
-    MakeErrorLookupTable();
+  uint16_t syndrome = CalculateSyndrome(block.raw);
+  result.corrected_bits = block.raw;
 
-// Section B.2.2
-uint32_t CorrectBurstErrors(uint32_t block, Offset offset) {
-  uint16_t syndrome = CalculateSyndrome(block);
-  uint32_t corrected_block = block;
-
-  if (kErrorLookup.count({syndrome, offset}) > 0) {
-    uint32_t err = kErrorLookup.at({syndrome, offset});
-    corrected_block ^= err;
+  auto search = error_lookup_table.find({syndrome, expected_offset});
+  if (search != error_lookup_table.end()) {
+    uint32_t err = search->second;
+    result.corrected_bits ^= err;
+    result.succeeded = true;
   }
-
-  return corrected_block;
-}
-
-RunningSum::RunningSum(int length) :
-  history_(length), pointer_(0) {
-}
-
-void RunningSum::push(int number) {
-  history_[pointer_] = number;
-  pointer_ = (pointer_ + 1) % history_.size();
-}
-
-int RunningSum::sum() const {
-  int result = 0;
-  for (int number : history_)
-    result += number;
 
   return result;
 }
 
-void RunningSum::clear() {
-  for (size_t i = 0; i < history_.size(); i++)
-    history_[i] = 0;
+BlockStream::BlockStream(const Options& options) :
+  options_(options) {
 }
 
-BlockStream::BlockStream(const Options& options) : bitcount_(0),
-  prevbitcount_(0), left_to_read_(1), input_register_(0), prevsync_(Offset::A),
-  expected_offset_(Offset::A),
-  received_offset_(Offset::invalid), pi_(0x0000), is_in_sync_(false),
-  block_error_sum_(50),
-  options_(options),
-  input_type_(options.input_type), is_eof_(false), bler_average_(12) {
-}
-
-// A block can't be decoded
-void BlockStream::Uncorrectable() {
-  // Sync is lost when >45 out of last 50 blocks are erroneous (Section C.1.2)
-  if (is_in_sync_ && block_error_sum_.sum() > 45) {
+void BlockStream::UncorrectableErrorEncountered() {
+  // EN 50067:1998, section C.1.2:
+  // Sync is lost when >45 out of last 50 blocks are erroneous
+  if (is_in_sync_ && block_error_sum50_.sum() > 45) {
     is_in_sync_ = false;
-    block_error_sum_.clear();
+    block_error_sum50_.clear();
     pi_ = 0x0000;
   }
 }
 
-bool BlockStream::AcquireSync() {
+bool BlockStream::AcquireSync(Block block) {
   if (is_in_sync_)
     return true;
 
   // Try to find a repeating offset sequence
-  if (received_offset_ != Offset::invalid) {
-    int dist = bitcount_ - prevbitcount_;
+  if (block.offset != Offset::invalid) {
+    int sync_distance = bitcount_ - previous_syncing_bitcount_;
 
-    if (dist % 26 == 0 && dist <= 156 &&
-        (BlockNumberForOffset(prevsync_) + dist/26) % 4 ==
-         BlockNumberForOffset(received_offset_)) {
+    if (sync_distance % kBlockLength == 0 &&
+        sync_distance / kBlockLength <= 6 &&
+        (BlockNumberForOffset(previous_syncing_offset_) + sync_distance / kBlockLength) % 4 ==
+         BlockNumberForOffset(block.offset)) {
       is_in_sync_ = true;
-      expected_offset_ = received_offset_;
+      expected_offset_ = block.offset;
       current_group_ = Group();
     } else {
-      prevbitcount_ = bitcount_;
-      prevsync_ = received_offset_;
+      previous_syncing_bitcount_= bitcount_;
+      previous_syncing_offset_  = block.offset;
     }
   }
 
@@ -191,44 +204,45 @@ bool BlockStream::AcquireSync() {
 
 void BlockStream::PushBit(bool bit) {
   input_register_ = (input_register_ << 1) + bit;
-  left_to_read_--;
+  num_bits_until_next_block_--;
   bitcount_++;
 
-  if (left_to_read_ > 0)
-    return;
+  if (num_bits_until_next_block_ == 0) {
+    FindBlockInInputRegister();
 
-  uint32_t block = (input_register_ >> 1) & kBitmask26;
+    num_bits_until_next_block_ = is_in_sync_ ? kBlockLength : 1;
+  }
+}
 
-  received_offset_ = OffsetForSyndrome(CalculateSyndrome(block));
+void BlockStream::FindBlockInInputRegister() {
+  Block block;
+  block.raw    = input_register_ & kBitmask26;
+  block.offset = OffsetForSyndrome(CalculateSyndrome(block.raw));
 
-  if (AcquireSync()) {
-    if (expected_offset_ == Offset::C && received_offset_ == Offset::Cprime)
+  AcquireSync(block);
+
+  if (is_in_sync_) {
+    if (expected_offset_ == Offset::C && block.offset == Offset::Cprime)
       expected_offset_ = Offset::Cprime;
 
-    bool block_had_errors = (received_offset_ != expected_offset_);
-    block_error_sum_.push(block_had_errors);
+    block.had_errors = (block.offset != expected_offset_);
+    block_error_sum50_.push(block.had_errors);
 
-    uint16_t message = block >> 10;
+    block.data = block.raw >> 10;
 
-    if (block_had_errors) {
-      uint32_t corrected_block = CorrectBurstErrors(block, expected_offset_);
-      if (corrected_block != block) {
-        message = corrected_block >> 10;
-        received_offset_ = expected_offset_;
+    if (block.had_errors) {
+      auto correction = CorrectBurstErrors(block, expected_offset_);
+      if (correction.succeeded) {
+        block.data   = correction.corrected_bits >> 10;
+        block.offset = expected_offset_;
+      } else {
+        UncorrectableErrorEncountered();
       }
-
-      // Still no valid syndrome
-      if (received_offset_ != expected_offset_)
-        Uncorrectable();
     }
 
     // Error-free block received or errors successfully corrected
-    if (received_offset_ == expected_offset_) {
-      if (expected_offset_ == Offset::Cprime)
-        current_group_.set_c_prime(message, block_had_errors);
-      else
-        current_group_.set(BlockNumberForOffset(expected_offset_), message,
-            block_had_errors);
+    if (block.offset == expected_offset_) {
+      current_group_.set_block(BlockNumberForOffset(expected_offset_), block);
 
       if (current_group_.has_pi())
         pi_ = current_group_.pi();
@@ -236,14 +250,14 @@ void BlockStream::PushBit(bool bit) {
 
     expected_offset_ = NextOffsetFor(expected_offset_);
 
-    if (expected_offset_ == Offset::A) {
-      groups_.push_back(current_group_);
-      current_group_ = Group();
-    }
-    left_to_read_ = 26;
-  } else {
-    left_to_read_ = 1;
+    if (expected_offset_ == Offset::A)
+      NewGroupReceived();
   }
+}
+
+void BlockStream::NewGroupReceived() {
+  groups_.push_back(current_group_);
+  current_group_ = Group();
 }
 
 std::vector<Group> BlockStream::PopGroups() {

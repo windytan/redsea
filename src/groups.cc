@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -51,32 +52,19 @@ std::string TimePointToString(
   return result;
 }
 
-/*
- * Print a group as a single line in the RDS Spy hex format.
- *
- */
-void PrintHexGroup(const Group& group, std::ostream* stream,
-                   const std::string& time_format) {
-  stream->fill('0');
-  stream->setf(std::ios_base::uppercase);
-
-  if (group.empty())
-    return;
-
-  for (eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
-    if (group.has(block_num))
-      *stream << std::hex << std::setw(4) << group.block(block_num);
-    else
-      *stream << "----";
-
-    if (block_num != BLOCK4)
-      *stream << " ";
+// Programme Item Number (IEC 62106:2015, section 6.1.5.2)
+bool DecodePin(uint16_t pin, Json::Value* json) {
+  uint16_t day    = Bits(pin, 11, 5);
+  uint16_t hour   = Bits(pin, 6, 5);
+  uint16_t minute = Bits(pin, 0, 6);
+  if (day >= 1 && hour <= 24 && minute <= 59) {
+    (*json)["prog_item_number"] = pin;
+    (*json)["prog_item_started"]["day"] = day;
+    (*json)["prog_item_started"]["time"] = HoursMinutesString(hour, minute);
+    return true;
+  } else {
+    return false;
   }
-
-  if (group.has_time())
-    *stream << " " << TimePointToString(group.rx_time(), time_format);
-
-  *stream << '\n' << std::flush;
 }
 
 GroupType::GroupType(uint16_t type_code) :
@@ -101,18 +89,15 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
  * A single RDS group transmitted as four 16-bit blocks.
  *
  */
-Group::Group() : pi_(0x0000), has_block_({false, false, false, false, false}),
-                 block_(5), block_had_errors_(4), bler_(0), has_type_(false),
-                 has_pi_(false), has_c_prime_(false), has_bler_(false),
-                 has_time_(false), no_offsets_(false) {
+Group::Group() {
 }
 
 uint16_t Group::block(eBlockNumber block_num) const {
-  return block_.at(block_num);
+  return blocks_[block_num].data;
 }
 
 bool Group::has(eBlockNumber block_num) const {
-  return has_block_.at(block_num);
+  return blocks_[block_num].is_received;
 }
 
 bool Group::empty() const {
@@ -128,10 +113,10 @@ uint8_t Group::bler() const {
 }
 
 uint8_t Group::num_errors() const {
-  int n_err = 0;
-  for (eBlockNumber b : {BLOCK1, BLOCK2, BLOCK3, BLOCK4})
-    n_err += (block_had_errors_[b] || !has(b));
-  return n_err;
+  return std::accumulate(blocks_.cbegin(), blocks_.cend(), 0,
+      [](int a, Block b) {
+        return a + (b.had_errors || !b.is_received);
+      });
 }
 
 bool Group::has_pi() const {
@@ -162,19 +147,18 @@ void Group::disable_offsets() {
   no_offsets_ = true;
 }
 
-void Group::set(eBlockNumber block_num, uint16_t data, bool had_errors) {
-  block_[block_num] = data;
-  has_block_[block_num] = true;
-  block_had_errors_[block_num] = had_errors;
+void Group::set_block(eBlockNumber block_num, Block block) {
+  blocks_[block_num] = block;
+  blocks_[block_num].is_received = true;
 
   switch (block_num) {
     case BLOCK1:
-      pi_ = data;
+      pi_ = block.data;
       has_pi_ = true;
       break;
 
     case BLOCK2:
-      type_ = GroupType(Bits(data, 11, 5));
+      type_ = GroupType(Bits(block.data, 11, 5));
       if (type_.version == GroupTypeVersion::A)
         has_type_ = true;
       else
@@ -182,15 +166,15 @@ void Group::set(eBlockNumber block_num, uint16_t data, bool had_errors) {
       break;
 
     case BLOCK3:
-      if (has_c_prime_ && !has_pi_) {
-        pi_ = data;
+      if (block.offset == Offset::Cprime && !has_pi_) {
+        pi_ = block.data;
         has_pi_ = true;
       }
       break;
 
     case BLOCK4:
       if (has_c_prime_ && !has_type_) {
-        GroupType potential_type(Bits(data, 11, 5));
+        GroupType potential_type(Bits(block.data, 11, 5));
         if (potential_type.number == 15 &&
             potential_type.version == GroupTypeVersion::B) {
           type_ = potential_type;
@@ -199,14 +183,8 @@ void Group::set(eBlockNumber block_num, uint16_t data, bool had_errors) {
       }
       break;
   }
-}
 
-void Group::set_c_prime(uint16_t data, bool had_errors) {
-  has_c_prime_ = true;
-  block_had_errors_[BLOCK3] = had_errors;
-
-  set(BLOCK3, data);
-  if (has(BLOCK2))
+  if (block.offset == Offset::Cprime && has(BLOCK2))
     has_type_ = (type_.version == GroupTypeVersion::B);
 }
 
@@ -220,6 +198,31 @@ void Group::set_bler(uint8_t bler) {
   has_bler_ = true;
 }
 
+void Group::PrintHex(std::ostream* stream,
+                     const std::string& time_format) const {
+  stream->fill('0');
+  stream->setf(std::ios_base::uppercase);
+
+  if (empty())
+    return;
+
+  for (eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
+    const Block& block = blocks_[block_num];
+    if (block.is_received)
+      *stream << std::hex << std::setw(4) << block.data;
+    else
+      *stream << "----";
+
+    if (block_num != BLOCK4)
+      *stream << " ";
+  }
+
+  if (has_time())
+    *stream << " " << TimePointToString(rx_time(), time_format);
+
+  *stream << '\n' << std::flush;
+}
+
 /*
  * A Station represents a single broadcast carrier identified by its RDS PI
  * code.
@@ -229,17 +232,7 @@ Station::Station() : Station(0x0000, Options(), 0) {
 }
 
 Station::Station(uint16_t _pi, const Options& options, int which_channel) :
-  pi_(_pi), options_(options), which_channel_(which_channel), ps_(8),
-  radiotext_(64), radiotext_ab_(0), pty_(0),
-  is_tp_(false), is_ta_(false), is_music_(false), pin_(0), ecc_(0), cc_(0),
-  tmc_id_(0), ews_channel_(0), lang_(0), linkage_la_(0), clock_time_(""),
-  has_country_(false), oda_app_for_group_(), has_radiotext_plus_(false),
-  radiotext_plus_cb_(false), radiotext_plus_scb_(0),
-  radiotext_plus_template_num_(0),
-  radiotext_plus_toggle_(false), radiotext_plus_item_running_(false),
-  last_block_had_pi_(false), alt_freq_list_(), pager_pac_(0), pager_opc_(0),
-  pager_tng_(0), pager_ecc_(0), pager_ccf_(0), pager_interval_(0),
-  writer_builder_(), json_()
+  pi_(_pi), options_(options), which_channel_(which_channel)
 #ifdef ENABLE_TMC
                     , tmc_(options)
 #endif
@@ -251,17 +244,13 @@ Station::Station(uint16_t _pi, const Options& options, int which_channel) :
 }
 
 void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
-  if (group.empty())
-    return;
-
   // Allow 1 group with missed PI
-  if (group.has_pi()) {
-    last_block_had_pi_ = true;
-  } else if (!last_block_had_pi_) {
+  if (group.has_pi())
+    last_group_had_pi_ = true;
+  else if (last_group_had_pi_)
+    last_group_had_pi_ = false;
+  else
     return;
-  } else if (last_block_had_pi_) {
-    last_block_had_pi_ = false;
-  }
 
   json_.clear();
   json_["pi"] = "0x" + HexString(pi(), 4);
@@ -320,38 +309,23 @@ uint16_t Station::pi() const {
   return pi_;
 }
 
-void Station::UpdatePS(int pos, int char1, int char2) {
-  ps_.set(pos, RDSChar(char1), RDSChar(char2));
-
-  if (ps_.complete())
-    json_["ps"] = ps_.last_complete_string();
-  else if (options_.show_partial)
-    json_["partial_ps"] = ps_.str();
-}
-
-void Station::UpdateRadioText(int pos, int char1, int char2) {
-  radiotext_.set(pos, RDSChar(char1), RDSChar(char2));
-}
-
 void Station::DecodeBasics(const Group& group) {
   if (group.has(BLOCK2)) {
-    is_tp_ = Bits(group.block(BLOCK2), 10, 1);
-    pty_   = Bits(group.block(BLOCK2),  5, 5);
+    uint16_t pty = Bits(group.block(BLOCK2),  5, 5);
 
     if (group.has_type())
       json_["group"] = group.type().str();
-    json_["tp"] = is_tp_;
+    json_["tp"] = Bits(group.block(BLOCK2), 10, 1);
     json_["prog_type"] =
-        options_.rbds ? PTYNameStringRBDS(pty_) : PTYNameString(pty_);
+        options_.rbds ? PTYNameStringRBDS(pty) : PTYNameString(pty);
   } else if (group.type().number == 15 && group.type().version == GroupTypeVersion::B &&
       group.has(BLOCK4)) {
-    is_tp_ = Bits(group.block(BLOCK4), 10, 1);
-    pty_   = Bits(group.block(BLOCK4),  5, 5);
+    uint16_t pty = Bits(group.block(BLOCK4),  5, 5);
 
     json_["group"] = group.type().str();
-    json_["tp"] = is_tp_;
+    json_["tp"] = Bits(group.block(BLOCK4), 10, 1);
     json_["prog_type"] =
-        options_.rbds ? PTYNameStringRBDS(pty_) : PTYNameString(pty_);
+        options_.rbds ? PTYNameStringRBDS(pty) : PTYNameString(pty);
   }
 }
 
@@ -361,11 +335,8 @@ void Station::DecodeType0(const Group& group) {
   bool is_di = Bits(group.block(BLOCK2), 2, 1);
   json_["di"][DICodeString(segment_address)] = is_di;
 
-  is_ta_    = Bits(group.block(BLOCK2), 4, 1);
-  is_music_ = Bits(group.block(BLOCK2), 3, 1);
-
-  json_["ta"] = is_ta_;
-  json_["is_music"] = is_music_;
+  json_["ta"]       = Bits(group.block(BLOCK2), 4, 1);
+  json_["is_music"] = Bits(group.block(BLOCK2), 3, 1);
 
   if (!group.has(BLOCK3))
     return;
@@ -388,9 +359,14 @@ void Station::DecodeType0(const Group& group) {
   if (!group.has(BLOCK4))
     return;
 
-  UpdatePS(segment_address * 2,
-           Bits(group.block(BLOCK4), 8, 8),
-           Bits(group.block(BLOCK4), 0, 8));
+  ps_.Update(segment_address * 2,
+             RDSChar(Bits(group.block(BLOCK4), 8, 8)),
+             RDSChar(Bits(group.block(BLOCK4), 0, 8)));
+
+  if (ps_.text.complete())
+    json_["ps"] = ps_.text.last_complete_string();
+  else if (options_.show_partial)
+    json_["partial_ps"] = ps_.text.str();
 }
 
 // Group 1: Programme Item Number and slow labelling codes
@@ -400,24 +376,14 @@ void Station::DecodeType1(const Group& group) {
 
   pin_ = group.block(BLOCK4);
 
-  if (pin_ != 0x0000) {
-    uint16_t day    = Bits(pin_, 11, 5);
-    uint16_t hour   = Bits(pin_, 6, 5);
-    uint16_t minute = Bits(pin_, 0, 6);
-    if (day >= 1 && hour <= 24 && minute <= 59) {
-      json_["prog_item_number"] = pin_;
-      json_["prog_item_started"]["day"] = day;
-      json_["prog_item_started"]["time"] = HoursMinutesString(hour, minute);
-    } else {
+  if (pin_ != 0x0000)
+    if (!DecodePin(pin_, &json_))
       json_["debug"].append("invalid PIN");
-    }
-  }
 
   if (group.type().version == GroupTypeVersion::A) {
-    pager_tng_ = Bits(group.block(BLOCK2), 2, 3);
-    if (pager_tng_ != 0) {
-      pager_interval_ = Bits(group.block(BLOCK2), 0, 2);
-    }
+    pager_.paging_code = Bits(group.block(BLOCK2), 2, 3);
+    if (pager_.paging_code != 0)
+      pager_.interval = Bits(group.block(BLOCK2), 0, 2);
     linkage_la_ = Bits(group.block(BLOCK3), 15, 1);
     json_["has_linkage"] = linkage_la_;
 
@@ -425,27 +391,12 @@ void Station::DecodeType1(const Group& group) {
 
     switch (slow_label_variant) {
       case 0:
-        if (pager_tng_ != 0)
-          pager_opc_ = Bits(group.block(BLOCK3), 8, 4);
+        if (pager_.paging_code != 0) {
+          pager_.opc = Bits(group.block(BLOCK3), 8, 4);
 
-        // No PIN, section M.3.2.4.3
-        if (group.has(BLOCK4) && (group.block(BLOCK4) >> 11) == 0) {
-          int subtype = Bits(group.block(BLOCK4), 10, 1);
-          if (subtype == 0) {
-            if (pager_tng_ != 0) {
-              pager_pac_ = Bits(group.block(BLOCK4), 4, 6);
-              pager_opc_ = Bits(group.block(BLOCK4), 0, 4);
-            }
-          } else if (subtype == 1) {
-            if (pager_tng_ != 0) {
-              int b = Bits(group.block(BLOCK4), 8, 2);
-              if (b == 0) {
-                pager_ecc_ = Bits(group.block(BLOCK4), 0, 6);
-              } else if (b == 3) {
-                pager_ccf_ = Bits(group.block(BLOCK4), 0, 4);
-              }
-            }
-          }
+          // No PIN (IEC 62106:2015, section M.3.2.5.3)
+          if (group.has(BLOCK4) && Bits(group.block(BLOCK4), 11, 5) == 0)
+            pager_.Decode1ABlock4(group.block(BLOCK4));
         }
 
         ecc_ = Bits(group.block(BLOCK3),  0, 8);
@@ -463,40 +414,22 @@ void Station::DecodeType1(const Group& group) {
         break;
 
       case 2:
-        if (pager_tng_ != 0) {
-          pager_pac_ = Bits(group.block(BLOCK3), 0, 6);
-          pager_opc_ = Bits(group.block(BLOCK3), 8, 4);
-        }
+        if (pager_.paging_code != 0) {
+          pager_.pac = Bits(group.block(BLOCK3), 0, 6);
+          pager_.opc = Bits(group.block(BLOCK3), 8, 4);
 
-        // No PIN, section M.3.2.4.3
-        if (group.has(BLOCK4) && (group.block(BLOCK4) >> 11) == 0) {
-          int subtype = Bits(group.block(BLOCK4), 10, 1);
-          if (subtype == 0) {
-            if (pager_tng_ != 0) {
-              pager_pac_ = Bits(group.block(BLOCK4), 4, 6);
-              pager_opc_ = Bits(group.block(BLOCK4), 0, 4);
-            }
-          } else if (subtype == 1) {
-            if (pager_tng_ != 0) {
-              int b = Bits(group.block(BLOCK4), 8, 2);
-              if (b == 0) {
-                pager_ecc_ = Bits(group.block(BLOCK4), 0, 6);
-              } else if (b == 3) {
-                pager_ccf_ = Bits(group.block(BLOCK4), 0, 4);
-              }
-            }
-          }
+          // No PIN (IEC 62105:2015, section M.3.2.5.3)
+          if (group.has(BLOCK4) && Bits(group.block(BLOCK4), 11, 5) == 0)
+            pager_.Decode1ABlock4(group.block(BLOCK4));
         }
         break;
 
       case 3:
-        lang_ = Bits(group.block(BLOCK3), 0, 8);
-        json_["language"] = LanguageString(lang_);
+        json_["language"] = LanguageString(Bits(group.block(BLOCK3), 0, 8));
         break;
 
       case 7:
-        ews_channel_ = Bits(group.block(BLOCK3), 0, 12);
-        json_["ews"] = ews_channel_;
+        json_["ews"] = Bits(group.block(BLOCK3), 0, 12);
         break;
 
       default:
@@ -514,32 +447,30 @@ void Station::DecodeType2(const Group& group) {
 
   int radiotext_position = Bits(group.block(BLOCK2), 0, 4) *
     (group.type().version == GroupTypeVersion::A ? 4 : 2);
-  int prev_text_ab = radiotext_ab_;
-  radiotext_ab_ = Bits(group.block(BLOCK2), 4, 1);
 
-  if (prev_text_ab != radiotext_ab_)
-    radiotext_.clear();
+  if (radiotext_.is_ab_changed(Bits(group.block(BLOCK2), 4, 1)))
+    radiotext_.text.clear();
 
   if (group.type().version == GroupTypeVersion::A) {
-    radiotext_.resize(64);
-    UpdateRadioText(radiotext_position,
-                    Bits(group.block(BLOCK3), 8, 8),
-                    Bits(group.block(BLOCK3), 0, 8));
+    radiotext_.text.resize(64);
+    radiotext_.Update(radiotext_position,
+                      RDSChar(Bits(group.block(BLOCK3), 8, 8)),
+                      RDSChar(Bits(group.block(BLOCK3), 0, 8)));
   } else {
-    radiotext_.resize(32);
+    radiotext_.text.resize(32);
   }
 
   if (group.has(BLOCK4)) {
-    UpdateRadioText(radiotext_position +
-                    (group.type().version == GroupTypeVersion::A ? 2 : 0),
-                    Bits(group.block(BLOCK4), 8, 8),
-                    Bits(group.block(BLOCK4), 0, 8));
+    radiotext_.Update(radiotext_position +
+                      (group.type().version == GroupTypeVersion::A ? 2 : 0),
+                      RDSChar(Bits(group.block(BLOCK4), 8, 8)),
+                      RDSChar(Bits(group.block(BLOCK4), 0, 8)));
   }
 
-  if (radiotext_.complete())
-    json_["radiotext"] = rtrim(radiotext_.last_complete_string());
-  else if (options_.show_partial && rtrim(radiotext_.str()).length() > 0)
-    json_["partial_radiotext"] = rtrim(radiotext_.str());
+  if (radiotext_.text.complete())
+    json_["radiotext"] = rtrim(radiotext_.text.last_complete_string());
+  else if (options_.show_partial && rtrim(radiotext_.text.str()).length() > 0)
+    json_["partial_radiotext"] = rtrim(radiotext_.text.str());
 }
 
 // Group 3A: Application identification for Open Data
@@ -563,7 +494,7 @@ void Station::DecodeType3A(const Group& group) {
     case 0xCD46:
     case 0xCD47:
 #ifdef ENABLE_TMC
-      tmc_.SystemGroup(oda_message, &json_);
+      tmc_.ReceiveSystemGroup(oda_message, &json_);
 #else
       json_["debug"].append("redsea compiled without TMC support");
 #endif
@@ -571,9 +502,9 @@ void Station::DecodeType3A(const Group& group) {
 
     case 0x4BD7:
       has_radiotext_plus_ = true;
-      radiotext_plus_cb_ = Bits(oda_message, 12, 1);
-      radiotext_plus_scb_ = Bits(oda_message, 8, 4);
-      radiotext_plus_template_num_ = Bits(oda_message, 0, 8);
+      radiotext_plus_.cb = Bits(oda_message, 12, 1);
+      radiotext_plus_.scb = Bits(oda_message, 8, 4);
+      radiotext_plus_.template_num = Bits(oda_message, 0, 8);
       break;
 
     default:
@@ -743,12 +674,8 @@ void Station::DecodeType14(const Group& group) {
     {
       uint16_t pin = group.block(BLOCK3);
 
-      if (pin != 0x0000) {
-        json_["other_network"]["prog_item_number"] = pin;
-        json_["other_network"]["prog_item_started"]["day"] = Bits(pin, 11, 5);
-        json_["other_network"]["prog_item_started"]["time"] =
-            HoursMinutesString(Bits(pin, 6, 5), Bits(pin, 0, 6));
-      }
+      if (pin != 0x0000)
+        DecodePin(pin, &(json_["other_network"]));
       break;
     }
 
@@ -763,11 +690,8 @@ void Station::DecodeType14(const Group& group) {
 void Station::DecodeType15B(const Group& group) {
   eBlockNumber block_num = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
 
-  is_ta_    = Bits(group.block(block_num), 4, 1);
-  is_music_ = Bits(group.block(block_num), 3, 1);
-
-  json_["ta"] = is_ta_;
-  json_["is_music"] = is_music_;
+  json_["ta"]       = Bits(group.block(block_num), 4, 1);
+  json_["is_music"] = Bits(group.block(block_num), 3, 1);
 }
 
 /* Open Data Application */
@@ -781,8 +705,8 @@ void Station::DecodeODAGroup(const Group& group) {
 #ifdef ENABLE_TMC
 
     if (group.has(BLOCK2) && group.has(BLOCK3) && group.has(BLOCK4))
-      tmc_.UserGroup(Bits(group.block(BLOCK2), 0, 5), group.block(BLOCK3),
-                     group.block(BLOCK4), &json_);
+      tmc_.ReceiveUserGroup(Bits(group.block(BLOCK2), 0, 5), group.block(BLOCK3),
+                            group.block(BLOCK4), &json_);
 #endif
   } else if (app_id == 0x4BD7) {
     ParseRadioTextPlus(group);
@@ -793,11 +717,11 @@ void Station::ParseRadioTextPlus(const Group& group) {
   bool item_toggle  = Bits(group.block(BLOCK2), 4, 1);
   bool item_running = Bits(group.block(BLOCK2), 3, 1);
 
-  if (item_toggle != radiotext_plus_toggle_ ||
-      item_running != radiotext_plus_item_running_) {
-    radiotext_.clear();
-    radiotext_plus_toggle_ = item_toggle;
-    radiotext_plus_item_running_ = item_running;
+  if (item_toggle != radiotext_plus_.toggle ||
+      item_running != radiotext_plus_.item_running) {
+    radiotext_.text.clear();
+    radiotext_plus_.toggle = item_toggle;
+    radiotext_plus_.item_running = item_running;
   }
 
   json_["radiotext_plus"]["item_running"] = item_running;
@@ -822,15 +746,29 @@ void Station::ParseRadioTextPlus(const Group& group) {
 
   for (RTPlusTag tag : tags) {
     std::string text =
-      rtrim(radiotext_.last_complete_string(tag.start, tag.length));
+      rtrim(radiotext_.text.last_complete_string(tag.start, tag.length));
 
-    if (radiotext_.has_chars(tag.start, tag.length) && text.length() > 0 &&
+    if (radiotext_.text.has_chars(tag.start, tag.length) && text.length() > 0 &&
         tag.content_type != 0) {
       Json::Value tag_json;
       tag_json["content-type"] = RTPlusContentTypeString(tag.content_type);
       tag_json["data"] = text;
       json_["radiotext_plus"]["tags"].append(tag_json);
     }
+  }
+}
+
+void Pager::Decode1ABlock4(uint16_t block4) {
+  int sub_type = Bits(block4, 10, 1);
+  if (sub_type == 0) {
+    pac = Bits(block4, 4, 6);
+    opc = Bits(block4, 0, 4);
+  } else if (sub_type == 1) {
+    int sub_usage = Bits(block4, 8, 2);
+    if (sub_usage == 0)
+      ecc = Bits(block4, 0, 6);
+    else if (sub_usage == 3)
+      ccf = Bits(block4, 0, 4);
   }
 }
 

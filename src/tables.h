@@ -14,8 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#ifndef DATA_H_
-#define DATA_H_
+#ifndef TABLES_H_
+#define TABLES_H_
 
 #include <string>
 
@@ -33,4 +33,4 @@ std::string DICodeString(uint16_t di);
 std::string PiToCallSign(uint16_t pi);
 
 }  // namespace redsea
-#endif  // DATA_H_
+#endif  // TABLES_H_

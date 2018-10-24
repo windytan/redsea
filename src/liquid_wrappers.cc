@@ -26,8 +26,8 @@
 
 namespace liquid {
 
-AGC::AGC(float bw, float initial_gain) {
-  object_ = agc_crcf_create();
+AGC::AGC(float bw, float initial_gain) :
+    object_(agc_crcf_create()) {
   agc_crcf_set_bandwidth(object_, bw);
   agc_crcf_set_gain(object_, initial_gain);
 }
@@ -101,8 +101,9 @@ float NCO::frequency() {
 }
 
 SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
-    float beta, unsigned num_filters) :
-  object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)) {
+                 float beta, unsigned num_filters) :
+    object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)),
+    out_(8) {
 }
 
 SymSync::~SymSync() {

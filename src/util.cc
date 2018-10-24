@@ -38,9 +38,9 @@ std::string HoursMinutesString(int hour, int minute) {
 
 std::string Join(std::vector<std::string> strings, const std::string& d) {
   std::string result("");
-  for (size_t i=0; i < strings.size(); i++) {
+  for (size_t i = 0; i < strings.size(); i++) {
     result += strings[i];
-    if (i < strings.size()-1)
+    if (i < strings.size() - 1)
       result += d;
   }
   return result;
@@ -48,9 +48,9 @@ std::string Join(std::vector<std::string> strings, const std::string& d) {
 
 std::string Join(std::vector<uint16_t> nums, const std::string& d) {
   std::string result("");
-  for (size_t i=0; i < nums.size(); i++) {
+  for (size_t i = 0; i < nums.size(); i++) {
     result += std::to_string(nums[i]);
-    if (i < nums.size()-1)
+    if (i < nums.size() - 1)
       result += d;
   }
   return result;
@@ -113,9 +113,7 @@ bool operator< (const CarrierFrequency &f1,
   return (f1.kHz() < f2.kHz());
 }
 
-AltFreqList::AltFreqList() : alt_freqs_(), num_alt_freqs_(0),
-                             lf_mf_follows_(false) {
-}
+AltFreqList::AltFreqList() {}
 
 void AltFreqList::insert(uint8_t af_code) {
   CarrierFrequency frequency(af_code, lf_mf_follows_);
@@ -136,7 +134,7 @@ void AltFreqList::insert(uint8_t af_code) {
 }
 
 bool AltFreqList::complete() const {
-  return (static_cast<int>(alt_freqs_.size()) == num_alt_freqs_ &&
+  return (alt_freqs_.size() == num_alt_freqs_ &&
           num_alt_freqs_ > 0);
 }
 
@@ -148,7 +146,7 @@ void AltFreqList::clear() {
   alt_freqs_.clear();
 }
 
-std::vector<std::string> SplitLine(std::string line, char delimiter) {
+std::vector<std::string> SplitLine(const std::string& line, char delimiter) {
   std::stringstream ss(line);
   std::vector<std::string> result;
 
@@ -165,8 +163,10 @@ std::vector<std::vector<std::string>> ReadCSV(std::vector<std::string> csvdata,
                                               char delimiter) {
   std::vector<std::vector<std::string>> lines;
 
-  for (std::string line : csvdata)
-    lines.push_back(SplitLine(line, delimiter));
+  std::transform(csvdata.cbegin(), csvdata.cend(), std::back_inserter(lines),
+                 [&](const std::string& line) {
+                   return SplitLine(line, delimiter);
+                 });
 
   return lines;
 }
@@ -249,20 +249,6 @@ std::string CSVRow::at(std::string title) const {
 
 std::string rtrim(std::string s) {
   return s.erase(s.find_last_not_of(' ') + 1);
-}
-
-RunningAverage::RunningAverage(int length) :
-  history_(length < 1 ? 1 : length), sum_(0), ptr_(0) {}
-
-void RunningAverage::push(int value) {
-  sum_ -= history_[ptr_];
-  history_[ptr_] = value;
-  sum_ += value;
-  ptr_ = (ptr_ + 1) % history_.size();
-}
-
-float RunningAverage::average() const {
-  return 1.0f * sum_ / history_.size();
 }
 
 }  // namespace redsea

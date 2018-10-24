@@ -26,21 +26,10 @@
 
 namespace redsea {
 
-uint32_t CalculateSyndrome(uint32_t vec);
-Offset OffsetForSyndrome(uint16_t syndrome);
-Offset NextOffsetFor(Offset this_offset);
-uint32_t CorrectBurstErrors(uint32_t block, Offset offset);
-
-class RunningSum {
+class ErrorCorrectionResult {
  public:
-  explicit RunningSum(int length);
-  int sum() const;
-  void push(int number);
-  void clear();
-
- private:
-  std::vector<int> history_;
-  int pointer_;
+  bool     succeeded      { false };
+  uint32_t corrected_bits { 0 };
 };
 
 class BlockStream {
@@ -51,23 +40,23 @@ class BlockStream {
   bool eof() const;
 
  private:
-  void Uncorrectable();
-  bool AcquireSync();
+  bool AcquireSync(Block block);
+  void UncorrectableErrorEncountered();
+  void FindBlockInInputRegister();
+  void NewGroupReceived();
 
-  unsigned bitcount_;
-  unsigned prevbitcount_;
-  int left_to_read_;
-  uint32_t input_register_;
-  Offset prevsync_;
-  Offset expected_offset_;
-  Offset received_offset_;
-  uint16_t pi_;
-  bool is_in_sync_;
-  RunningSum block_error_sum_;
-  const Options options_;
-  const InputType input_type_;
-  bool is_eof_;
-  RunningAverage bler_average_;
+  unsigned bitcount_                  { 0 };
+  unsigned previous_syncing_bitcount_ { 0 };
+  int      num_bits_until_next_block_ { 1 };
+  uint32_t input_register_            { 0 };
+  Offset   previous_syncing_offset_   { Offset::A };
+  Offset   expected_offset_           { Offset::A };
+  uint16_t pi_                        { 0x0000 };
+  bool     is_in_sync_                { false };
+  RunningSum<50> block_error_sum50_;
+  const    Options options_;
+  bool     is_eof_                    { false };
+  RunningAverage<kNumBlerAverageGroups> bler_average_;
   Group current_group_;
   std::vector<Group> groups_;
 };

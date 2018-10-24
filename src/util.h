@@ -18,7 +18,10 @@
 #define UTIL_H_
 
 #include <cstdint>
+
+#include <algorithm>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <vector>
@@ -82,20 +85,49 @@ class AltFreqList {
 
  private:
   std::set<CarrierFrequency> alt_freqs_;
-  int num_alt_freqs_;
-  bool lf_mf_follows_;
+  unsigned num_alt_freqs_ { 0 };
+  bool lf_mf_follows_     { false };
 };
 
-class RunningAverage {
+template<size_t N>
+class RunningSum {
  public:
-  explicit RunningAverage(int length);
-  void push(int value);
-  float average() const;
+  RunningSum() {};
+  int sum() const {
+    return std::accumulate(history_.cbegin(), history_.cend(), 0);
+  }
+  void push(int number) {
+    history_[pointer_] = number;
+    pointer_ = (pointer_ + 1) % history_.size();
+  }
+  void clear() {
+    std::fill(history_.begin(), history_.end(), 0);
+  }
 
  private:
-  std::vector<int> history_;
-  int sum_;
-  int ptr_;
+  std::array<int, N> history_;
+  size_t pointer_ { 0 };
+};
+
+template<size_t N>
+class RunningAverage {
+ public:
+  RunningAverage() {};
+  void push(int value) {
+    sum_ -= history_[ptr_];
+    history_[ptr_] = value;
+    sum_ += value;
+    ptr_ = (ptr_ + 1) % history_.size();
+  }
+
+  float average() const {
+    return 1.0f * sum_ / history_.size();
+  }
+
+ private:
+  std::array<int, N> history_;
+  int    sum_ { 0 };
+  size_t ptr_ { 0 };
 };
 
 std::string rtrim(std::string s);

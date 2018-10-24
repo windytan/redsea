@@ -1,5 +1,5 @@
 bin_PROGRAMS = redsea
-redsea_CPPFLAGS = -std=c++11 -Wall -Wextra -Wstrict-overflow -Wshadow \
+redsea_CPPFLAGS = -std=c++14 -Wall -Wextra -Wstrict-overflow -Wshadow \
 									$(MACPORTS_CF) \
 									-Wuninitialized -pedantic $(RFLAGS)
 redsea_LDADD = $(MACPORTS_LD) -lc $(LIQUID) $(ICONV) $(SNDFILE)

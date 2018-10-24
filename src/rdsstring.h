@@ -41,24 +41,24 @@ class RDSChar {
 
 class RDSString {
  public:
-  explicit RDSString(int len = 8);
-  void set(int pos, RDSChar chr);
-  void set(int pos, RDSChar chr1, RDSChar chr2);
+  explicit RDSString(size_t len = 8);
+  void set(size_t pos, RDSChar chr);
+  void set(size_t pos, RDSChar chr1, RDSChar chr2);
   size_t length_received() const;
   size_t length_expected() const;
   std::vector<RDSChar> chars() const;
   std::string str() const;
   std::string last_complete_string() const;
-  std::string last_complete_string(int start, int len) const;
-  bool has_chars(int start, int len) const;
+  std::string last_complete_string(size_t start, size_t len) const;
+  bool has_chars(size_t start, size_t len) const;
   bool complete() const;
   void clear();
-  void resize(int n);
+  void resize(size_t n);
 
  private:
   std::vector<RDSChar> chars_;
   std::vector<RDSChar> last_complete_chars_;
-  int prev_pos_;
+  size_t prev_pos_ { 0 };
   std::string last_complete_string_;
 };
 
