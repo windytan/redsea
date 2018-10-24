@@ -57,11 +57,11 @@ MPXReader::MPXReader(const Options& options) :
   if (!file_) {
     std::cerr << "error: failed to open file: " <<
               sf_error_number(sf_error(file_)) << '\n';
-    exit(EXIT_FAILURE);
+    is_error_ = true;
   } else if (sfinfo_.samplerate < kMinimumSampleRate_Hz) {
     std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
               << " Hz or higher\n";
-    exit(EXIT_FAILURE);
+    is_error_ = true;
   } else {
     assert(num_channels_ < static_cast<int>(buffer_.data.size()));
     chunk_size_ = (kInputChunkSize / num_channels_) * num_channels_;
@@ -120,6 +120,10 @@ float MPXReader::samplerate() const {
 
 int MPXReader::num_channels() const {
   return num_channels_;
+}
+
+bool MPXReader::error() const {
+  return is_error_;
 }
 
 /*

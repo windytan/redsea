@@ -123,6 +123,9 @@ int main(int argc, char** argv) {
   options.samplerate = mpx.samplerate();
   options.num_channels = mpx.num_channels();
 
+  if (mpx.error())
+    return EXIT_FAILURE;
+
   /* When we don't have MPX input, there are no channels. But we want at least
    * 1 Channel anyway. Also, we need a sample rate for the Subcarrier
    * constructor.

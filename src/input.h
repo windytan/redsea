@@ -47,16 +47,18 @@ class MPXReader {
   explicit MPXReader(const Options& options);
   ~MPXReader();
   bool eof() const;
+  bool error() const;
   void FillBuffer();
   MPXBuffer<>& ReadChunk(int channel);
   float samplerate() const;
   int num_channels() const;
 
  private:
-  int num_channels_;
+  int num_channels_ { 0 };
   sf_count_t chunk_size_;
-  bool is_eof_;
-  bool feed_thru_;
+  bool is_eof_      { true };
+  bool is_error_    { false };
+  bool feed_thru_   { false };
   MPXBuffer<> buffer_;
   MPXBuffer<> buffer_singlechan_;
   SF_INFO sfinfo_;
