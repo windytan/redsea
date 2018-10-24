@@ -118,13 +118,13 @@ void SymSync::set_output_rate(unsigned r) {
   symsync_crcf_set_output_rate(object_, r);
 }
 
-std::vector<std::complex<float>> SymSync::execute(std::complex<float>* in) {
-  std::vector<std::complex<float>> s_out(8);
+std::pair<bool, std::complex<float>> SymSync::execute(std::complex<float>* in) {
   unsigned n_out = 0;
-  symsync_crcf_execute(object_, in, 1, s_out.data(), &n_out);
+  symsync_crcf_execute(object_, in, 1, out_.data(), &n_out);
 
-  s_out.resize(n_out);
-  return s_out;
+  // assert(n_out <= 1);
+
+  return {n_out == 1, out_[0]};
 }
 
 Modem::Modem(modulation_scheme scheme) : object_(modem_create(scheme)) {

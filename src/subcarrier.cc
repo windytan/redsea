@@ -162,10 +162,9 @@ void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
     if (sample_num_ % decimate_ratio == 0) {
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
-      std::vector<std::complex<float>> symbols =
-        symsync_.execute(&sample_lopass);
+      auto symbol_optional = symsync_.execute(&sample_lopass);
 
-      for (std::complex<float> symbol : symbols) {
+      if (symbol_optional.first) {
 #ifdef DEBUG
         printf("sy:%f,%f,%f\n",
             sample_num_ / kTargetSampleRate_Hz,
@@ -174,12 +173,12 @@ void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
 #endif
 
         // Modem here is only used to track PLL phase error
-        modem_.Demodulate(symbol);
+        modem_.Demodulate(symbol_optional.second);
         oscillator_.StepPLL(modem_.phase_error() * kPLLMultiplier);
 
         bool is_clock;
         std::complex<float> biphase;
-        std::tie(is_clock, biphase) = biphase_decoder_.push(symbol);
+        std::tie(is_clock, biphase) = biphase_decoder_.push(symbol_optional.second);
 
         // One biphase symbol received for every 2 PSK symbols
         if (is_clock) {

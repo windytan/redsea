@@ -71,10 +71,11 @@ class SymSync {
   ~SymSync();
   void set_bandwidth(float);
   void set_output_rate(unsigned);
-  std::vector<std::complex<float>> execute(std::complex<float>* in);
+  std::pair<bool, std::complex<float>> execute(std::complex<float>* in);
 
  private:
   symsync_crcf object_;
+  std::vector<std::complex<float>> out_;
 };
 
 class Modem {
