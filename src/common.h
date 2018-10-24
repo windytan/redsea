@@ -25,9 +25,5 @@ constexpr float kTargetSampleRate_Hz  = 171000.0f;
 constexpr int   kNumBlerAverageGroups = 12;
 constexpr float kMinimumSampleRate_Hz = 128000.0f;
 
-enum class CodeTable {
-  G0, G1, G2
-};
-
 }  // namespace redsea
 #endif  // COMMON_H_

@@ -16,50 +16,65 @@
  */
 #include "src/rdsstring.h"
 
+#include <algorithm>
+#include <array>
+#include <numeric>
 #include <string>
 #include <utility>
 
 #include "src/common.h"
-#include "src/tables.h"
 
 namespace redsea {
 
-RDSChar::RDSChar() : code_(0), codetable_(CodeTable::G0) {
+namespace {
+
+// EN 50067:1998, Annex E (pp. 73-76)
+std::string RDSCharString(uint8_t code) {
+  std::string result(" ");
+  static const std::array<std::string, 223> codetable_G0({
+     " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Á", "Â", "Ã", "ã",
+     "!", "1", "A", "Q", "a", "q", "à", "ä", "α", "¹", "À", "Ä", "Å", "å",
+     "\"","2", "B", "R", "b", "r", "é", "ê", "©", "²", "É", "Ê", "Æ", "æ",
+     "#", "3", "C", "S", "c", "s", "è", "ë", "‰", "³", "È", "Ë", "Œ", "œ",
+     "¤", "4", "D", "T", "d", "t", "í", "î", "Ǧ", "±", "Í", "Î", "ŷ", "ŵ",
+     "%", "5", "E", "U", "e", "u", "ì", "ï", "ě", "İ", "Ì", "Ï", "Ý", "ý",
+     "&", "6", "F", "V", "f", "v", "ó", "ô", "ň", "ń", "Ó", "Ô", "Õ", "õ",
+     "'", "7", "G", "W", "g", "w", "ò", "ö", "ő", "ű", "Ò", "Ö", "Ø", "ø",
+     "(", "8", "H", "X", "h", "x", "ú", "û", "π", "µ", "Ú", "Û", "Þ", "þ",
+     ")", "9", "I", "Y", "i", "y", "ù", "ü", "€", "¿", "Ù", "Ü", "Ŋ", "ŋ",
+     "*", ":", "J", "Z", "j", "z", "Ñ", "ñ", "£", "÷", "Ř", "ř", "Ŕ", "ŕ",
+     "+", ";", "K", "[", "k", "{", "Ç", "ç", "$", "°", "Č", "č", "Ć", "ć",
+     ",", "<", "L", "\\","l", "|", "Ş", "ş", "←", "¼", "Š", "š", "Ś", "ś",
+     "-", "=", "M", "]", "m", "}", "β", "ǧ", "↑", "½", "Ž", "ž", "Ź", "ź",
+     ".", ">", "N", "―", "n", "¯", "¡", "ı", "→", "¾", "Ð", "đ", "Ŧ", "ŧ",
+     "/", "?", "O", "_", "o", " ", "Ĳ", "ĳ", "↓", "§", "Ŀ", "ŀ", "ð" });
+
+  int row = code & 0xF;
+  int col = code >> 4;
+  int idx = row * 14 + (col - 2);
+  if (col >= 2 && idx >= 0 && idx < static_cast<int>(codetable_G0.size()))
+    result = codetable_G0[idx];
+
+  return result;
 }
 
-RDSChar::RDSChar(uint8_t _code) : code_(_code), codetable_(CodeTable::G0) {
-}
+}  // namespace
 
-void RDSChar::set_codetable(CodeTable codetable) {
-  codetable_ = codetable;
-}
-
-uint8_t RDSChar::code() const {
-  return code_;
-}
-
-std::string RDSChar::str() const {
-  return RDSCharString(code_, codetable_);
-}
-
-RDSString::RDSString(int len) : chars_(len), is_char_sequential_(len),
-  prev_pos_(-1), last_complete_string_(str()) {
+RDSString::RDSString(int len) : chars_(len),
+  prev_pos_(0), last_complete_string_(str()) {
 }
 
 void RDSString::set(int pos, RDSChar chr) {
   if (pos < 0 || pos >= static_cast<int>(chars_.size()))
     return;
 
-  chr.set_codetable(repertoire_at(pos));
-
   chars_.at(pos) = chr;
 
-  if (pos != prev_pos_ + 1) {
-    for (size_t i=0; i < is_char_sequential_.size(); i++)
-      is_char_sequential_[i] = false;
-  }
+  if (pos != prev_pos_ + 1)
+    for (RDSChar& c : chars_)
+      c.set_sequential(false);
 
-  is_char_sequential_.at(pos) = true;
+  chars_.at(pos).set_sequential(true);
 
   if (complete()) {
     last_complete_string_ = str();
@@ -149,10 +164,9 @@ std::string RDSString::last_complete_string() const {
 
 std::string RDSString::last_complete_string(int start, int len) const {
   std::string result;
-  for (int i=start; i < start+len; i++) {
+  for (int i=start; i < start+len; i++)
     result += (i < static_cast<int>(last_complete_chars_.size()) ?
-        last_complete_chars_[i].str() : " ");
-  }
+        RDSCharString(last_complete_chars_[i].code()) : " ");
 
   return result;
 }
@@ -171,7 +185,6 @@ void RDSString::clear() {
   }
   last_complete_string_ = str();
   last_complete_chars_.clear();
-  repertoire_.clear();
 }
 
 }  // namespace redsea

@@ -27,15 +27,16 @@ namespace redsea {
 
 class RDSChar {
  public:
-  RDSChar();
-  explicit RDSChar(uint8_t _code);
-  uint8_t code() const;
-  std::string str() const;
-  void set_codetable(CodeTable codetable);
+  RDSChar() {};
+  explicit RDSChar(uint8_t _code) : code_(_code) {};
+  uint8_t code() const         { return code_; };
+  bool is_sequential() const   { return is_sequential_; };
+
+  void set_sequential(bool is) { is_sequential_ = is; }
 
  private:
-  uint8_t code_;
-  CodeTable codetable_;
+  uint8_t code_        { 0 };
+  bool is_sequential_  { false };
 };
 
 class RDSString {
@@ -43,8 +44,6 @@ class RDSString {
   explicit RDSString(int len = 8);
   void set(int pos, RDSChar chr);
   void set(int pos, RDSChar chr1, RDSChar chr2);
-  void set_repertoire(int pos, CodeTable codetable);
-  CodeTable repertoire_at(int pos) const;
   size_t length_received() const;
   size_t length_expected() const;
   std::vector<RDSChar> chars() const;
@@ -59,10 +58,8 @@ class RDSString {
  private:
   std::vector<RDSChar> chars_;
   std::vector<RDSChar> last_complete_chars_;
-  std::vector<bool> is_char_sequential_;
   int prev_pos_;
   std::string last_complete_string_;
-  std::map<int, CodeTable> repertoire_;
 };
 
 }  // namespace redsea
