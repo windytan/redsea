@@ -54,8 +54,6 @@ MPXReader::MPXReader(const Options& options) :
     num_channels_ = sfinfo_.channels;
   }
 
-  chunk_size_ = (kInputChunkSize / num_channels_) * num_channels_;
-
   if (!file_) {
     std::cerr << "error: failed to open file: " <<
               sf_error_number(sf_error(file_)) << '\n';
@@ -66,6 +64,8 @@ MPXReader::MPXReader(const Options& options) :
     exit(EXIT_FAILURE);
   } else {
     assert(num_channels_ < static_cast<int>(buffer_.data.size()));
+    chunk_size_ = (kInputChunkSize / num_channels_) * num_channels_;
+
     is_eof_ = false;
   }
 }
