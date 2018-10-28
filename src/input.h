@@ -31,7 +31,7 @@
 
 namespace redsea {
 
-constexpr int   kInputChunkSize   = 4096;
+constexpr int   kInputChunkSize   = 8192;
 constexpr float kMaxResampleRatio = kTargetSampleRate_Hz / kMinimumSampleRate_Hz;
 constexpr int   kBufferSize       = kInputChunkSize * kMaxResampleRatio + 1;
 
