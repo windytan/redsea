@@ -32,6 +32,7 @@ namespace redsea {
 Channel::Channel(const Options& options, int which_channel) :
     options_(options),
     which_channel_(which_channel),
+    cached_pi_(options.input_type),
     block_stream_(options), station_(0x0000, options, which_channel)
 #ifdef HAVE_LIQUID
     , subcarrier_(options)
@@ -41,7 +42,8 @@ Channel::Channel(const Options& options, int which_channel) :
 
 Channel::Channel(const Channel& other) :
     options_(other.options_), which_channel_(other.which_channel_),
-    block_stream_(options_), station_(cached_pi_.confirmed, options_, which_channel_)
+    cached_pi_(options_.input_type),
+    block_stream_(options_), station_(cached_pi_.Get(), options_, which_channel_)
 #ifdef HAVE_LIQUID
     , subcarrier_(options_)
 #endif
@@ -69,16 +71,18 @@ void Channel::ProcessGroup(Group group) {
 
   if (group.has_pi()) {
     // Repeated PI confirms change
-    cached_pi_.previous_changed = cached_pi_.changed;
-    cached_pi_.changed = group.pi();
+    auto pi_status = cached_pi_.Update(group.pi());
+    switch (pi_status) {
+      case CachedPI::Result::ChangeConfirmed:
+        station_ = Station(cached_pi_.Get(), options_, which_channel_);
+        break;
 
-    if (cached_pi_.changed == cached_pi_.previous_changed ||
-        options_.input_type == InputType::Hex) {
-      if (cached_pi_.changed != cached_pi_.confirmed)
-        station_ = Station(cached_pi_.changed, options_, which_channel_);
-      cached_pi_.confirmed = cached_pi_.changed;
-    } else {
-      return;
+      case CachedPI::Result::SpuriousChange:
+        return;
+        break;
+
+      case CachedPI::Result::NoChange:
+        break;
     }
   }
 

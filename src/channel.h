@@ -26,10 +26,35 @@
 
 namespace redsea {
 
-struct CachedPI {
-  uint16_t confirmed        { 0 };
-  uint16_t previous_changed { 0 };
-  uint16_t changed          { 0 };
+class CachedPI {
+ public:
+  enum class Result {
+    ChangeConfirmed, NoChange, SpuriousChange
+  };
+
+  CachedPI(InputType input_type) :
+    bypass_(input_type == InputType::Hex) {}
+  Result Update(uint16_t pi) {
+    pi_prev2_ = pi_prev1_;
+    pi_prev1_ = pi;
+
+    Result status { Result::SpuriousChange };
+    if (pi_prev1_ == pi_prev2_ || bypass_) {
+      status = (pi == pi_confirmed_ ? Result::NoChange :
+                                      Result::ChangeConfirmed);
+      pi_confirmed_ = pi;
+    }
+    return status;
+  }
+  uint16_t Get() const {
+    return pi_confirmed_;
+  }
+
+ private:
+  uint16_t pi_confirmed_ { 0 };
+  uint16_t pi_prev1_     { 0 };
+  uint16_t pi_prev2_     { 0 };
+  bool     bypass_       { false };
 };
 
 class Channel {
