@@ -32,25 +32,19 @@ enum class OutputType {
 };
 
 struct Options {
-  Options() : rbds(false), feed_thru(false), show_partial(false),
-              exit_success(false), exit_failure(false), print_usage(false),
-              print_version(false),
-              timestamp(false), bler(false),
-              samplerate(kTargetSampleRate_Hz), num_channels(1),
-              input_type(InputType::MPX_stdin), output_type(OutputType::JSON) {}
-  bool rbds;
-  bool feed_thru;
-  bool show_partial;
-  bool exit_success;
-  bool exit_failure;
-  bool print_usage;
-  bool print_version;
-  bool timestamp;
-  bool bler;
-  float samplerate;
-  int num_channels;
-  InputType input_type;
-  OutputType output_type;
+  bool rbds          { false };
+  bool feed_thru     { false };
+  bool show_partial  { false };
+  bool exit_success  { false };
+  bool exit_failure  { false };
+  bool print_usage   { false };
+  bool print_version { false };
+  bool timestamp     { false };
+  bool bler          { false };
+  float samplerate   { kTargetSampleRate_Hz };
+  int num_channels   { 1 };
+  InputType input_type   { InputType::MPX_stdin };
+  OutputType output_type { OutputType::JSON };
   std::string loctable_dir;
   std::string sndfilename;
   std::string time_format;
