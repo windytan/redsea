@@ -15,13 +15,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include <getopt.h>
 #include <iostream>
 
 #include "config.h"
 #include "src/channel.h"
 #include "src/common.h"
-#include "src/block_sync.h"
 #include "src/groups.h"
 #include "src/options.h"
 #include "src/subcarrier.h"
@@ -93,6 +91,57 @@ void PrintVersion() {
 #endif
 }
 
+int ProcessMPXInput(Options options) {
+
+#ifndef HAVE_LIQUID
+  std::cerr << "error: redsea was compiled without liquid-dsp"
+            << '\n';
+  return EXIT_FAILURE;
+#endif
+
+  MPXReader mpx(options);
+  options.samplerate = mpx.samplerate();
+  options.num_channels = mpx.num_channels();
+
+  if (mpx.error())
+    return EXIT_FAILURE;
+
+  std::vector<Channel> channels;
+  for (int i = 0; i < options.num_channels; i++) {
+    channels.emplace_back(options, i);
+  }
+
+  while (!mpx.eof()) {
+    mpx.FillBuffer();
+    for (int i = 0; i < options.num_channels; i++) {
+      channels[i].ProcessChunk(mpx.ReadChunk(i));
+    }
+  }
+
+  return EXIT_SUCCESS;
+}
+
+int ProcessASCIIBitsInput(Options options) {
+  Channel channel(options, 0);
+  AsciiBitReader ascii_reader(options);
+
+  while (!ascii_reader.eof()) {
+    channel.ProcessBit(ascii_reader.ReadBit());
+  }
+
+  return EXIT_SUCCESS;
+}
+
+int ProcessHexInput(Options options) {
+  Channel channel(options, 0);
+
+  while (!std::cin.eof()) {
+    channel.ProcessGroup(ReadHexGroup(options));
+  }
+
+  return EXIT_SUCCESS;
+}
+
 }  // namespace redsea
 
 int main(int argc, char** argv) {
@@ -110,73 +159,18 @@ int main(int argc, char** argv) {
   if (options.exit_success)
     return EXIT_SUCCESS;
 
-#ifndef HAVE_LIQUID
-  if (options.input_type == redsea::InputType::MPX_stdin ||
-      options.input_type == redsea::InputType::MPX_sndfile) {
-    std::cerr << "error: redsea was compiled without liquid-dsp"
-              << '\n';
-    return EXIT_FAILURE;
-  }
-#endif
-
-  redsea::MPXReader mpx(options);
-  options.samplerate = mpx.samplerate();
-  options.num_channels = mpx.num_channels();
-
-  if (mpx.error())
-    return EXIT_FAILURE;
-
-  /* When we don't have MPX input, there are no channels. But we want at least
-   * 1 Channel anyway. Also, we need a sample rate for the Subcarrier
-   * constructor.
-   */
-  if (options.input_type != redsea::InputType::MPX_sndfile &&
-      options.input_type != redsea::InputType::MPX_stdin) {
-    options.num_channels = 1;
-    options.samplerate = redsea::kTargetSampleRate_Hz;
-  }
-
-  std::vector<redsea::Channel> channels;
-  for (int n_channel = 0; n_channel < options.num_channels; n_channel++)
-    channels.emplace_back(redsea::Channel(options, n_channel));
-
-  redsea::AsciiBitReader ascii_reader(options);
-
-  while (true) {
-    bool eof = false;
-    if (options.input_type == redsea::InputType::MPX_stdin ||
-        options.input_type == redsea::InputType::MPX_sndfile) {
-      eof = mpx.eof();
-    } else if (options.input_type == redsea::InputType::ASCIIbits) {
-      eof = ascii_reader.eof();
-    } else if (options.input_type == redsea::InputType::Hex) {
-      eof = std::cin.eof();
-    }
-
-    if (eof)
+  switch (options.input_type) {
+    case redsea::InputType::MPX_stdin:
+    case redsea::InputType::MPX_sndfile:
+      return ProcessMPXInput(options);
       break;
 
-    if (options.input_type == redsea::InputType::MPX_stdin ||
-        options.input_type == redsea::InputType::MPX_sndfile)
-      mpx.FillBuffer();
+    case redsea::InputType::ASCIIbits:
+      return ProcessASCIIBitsInput(options);
+      break;
 
-    for (int n_channel = 0; n_channel < options.num_channels; n_channel++) {
-      switch (options.input_type) {
-        case redsea::InputType::MPX_stdin:
-        case redsea::InputType::MPX_sndfile:
-          channels[n_channel].ProcessChunk(mpx.ReadChunk(n_channel));
-          break;
-
-        case redsea::InputType::ASCIIbits:
-          channels[n_channel].ProcessBit(ascii_reader.ReadNextBit());
-          break;
-
-        case redsea::InputType::Hex:
-          channels[n_channel].ProcessGroup(redsea::ReadNextHexGroup(options));
-          break;
-      }
-    }
+    case redsea::InputType::Hex:
+      return ProcessHexInput(options);
+      break;
   }
-
-  return EXIT_SUCCESS;
 }
