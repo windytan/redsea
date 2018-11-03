@@ -38,9 +38,9 @@ namespace tmc {
 
 namespace {
 
-std::string to_utf8(const std::string& input, iconvpp::converter* conv) {
+std::string to_utf8(const std::string& input, iconvpp::converter* converter) {
   std::string converted;
-  conv->convert(input, converted);
+  converter->convert(input, converted);
   return converted;
 }
 
@@ -52,9 +52,6 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
 
   for (std::vector<std::string> fields :
        ReadCSV(directory + "/README.DAT", ';')) {
-    if (fields.size() < 5)
-      continue;
-
     try {
       encoding = fields.at(4);
     } catch (const std::exception& e) {
@@ -68,25 +65,27 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
   if (std::regex_match(encoding, std::regex("ISO.8859-15\\b.*")))
     encoding = "ISO-8859-15";
 
-  iconvpp::converter conv("UTF-8", encoding);
+  iconvpp::converter converter("UTF-8", encoding);
 
-  for (CSVRow row : ReadCSVWithTitles(directory + "/NAMES.DAT", ';')) {
+  CSVTable table = ReadCSVWithTitles(directory + "/NAMES.DAT", ';');
+  for (CSVRow row : table.rows) {
     try {
-      int nid = std::stoi(row.at("NID"));
-      locdb.names[nid] = to_utf8(row.at("NAME"), &conv);
+      int nid = std::stoi(row.at(table.titles.at("NID")));
+      locdb.names[nid] = to_utf8(row.at(table.titles.at("NAME")), &converter);
     } catch (const std::exception& e) {
       continue;
     }
   }
 
-  for (CSVRow row : ReadCSVWithTitles(directory + "/ROADS.DAT", ';')) {
+  table = ReadCSVWithTitles(directory + "/ROADS.DAT", ';');
+  for (CSVRow row : table.rows) {
     try {
       Road road;
-      road.lcd = std::stoi(row.at("LCD"));
-      road.road_number = row.at("ROADNUMBER");
+      road.lcd = std::stoi(row.at(table.titles.at("LCD")));
+      road.road_number = row.at(table.titles.at("ROADNUMBER"));
       int rnid = 0;
-      if (!row.at("RNID").empty())
-        rnid = std::stoi(row.at("RNID"));
+      if (!row.at(table.titles.at("RNID")).empty())
+        rnid = std::stoi(row.at(table.titles.at("RNID")));
       if (locdb.names.count(rnid) > 0)
         road.name = locdb.names[rnid];
       locdb.roads[road.lcd] = road;
@@ -95,39 +94,41 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
     }
   }
 
-  for (CSVRow row : ReadCSVWithTitles(directory + "/SEGMENTS.DAT", ';')) {
+  table = ReadCSVWithTitles(directory + "/SEGMENTS.DAT", ';');
+  for (CSVRow row : table.rows) {
     try {
       Segment seg;
-      seg.lcd = std::stoi(row.at("LCD"));
-      seg.roa_lcd = std::stoi(row.at("ROA_LCD"));
+      seg.lcd = std::stoi(row.at(table.titles.at("LCD")));
+      seg.roa_lcd = std::stoi(row.at(table.titles.at("ROA_LCD")));
       locdb.segments[seg.lcd] = seg;
     } catch (const std::exception& e) {
       continue;
     }
   }
 
-  for (CSVRow row : ReadCSVWithTitles(directory + "/POINTS.DAT", ';')) {
+  table = ReadCSVWithTitles(directory + "/POINTS.DAT", ';');
+  for (CSVRow row : table.rows) {
     try {
-      locdb.ltn = std::stoi(row.at("TABCD"));
+      locdb.ltn = std::stoi(row.at(table.titles.at("TABCD")));
       Point point;
-      point.lcd = std::stoi(row.at("LCD"));
+      point.lcd = std::stoi(row.at(table.titles.at("LCD")));
       int n1id = 0;
-      if (!row.at("N1ID").empty())
-        n1id = std::stoi(row.at("N1ID"));
+      if (!row.at(table.titles.at("N1ID")).empty())
+        n1id = std::stoi(row.at(table.titles.at("N1ID")));
       if (locdb.names.count(n1id) > 0)
         point.name1 = locdb.names[n1id];
-      if (!row.at("XCOORD").empty())
-        point.lon = std::stoi(row.at("XCOORD")) * 1e-5f;
-      if (!row.at("YCOORD").empty())
-        point.lat = std::stoi(row.at("YCOORD")) * 1e-5f;
-      if (!row.at("ROA_LCD").empty())
-        point.roa_lcd = std::stoi(row.at("ROA_LCD"));
-      if (!row.at("SEG_LCD").empty())
-        point.seg_lcd = std::stoi(row.at("SEG_LCD"));
+      if (!row.at(table.titles.at("XCOORD")).empty())
+        point.lon = std::stoi(row.at(table.titles.at("XCOORD"))) * 1e-5f;
+      if (!row.at(table.titles.at("YCOORD")).empty())
+        point.lat = std::stoi(row.at(table.titles.at("YCOORD"))) * 1e-5f;
+      if (!row.at(table.titles.at("ROA_LCD")).empty())
+        point.roa_lcd = std::stoi(row.at(table.titles.at("ROA_LCD")));
+      if (!row.at(table.titles.at("SEG_LCD")).empty())
+        point.seg_lcd = std::stoi(row.at(table.titles.at("SEG_LCD")));
 
       int rnid = 0;
-      if (!row.at("RNID").empty())
-        rnid = std::stoi(row.at("RNID"));
+      if (!row.at(table.titles.at("RNID")).empty())
+        rnid = std::stoi(row.at(table.titles.at("RNID")));
       if (locdb.names.count(rnid) > 0)
         point.road_name = locdb.names[rnid];
 
@@ -143,11 +144,12 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
     }
   }
 
-  for (CSVRow row : ReadCSVWithTitles(directory + "/POFFSETS.DAT", ';')) {
+  table = ReadCSVWithTitles(directory + "/POFFSETS.DAT", ';');
+  for (CSVRow row : table.rows) {
     try {
-      int lcd = std::stoi(row.at("LCD"));
-      int neg = std::stoi(row.at("NEG_OFF_LCD"));
-      int pos = std::stoi(row.at("POS_OFF_LCD"));
+      int lcd = std::stoi(row.at(table.titles.at("LCD")));
+      int neg = std::stoi(row.at(table.titles.at("NEG_OFF_LCD")));
+      int pos = std::stoi(row.at(table.titles.at("POS_OFF_LCD")));
       if (locdb.points.count(lcd) > 0) {
         locdb.points[lcd].neg_off = neg;
         locdb.points[lcd].pos_off = pos;
@@ -157,12 +159,12 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
     }
   }
 
-  for (CSVRow row :
-       ReadCSVWithTitles(directory + "/ADMINISTRATIVEAREA.DAT", ';')) {
+  table = ReadCSVWithTitles(directory + "/ADMINISTRATIVEAREA.DAT", ';');
+  for (CSVRow row : table.rows) {
     try {
       AdminArea area;
-      area.lcd = std::stoi(row.at("LCD"));
-      area.name = row.at("NID");
+      area.lcd = std::stoi(row.at(table.titles.at("LCD")));
+      area.name = row.at(table.titles.at("NID"));
       locdb.admin_areas[area.lcd] = area;
     } catch (const std::exception& e) {
       continue;

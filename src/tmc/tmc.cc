@@ -302,42 +302,44 @@ std::string ucfirst(std::string in) {
 }
 
 void LoadEventData() {
-  for (CSVRow row : ReadCSVWithTitles(tmc_data_events, ';')) {
+  CSVTable table = ReadCSVWithTitles(tmc_data_events, ';');
+  for (CSVRow row : table.rows) {
     try {
-      uint16_t code = std::stoi(row.at("Code"));
+      uint16_t code = std::stoi(row.at(table.titles.at("Code")));
       Event event;
-      event.description = row.at("Description");
-      event.description_with_quantifier = row.at("Description with Q");
+      event.description = row.at(table.titles.at("Description"));
+      event.description_with_quantifier = row.at(table.titles.at("Description with Q"));
 
-      if (row.at("N") == "F")
+      if (row.at(table.titles.at("N")) == "F")
         event.nature = EventNature::Forecast;
-      else if (row.at("N") == "S")
+      else if (row.at(table.titles.at("N")) == "S")
         event.nature = EventNature::Silent;
 
-      if (!row.at("Q").empty()) {
-        int qt = std::stoi(row.at("Q"));
+      if (!row.at(table.titles.at("Q")).empty()) {
+        int qt = std::stoi(row.at(table.titles.at("Q")));
         if (qt >= 0 && qt <= 12)
           event.quantifier_type = static_cast<QuantifierType>(qt);
       }
       event.allows_quantifier = !event.description_with_quantifier.empty();
 
-      if (row.at("U") == "U")
+      if (row.at(table.titles.at("U")) == "U")
         event.urgency = EventUrgency::U;
-      else if (row.at("U") == "X")
+      else if (row.at(table.titles.at("U")) == "X")
         event.urgency = EventUrgency::X;
 
-      if (std::regex_match(row.at("T"), std::regex(".?D.?")))
+      if (std::regex_match(row.at(table.titles.at("T")), std::regex(".?D.?")))
         event.duration_type = DurationType::Dynamic;
-      else if (std::regex_match(row.at("T"), std::regex(".?L.?")))
+      else if (std::regex_match(row.at(table.titles.at("T")), std::regex(".?L.?")))
         event.duration_type = DurationType::LongerLasting;
 
-      if (std::regex_match(row.at("T"), std::regex("\\(")))
+      if (std::regex_match(row.at(table.titles.at("T")), std::regex("\\(")))
         event.show_duration = false;
 
-      if (!row.at("D").empty() && std::stoi(row.at("D")) == 2)
+      if (!row.at(table.titles.at("D")).empty() &&
+          std::stoi(row.at(table.titles.at("D"))) == 2)
         event.directionality = EventDirectionality::Both;
 
-      event.update_class = std::stoi(row.at("C"));
+      event.update_class = std::stoi(row.at(table.titles.at("C")));
 
       g_event_data[code] = event;
     } catch (std::exception& e) {

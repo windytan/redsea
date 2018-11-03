@@ -37,15 +37,12 @@ std::string Join(std::vector<uint16_t> nums, const std::string& d);
 
 std::string HexString(int value, int num_nybbles);
 
-class CSVRow {
- public:
-  CSVRow(const std::map<std::string, int>& titles,
-         const std::vector<std::string>& values);
-  std::string at(std::string title) const;
+using CSVRow = std::vector<std::string>;
 
- private:
-  std::map<std::string, int> titles_;
-  std::vector<std::string> values_;
+class CSVTable {
+ public:
+  std::map<std::string, int> titles;
+  std::vector<CSVRow> rows;
 };
 
 std::vector<std::string> splitline(std::string line, char delimiter);
@@ -53,8 +50,8 @@ std::vector<std::vector<std::string>> ReadCSV(std::vector<std::string> csvdata,
                                               char delimiter);
 std::vector<std::vector<std::string>> ReadCSV(std::string filename,
                                               char delimiter);
-std::vector<CSVRow> ReadCSVWithTitles(std::string filename, char delimiter);
-std::vector<CSVRow> ReadCSVWithTitles(std::vector<std::string> csvdata,
+CSVTable ReadCSVWithTitles(std::string filename, char delimiter);
+CSVTable ReadCSVWithTitles(std::vector<std::string> csvdata,
                                       char delimiter);
 
 const bool kFrequencyIsLFMF = true;

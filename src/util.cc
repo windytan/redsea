@@ -195,10 +195,9 @@ std::vector<std::vector<std::string>> ReadCSV(std::string filename,
   return lines;
 }
 
-std::vector<CSVRow> ReadCSVWithTitles(std::vector<std::string> csvdata,
-                                      char delimiter) {
-  std::vector<CSVRow> lines;
-  std::map<std::string, int> titles;
+CSVTable ReadCSVWithTitles(std::vector<std::string> csvdata,
+                           char delimiter) {
+  CSVTable table;
 
   bool is_title_row = true;
 
@@ -209,18 +208,18 @@ std::vector<CSVRow> ReadCSVWithTitles(std::vector<std::string> csvdata,
     std::vector<std::string> fields = SplitLine(line, delimiter);
     if (is_title_row) {
       for (size_t i = 0; i < fields.size(); i++)
-        titles[fields[i]] = i;
+        table.titles[fields[i]] = i;
       is_title_row = false;
+    } else {
+      if (fields.size() <= table.titles.size())
+        table.rows.push_back(fields);
     }
-
-    CSVRow csvrow(titles, fields);
-    lines.push_back(csvrow);
   }
 
-  return lines;
+  return table;
 }
 
-std::vector<CSVRow> ReadCSVWithTitles(std::string filename, char delimiter) {
+CSVTable ReadCSVWithTitles(std::string filename, char delimiter) {
   std::vector<std::string> lines;
 
   std::ifstream in(filename);
@@ -236,15 +235,6 @@ std::vector<CSVRow> ReadCSVWithTitles(std::string filename, char delimiter) {
   }
 
   return ReadCSVWithTitles(lines, delimiter);
-}
-
-CSVRow::CSVRow(const std::map<std::string, int>& titles,
-               const std::vector<std::string>& values) :
-    titles_(titles), values_(values) {
-}
-
-std::string CSVRow::at(std::string title) const {
-  return values_.at(titles_.at(title));
 }
 
 std::string rtrim(std::string s) {
