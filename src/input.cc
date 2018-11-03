@@ -138,7 +138,7 @@ AsciiBitReader::AsciiBitReader(const Options& options) :
 AsciiBitReader::~AsciiBitReader() {
 }
 
-bool AsciiBitReader::ReadNextBit() {
+bool AsciiBitReader::ReadBit() {
   int chr = 0;
   while (chr != '0' && chr != '1' && chr != EOF) {
     chr = getchar();
@@ -160,7 +160,7 @@ bool AsciiBitReader::eof() const {
  * Read a single line containing an RDS group in the RDS Spy hex format.
  *
  */
-Group ReadNextHexGroup(const Options& options) {
+Group ReadHexGroup(const Options& options) {
   Group group;
   group.disable_offsets();
 

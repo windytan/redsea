@@ -40,7 +40,7 @@ class BlockStream {
   bool eof() const;
 
  private:
-  bool AcquireSync(Block block);
+  void AcquireSync(Block block);
   void UncorrectableErrorEncountered();
   void FindBlockInInputRegister();
   void NewGroupReceived();

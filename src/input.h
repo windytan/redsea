@@ -71,7 +71,7 @@ class AsciiBitReader {
  public:
   explicit AsciiBitReader(const Options& options);
   ~AsciiBitReader();
-  bool ReadNextBit();
+  bool ReadBit();
   bool eof() const;
 
  private:
@@ -79,7 +79,7 @@ class AsciiBitReader {
   bool feed_thru_;
 };
 
-Group ReadNextHexGroup(const Options& options);
+Group ReadHexGroup(const Options& options);
 
 }  // namespace redsea
 #endif  // INPUT_H_

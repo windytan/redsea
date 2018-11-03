@@ -22,8 +22,9 @@
 
 namespace redsea {
 
-constexpr unsigned kBitmask26 = 0x3FFFFFF;
-constexpr unsigned kBlockLength = 26;
+constexpr unsigned kBlockLength  = 26;
+constexpr unsigned kBlockBitmask = (1 << kBlockLength) - 1;
+constexpr unsigned kCheckwordLength = 10;
 
 // Each offset word is associated with one block number
 constexpr eBlockNumber BlockNumberForOffset(Offset offset) {
@@ -67,7 +68,7 @@ constexpr Offset OffsetForSyndrome(uint16_t syndrome) {
 // EN 50067:1998, section B.1.1: '-- calculated by the modulo-two addition of
 // all the rows of the -- matrix for which the corresponding coefficient in the
 // -- vector is 1.'
-constexpr uint32_t MatrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
+uint32_t MatrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
   uint32_t result = 0;
 
   for (size_t k = 0; k < matrix.size(); k++)
@@ -134,7 +135,7 @@ std::map<std::pair<uint16_t, Offset>, uint32_t> MakeErrorLookupTable() {
     // bits."
     for (uint32_t error_bits : {0b1, 0b11}) {
       for (unsigned shift = 0; shift < kBlockLength; shift++) {
-        uint32_t error_vector = ((error_bits << shift) & kBitmask26);
+        uint32_t error_vector = ((error_bits << shift) & kBlockBitmask);
 
         uint32_t syndrome =
             CalculateSyndrome(error_vector ^ offset.second);
@@ -178,9 +179,9 @@ void BlockStream::UncorrectableErrorEncountered() {
   }
 }
 
-bool BlockStream::AcquireSync(Block block) {
+void BlockStream::AcquireSync(Block block) {
   if (is_in_sync_)
-    return true;
+    return;
 
   // Try to find a repeating offset sequence
   if (block.offset != Offset::invalid) {
@@ -198,8 +199,6 @@ bool BlockStream::AcquireSync(Block block) {
       previous_syncing_offset_  = block.offset;
     }
   }
-
-  return is_in_sync_;
 }
 
 void BlockStream::PushBit(bool bit) {
@@ -216,7 +215,7 @@ void BlockStream::PushBit(bool bit) {
 
 void BlockStream::FindBlockInInputRegister() {
   Block block;
-  block.raw    = input_register_ & kBitmask26;
+  block.raw    = input_register_ & kBlockBitmask;
   block.offset = OffsetForSyndrome(CalculateSyndrome(block.raw));
 
   AcquireSync(block);
@@ -228,12 +227,12 @@ void BlockStream::FindBlockInInputRegister() {
     block.had_errors = (block.offset != expected_offset_);
     block_error_sum50_.push(block.had_errors);
 
-    block.data = block.raw >> 10;
+    block.data = block.raw >> kCheckwordLength;
 
     if (block.had_errors) {
       auto correction = CorrectBurstErrors(block, expected_offset_);
       if (correction.succeeded) {
-        block.data   = correction.corrected_bits >> 10;
+        block.data   = correction.corrected_bits >> kCheckwordLength;
         block.offset = expected_offset_;
       } else {
         UncorrectableErrorEncountered();
