@@ -35,20 +35,28 @@ the [wiki][Wiki: Use cases].
 
 ## Installation
 
-You will need git, the [liquid-dsp][liquid-dsp] library, libsndfile, and GNU
-autotools. On macOS (OSX) you will also need XCode command-line tools
-(`xcode-select --install`).
+These commands should be run in the terminal. Don't type the `$` in the
+beginning.
 
-1. Clone the repository (unless you downloaded a release zip file):
+1. Install the prerequisites. On Ubuntu:
+
+        $ sudo apt install git build-essential autoconf libsndfile1-dev libliquid-dev
+
+Or on macOS (OSX) using Homebrew:
+
+        $ brew install autoconf libsndfile liquid-dsp
+        $ xcode-select --install
+
+2. Clone the repository (unless you downloaded a release zip file):
 
         $ git clone https://github.com/windytan/redsea.git
         $ cd redsea
 
-2. Compile redsea:
+3. Compile redsea:
 
         $ ./autogen.sh && ./configure && make
 
-3. Install:
+4. Install:
 
         $ make install
 
@@ -150,7 +158,7 @@ type:
 * Linux or macOS
 * For realtime decoding, a Raspberry Pi 1 or faster
 * ~8 MB of free memory (~128 MB for RDS-TMC)
-* C++11 compiler
+* C++14 compiler
 * GNU autotools
 * libiconv
 * libsndfile
