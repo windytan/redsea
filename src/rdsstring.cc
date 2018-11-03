@@ -65,7 +65,7 @@ RDSString::RDSString(size_t len) : chars_(len),
 }
 
 void RDSString::set(size_t pos, RDSChar chr) {
-  if (pos < 0 || pos >= chars_.size())
+  if (pos >= chars_.size())
     return;
 
   chars_.at(pos) = chr;
