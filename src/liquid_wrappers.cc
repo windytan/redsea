@@ -42,16 +42,12 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   return result;
 }
 
-float AGC::gain() {
+float AGC::gain() const {
   return agc_crcf_get_gain(object_);
 }
 
-FIRFilter::FIRFilter(int len, float fc, float As, float mu) {
-  assert(fc >= 0.0f && fc <= 0.5f);
-  assert(As > 0.0f);
-  assert(mu >= -0.5f && mu <= 0.5f);
-
-  object_ = firfilt_crcf_create_kaiser(len, fc, As, mu);
+FIRFilter::FIRFilter(int len, float fc, float As, float mu) :
+    object_(firfilt_crcf_create_kaiser(len, fc, As, mu)) {
   firfilt_crcf_set_scale(object_, 2.0f * fc);
 }
 
@@ -67,6 +63,10 @@ std::complex<float> FIRFilter::execute() {
   std::complex<float> result;
   firfilt_crcf_execute(object_, &result);
   return result;
+}
+
+size_t FIRFilter::length() const {
+  return firfilt_crcf_get_length(object_);
 }
 
 NCO::NCO(liquid_ncotype type, float freq) :
@@ -96,7 +96,7 @@ void NCO::StepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
-float NCO::frequency() {
+float NCO::frequency() const {
   return nco_crcf_get_frequency(object_);
 }
 
@@ -118,16 +118,17 @@ void SymSync::set_output_rate(unsigned r) {
   symsync_crcf_set_output_rate(object_, r);
 }
 
-std::pair<bool, std::complex<float>> SymSync::execute(std::complex<float>* in) {
+Maybe<std::complex<float>> SymSync::execute(std::complex<float>* in) {
   unsigned n_out = 0;
   symsync_crcf_execute(object_, in, 1, out_.data(), &n_out);
 
   // assert(n_out <= 1);
 
-  return {n_out == 1, out_[0]};
+  return Maybe<std::complex<float>> { out_[0], n_out == 1 };
 }
 
-Modem::Modem(modulation_scheme scheme) : object_(modem_create(scheme)) {
+Modem::Modem(modulation_scheme scheme) :
+    object_(modem_create(scheme)) {
 }
 
 Modem::~Modem() {
@@ -146,7 +147,7 @@ float Modem::phase_error() {
   return modem_get_demodulator_phase_error(object_);
 }
 
-Resampler::Resampler(float ratio, int length) :
+Resampler::Resampler(float ratio, size_t length) :
     object_(resamp_rrrf_create(ratio, length, 0.47f, 60.0f, 32)) {
   assert(ratio <= 2.0f);
 }
@@ -157,6 +158,10 @@ Resampler::~Resampler() {
 
 void Resampler::set_rate(float rate) {
   resamp_rrrf_set_rate(object_, rate);
+}
+
+float Resampler::rate() const {
+  return resamp_rrrf_get_rate(object_);
 }
 
 unsigned int Resampler::execute(float in,

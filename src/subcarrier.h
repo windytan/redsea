@@ -36,25 +36,24 @@ namespace redsea {
 class BiphaseDecoder {
  public:
   BiphaseDecoder();
-  ~BiphaseDecoder();
-  std::pair<bool, std::complex<float>> push(
-      const std::complex<float>& psk_symbol);
+  ~BiphaseDecoder() = default;
+  Maybe<std::complex<float>> push(std::complex<float> psk_symbol);
 
  private:
-  std::complex<float> prev_psk_symbol_;
+  std::complex<float> prev_psk_symbol_ { 0.0f, 0.0f };
   std::vector<float> clock_history_;
-  unsigned clock_;
-  unsigned clock_polarity_;
+  unsigned clock_                      { 0 };
+  unsigned clock_polarity_             { 0 };
 };
 
 class DeltaDecoder {
  public:
-  DeltaDecoder();
-  ~DeltaDecoder();
+  DeltaDecoder() = default;
+  ~DeltaDecoder() = default;
   unsigned Decode(unsigned d);
 
  private:
-  unsigned prev_;
+  unsigned prev_ { 0 };
 };
 
 class Subcarrier {

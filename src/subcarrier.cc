@@ -51,34 +51,27 @@ constexpr float hertz2step(float Hz) {
   return Hz * 2.0f * M_PI / kTargetSampleRate_Hz;
 }
 
-#ifdef DEBUG
-constexpr float step2hertz(float step) {
-  return step * kTargetSampleRate_Hz / (2.0f * M_PI);
-}
-#endif
-
 }  // namespace
 
-BiphaseDecoder::BiphaseDecoder() : prev_psk_symbol_(0.0f),
-  clock_history_(128), clock_(0), clock_polarity_(0) {
+BiphaseDecoder::BiphaseDecoder() : clock_history_(128) {
 }
 
-BiphaseDecoder::~BiphaseDecoder() {
-}
+// At correct clock phase, return binary symbol in
+// constellation {-1,0} => 0, {1,0} => 1
+Maybe<std::complex<float>> BiphaseDecoder::push(
+    std::complex<float> psk_symbol) {
 
-// Return {is_clock, symbol}
-//   is_clock: true if symbol valid
-//   symbol:   binary symbol in constellation {-1,0} => 0, {1,0} => 1
-std::pair<bool, std::complex<float>> BiphaseDecoder::push(
-    const std::complex<float>& psk_symbol) {
+  Maybe<std::complex<float>> result;
 
-  std::complex<float> biphase = (psk_symbol - prev_psk_symbol_) * 0.5f;
-  bool is_clock = (clock_ % 2 == clock_polarity_);
+  result.data = (psk_symbol - prev_psk_symbol_) * 0.5f;
+  result.valid = (clock_ % 2 == clock_polarity_);
+  prev_psk_symbol_ = psk_symbol;
 
-  clock_history_[clock_] = std::fabs(biphase.real());
+  clock_history_[clock_] = std::fabs(result.data.real());
+  clock_++;
 
   // Periodically evaluate validity of the chosen biphase clock polarity
-  if (++clock_ == clock_history_.size()) {
+  if (clock_ == clock_history_.size()) {
     float a = 0;
     float b = 0;
 
@@ -96,15 +89,7 @@ std::pair<bool, std::complex<float>> BiphaseDecoder::push(
     clock_ = 0;
   }
 
-  prev_psk_symbol_ = psk_symbol;
-
-  return {is_clock, biphase};
-}
-
-DeltaDecoder::DeltaDecoder() : prev_(0) {
-}
-
-DeltaDecoder::~DeltaDecoder() {
+  return result;
 }
 
 unsigned DeltaDecoder::Decode(unsigned d) {
@@ -161,34 +146,19 @@ std::vector<bool> Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
     if (sample_num_ % decimate_ratio == 0) {
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
-      auto symbol_optional = symsync_.execute(&sample_lopass);
+      auto symbol = symsync_.execute(&sample_lopass);
 
-      if (symbol_optional.first) {
-#ifdef DEBUG
-        printf("sy:%f,%f,%f\n",
-            sample_num_ / kTargetSampleRate_Hz,
-            symbol.real(),
-            symbol.imag());
-#endif
-
+      if (symbol.valid) {
         // Modem here is only used to track PLL phase error
-        modem_.Demodulate(symbol_optional.second);
+        modem_.Demodulate(symbol.data);
         oscillator_.StepPLL(modem_.phase_error() * kPLLMultiplier);
 
-        bool is_clock;
-        std::complex<float> biphase;
-        std::tie(is_clock, biphase) = biphase_decoder_.push(symbol_optional.second);
+        auto biphase = biphase_decoder_.push(symbol.data);
 
         // One biphase symbol received for every 2 PSK symbols
-        if (is_clock) {
-          bit_buffer_.push_back(delta_decoder_.Decode(
-                                biphase.real() >= 0));
-#ifdef DEBUG
-          printf("bi:%f,%f,%f\n",
-              sample_num_ / kTargetSampleRate_Hz,
-              biphase.real(),
-              biphase.imag());
-#endif
+        if (biphase.valid) {
+          bits.push_back(delta_decoder_.Decode(
+                           biphase.data.real() >= 0.0));
         }
       }
     }

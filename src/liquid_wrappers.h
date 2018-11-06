@@ -26,14 +26,21 @@
 
 #include "liquid/liquid.h"
 
+template<typename T>
+struct Maybe {
+  T data;
+  bool valid;
+};
+
 namespace liquid {
 
 class AGC {
  public:
   AGC(float bw, float initial_gain);
+  AGC(const AGC&) = delete;
   ~AGC();
   std::complex<float> execute(std::complex<float> s);
-  float gain();
+  float gain() const;
 
  private:
   agc_crcf object_;
@@ -42,9 +49,11 @@ class AGC {
 class FIRFilter {
  public:
   FIRFilter(int len, float fc, float As = 60.0f, float mu = 0.0f);
+  FIRFilter(const FIRFilter&) = delete;
   ~FIRFilter();
   void push(std::complex<float> s);
   std::complex<float> execute();
+  size_t length() const;
 
  private:
   firfilt_crcf object_;
@@ -53,12 +62,13 @@ class FIRFilter {
 class NCO {
  public:
   explicit NCO(liquid_ncotype type, float freq);
+  NCO(const NCO&) = delete;
   ~NCO();
   std::complex<float> MixDown(std::complex<float> s);
   void Step();
   void set_pll_bandwidth(float);
   void StepPLL(float dphi);
-  float frequency();
+  float frequency() const;
 
  private:
   nco_crcf object_;
@@ -68,10 +78,11 @@ class SymSync {
  public:
   SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
           float beta, unsigned num_filters);
+  SymSync(const SymSync&) = delete;
   ~SymSync();
   void set_bandwidth(float);
   void set_output_rate(unsigned);
-  std::pair<bool, std::complex<float>> execute(std::complex<float>* in);
+  Maybe<std::complex<float>> execute(std::complex<float>* in);
 
  private:
   symsync_crcf object_;
@@ -81,6 +92,7 @@ class SymSync {
 class Modem {
  public:
   explicit Modem(modulation_scheme scheme);
+  Modem(const Modem&) = delete;
   ~Modem();
   unsigned int Demodulate(std::complex<float> sample);
   float phase_error();
@@ -91,10 +103,12 @@ class Modem {
 
 class Resampler {
  public:
-  explicit Resampler(float ratio, int length);
+  explicit Resampler(float ratio, size_t length);
+  Resampler(const Resampler&) = delete;
   ~Resampler();
   unsigned int execute(float in, float* out);
   void set_rate(float rate);
+  float rate() const;
 
  private:
   resamp_rrrf object_;
