@@ -60,19 +60,13 @@ class DeltaDecoder {
 class Subcarrier {
  public:
   explicit Subcarrier(const Options& options);
-  ~Subcarrier();
-  std::vector<bool> PopBits();
+  ~Subcarrier() = default;
   bool eof() const;
-  void ProcessChunk(MPXBuffer<>& chunk);
-#ifdef DEBUG
-  float t() const;
-#endif
+  std::vector<bool> ProcessChunk(MPXBuffer<>& chunk);
 
  private:
   int sample_num_ { 0 };
   const float resample_ratio_;
-
-  std::vector<bool> bit_buffer_;
 
   liquid::FIRFilter fir_lpf_;
   liquid::AGC agc_;

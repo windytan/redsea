@@ -33,29 +33,13 @@ Channel::Channel(const Options& options, int which_channel) :
     options_(options),
     which_channel_(which_channel),
     cached_pi_(options.input_type),
-    block_stream_(options), station_(0x0000, options, which_channel)
-#ifdef HAVE_LIQUID
-    , subcarrier_(options)
-#endif
-    {
+    block_stream_(options), station_(0x0000, options, which_channel) {
 }
 
 Channel::Channel(const Channel& other) :
     options_(other.options_), which_channel_(other.which_channel_),
     cached_pi_(options_.input_type),
-    block_stream_(options_), station_(cached_pi_.Get(), options_, which_channel_)
-#ifdef HAVE_LIQUID
-    , subcarrier_(options_)
-#endif
-    {
-}
-
-void Channel::ProcessChunk(MPXBuffer<>& chunk) {
-#ifdef HAVE_LIQUID
-  subcarrier_.ProcessChunk(chunk);
-  for (bool bit : subcarrier_.PopBits())
-    ProcessBit(bit);
-#endif
+    block_stream_(options_), station_(cached_pi_.Get(), options_, which_channel_) {
 }
 
 void Channel::ProcessBit(bool bit) {
@@ -63,6 +47,11 @@ void Channel::ProcessBit(bool bit) {
 
   for (Group group : block_stream_.PopGroups())
     ProcessGroup(group);
+}
+
+void Channel::ProcessBits(std::vector<bool> bits) {
+  for (bool bit : bits)
+    ProcessBit(bit);
 }
 
 void Channel::ProcessGroup(Group group) {

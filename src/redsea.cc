@@ -107,14 +107,20 @@ int ProcessMPXInput(Options options) {
     return EXIT_FAILURE;
 
   std::vector<Channel> channels;
+  std::vector<std::unique_ptr<Subcarrier>> subcarriers;
   for (int i = 0; i < options.num_channels; i++) {
     channels.emplace_back(options, i);
+    subcarriers.push_back(std::make_unique<Subcarrier>(options));
   }
 
   while (!mpx.eof()) {
     mpx.FillBuffer();
     for (int i = 0; i < options.num_channels; i++) {
-      channels[i].ProcessChunk(mpx.ReadChunk(i));
+      channels[i].ProcessBits(
+        subcarriers[i]->ProcessChunk(
+          mpx.ReadChunk(i)
+        )
+      );
     }
   }
 

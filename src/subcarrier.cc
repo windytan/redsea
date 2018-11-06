@@ -127,12 +127,9 @@ Subcarrier::Subcarrier(const Options& options) :
   oscillator_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
 }
 
-Subcarrier::~Subcarrier() {
-}
-
 /** MPX to bits
  */
-void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
+std::vector<bool> Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
   if (resample_ratio_ != 1.0f) {
     int i_resampled = 0;
     for (size_t i = 0; i < chunk.used_size; i++) {
@@ -151,6 +148,8 @@ void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
 
   constexpr int decimate_ratio = kTargetSampleRate_Hz / kBitsPerSecond / 2 /
                                  kSamplesPerSymbol;
+
+  std::vector<bool> bits;
 
   for (size_t i = 0; i < buf.used_size; i++) {
     // Mix RDS to baseband for filtering purposes
@@ -192,39 +191,19 @@ void Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
 #endif
         }
       }
-#ifdef DEBUG
-      printf("f:%f,%f,%f,%f,%f,%f,%f\n",
-          sample_num_ / kTargetSampleRate_Hz,
-          sample.real(),
-          step2hertz(oscillator_.frequency()),
-          modem_.phase_error(),
-          agc_.gain(),
-          sample_lopass.real(),
-          sample_lopass.imag());
-#endif
     }
 
     oscillator_.Step();
 
     sample_num_++;
   }
-}
 
-std::vector<bool> Subcarrier::PopBits() {
-  std::vector<bool> result = bit_buffer_;
-  bit_buffer_.clear();
-  return result;
+  return bits;
 }
 
 bool Subcarrier::eof() const {
   return is_eof_;
 }
-
-#ifdef DEBUG
-float Subcarrier::t() const {
-  return sample_num_ / kTargetSampleRate_Hz;
-}
-#endif
 
 }  // namespace redsea
 

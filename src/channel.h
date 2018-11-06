@@ -22,7 +22,6 @@
 #include "src/block_sync.h"
 #include "src/common.h"
 #include "src/options.h"
-#include "src/subcarrier.h"
 
 namespace redsea {
 
@@ -61,8 +60,8 @@ class Channel {
  public:
   Channel(const Options& options, int which_channel);
   Channel(const Channel& other);
-  void ProcessChunk(MPXBuffer<>& chunk);
   void ProcessBit(bool bit);
+  void ProcessBits(std::vector<bool> bits);
   void ProcessGroup(Group group);
 
  private:
@@ -71,9 +70,6 @@ class Channel {
   CachedPI cached_pi_;
   BlockStream block_stream_;
   Station station_;
-#ifdef HAVE_LIQUID
-  Subcarrier subcarrier_;
-#endif
   RunningAverage<kNumBlerAverageGroups> bler_average_;
 };
 
