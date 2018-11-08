@@ -97,7 +97,7 @@ Options GetOptions(int argc, char** argv) {
         options.rbds = true;
         break;
       case 'l':
-        options.loctable_dir = std::string(optarg);
+        options.loctable_dirs.push_back(std::string(optarg));
         break;
       case 'v':
         options.print_version = true;

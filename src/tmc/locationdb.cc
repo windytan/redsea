@@ -20,7 +20,6 @@
 #ifdef ENABLE_TMC
 
 #include <climits>
-#include <deque>
 #include <fstream>
 #include <regex>
 #include <sstream>
@@ -45,6 +44,21 @@ std::string to_utf8(const std::string& input, iconvpp::converter* converter) {
 }
 
 }  // namespace
+
+uint16_t ReadLTN(const std::string& directory) {
+  uint16_t ltn = 0;
+
+  CSVTable table = ReadCSVWithTitles(directory + "/LOCATIONDATASETS.DAT", ';');
+  for (CSVRow row : table.rows) {
+    try {
+      ltn = std::stoi(row.at(table.titles.at("TABCD")));
+    } catch (const std::exception& e) {
+      continue;
+    }
+  }
+
+  return ltn;
+}
 
 LocationDatabase LoadLocationDatabase(const std::string& directory) {
   LocationDatabase locdb;

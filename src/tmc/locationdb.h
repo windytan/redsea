@@ -73,9 +73,10 @@ struct LocationDatabase {
   std::map<uint16_t, Segment> segments;
   std::map<uint16_t, AdminArea> admin_areas;
 };
+std::ostream& operator<<(std::ostream& strm, const LocationDatabase& locdb);
 
 LocationDatabase LoadLocationDatabase(const std::string& directory);
-std::ostream& operator<<(std::ostream& strm, const LocationDatabase& locdb);
+uint16_t ReadLTN(const std::string& directory);
 
 }  // namespace tmc
 }  // namespace redsea

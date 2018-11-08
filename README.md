@@ -115,7 +115,8 @@ redsea -f WAVFILE
 -h, --input-hex        The input is in the RDS Spy hex format.
 
 -l, --loctable DIR     Load TMC location table from a directory in TMC
-                       Exchange format.
+                       Exchange format. This option can be specified
+                       multiple times to load several location tables.
 
 -p, --show-partial     Show some multi-group data even before they've been
                        fully received (PS names, RadioText, alternative

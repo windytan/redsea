@@ -18,6 +18,7 @@
 #define OPTIONS_H_
 
 #include <string>
+#include <vector>
 
 #include "src/common.h"
 
@@ -45,7 +46,7 @@ struct Options {
   int num_channels   { 1 };
   InputType input_type   { InputType::MPX_stdin };
   OutputType output_type { OutputType::JSON };
-  std::string loctable_dir;
+  std::vector<std::string> loctable_dirs;
   std::string sndfilename;
   std::string time_format;
 };

@@ -44,7 +44,7 @@ namespace {
 
 std::map<uint16_t, Event> g_event_data;
 std::map<uint16_t, std::string> g_supplementary_data;
-LocationDatabase g_location_database;
+std::map<uint16_t, LocationDatabase> g_location_databases;
 
 uint16_t PopBits(std::deque<int>* bit_deque, size_t len) {
   uint16_t result = 0x00;
@@ -66,7 +66,7 @@ uint16_t rotl16(uint16_t value, unsigned int count) {
 // label, field_data (ISO 14819-1: 5.5)
 std::vector<FreeformField> GetFreeformFields(
     const std::array<MessagePart, 5>& parts) {
-  static const std::array<size_t, 16> field_size(
+  static constexpr std::array<size_t, 16> field_size(
       {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
   uint16_t second_gsi = Bits(parts[1].data[0], 12, 2);
@@ -453,12 +453,15 @@ Event getEvent(uint16_t code) {
 
 TMCService::TMCService(const Options& options) : message_(is_encrypted_),
                        service_key_table_(LoadServiceKeyTable()), ps_(8) {
-  if (!options.loctable_dir.empty() && g_location_database.ltn == 0) {
-    g_location_database = LoadLocationDatabase(options.loctable_dir);
-    if (options.feed_thru)
-      std::cerr << g_location_database;
-    else
-      std::cout << g_location_database;
+  if (!options.loctable_dirs.empty() && g_location_databases.empty()) {
+    for (std::string loctable_dir : options.loctable_dirs) {
+      uint16_t ltn = ReadLTN(loctable_dir);
+      g_location_databases[ltn] = LoadLocationDatabase(loctable_dir);
+      if (options.feed_thru)
+        std::cerr << g_location_databases[ltn];
+      else
+        std::cout << g_location_databases[ltn];
+    }
   }
 }
 
@@ -601,7 +604,7 @@ void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
 
       if (!single_message.json().empty()) {
         (*jsonroot)["tmc"]["message"] = single_message.json();
-        DecodeLocation(g_location_database, ltn_, jsonroot);
+        DecodeLocation(g_location_databases[ltn_], ltn_, jsonroot);
       }
 
     // Part of multi-group message
@@ -618,7 +621,7 @@ void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
 
         if (!message_.json().empty()) {
           (*jsonroot)["tmc"]["message"] = message_.json();
-          DecodeLocation(g_location_database, ltn_, jsonroot);
+          DecodeLocation(g_location_databases[ltn_], ltn_, jsonroot);
         }
         message_ = Message(is_encrypted_);
       }
@@ -839,9 +842,8 @@ Json::Value Message::json() const {
   for (uint16_t code : events_)
     element["event_codes"].append(code);
 
-  if (supplementary_.size() > 0)
-    for (uint16_t code : supplementary_)
-      element["supplementary_codes"].append(code);
+  for (uint16_t code : supplementary_)
+    element["supplementary_codes"].append(code);
 
   std::vector<std::string> sentences;
   for (size_t i=0; i < events_.size(); i++) {
@@ -867,9 +869,8 @@ Json::Value Message::json() const {
   if (!sentences.empty())
     element["description"] = Join(sentences, ". ") + ".";
 
-  if (!diversion_.empty())
-    for (uint16_t code : diversion_)
-      element["diversion_route"].append(code);
+  for (uint16_t code : diversion_)
+    element["diversion_route"].append(code);
 
   if (has_speed_limit_)
     element["speed_limit"] =
