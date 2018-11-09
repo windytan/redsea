@@ -70,13 +70,13 @@ class MPXReader {
 class AsciiBitReader {
  public:
   explicit AsciiBitReader(const Options& options);
-  ~AsciiBitReader();
+  ~AsciiBitReader() = default;
   bool ReadBit();
   bool eof() const;
 
  private:
-  bool is_eof_;
-  bool feed_thru_;
+  bool is_eof_     { false };
+  bool feed_thru_  { false };
 };
 
 Group ReadHexGroup(const Options& options);

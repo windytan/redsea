@@ -154,7 +154,7 @@ class Group {
  private:
   GroupType type_;
   uint16_t pi_      { 0x0000 };
-  std::array<Block, 4> blocks_;
+  std::array<Block, 4> blocks_ {};
   std::chrono::time_point<std::chrono::system_clock> time_received_;
   uint8_t bler_     { 0 };
   bool has_type_    { false };
@@ -218,9 +218,9 @@ class Station {
 
 class RTPlusTag {
  public:
-  uint16_t content_type;
-  uint16_t start;
-  uint16_t length;
+  uint16_t content_type { 0 };
+  uint16_t start        { 0 };
+  uint16_t length       { 0 };
 };
 
 }  // namespace redsea

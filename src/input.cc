@@ -132,10 +132,7 @@ bool MPXReader::error() const {
  *
  */
 AsciiBitReader::AsciiBitReader(const Options& options) :
-    is_eof_(false), feed_thru_(options.feed_thru) {
-}
-
-AsciiBitReader::~AsciiBitReader() {
+    feed_thru_(options.feed_thru) {
 }
 
 bool AsciiBitReader::ReadBit() {
