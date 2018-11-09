@@ -67,11 +67,13 @@ CSVTable ReadCSVWithTitles(std::string filename, char delimiter);
 CSVTable ReadCSVWithTitles(std::vector<std::string> csvdata,
                                       char delimiter);
 
-const bool kFrequencyIsLFMF = true;
-
 class CarrierFrequency {
  public:
-  explicit CarrierFrequency(uint16_t code, bool is_lf_mf = false);
+  enum class Band {
+    LF_MF, FM
+  };
+ public:
+  explicit CarrierFrequency(uint16_t code, Band band = Band::FM);
   bool valid() const;
   int kHz() const;
   std::string str() const;
@@ -82,7 +84,7 @@ class CarrierFrequency {
 
  private:
   uint16_t code_;
-  bool is_lf_mf_;
+  Band band_ { Band::FM };
 };
 
 class AltFreqList {

@@ -276,12 +276,12 @@ std::string DescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       break;
     }
     case QuantifierType::MHz: {
-      CarrierFrequency freq(q_value);
+      CarrierFrequency freq(q_value, CarrierFrequency::Band::FM);
       text = freq.str();
       break;
     }
     case QuantifierType::kHz: {
-      CarrierFrequency freq(q_value, kFrequencyIsLFMF);
+      CarrierFrequency freq(q_value, CarrierFrequency::Band::LF_MF);
       text = freq.str();
       break;
     }

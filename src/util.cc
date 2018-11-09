@@ -63,24 +63,30 @@ std::string HexString(int value, int num_nybbles) {
 }
 
 // 3.2.1.6
-CarrierFrequency::CarrierFrequency(uint16_t code, bool is_lf_mf) :
-    code_(code), is_lf_mf_(is_lf_mf) {
+CarrierFrequency::CarrierFrequency(uint16_t code, Band band) :
+    code_(code), band_(band) {
 }
 
 bool CarrierFrequency::valid() const {
-  return ((is_lf_mf_ && code_ >= 1 && code_ <= 135) ||
-         (!is_lf_mf_ && code_ >= 1 && code_ <= 204));
+  return (band_ == Band::LF_MF && code_ >= 1 && code_ <= 135) ||
+         (band_ == Band::FM    && code_ >= 1 && code_ <= 204);
 }
 
 int CarrierFrequency::kHz() const {
   int khz = 0;
   if (valid()) {
-    if (!is_lf_mf_)
-      khz = 87500 + 100 * code_;
-    else if (code_ <= 15)
-      khz = 144 + 9 * code_;
-    else
-      khz = 522 + (9 * (code_ - 15));
+    switch (band_) {
+      case Band::FM :
+        khz = 87500 + 100 * code_;
+        break;
+
+      case Band::LF_MF :
+        if (code_ <= 15)
+          khz = 144 + 9 * code_;
+        else
+          khz = 522 + (9 * (code_ - 15));
+        break;
+    }
   }
 
   return khz;
@@ -89,9 +95,20 @@ int CarrierFrequency::kHz() const {
 std::string CarrierFrequency::str() const {
   std::stringstream ss;
   if (valid()) {
-    float num = (is_lf_mf_ ? kHz() : kHz() / 1000.0f);
-    ss.precision(is_lf_mf_ ? 0 : 1);
-    ss << std::fixed << num << (is_lf_mf_ ? " kHz" : " MHz");
+    switch (band_) {
+      case Band::FM : {
+        float num = kHz() / 1000.0f;
+        ss.precision(1);
+        ss << std::fixed << num << " MHz";
+        break;
+      }
+
+      case Band::LF_MF : {
+        float num = kHz();
+        ss.precision(0);
+        ss << std::fixed << num << " kHz";
+      }
+    }
   } else {
     ss << "N/A";
   }
@@ -111,7 +128,8 @@ bool operator< (const CarrierFrequency &f1,
 AltFreqList::AltFreqList() {}
 
 void AltFreqList::insert(uint8_t af_code) {
-  CarrierFrequency frequency(af_code, lf_mf_follows_);
+  CarrierFrequency frequency(af_code, lf_mf_follows_ ? CarrierFrequency::Band::LF_MF :
+                                                       CarrierFrequency::Band::FM);
   lf_mf_follows_ = false;
 
   if (frequency.valid()) {
