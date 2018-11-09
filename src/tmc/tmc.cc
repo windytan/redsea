@@ -69,7 +69,7 @@ std::vector<FreeformField> GetFreeformFields(
   static constexpr std::array<size_t, 16> field_size(
       {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
 
-  uint16_t second_gsi = Bits(parts[1].data[0], 12, 2);
+  uint16_t second_gsi = Bits<2>(parts[1].data[0], 12);
 
   // Concatenate freeform data from used message length (derived from
   // GSI of second group)
@@ -149,10 +149,10 @@ std::string TimeString(uint16_t field_data) {
 }
 
 std::vector<std::string> ScopeStrings(uint16_t mgs) {
-  bool mgs_i = Bits(mgs, 3, 1);
-  bool mgs_n = Bits(mgs, 2, 1);
-  bool mgs_r = Bits(mgs, 1, 1);
-  bool mgs_u = Bits(mgs, 0, 1);
+  bool mgs_i = Bits<1>(mgs, 3);
+  bool mgs_n = Bits<1>(mgs, 2);
+  bool mgs_r = Bits<1>(mgs, 1);
+  bool mgs_u = Bits<1>(mgs, 0);
 
   std::vector<std::string> scope;
   if (mgs_i)
@@ -466,14 +466,14 @@ TMCService::TMCService(const Options& options) : message_(is_encrypted_),
 }
 
 void TMCService::ReceiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
-  uint16_t variant = Bits(message, 14, 2);
+  uint16_t variant = Bits<2>(message, 14);
 
   if (variant == 0) {
     if (g_event_data.empty())
       LoadEventData();
 
     is_initialized_ = true;
-    uint16_t ltn = Bits(message, 6, 6);
+    uint16_t ltn = Bits<6>(message, 6);
 
     is_encrypted_ = (ltn == 0);
     (*jsonroot)["tmc"]["system_info"]["is_encrypted"] = is_encrypted_;
@@ -483,26 +483,26 @@ void TMCService::ReceiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
       (*jsonroot)["tmc"]["system_info"]["location_table"] = ltn_;
     }
 
-    bool     afi = Bits(message, 5, 1);
-    uint16_t mgs = Bits(message, 0, 4);
-    is_enhanced_mode_ = Bits(message, 4, 1);
+    bool     afi = Bits<1>(message, 5);
+    uint16_t mgs = Bits<4>(message, 0);
+    is_enhanced_mode_ = Bits<1>(message, 4);
 
     (*jsonroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
 
     for (std::string s : ScopeStrings(mgs))
       (*jsonroot)["tmc"]["system_info"]["scope"].append(s);
   } else if (variant == 1) {
-    sid_ = Bits(message, 6, 6);
+    sid_ = Bits<6>(message, 6);
     (*jsonroot)["tmc"]["system_info"]["service_id"] = sid_;
 
-    uint16_t g = Bits(message, 12, 2);
+    uint16_t g = Bits<2>(message, 12);
     static const int gap_values[4] = {3, 5, 8, 11};
     (*jsonroot)["tmc"]["system_info"]["gap"] = gap_values[g];
 
     if (is_enhanced_mode_) {
-      uint16_t t_d = Bits(message, 0, 2);
-      uint16_t t_w = Bits(message, 2, 2);
-      uint16_t t_a = Bits(message, 4, 2);
+      uint16_t t_d = Bits<2>(message, 0);
+      uint16_t t_w = Bits<2>(message, 2);
+      uint16_t t_a = Bits<2>(message, 4);
 
       (*jsonroot)["tmc"]["system_info"]["delay_time"] = t_d;
       (*jsonroot)["tmc"]["system_info"]["activity_time"] = 1 << t_a;
@@ -515,13 +515,13 @@ void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
   if (!is_initialized_)
     return;
 
-  bool t = Bits(x, 4, 1);
+  bool t = Bits<1>(x, 4);
 
   // Encryption administration group
-  if (Bits(x, 0, 5) == 0x00) {
-    sid_   = Bits(y, 5, 6);
-    encid_ = Bits(y, 0, 5);
-    ltn_   = Bits(z, 10, 6);
+  if (Bits<5>(x, 0) == 0x00) {
+    sid_   = Bits<6>(y, 5);
+    encid_ = Bits<5>(y, 0);
+    ltn_   = Bits<6>(z, 10);
     has_encid_ = true;
 
     (*jsonroot)["tmc"]["system_info"]["service_id"] = sid_;
@@ -530,17 +530,17 @@ void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
 
   // Tuning information
   } else if (t) {
-    uint16_t variant = Bits(x, 0, 4);
+    uint16_t variant = Bits<4>(x, 0);
 
     switch (variant) {
       case 4:
       case 5: {
         int pos = 4 * (variant - 4);
 
-        ps_.set(pos,   RDSChar(Bits(y, 8, 8)));
-        ps_.set(pos+1, RDSChar(Bits(y, 0, 8)));
-        ps_.set(pos+2, RDSChar(Bits(z, 8, 8)));
-        ps_.set(pos+3, RDSChar(Bits(z, 0, 8)));
+        ps_.set(pos,   RDSChar(Bits<8>(y, 8)));
+        ps_.set(pos+1, RDSChar(Bits<8>(y, 0)));
+        ps_.set(pos+2, RDSChar(Bits<8>(z, 8)));
+        ps_.set(pos+3, RDSChar(Bits<8>(z, 0)));
 
         if (ps_.complete())
           (*jsonroot)["tmc"]["service_provider"] = ps_.last_complete_string();
@@ -552,8 +552,8 @@ void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
         if (other_network_freqs_.count(on_pi) == 0)
           other_network_freqs_.insert({on_pi, AltFreqList()});
 
-        other_network_freqs_.at(on_pi).insert(Bits(y, 8, 8));
-        other_network_freqs_.at(on_pi).insert(Bits(y, 0, 8));
+        other_network_freqs_.at(on_pi).insert(Bits<8>(y, 8));
+        other_network_freqs_.at(on_pi).insert(Bits<8>(y, 0));
 
         /* Here, the alternative frequencies are printed out right away -
            DKULTUR, for example, does not transmit information about the total
@@ -567,9 +567,9 @@ void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
 
       case 9: {
         uint16_t on_pi = z;
-        uint16_t on_sid = Bits(y, 0, 6);
-        uint16_t on_mgs = Bits(y, 6, 4);
-        uint16_t on_ltn = Bits(y, 10, 6);
+        uint16_t on_sid = Bits<6>(y, 0);
+        uint16_t on_mgs = Bits<4>(y, 6);
+        uint16_t on_ltn = Bits<6>(y, 10);
 
         (*jsonroot)["tmc"]["other_network"]["pi"] = HexString(on_pi, 4);
         (*jsonroot)["tmc"]["other_network"]["service_id"] = on_sid;
@@ -592,7 +592,7 @@ void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
     if (is_encrypted_ && !has_encid_)
       return;
 
-    bool f = Bits(x, 3, 1);
+    bool f = Bits<1>(x, 3);
 
     // Single-group message
     if (f) {
@@ -609,7 +609,7 @@ void TMCService::ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
 
     // Part of multi-group message
     } else {
-      uint16_t continuity_index = Bits(x, 0, 3);
+      uint16_t continuity_index = Bits<3>(x, 0);
 
       if (continuity_index != message_.continuity_index())
        message_ = Message(is_encrypted_);
@@ -638,12 +638,12 @@ uint16_t Message::continuity_index() const {
 }
 
 void Message::PushSingle(uint16_t x, uint16_t y, uint16_t z) {
-  duration_          = Bits(x, 0, 3);
-  diversion_advised_ = Bits(y, 15, 1);
-  direction_         = Bits(y, 14, 1) ? Direction::Negative :
+  duration_          = Bits<3>(x, 0);
+  diversion_advised_ = Bits<1>(y, 15);
+  direction_         = Bits<1>(y, 14) ? Direction::Negative :
                                         Direction::Positive;
-  extent_            = Bits(y, 11, 3);
-  events_.push_back(Bits(y, 0, 11));
+  extent_            = Bits<3>(y, 11);
+  events_.push_back(Bits<11>(y, 0));
   if (is_encrypted_)
     encrypted_location_ = z;
   else
@@ -656,22 +656,22 @@ void Message::PushSingle(uint16_t x, uint16_t y, uint16_t z) {
 }
 
 void Message::PushMulti(uint16_t x, uint16_t y, uint16_t z) {
-  uint16_t new_continuity_index = Bits(x, 0, 3);
+  uint16_t new_continuity_index = Bits<3>(x, 0);
   if (continuity_index_ != new_continuity_index && continuity_index_ != 0) {
     //*stream_ << jsonVal("debug", "ERR: wrong continuity index!");
   }
   continuity_index_ = new_continuity_index;
-  bool is_first_group = Bits(y, 15, 1);
+  bool is_first_group = Bits<1>(y, 15);
   int current_group;
   int group_sequence_indicator = -1;
 
   if (is_first_group) {
     current_group = 0;
-  } else if (Bits(y, 14, 1)) {  // SG
-    group_sequence_indicator = Bits(y, 12, 2);
+  } else if (Bits<1>(y, 14)) {  // SG
+    group_sequence_indicator = Bits<2>(y, 12);
     current_group = 1;
   } else {
-    group_sequence_indicator = Bits(y, 12, 2);
+    group_sequence_indicator = Bits<2>(y, 12);
     current_group = 4 - group_sequence_indicator;
   }
 
@@ -693,10 +693,10 @@ void Message::DecodeMulti() {
   is_complete_ = true;
 
   // First group
-  direction_ = Bits(parts_[0].data[0], 14, 1) ? Direction::Negative :
+  direction_ = Bits<1>(parts_[0].data[0], 14) ? Direction::Negative :
                                                 Direction::Positive;
-  extent_    = Bits(parts_[0].data[0], 11, 3);
-  events_.push_back(Bits(parts_[0].data[0], 0, 11));
+  extent_    = Bits<3>(parts_[0].data[0], 11);
+  events_.push_back(Bits<11>(parts_[0].data[0], 0));
   if (is_encrypted_)
     encrypted_location_ = parts_[0].data[1];
   else

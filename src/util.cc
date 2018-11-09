@@ -23,11 +23,6 @@
 
 namespace redsea {
 
-// extract len bits from word, starting at starting_at from the right
-uint16_t Bits(uint16_t word, int starting_at, int len) {
-  return ((word >> starting_at) & ((1 << len) - 1));
-}
-
 std::string HoursMinutesString(int hour, int minute) {
   std::stringstream ss;
   ss << std::setfill('0') <<

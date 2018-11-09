@@ -28,7 +28,20 @@
 
 namespace redsea {
 
-uint16_t Bits(uint16_t word, int starting_at, int len);
+// extract N bits from word, starting at starting_at from the right
+template<size_t N>
+uint16_t Bits(uint16_t word, size_t starting_at) {
+  static_assert(N <= 16, "");
+  return (word >> starting_at) & ((1 << N) - 1);
+}
+
+// extract N bits from the concatenation of word1 and word2, starting at
+// starting_at from the right
+template<size_t N>
+uint32_t Bits(uint16_t word1, uint16_t word2, size_t starting_at) {
+  static_assert(N <= 32, "");
+  return (((word1 << 16) + word2) >> starting_at) & ((1 << N) - 1);
+}
 
 std::string HoursMinutesString(int hour, int minute);
 

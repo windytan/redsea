@@ -125,6 +125,11 @@ class Group {
   Group();
 
   uint16_t block(eBlockNumber block_num) const;
+  uint16_t block1() const;
+  uint16_t block2() const;
+  uint16_t block3() const;
+  uint16_t block4() const;
+
   bool has(eBlockNumber block_num) const;
   bool empty() const;
   GroupType type() const;
