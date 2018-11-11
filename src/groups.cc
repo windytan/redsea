@@ -325,7 +325,10 @@ void Station::DecodeBasics(const Group& group) {
 
     if (group.has_type())
       json_["group"] = group.type().str();
-    json_["tp"] = Bits<1>(group.block2(), 10);
+
+    bool tp = Bits<1>(group.block2(), 10);
+    json_["tp"] = tp;
+
     json_["prog_type"] =
         options_.rbds ? PTYNameStringRBDS(pty) : PTYNameString(pty);
   } else if (group.type().number == 15 && group.type().version == GroupType::Version::B &&
@@ -333,7 +336,9 @@ void Station::DecodeBasics(const Group& group) {
     uint16_t pty = Bits<5>(group.block4(), 5);
 
     json_["group"] = group.type().str();
-    json_["tp"] = Bits<1>(group.block4(), 10);
+
+    bool tp = Bits<1>(group.block4(), 10);
+    json_["tp"] = tp;
     json_["prog_type"] =
         options_.rbds ? PTYNameStringRBDS(pty) : PTYNameString(pty);
   }
@@ -345,8 +350,8 @@ void Station::DecodeType0(const Group& group) {
   bool is_di = Bits<1>(group.block2(), 2);
   json_["di"][DICodeString(segment_address)] = is_di;
 
-  json_["ta"]       = Bits<1>(group.block2(), 4);
-  json_["is_music"] = Bits<1>(group.block2(), 3);
+  json_["ta"]       = static_cast<bool>(Bits<1>(group.block2(), 4));
+  json_["is_music"] = static_cast<bool>(Bits<1>(group.block2(), 3));
 
   if (!group.has(BLOCK3))
     return;
@@ -699,8 +704,11 @@ void Station::DecodeType14(const Group& group) {
 void Station::DecodeType15B(const Group& group) {
   eBlockNumber block_num = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
 
-  json_["ta"]       = Bits<1>(group.block(block_num), 4);
-  json_["is_music"] = Bits<1>(group.block(block_num), 3);
+  bool ta       = Bits<1>(group.block(block_num), 4);
+  bool is_music = Bits<1>(group.block(block_num), 3);
+
+  json_["ta"]       = ta;
+  json_["is_music"] = is_music;
 }
 
 /* Open Data Application */
