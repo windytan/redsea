@@ -29,6 +29,7 @@ namespace redsea {
 void PrintUsage() {
   std::cout <<
     "radio_command | redsea [OPTIONS]\n"
+    "redsea [OPTIONS] < raw_signal_file.s16\n"
     "\n"
     "By default, a 171 kHz single-channel 16-bit MPX signal is expected via\n"
     "stdin.\n"
