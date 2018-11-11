@@ -200,7 +200,7 @@ void Group::set_time(std::chrono::time_point<std::chrono::system_clock> t) {
   has_time_ = true;
 }
 
-void Group::set_bler(uint8_t bler) {
+void Group::set_average_bler(uint8_t bler) {
   bler_ = bler;
   has_bler_ = true;
 }

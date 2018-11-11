@@ -48,7 +48,7 @@ std::string HoursMinutesString(int hour, int minute);
 std::string Join(std::vector<std::string> strings, const std::string& d);
 std::string Join(std::vector<uint16_t> nums, const std::string& d);
 
-std::string HexString(int value, int num_nybbles);
+std::string HexString(uint32_t value, int num_nybbles);
 
 using CSVRow = std::vector<std::string>;
 

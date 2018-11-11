@@ -51,7 +51,7 @@ std::string Join(std::vector<uint16_t> nums, const std::string& d) {
   return result;
 }
 
-std::string HexString(int value, int num_nybbles) {
+std::string HexString(uint32_t value, int num_nybbles) {
   std::stringstream ss;
 
   ss.fill('0');
