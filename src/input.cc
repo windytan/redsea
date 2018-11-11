@@ -31,11 +31,10 @@ namespace redsea {
  * floating-point samples.
  *
  */
-MPXReader::MPXReader(const Options& options) :
-    num_channels_(options.num_channels),
-    feed_thru_(options.feed_thru),
-    sfinfo_({0, 0, 0, 0, 0, 0}),
-    file_(nullptr) {
+void MPXReader::init(const Options& options) {
+  num_channels_ = options.num_channels;
+  feed_thru_ = options.feed_thru;
+  filename_ = options.sndfilename;
 
   if (options.input_type != InputType::MPX_stdin &&
       options.input_type != InputType::MPX_sndfile)
@@ -55,6 +54,9 @@ MPXReader::MPXReader(const Options& options) :
   }
 
   if (!file_) {
+    if (sf_error(file_) == 26)
+      throw (BeyondEofError());
+
     std::cerr << "error: failed to open file: " <<
               sf_error_number(sf_error(file_)) << '\n';
     is_error_ = true;

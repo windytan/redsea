@@ -100,7 +100,14 @@ int ProcessMPXInput(Options options) {
   return EXIT_FAILURE;
 #endif
 
-  MPXReader mpx(options);
+  MPXReader mpx;
+
+  try {
+    mpx.init(options);
+  } catch (BeyondEofError& e) {
+    PrintUsage();
+    return EXIT_FAILURE;
+  }
   options.samplerate = mpx.samplerate();
   options.num_channels = mpx.num_channels();
 

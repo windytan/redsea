@@ -18,6 +18,7 @@
 #define INPUT_H_
 
 #include <cstdint>
+#include <exception>
 #include <array>
 #include <vector>
 
@@ -42,10 +43,16 @@ class MPXBuffer {
   size_t used_size;
 };
 
+class BeyondEofError : std::exception {
+ public:
+  BeyondEofError() {};
+};
+
 class MPXReader {
  public:
-  explicit MPXReader(const Options& options);
+  MPXReader() = default;
   ~MPXReader();
+  void init(const Options& options);
   bool eof() const;
   bool error() const;
   void FillBuffer();
@@ -59,12 +66,13 @@ class MPXReader {
   bool is_eof_      { true };
   bool is_error_    { false };
   bool feed_thru_   { false };
+  std::string filename_ { "" };
   MPXBuffer<> buffer_;
   MPXBuffer<> buffer_singlechan_;
-  SF_INFO sfinfo_;
-  SNDFILE* file_;
-  SNDFILE* outfile_;
-  sf_count_t num_read_;
+  SF_INFO sfinfo_   { 0, 0, 0, 0, 0, 0 };
+  SNDFILE* file_    { nullptr };
+  SNDFILE* outfile_ { nullptr };
+  sf_count_t num_read_ { 0 };
 };
 
 class AsciiBitReader {
