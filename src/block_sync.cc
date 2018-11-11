@@ -36,7 +36,9 @@ constexpr eBlockNumber BlockNumberForOffset(Offset offset) {
     case Offset::D       : return BLOCK4; break;
 
     case Offset::invalid : return BLOCK1; break;
+    default              : return BLOCK1; break;
   }
+  return BLOCK1;
 }
 
 // Return the next offset word in sequence
@@ -49,6 +51,7 @@ constexpr Offset NextOffsetFor(Offset this_offset) {
     case Offset::D       : return Offset::A; break;
 
     case Offset::invalid : return Offset::A; break;
+    default              : return Offset::A; break;
   }
 }
 
@@ -170,7 +173,7 @@ void SyncPulseBuffer::Push(Offset offset, int bitcount) {
     pulses[i] = pulses[i + 1];
   }
   pulses.back() = {offset, bitcount};
-};
+}
 
 bool SyncPulseBuffer::SequenceFound() const {
   for (size_t prev_i = 0; prev_i < pulses.size() - 1; prev_i++) {

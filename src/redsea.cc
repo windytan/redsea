@@ -16,6 +16,7 @@
  *
  */
 #include <iostream>
+#include <memory>
 
 #include "config.h"
 #include "src/channel.h"

@@ -108,7 +108,6 @@ class Resampler {
   ~Resampler();
   unsigned int execute(float in, float* out);
   void set_rate(float rate);
-  float rate() const;
 
  private:
   resamp_rrrf object_;

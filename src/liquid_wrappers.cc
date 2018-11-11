@@ -160,10 +160,6 @@ void Resampler::set_rate(float rate) {
   resamp_rrrf_set_rate(object_, rate);
 }
 
-float Resampler::rate() const {
-  return resamp_rrrf_get_rate(object_);
-}
-
 unsigned int Resampler::execute(float in,
                                 float* out) {
   unsigned int num_written;

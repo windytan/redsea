@@ -110,6 +110,8 @@ std::string UrgencyString(EventUrgency u) {
     case EventUrgency::None : return "none"; break;
     case EventUrgency::U    : return "U";    break;
     case EventUrgency::X    : return "X";    break;
+
+    default                 : return "none"; break;
   }
 }
 
