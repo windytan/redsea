@@ -101,8 +101,7 @@ class RadioText {
   int       ab { 0 };
 };
 
-class RadioTextPlus {
- public:
+struct RadioTextPlus {
   bool     cb           { false };
   uint16_t scb          { 0 };
   uint16_t template_num { 0 };
@@ -148,17 +147,15 @@ class Group {
   void disable_offsets();
   void set_block(eBlockNumber block_num, Block block);
   void set_time(std::chrono::time_point<std::chrono::system_clock> t);
-  void set_bler(uint8_t bler);
+  void set_average_bler(uint8_t bler);
   void set_channel(int which_channel);
 
  private:
-  GroupType type_;
-  uint16_t pi_      { 0x0000 };
+  GroupType type_   {};
   std::array<Block, 4> blocks_ {};
   std::chrono::time_point<std::chrono::system_clock> time_received_;
   uint8_t bler_     { 0 };
   bool has_type_    { false };
-  bool has_pi_      { false };
   bool has_c_prime_ { false };
   bool has_bler_    { false };
   bool has_time_    { false };
@@ -216,8 +213,7 @@ class Station {
 #endif
 };
 
-class RTPlusTag {
- public:
+struct RTPlusTag {
   uint16_t content_type { 0 };
   uint16_t start        { 0 };
   uint16_t length       { 0 };

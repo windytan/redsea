@@ -262,10 +262,8 @@ void BlockStream::FindBlockInInputRegister() {
 
     // Error-free block received or errors successfully corrected
     if (block.offset == expected_offset_) {
+      block.is_received = true;
       current_group_.set_block(BlockNumberForOffset(expected_offset_), block);
-
-      if (current_group_.has_pi())
-        pi_ = current_group_.pi();
     }
 
     expected_offset_ = NextOffsetFor(expected_offset_);

@@ -37,7 +37,8 @@ class CachedPI {
     pi_prev2_ = pi_prev1_;
     pi_prev1_ = pi;
 
-    Result status { Result::SpuriousChange };
+    Result status (Result::SpuriousChange);
+
     if (pi_prev1_ == pi_prev2_ || bypass_) {
       status = (pi == pi_confirmed_ ? Result::NoChange :
                                       Result::ChangeConfirmed);

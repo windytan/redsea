@@ -65,7 +65,6 @@ class BlockStream {
   uint32_t input_register_            { 0 };
   Offset   previous_syncing_offset_   { Offset::invalid };
   Offset   expected_offset_           { Offset::A };
-  uint16_t pi_                        { 0x0000 };
   bool     is_in_sync_                { false };
   RunningSum<50> block_error_sum50_;
   const    Options options_;

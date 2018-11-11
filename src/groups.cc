@@ -121,7 +121,13 @@ bool Group::empty() const {
 }
 
 uint16_t Group::pi() const {
-  return pi_;
+  if (blocks_[BLOCK1].is_received)
+    return blocks_[BLOCK1].data;
+  else if (blocks_[BLOCK3].is_received &&
+           blocks_[BLOCK3].offset == Offset::Cprime)
+    return blocks_[BLOCK3].data;
+  else
+    return 0x0000;
 }
 
 uint8_t Group::bler() const {
@@ -136,7 +142,8 @@ uint8_t Group::num_errors() const {
 }
 
 bool Group::has_pi() const {
-  return has_pi_;
+  return blocks_[BLOCK1].is_received ||
+         (blocks_[BLOCK3].is_received && blocks_[BLOCK3].offset == Offset::Cprime);
 }
 
 GroupType Group::type() const {
@@ -165,39 +172,23 @@ void Group::disable_offsets() {
 
 void Group::set_block(eBlockNumber block_num, Block block) {
   blocks_[block_num] = block;
-  blocks_[block_num].is_received = true;
 
-  switch (block_num) {
-    case BLOCK1:
-      pi_ = block.data;
-      has_pi_ = true;
-      break;
+  if (block_num == BLOCK2) {
+    type_ = GroupType(Bits<5>(block.data, 11));
+    if (type_.version == GroupType::Version::A)
+      has_type_ = true;
+    else
+      has_type_ = (has_c_prime_ || no_offsets_);
 
-    case BLOCK2:
-      type_ = GroupType(Bits<5>(block.data, 11));
-      if (type_.version == GroupType::Version::A)
+  } else if (block_num == BLOCK4) {
+    if (has_c_prime_ && !has_type_) {
+      GroupType potential_type(Bits<5>(block.data, 11));
+      if (potential_type.number == 15 &&
+          potential_type.version == GroupType::Version::B) {
+        type_ = potential_type;
         has_type_ = true;
-      else
-        has_type_ = (has_c_prime_ || no_offsets_);
-      break;
-
-    case BLOCK3:
-      if (block.offset == Offset::Cprime && !has_pi_) {
-        pi_ = block.data;
-        has_pi_ = true;
       }
-      break;
-
-    case BLOCK4:
-      if (has_c_prime_ && !has_type_) {
-        GroupType potential_type(Bits<5>(block.data, 11));
-        if (potential_type.number == 15 &&
-            potential_type.version == GroupType::Version::B) {
-          type_ = potential_type;
-          has_type_ = true;
-        }
-      }
-      break;
+    }
   }
 
   if (block.offset == Offset::Cprime && has(BLOCK2))

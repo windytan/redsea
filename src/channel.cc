@@ -58,6 +58,11 @@ void Channel::ProcessGroup(Group group) {
   if (options_.timestamp)
     group.set_time(std::chrono::system_clock::now());
 
+  if (options_.bler) {
+    bler_average_.push(100.0f * group.num_errors() / 4);
+    group.set_average_bler(bler_average_.average());
+  }
+
   if (group.has_pi()) {
     // Repeated PI confirms change
     auto pi_status = cached_pi_.Update(group.pi());
@@ -67,17 +72,12 @@ void Channel::ProcessGroup(Group group) {
         break;
 
       case CachedPI::Result::SpuriousChange:
-        return;
+        group.set_block(BLOCK1, Block());
         break;
 
       case CachedPI::Result::NoChange:
         break;
     }
-  }
-
-  if (options_.bler) {
-    bler_average_.push(100.0f * group.num_errors() / 4);
-    group.set_bler(bler_average_.average());
   }
 
   if (options_.output_type == redsea::OutputType::Hex) {
