@@ -1,5 +1,20 @@
 # redsea changelog
 
+## 0.18
+
+* Add support for loading multiple TMC location databases by specifying
+  `--loctable` more than once.
+* Sample rate can also be specified as `-r 171k` instead of `-r 171000`.
+* Fix a crash if the input audio file couldn't be loaded.
+* Print usage help instead of error message when stdin is empty.
+* Speed up loading of TMC location database.
+* Improve block sync detection by ignoring spurious sync pulses.
+* At EOF, process the last partially received group.
+* Remove character codetables G1 and G2 since they don't appear in the latest
+  RDS standard any more.
+* Clean up code to ensure maintainability. Redsea now requires a compiler
+  that supports C++14.
+
 ## 0.17.1 (2018-06-08)
 
 * Fix: Return exit value 0 if `--version` or `--help` was requested
