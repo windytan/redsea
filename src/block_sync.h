@@ -26,8 +26,21 @@
 
 namespace redsea {
 
-class ErrorCorrectionResult {
+struct SyncPulse {
+  Offset offset { Offset::invalid };
+  int bitcount  { -1 };
+};
+
+class SyncPulseBuffer {
  public:
+  void Push(Offset offset, int bitcount);
+  bool SequenceFound() const;
+
+ private:
+  std::array<SyncPulse, 4> pulses;
+};
+
+struct ErrorCorrectionResult {
   bool     succeeded      { false };
   uint32_t corrected_bits { 0 };
 };
@@ -49,7 +62,7 @@ class BlockStream {
   unsigned previous_syncing_bitcount_ { 0 };
   int      num_bits_until_next_block_ { 1 };
   uint32_t input_register_            { 0 };
-  Offset   previous_syncing_offset_   { Offset::A };
+  Offset   previous_syncing_offset_   { Offset::invalid };
   Offset   expected_offset_           { Offset::A };
   uint16_t pi_                        { 0x0000 };
   bool     is_in_sync_                { false };

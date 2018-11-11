@@ -165,6 +165,29 @@ ErrorCorrectionResult CorrectBurstErrors(Block block, Offset expected_offset) {
   return result;
 }
 
+void SyncPulseBuffer::Push(Offset offset, int bitcount) {
+  for (size_t i = 0; i < pulses.size() - 1; i++) {
+    pulses[i] = pulses[i + 1];
+  }
+  pulses.back() = {offset, bitcount};
+};
+
+bool SyncPulseBuffer::SequenceFound() const {
+  for (size_t prev_i = 0; prev_i < pulses.size() - 1; prev_i++) {
+    int sync_distance = pulses.back().bitcount - pulses[prev_i].bitcount;
+
+    bool found = (sync_distance % kBlockLength == 0 &&
+                  sync_distance / kBlockLength <= 6 &&
+                  pulses[prev_i].offset != Offset::invalid &&
+      (BlockNumberForOffset(pulses[prev_i].offset) + sync_distance / kBlockLength) % 4 ==
+       BlockNumberForOffset(pulses.back().offset));
+
+    if (found)
+      return true;
+  }
+  return false;
+}
+
 BlockStream::BlockStream(const Options& options) :
   options_(options) {
 }
@@ -175,22 +198,20 @@ void BlockStream::UncorrectableErrorEncountered() {
   if (is_in_sync_ && block_error_sum50_.sum() > 45) {
     is_in_sync_ = false;
     block_error_sum50_.clear();
-    pi_ = 0x0000;
   }
 }
 
 void BlockStream::AcquireSync(Block block) {
+  static SyncPulseBuffer sync_buffer;
+
   if (is_in_sync_)
     return;
 
   // Try to find a repeating offset sequence
   if (block.offset != Offset::invalid) {
-    int sync_distance = bitcount_ - previous_syncing_bitcount_;
+    sync_buffer.Push(block.offset, bitcount_);
 
-    if (sync_distance % kBlockLength == 0 &&
-        sync_distance / kBlockLength <= 6 &&
-        (BlockNumberForOffset(previous_syncing_offset_) + sync_distance / kBlockLength) % 4 ==
-         BlockNumberForOffset(block.offset)) {
+    if (sync_buffer.SequenceFound()) {
       is_in_sync_ = true;
       expected_offset_ = block.offset;
       current_group_ = Group();
