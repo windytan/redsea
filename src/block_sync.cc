@@ -280,10 +280,15 @@ void BlockStream::NewGroupReceived() {
   current_group_ = Group();
 }
 
+// TODO: this will probably never be > 1
 std::vector<Group> BlockStream::PopGroups() {
   std::vector<Group> result = groups_;
   groups_.clear();
   return result;
+}
+
+Group BlockStream::FlushCurrentGroup() const {
+  return current_group_;
 }
 
 }  // namespace redsea

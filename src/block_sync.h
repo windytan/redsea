@@ -51,6 +51,7 @@ class BlockStream {
   void PushBit(bool bit);
   std::vector<Group> PopGroups();
   bool eof() const;
+  Group FlushCurrentGroup() const;
 
  private:
   void AcquireSync(Block block);

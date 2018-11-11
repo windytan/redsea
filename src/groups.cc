@@ -268,6 +268,9 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
   else
     return;
 
+  if (group.empty())
+    return;
+
   json_.clear();
   json_["pi"] = "0x" + HexString(pi(), 4);
   if (options_.rbds) {

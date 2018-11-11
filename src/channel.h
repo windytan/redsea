@@ -63,6 +63,7 @@ class Channel {
   void ProcessBit(bool bit);
   void ProcessBits(std::vector<bool> bits);
   void ProcessGroup(Group group);
+  void Flush();
 
  private:
   Options options_;

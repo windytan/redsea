@@ -125,6 +125,9 @@ int ProcessMPXInput(Options options) {
     }
   }
 
+  for (int i = 0; i < options.num_channels; i++)
+    channels[i].Flush();
+
   return EXIT_SUCCESS;
 }
 
@@ -135,6 +138,8 @@ int ProcessASCIIBitsInput(Options options) {
   while (!ascii_reader.eof()) {
     channel.ProcessBit(ascii_reader.ReadBit());
   }
+
+  channel.Flush();
 
   return EXIT_SUCCESS;
 }

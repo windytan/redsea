@@ -90,4 +90,10 @@ void Channel::ProcessGroup(Group group) {
   }
 }
 
+void Channel::Flush() {
+  Group last_group = block_stream_.FlushCurrentGroup();
+  if (!last_group.empty())
+    ProcessGroup(last_group);
+}
+
 }  // namespace redsea
