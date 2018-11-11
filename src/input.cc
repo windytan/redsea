@@ -199,8 +199,10 @@ Group ReadHexGroup(const Options& options) {
         line = line.substr(1);
       }
 
-      if (block_still_valid)
+      if (block_still_valid) {
+        block.is_received = true;
         group.set_block(block_num, block);
+      }
 
       if (block_num == BLOCK4)
         group_complete = true;
