@@ -81,14 +81,23 @@ Options GetOptions(int argc, char** argv) {
       case 'p':
         options.show_partial = true;
         break;
-      case 'r':
-        options.samplerate = std::atoi(optarg);
+      case 'r': {
+        std::string optstr(optarg);
+        double factor = 1.0;
+        if (optstr.size() > 1) {
+          if (tolower(optstr.back()) == 'k')
+            factor = 1000.0;
+          else if (toupper(optstr.back()) == 'M')
+            factor = 1000000.0;
+        }
+        options.samplerate = std::atof(optarg) * factor;
         if (options.samplerate < kMinimumSampleRate_Hz) {
           std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
                     << " Hz or higher\n";
           options.exit_failure = true;
         }
         break;
+      }
       case 't':
         options.timestamp = true;
         options.time_format = std::string(optarg);
