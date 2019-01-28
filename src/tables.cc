@@ -25,35 +25,35 @@
 namespace redsea {
 
 // EN 50067:1998, Annex F (pp. 77-78)
-std::string PTYNameString(int pty) {
-  assert(pty >= 0 && pty <= 32);
+std::string PTYNameString(uint16_t pty) {
+  assert(pty <= 32);
 
   static const std::vector<std::string> pty_names({
-    "No PTY",         "News",            "Current affairs",    "Information",
-    "Sport",          "Education",       "Drama",              "Culture",
-    "Science",        "Varied",          "Pop music",          "Rock music",
-    "Easy listening", "Light classical", "Serious classical",  "Other music",
-    "Weather",        "Finance",      "Children's programmes", "Social affairs",
-    "Religion",       "Phone-in",        "Travel",             "Leisure",
-    "Jazz music",     "Country music",   "National music",     "Oldies music",
-    "Folk music",     "Documentary",     "Alarm test",         "Alarm" });
+    "No PTY",         "News",            "Current affairs",       "Information",
+    "Sport",          "Education",       "Drama",                 "Culture",
+    "Science",        "Varied",          "Pop music",             "Rock music",
+    "Easy listening", "Light classical", "Serious classical",     "Other music",
+    "Weather",        "Finance",         "Children's programmes", "Social affairs",
+    "Religion",       "Phone-in",        "Travel",                "Leisure",
+    "Jazz music",     "Country music",   "National music",        "Oldies music",
+    "Folk music",     "Documentary",     "Alarm test",            "Alarm" });
 
   return pty_names[pty];
 }
 
 // U.S. RBDS Standard, Annex F (pp. 95-96)
-std::string PTYNameStringRBDS(int pty) {
-  assert(pty >= 0 && pty <= 32);
+std::string PTYNameStringRBDS(uint16_t pty) {
+  assert(pty <= 32);
 
   static const std::vector<std::string> pty_names_rbds({
-    "No PTY",           "News",                  "Information",  "Sports",
-    "Talk",             "Rock",                  "Classic rock", "Adult hits",
-    "Soft rock",        "Top 40",                "Country",      "Oldies",
-    "Soft",             "Nostalgia",             "Jazz",         "Classical",
-    "Rhythm and blues", "Soft rhythm and blues", "Language",  "Religious music",
-    "Religious talk",   "Personality",           "Public",       "College",
-    "Spanish talk",     "Spanish music",         "Hip hop",      "",
-    "",                 "Weather",              "Emergency test", "Emergency"});
+    "No PTY",           "News",                  "Information",    "Sports",
+    "Talk",             "Rock",                  "Classic rock",   "Adult hits",
+    "Soft rock",        "Top 40",                "Country",        "Oldies",
+    "Soft",             "Nostalgia",             "Jazz",           "Classical",
+    "Rhythm and blues", "Soft rhythm and blues", "Language",       "Religious music",
+    "Religious talk",   "Personality",           "Public",         "College",
+    "Spanish talk",     "Spanish music",         "Hip hop",        "",
+    "",                 "Weather",               "Emergency test", "Emergency" });
 
   return pty_names_rbds[pty];
 }
