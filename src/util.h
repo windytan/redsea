@@ -101,11 +101,11 @@ class AltFreqList {
   bool lf_mf_follows_     { false };
 };
 
-template<size_t N>
+template<typename T, size_t N>
 class RunningSum {
  public:
-  RunningSum() {};
-  int sum() const {
+  RunningSum() = default;
+  T sum() const {
     return std::accumulate(history_.cbegin(), history_.cend(), 0);
   }
   void push(int number) {
@@ -117,15 +117,15 @@ class RunningSum {
   }
 
  private:
-  std::array<int, N> history_ {};
+  std::array<T, N> history_ {};
   size_t pointer_ { 0 };
 };
 
-template<size_t N>
+template<typename T, size_t N>
 class RunningAverage {
  public:
-  RunningAverage() {};
-  void push(int value) {
+  RunningAverage() = default;
+  void push(T value) {
     sum_ -= history_[ptr_];
     history_[ptr_] = value;
     sum_ += value;

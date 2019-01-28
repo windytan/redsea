@@ -116,17 +116,12 @@ struct FreeformField {
 };
 
 struct ServiceKey {
-  ServiceKey() {}
-  ServiceKey(uint8_t _xorval, uint8_t _xorstart, uint8_t _nrot) :
-    xorval(_xorval), xorstart(_xorstart), nrot(_nrot) {}
   uint8_t xorval   { 0 };
   uint8_t xorstart { 0 };
   uint8_t nrot     { 0 };
 };
 
-class Event {
- public:
-  Event() {}
+struct Event {
   std::string description                 { "" };
   std::string description_with_quantifier { "" };
   EventNature         nature              { EventNature::Event };
@@ -148,8 +143,8 @@ struct MessagePart {
   MessagePart(bool _is_received, const std::array<uint16_t, 2>& _data) :
     is_received(_is_received), data(_data) {}
 
-  bool                    is_received { false };
-  std::array<uint16_t, 2> data        {};
+  bool is_received { false };
+  std::array<uint16_t, 2> data {};
 };
 
 class Message {
