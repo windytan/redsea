@@ -137,12 +137,17 @@ class RunningAverage {
   }
 
  private:
-  std::array<int, N> history_ {};
-  int    sum_ { 0 };
+  std::array<T, N> history_ {};
+  T      sum_ {};
   size_t ptr_ { 0 };
 };
 
 std::string rtrim(std::string s);
+
+std::string get_string(const CSVTable& table, const CSVRow& row, const std::string& title);
+int get_int(const CSVTable& table, const CSVRow& row, const std::string& title);
+uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title);
+bool row_contains(const CSVTable& table, const CSVRow& row, const std::string& title);
 
 }  // namespace redsea
 #endif  // UTIL_H_

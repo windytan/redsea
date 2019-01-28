@@ -51,7 +51,7 @@ uint16_t ReadLTN(const std::string& directory) {
   CSVTable table = ReadCSVWithTitles(directory + "/LOCATIONDATASETS.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
-      ltn = std::stoi(row.at(table.titles.at("TABCD")));
+      ltn = get_uint16(table, row, "TABCD");
     } catch (const std::exception& e) {
       continue;
     }
@@ -84,8 +84,8 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
   CSVTable table = ReadCSVWithTitles(directory + "/NAMES.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
-      int nid = std::stoi(row.at(table.titles.at("NID")));
-      locdb.names[nid] = to_utf8(row.at(table.titles.at("NAME")), &converter);
+      int nid = get_int(table, row, "NID");
+      locdb.names[nid] = to_utf8(get_string(table, row, "NAME"), &converter);
     } catch (const std::exception& e) {
       continue;
     }
@@ -95,11 +95,11 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
   for (CSVRow row : table.rows) {
     try {
       Road road;
-      road.lcd = std::stoi(row.at(table.titles.at("LCD")));
-      road.road_number = row.at(table.titles.at("ROADNUMBER"));
+      road.lcd = get_uint16(table, row, "LCD");
+      road.road_number = get_string(table, row, "ROADNUMBER");
       int rnid = 0;
-      if (!row.at(table.titles.at("RNID")).empty())
-        rnid = std::stoi(row.at(table.titles.at("RNID")));
+      if (row_contains(table, row, "RNID"))
+        rnid = get_int(table, row, "RNID");
       if (locdb.names.count(rnid) > 0)
         road.name = locdb.names[rnid];
       locdb.roads[road.lcd] = road;
@@ -112,8 +112,8 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
   for (CSVRow row : table.rows) {
     try {
       Segment seg;
-      seg.lcd = std::stoi(row.at(table.titles.at("LCD")));
-      seg.roa_lcd = std::stoi(row.at(table.titles.at("ROA_LCD")));
+      seg.lcd = get_uint16(table, row, "LCD");
+      seg.roa_lcd = get_uint16(table, row, "ROA_LCD");
       locdb.segments[seg.lcd] = seg;
     } catch (const std::exception& e) {
       continue;
@@ -123,26 +123,26 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
   table = ReadCSVWithTitles(directory + "/POINTS.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
-      locdb.ltn = std::stoi(row.at(table.titles.at("TABCD")));
+      locdb.ltn = get_uint16(table, row, "TABCD");
       Point point;
-      point.lcd = std::stoi(row.at(table.titles.at("LCD")));
+      point.lcd = get_uint16(table, row, "LCD");
       int n1id = 0;
-      if (!row.at(table.titles.at("N1ID")).empty())
-        n1id = std::stoi(row.at(table.titles.at("N1ID")));
+      if (row_contains(table, row, "N1ID"))
+        n1id = get_int(table, row, "N1ID");
       if (locdb.names.count(n1id) > 0)
         point.name1 = locdb.names[n1id];
-      if (!row.at(table.titles.at("XCOORD")).empty())
-        point.lon = std::stoi(row.at(table.titles.at("XCOORD"))) * 1e-5f;
-      if (!row.at(table.titles.at("YCOORD")).empty())
-        point.lat = std::stoi(row.at(table.titles.at("YCOORD"))) * 1e-5f;
-      if (!row.at(table.titles.at("ROA_LCD")).empty())
-        point.roa_lcd = std::stoi(row.at(table.titles.at("ROA_LCD")));
-      if (!row.at(table.titles.at("SEG_LCD")).empty())
-        point.seg_lcd = std::stoi(row.at(table.titles.at("SEG_LCD")));
+      if (row_contains(table, row, "XCOORD"))
+        point.lon = get_int(table, row, "XCOORD") * 1e-5f;
+      if (row_contains(table, row, "YCOORD"))
+        point.lat = get_int(table, row, "YCOORD") * 1e-5f;
+      if (row_contains(table, row, "ROA_LCD"))
+        point.roa_lcd = get_uint16(table, row, "ROA_LCD");
+      if (row_contains(table, row, "SEG_LCD"))
+        point.seg_lcd = get_uint16(table, row, "SEG_LCD");
 
       int rnid = 0;
-      if (!row.at(table.titles.at("RNID")).empty())
-        rnid = std::stoi(row.at(table.titles.at("RNID")));
+      if (row_contains(table, row, "RNID"))
+        rnid = get_int(table, row, "RNID");
       if (locdb.names.count(rnid) > 0)
         point.road_name = locdb.names[rnid];
 
@@ -161,9 +161,9 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
   table = ReadCSVWithTitles(directory + "/POFFSETS.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
-      int lcd = std::stoi(row.at(table.titles.at("LCD")));
-      int neg = std::stoi(row.at(table.titles.at("NEG_OFF_LCD")));
-      int pos = std::stoi(row.at(table.titles.at("POS_OFF_LCD")));
+      uint16_t lcd = get_uint16(table, row, "LCD");
+      uint16_t neg = get_uint16(table, row, "NEG_OFF_LCD");
+      uint16_t pos = get_uint16(table, row, "POS_OFF_LCD");
       if (locdb.points.count(lcd) > 0) {
         locdb.points[lcd].neg_off = neg;
         locdb.points[lcd].pos_off = pos;
@@ -177,8 +177,8 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
   for (CSVRow row : table.rows) {
     try {
       AdminArea area;
-      area.lcd = std::stoi(row.at(table.titles.at("LCD")));
-      area.name = row.at(table.titles.at("NID"));
+      area.lcd = get_uint16(table, row, "LCD");
+      area.name = get_string(table, row, "NID");
       locdb.admin_areas[area.lcd] = area;
     } catch (const std::exception& e) {
       continue;

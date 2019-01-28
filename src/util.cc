@@ -254,4 +254,20 @@ std::string rtrim(std::string s) {
   return s.erase(s.find_last_not_of(' ') + 1);
 }
 
+std::string get_string(const CSVTable& table, const CSVRow& row, const std::string& title) {
+  return row.at(table.titles.at(title));
+}
+
+int get_int(const CSVTable& table, const CSVRow& row, const std::string& title) {
+  return std::stoi(row.at(table.titles.at(title)));
+}
+
+uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title) {
+  return uint16_t(get_int(table, row, title));
+}
+
+bool row_contains(const CSVTable& table, const CSVRow& row, const std::string& title) {
+  return !row.at(table.titles.at(title)).empty();
+}
+
 }  // namespace redsea
