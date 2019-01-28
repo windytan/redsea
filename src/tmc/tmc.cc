@@ -180,6 +180,13 @@ uint16_t QuantifierSize(QuantifierType qtype) {
       return 5;
       break;
 
+    case QuantifierType::DegreesCelsius:
+    case QuantifierType::Time:
+    case QuantifierType::Tonnes:
+    case QuantifierType::Metres:
+    case QuantifierType::UptoMillimetres:
+    case QuantifierType::MHz:
+    case QuantifierType::kHz:
     default:
       return 8;
       break;
