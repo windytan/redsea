@@ -43,7 +43,7 @@ void MPXReader::init(const Options& options) {
   if (options.input_type == InputType::MPX_stdin) {
     sfinfo_.channels = 1;
     sfinfo_.format = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
-    sfinfo_.samplerate = options.samplerate;
+    sfinfo_.samplerate = int(options.samplerate);
     sfinfo_.frames = 0;
     file_ = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
     if (feed_thru_)
@@ -65,7 +65,7 @@ void MPXReader::init(const Options& options) {
               << " Hz or higher\n";
     is_error_ = true;
   } else {
-    assert(num_channels_ < static_cast<int>(buffer_.data.size()));
+    assert(num_channels_ < int(buffer_.data.size()));
     chunk_size_ = (kInputChunkSize / num_channels_) * num_channels_;
 
     is_eof_ = false;
@@ -93,7 +93,7 @@ void MPXReader::FillBuffer() {
   if (num_read_ < chunk_size_)
     is_eof_ = true;
 
-  buffer_.used_size = num_read_;
+  buffer_.used_size = size_t(num_read_);
 
   if (feed_thru_)
     sf_write_float(outfile_, buffer_.data.data(), num_read_);
@@ -190,7 +190,7 @@ Group ReadHexGroup(const Options& options) {
         if (single != " ") {
           try {
             int nval = std::stoi(std::string(single), nullptr, 16);
-            block.data = (block.data << 4) + nval;
+            block.data = uint16_t((block.data << 4) + nval);
           } catch (std::exception) {
             block_still_valid = false;
           }

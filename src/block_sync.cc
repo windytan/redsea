@@ -22,9 +22,9 @@
 
 namespace redsea {
 
-constexpr unsigned kBlockLength  = 26;
+constexpr int kBlockLength  = 26;
 constexpr unsigned kBlockBitmask = (1 << kBlockLength) - 1;
-constexpr unsigned kCheckwordLength = 10;
+constexpr int kCheckwordLength = 10;
 
 // Each offset word is associated with one block number
 constexpr eBlockNumber BlockNumberForOffset(Offset offset) {
@@ -136,7 +136,7 @@ std::map<std::pair<uint16_t, Offset>, uint32_t> MakeErrorLookupTable() {
     // "...the error-correction system should be enabled, but should be
     // restricted by attempting to correct bursts of errors spanning one or two
     // bits."
-    for (uint32_t error_bits : {0b1, 0b11}) {
+    for (uint32_t error_bits : {0b1u, 0b11u}) {
       for (unsigned shift = 0; shift < kBlockLength; shift++) {
         uint32_t error_vector = ((error_bits << shift) & kBlockBitmask);
 
@@ -155,7 +155,7 @@ ErrorCorrectionResult CorrectBurstErrors(Block block, Offset expected_offset) {
 
   ErrorCorrectionResult result;
 
-  uint16_t syndrome = CalculateSyndrome(block.raw);
+  uint16_t syndrome = uint16_t(CalculateSyndrome(block.raw));
   result.corrected_bits = block.raw;
 
   auto search = error_lookup_table.find({syndrome, expected_offset});
@@ -240,7 +240,7 @@ void BlockStream::PushBit(bool bit) {
 void BlockStream::FindBlockInInputRegister() {
   Block block;
   block.raw    = input_register_ & kBlockBitmask;
-  block.offset = OffsetForSyndrome(CalculateSyndrome(block.raw));
+  block.offset = OffsetForSyndrome(uint16_t(CalculateSyndrome(block.raw)));
 
   AcquireSync(block);
 
@@ -251,12 +251,12 @@ void BlockStream::FindBlockInInputRegister() {
     block.had_errors = (block.offset != expected_offset_);
     block_error_sum50_.push(block.had_errors);
 
-    block.data = block.raw >> kCheckwordLength;
+    block.data = uint16_t(block.raw >> kCheckwordLength);
 
     if (block.had_errors) {
       auto correction = CorrectBurstErrors(block, expected_offset_);
       if (correction.succeeded) {
-        block.data   = correction.corrected_bits >> kCheckwordLength;
+        block.data   = uint16_t(correction.corrected_bits >> kCheckwordLength);
         block.offset = expected_offset_;
       } else {
         UncorrectableErrorEncountered();

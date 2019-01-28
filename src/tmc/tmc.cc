@@ -137,8 +137,8 @@ std::string TimeString(uint16_t field_data) {
     ss << "day " << (field_data - 200) << " of the month";
 
   } else {
-    int  month      = (field_data - 232) / 2;
-    bool end_or_mid = (field_data - 232) % 2;
+    uint16_t month      = (field_data - 232) / 2;
+    bool     end_or_mid = (field_data - 232) % 2;
     static const std::vector<std::string> month_names({
         "January",   "February", "March",    "April",
         "May",       "June",     "July",     "August",
@@ -353,7 +353,7 @@ void LoadEventData() {
     if (fields.size() < 2)
       continue;
 
-    uint16_t code = std::stoi(fields[0]);
+    uint16_t code = uint16_t(std::stoi(fields[0]));
     std::string desc = fields[1];
 
     g_supplementary_data.insert({code, desc});
@@ -373,10 +373,10 @@ std::map<uint16_t, ServiceKey> LoadServiceKeyTable() {
     std::vector<uint8_t> nums(3);
 
     try {
-      encid   = std::stoi(fields.at(0));
-      nums[0] = std::stoi(fields.at(1));
-      nums[1] = std::stoi(fields.at(2));
-      nums[2] = std::stoi(fields.at(3));
+      encid   = uint16_t(std::stoi(fields.at(0)));
+      nums[0] =  uint8_t(std::stoi(fields.at(1)));
+      nums[1] =  uint8_t(std::stoi(fields.at(2)));
+      nums[2] =  uint8_t(std::stoi(fields.at(3)));
     } catch (const std::exception& e) {
       continue;
     }
@@ -393,7 +393,7 @@ void DecodeLocation(const LocationDatabase& db, uint16_t ltn,
       !(*jsonroot)["tmc"]["message"].isMember("location"))
     return;
 
-  uint16_t lcd = (*jsonroot)["tmc"]["message"]["location"].asUInt();
+  uint16_t lcd = uint16_t((*jsonroot)["tmc"]["message"]["location"].asUInt());
   int extent = std::stoi((*jsonroot)["tmc"]["message"]["extent"].asString());
   bool is_positive = (extent >= 0);
 

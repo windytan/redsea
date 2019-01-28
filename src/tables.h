@@ -23,8 +23,8 @@
 
 namespace redsea {
 
-std::string PTYNameString(int pty);
-std::string PTYNameStringRBDS(int pty);
+std::string PTYNameString(uint16_t pty);
+std::string PTYNameStringRBDS(uint16_t pty);
 std::string CountryString(uint16_t pi, uint16_t ecc);
 std::string LanguageString(uint16_t code);
 std::string AppNameString(uint16_t aid);

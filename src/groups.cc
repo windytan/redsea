@@ -134,7 +134,7 @@ uint8_t Group::bler() const {
   return bler_;
 }
 
-uint8_t Group::num_errors() const {
+int Group::num_errors() const {
   return std::accumulate(blocks_.cbegin(), blocks_.cend(), 0,
       [](int a, Block b) {
         return a + (b.had_errors || !b.is_received);
@@ -460,7 +460,7 @@ void Station::DecodeType2(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  int radiotext_position = Bits<4>(group.block2(), 0) *
+  size_t radiotext_position = Bits<4>(group.block2(), 0) *
     (group.type().version == GroupType::Version::A ? 4 : 2);
 
   if (radiotext_.is_ab_changed(Bits<1>(group.block2(), 4)))
@@ -535,16 +535,16 @@ void Station::DecodeType4A(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  int modified_julian_date = Bits<17>(group.block2(), group.block3(), 1);
+  uint32_t modified_julian_date = Bits<17>(group.block2(), group.block3(), 1);
   double local_offset = (Bits<1>(group.block4(), 5) ? -1 : 1) *
-         Bits<5>(group.block4(), 0) / 2.0;
+                         Bits<5>(group.block4(), 0) / 2.0;
   modified_julian_date += local_offset / 24.0;
 
-  int year = (modified_julian_date - 15078.2) / 365.25;
-  int month = (modified_julian_date - 14956.1 -
-              std::trunc(year * 365.25)) / 30.6001;
-  int day = modified_julian_date - 14956 - std::trunc(year * 365.25) -
-            std::trunc(month * 30.6001);
+  int year  = int((modified_julian_date - 15078.2) / 365.25);
+  int month = int((modified_julian_date - 14956.1 -
+                std::trunc(year * 365.25)) / 30.6001);
+  int day   = int(modified_julian_date - 14956 - std::trunc(year * 365.25) -
+                std::trunc(month * 30.6001));
   if (month == 14 || month == 15) {
     year += 1;
     month -= 12;
@@ -552,7 +552,7 @@ void Station::DecodeType4A(const Group& group) {
   year += 1900;
   month -= 1;
 
-  int local_offset_min = (local_offset - std::trunc(local_offset)) * 60;
+  int local_offset_min = int((local_offset - std::trunc(local_offset)) * 60.0);
 
   int hour = static_cast<int>(Bits<5>(group.block3(), group.block4(), 12) +
                               + local_offset) % 24;
@@ -563,7 +563,7 @@ void Station::DecodeType4A(const Group& group) {
                         minute <= 59 && fabs(std::trunc(local_offset)) <= 14.0);
   if (is_date_valid) {
     char buffer[100];
-    int local_offset_hour = fabs(std::trunc(local_offset));
+    int local_offset_hour = int(fabs(std::trunc(local_offset)));
 
     if (local_offset_hour == 0 && local_offset_min == 0) {
       snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00Z",
@@ -744,16 +744,16 @@ void Station::ParseRadioTextPlus(const Group& group) {
   json_["radiotext_plus"]["item_running"] = item_running;
   json_["radiotext_plus"]["item_toggle"] = item_toggle ? 1 : 0;
 
-  int num_tags = group.has(BLOCK3) ? (group.has(BLOCK4) ? 2 : 1) : 0;
+  size_t num_tags = group.has(BLOCK3) ? (group.has(BLOCK4) ? 2 : 1) : 0;
   std::vector<RTPlusTag> tags(num_tags);
 
   if (num_tags > 0) {
-    tags[0].content_type = Bits<6>(group.block2(), group.block3(), 13);
+    tags[0].content_type = uint16_t(Bits<6>(group.block2(), group.block3(), 13));
     tags[0].start        = Bits<6>(group.block3(), 7);
     tags[0].length       = Bits<6>(group.block3(), 1) + 1;
 
     if (num_tags == 2) {
-      tags[1].content_type = Bits<6>(group.block3(), group.block4(), 11);
+      tags[1].content_type = uint16_t(Bits<6>(group.block3(), group.block4(), 11));
       tags[1].start        = Bits<6>(group.block4(), 5);
       tags[1].length       = Bits<5>(group.block4(), 0) + 1;
     }

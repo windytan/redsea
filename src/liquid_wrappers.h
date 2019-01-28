@@ -48,7 +48,7 @@ class AGC {
 
 class FIRFilter {
  public:
-  FIRFilter(int len, float fc, float As = 60.0f, float mu = 0.0f);
+  FIRFilter(unsigned int len, float fc, float As = 60.0f, float mu = 0.0f);
   FIRFilter(const FIRFilter&) = delete;
   ~FIRFilter();
   void push(std::complex<float> s);
@@ -103,7 +103,7 @@ class Modem {
 
 class Resampler {
  public:
-  explicit Resampler(float ratio, size_t length);
+  explicit Resampler(float ratio, unsigned int length);
   Resampler(const Resampler&) = delete;
   ~Resampler();
   unsigned int execute(float in, float* out);

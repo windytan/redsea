@@ -125,16 +125,16 @@ int ProcessMPXInput(Options options) {
 
   while (!mpx.eof()) {
     mpx.FillBuffer();
-    for (int i = 0; i < options.num_channels; i++) {
+    for (size_t i = 0; i < size_t(options.num_channels); i++) {
       channels[i].ProcessBits(
         subcarriers[i]->ProcessChunk(
-          mpx.ReadChunk(i)
+          mpx.ReadChunk(int(i))
         )
       );
     }
   }
 
-  for (int i = 0; i < options.num_channels; i++)
+  for (size_t i = 0; i < size_t(options.num_channels); i++)
     channels[i].Flush();
 
   return EXIT_SUCCESS;

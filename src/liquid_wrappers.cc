@@ -46,7 +46,7 @@ float AGC::gain() const {
   return agc_crcf_get_gain(object_);
 }
 
-FIRFilter::FIRFilter(int len, float fc, float As, float mu) :
+FIRFilter::FIRFilter(unsigned int len, float fc, float As, float mu) :
     object_(firfilt_crcf_create_kaiser(len, fc, As, mu)) {
   firfilt_crcf_set_scale(object_, 2.0f * fc);
 }
@@ -147,7 +147,7 @@ float Modem::phase_error() {
   return modem_get_demodulator_phase_error(object_);
 }
 
-Resampler::Resampler(float ratio, size_t length) :
+Resampler::Resampler(float ratio, unsigned int length) :
     object_(resamp_rrrf_create(ratio, length, 0.47f, 60.0f, 32)) {
   assert(ratio <= 2.0f);
 }

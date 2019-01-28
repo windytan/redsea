@@ -34,7 +34,7 @@ namespace redsea {
 
 constexpr int   kInputChunkSize   = 8192;
 constexpr float kMaxResampleRatio = kTargetSampleRate_Hz / kMinimumSampleRate_Hz;
-constexpr int   kBufferSize       = kInputChunkSize * kMaxResampleRatio + 1;
+constexpr int   kBufferSize       = int(kInputChunkSize * kMaxResampleRatio) + 1;
 
 template<int N=kBufferSize>
 class MPXBuffer {

@@ -29,7 +29,7 @@ namespace redsea {
 namespace {
 
 // EN 50067:1998, Annex E (pp. 73-76)
-std::string RDSCharString(uint8_t code) {
+std::string RDSCharString(uint16_t code) {
   std::string result(" ");
   static const std::array<std::string, 223> codetable_G0({
      " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Á", "Â", "Ã", "ã",
@@ -49,11 +49,14 @@ std::string RDSCharString(uint8_t code) {
      ".", ">", "N", "―", "n", "¯", "¡", "ı", "→", "¾", "Ð", "đ", "Ŧ", "ŧ",
      "/", "?", "O", "_", "o", " ", "Ĳ", "ĳ", "↓", "§", "Ŀ", "ŀ", "ð" });
 
-  int row = code & 0xF;
-  int col = code >> 4;
-  int idx = row * 14 + (col - 2);
-  if (col >= 2 && idx >= 0 && idx < static_cast<int>(codetable_G0.size()))
-    result = codetable_G0[idx];
+  size_t row = code & 0xF;
+  size_t col = code >> 4;
+
+  if (col >= 2) {
+    size_t idx = row * 14 + (col - 2);
+    if (idx < static_cast<int>(codetable_G0.size()))
+      result = codetable_G0[idx];
+  }
 
   return result;
 }
@@ -90,17 +93,17 @@ void RDSString::set(size_t pos, RDSChar chr1, RDSChar chr2) {
 }
 
 size_t RDSString::length_received() const {
-  return std::distance(chars_.cbegin(),
+  return size_t(std::distance(chars_.cbegin(),
       std::find_if(chars_.cbegin(), chars_.cend(), [](const RDSChar& chr) {
         return !chr.is_sequential();
-      })) + 1;
+      })) + 1);
 }
 
 size_t RDSString::length_expected() const {
-  return std::distance(chars_.cbegin(),
+  return size_t(std::distance(chars_.cbegin(),
       std::find_if(chars_.cbegin(), chars_.cend(), [](const RDSChar& chr) {
         return chr.code() == 0x0D;
-      }));
+      })));
 }
 
 void RDSString::resize(size_t n) {

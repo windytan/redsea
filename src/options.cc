@@ -90,7 +90,7 @@ Options GetOptions(int argc, char** argv) {
           else if (toupper(optstr.back()) == 'M')
             factor = 1000000.0;
         }
-        options.samplerate = std::atof(optarg) * factor;
+        options.samplerate = float(std::atof(optarg) * factor);
         if (options.samplerate < kMinimumSampleRate_Hz) {
           std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
                     << " Hz or higher\n";

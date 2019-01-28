@@ -127,7 +127,7 @@ bool operator< (const CarrierFrequency &f1,
 
 AltFreqList::AltFreqList() {}
 
-void AltFreqList::insert(uint8_t af_code) {
+void AltFreqList::insert(uint16_t af_code) {
   CarrierFrequency frequency(af_code, lf_mf_follows_ ? CarrierFrequency::Band::LF_MF :
                                                        CarrierFrequency::Band::FM);
   lf_mf_follows_ = false;

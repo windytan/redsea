@@ -48,7 +48,7 @@ constexpr float kPLLBandwidth_Hz      = 0.01f;
 constexpr float kPLLMultiplier        = 12.0f;
 
 constexpr float hertz2step(float Hz) {
-  return Hz * 2.0f * M_PI / kTargetSampleRate_Hz;
+  return Hz * 2.0f * float(M_PI) / kTargetSampleRate_Hz;
 }
 
 }  // namespace
@@ -116,12 +116,12 @@ Subcarrier::Subcarrier(const Options& options) :
  */
 std::vector<bool> Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
   if (resample_ratio_ != 1.0f) {
-    int i_resampled = 0;
+    unsigned int i_resampled = 0;
     for (size_t i = 0; i < chunk.used_size; i++) {
       static float buf[4];
-      int num_resampled = resampler_.execute(chunk.data[i], buf);
+      unsigned int num_resampled = resampler_.execute(chunk.data[i], buf);
 
-      for (int j = 0; j < num_resampled; j++) {
+      for (unsigned int j = 0; j < num_resampled; j++) {
         resampled_buffer_.data[i_resampled] = buf[j];
         i_resampled++;
       }
@@ -131,8 +131,8 @@ std::vector<bool> Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
 
   MPXBuffer<>& buf = (resample_ratio_ == 1.0f ? chunk : resampled_buffer_);
 
-  constexpr int decimate_ratio = kTargetSampleRate_Hz / kBitsPerSecond / 2 /
-                                 kSamplesPerSymbol;
+  constexpr int decimate_ratio = int(kTargetSampleRate_Hz / kBitsPerSecond / 2 /
+                                     kSamplesPerSymbol);
 
   std::vector<bool> bits;
 
@@ -158,7 +158,7 @@ std::vector<bool> Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
         // One biphase symbol received for every 2 PSK symbols
         if (biphase.valid) {
           bits.push_back(delta_decoder_.Decode(
-                           biphase.data.real() >= 0.0));
+                           biphase.data.real() >= 0.0f));
         }
       }
     }

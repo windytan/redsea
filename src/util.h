@@ -54,7 +54,7 @@ using CSVRow = std::vector<std::string>;
 
 class CSVTable {
  public:
-  std::map<std::string, int> titles;
+  std::map<std::string, size_t> titles;
   std::vector<CSVRow> rows;
 };
 
@@ -90,7 +90,7 @@ class CarrierFrequency {
 class AltFreqList {
  public:
   AltFreqList();
-  void insert(uint8_t af_code);
+  void insert(uint16_t af_code);
   bool complete() const;
   std::set<CarrierFrequency> get() const;
   void clear();

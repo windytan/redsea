@@ -78,7 +78,7 @@ bool operator<(const GroupType& type1, const GroupType& type2);
 class ProgramServiceName {
   public:
    ProgramServiceName() : text(8) {}
-   void Update(int pos, RDSChar char1, RDSChar char2) {
+   void Update(size_t pos, RDSChar char1, RDSChar char2) {
      text.set(pos, char1, char2);
    }
 
@@ -93,7 +93,7 @@ class RadioText {
     ab = new_ab;
     return is;
   }
-  void Update(int pos, RDSChar char1, RDSChar char2) {
+  void Update(size_t pos, RDSChar char1, RDSChar char2) {
     text.set(pos, char1, char2);
   }
 
@@ -188,8 +188,8 @@ class Station {
   int which_channel_       { 0 };
   ProgramServiceName ps_;
   RadioText radiotext_;
-  int pin_                 { 0 };
-  int ecc_                 { 0 };
+  uint16_t pin_            { 0 };
+  uint16_t ecc_            { 0 };
   int cc_                  { 0 };
   int tmc_id_              { 0 };
   bool linkage_la_         { 0 };
