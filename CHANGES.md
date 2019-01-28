@@ -9,6 +9,7 @@
 * Print usage help instead of error message when stdin is empty.
 * Speed up loading of TMC location database.
 * Improve block sync detection by ignoring spurious sync pulses.
+* Fine-tune filter bandwidths for better sensitivity, based on test runs.
 * At EOF, process the last partially received group.
 * Remove character codetables G1 and G2 since they don't appear in the latest
   RDS standard any more.
