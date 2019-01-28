@@ -130,7 +130,7 @@ uint16_t Group::pi() const {
     return 0x0000;
 }
 
-uint8_t Group::bler() const {
+float Group::bler() const {
   return bler_;
 }
 
@@ -200,7 +200,7 @@ void Group::set_time(std::chrono::time_point<std::chrono::system_clock> t) {
   has_time_ = true;
 }
 
-void Group::set_average_bler(uint8_t bler) {
+void Group::set_average_bler(float bler) {
   bler_ = bler;
   has_bler_ = true;
 }
@@ -278,7 +278,7 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
     json_["rx_time"] = TimePointToString(group.rx_time(), options_.time_format);
 
   if (group.has_bler())
-    json_["bler"] = group.bler();
+    json_["bler"] = int(group.bler() * 100.f + .5f);
 
   if (options_.num_channels > 1)
     json_["channel"] = which_channel_;

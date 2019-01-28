@@ -72,7 +72,7 @@ class Channel {
   CachedPI cached_pi_;
   BlockStream block_stream_;
   Station station_;
-  RunningAverage<kNumBlerAverageGroups> bler_average_;
+  RunningAverage<float, kNumBlerAverageGroups> bler_average_;
 };
 
 }  // namespace redsea

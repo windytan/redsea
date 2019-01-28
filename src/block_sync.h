@@ -66,10 +66,10 @@ class BlockStream {
   Offset   previous_syncing_offset_   { Offset::invalid };
   Offset   expected_offset_           { Offset::A };
   bool     is_in_sync_                { false };
-  RunningSum<50> block_error_sum50_;
+  RunningSum<int, 50> block_error_sum50_;
   const    Options options_;
   bool     is_eof_                    { false };
-  RunningAverage<kNumBlerAverageGroups> bler_average_;
+  RunningAverage<float, kNumBlerAverageGroups> bler_average_;
   Group current_group_;
   std::vector<Group> groups_;
 };

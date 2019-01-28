@@ -135,8 +135,8 @@ class Group {
   GroupType type() const;
   bool has_type() const;
   uint16_t pi() const;
-  uint8_t bler() const;
-  uint8_t num_errors() const;
+  float bler() const;
+  int num_errors() const;
   bool has_pi() const;
   bool has_bler() const;
   bool has_time() const;
@@ -147,14 +147,14 @@ class Group {
   void disable_offsets();
   void set_block(eBlockNumber block_num, Block block);
   void set_time(std::chrono::time_point<std::chrono::system_clock> t);
-  void set_average_bler(uint8_t bler);
+  void set_average_bler(float bler);
   void set_channel(int which_channel);
 
  private:
   GroupType type_   {};
   std::array<Block, 4> blocks_ {};
   std::chrono::time_point<std::chrono::system_clock> time_received_;
-  uint8_t bler_     { 0 };
+  float bler_       { 0.f };
   bool has_type_    { false };
   bool has_c_prime_ { false };
   bool has_bler_    { false };

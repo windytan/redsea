@@ -59,8 +59,8 @@ void Channel::ProcessGroup(Group group) {
     group.set_time(std::chrono::system_clock::now());
 
   if (options_.bler) {
-    bler_average_.push(100.0f * group.num_errors() / 4);
-    group.set_average_bler(bler_average_.average());
+    bler_average_.push(group.num_errors() / 4.f);
+    group.set_average_bler(100.f * bler_average_.average());
   }
 
   if (group.has_pi()) {
