@@ -417,8 +417,8 @@ void DecodeLocation(const LocationDatabase& db, uint16_t ltn,
 
     for (int i=0; i < static_cast<int>(points.size()); i++) {
 //        (*jsonroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
-      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lat"] = points[i].lat;
-      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lon"] = points[i].lon;
+      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lat"] = double(points[i].lat);
+      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lon"] = double(points[i].lon);
     }
 
     if (points.size() > 1 && points.at(0).name1.length() > 0 &&
