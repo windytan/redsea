@@ -377,18 +377,18 @@ std::map<uint16_t, ServiceKey> LoadServiceKeyTable() {
 
     uint16_t encid;
 
-    std::vector<uint8_t> nums(3);
+    ServiceKey key;
 
     try {
-      encid   = uint16_t(std::stoi(fields.at(0)));
-      nums[0] =  uint8_t(std::stoi(fields.at(1)));
-      nums[1] =  uint8_t(std::stoi(fields.at(2)));
-      nums[2] =  uint8_t(std::stoi(fields.at(3)));
+      encid        = uint16_t(std::stoi(fields.at(0)));
+      key.xorval   =  uint8_t(std::stoi(fields.at(1)));
+      key.xorstart =  uint8_t(std::stoi(fields.at(2)));
+      key.nrot     =  uint8_t(std::stoi(fields.at(3)));
     } catch (const std::exception& e) {
       continue;
     }
 
-    result.insert({encid, {nums[0], nums[1], nums[2]}});
+    result.insert({encid, key});
   }
 
   return result;

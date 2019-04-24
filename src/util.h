@@ -117,7 +117,7 @@ class RunningSum {
   }
 
  private:
-  std::array<T, N> history_ {};
+  std::array<T, N> history_;
   size_t pointer_ { 0 };
 };
 
@@ -137,8 +137,8 @@ class RunningAverage {
   }
 
  private:
-  std::array<T, N> history_ {};
-  T      sum_ {};
+  std::array<T, N> history_;
+  T      sum_;
   size_t ptr_ { 0 };
 };
 
