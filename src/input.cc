@@ -54,7 +54,7 @@ void MPXReader::init(const Options& options) {
   }
 
   if (!file_) {
-    if (sf_error(file_) == 26)
+    if (sf_error(file_) == 26 || options.input_type == InputType::MPX_stdin)
       throw (BeyondEofError());
 
     std::cerr << "error: failed to open file: " <<
