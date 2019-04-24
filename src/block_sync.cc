@@ -27,7 +27,7 @@ constexpr unsigned kBlockBitmask = (1 << kBlockLength) - 1;
 constexpr int kCheckwordLength = 10;
 
 // Each offset word is associated with one block number
-constexpr eBlockNumber BlockNumberForOffset(Offset offset) {
+eBlockNumber BlockNumberForOffset(Offset offset) {
   switch (offset) {
     case Offset::A       : return BLOCK1; break;
     case Offset::B       : return BLOCK2; break;
@@ -42,7 +42,7 @@ constexpr eBlockNumber BlockNumberForOffset(Offset offset) {
 }
 
 // Return the next offset word in sequence
-constexpr Offset NextOffsetFor(Offset this_offset) {
+Offset NextOffsetFor(Offset this_offset) {
   switch (this_offset) {
     case Offset::A       : return Offset::B; break;
     case Offset::B       : return Offset::C; break;
@@ -56,7 +56,7 @@ constexpr Offset NextOffsetFor(Offset this_offset) {
 }
 
 // IEC 62106:2015 section B.3.1 Table B.1
-constexpr Offset OffsetForSyndrome(uint16_t syndrome) {
+Offset OffsetForSyndrome(uint16_t syndrome) {
   switch (syndrome) {
     case 0b1111011000 : return Offset::A;       break;
     case 0b1111010100 : return Offset::B;       break;
@@ -169,21 +169,26 @@ ErrorCorrectionResult CorrectBurstErrors(Block block, Offset expected_offset) {
 }
 
 void SyncPulseBuffer::Push(Offset offset, int bitcount) {
-  for (size_t i = 0; i < pulses.size() - 1; i++) {
-    pulses[i] = pulses[i + 1];
+  for (size_t i = 0; i < pulses_.size() - 1; i++) {
+    pulses_[i] = pulses_[i + 1];
   }
-  pulses.back() = {offset, bitcount};
+
+  SyncPulse new_pulse;
+  new_pulse.offset = offset;
+  new_pulse.bitcount = bitcount;
+
+  pulses_.back() = new_pulse;
 }
 
 bool SyncPulseBuffer::SequenceFound() const {
-  for (size_t prev_i = 0; prev_i < pulses.size() - 1; prev_i++) {
-    int sync_distance = pulses.back().bitcount - pulses[prev_i].bitcount;
+  for (size_t prev_i = 0; prev_i < pulses_.size() - 1; prev_i++) {
+    int sync_distance = pulses_.back().bitcount - pulses_[prev_i].bitcount;
 
     bool found = (sync_distance % kBlockLength == 0 &&
                   sync_distance / kBlockLength <= 6 &&
-                  pulses[prev_i].offset != Offset::invalid &&
-      (BlockNumberForOffset(pulses[prev_i].offset) + sync_distance / kBlockLength) % 4 ==
-       BlockNumberForOffset(pulses.back().offset));
+                  pulses_[prev_i].offset != Offset::invalid &&
+      (BlockNumberForOffset(pulses_[prev_i].offset) + sync_distance / kBlockLength) % 4 ==
+       BlockNumberForOffset(pulses_.back().offset));
 
     if (found)
       return true;

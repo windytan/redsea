@@ -37,7 +37,7 @@ class SyncPulseBuffer {
   bool SequenceFound() const;
 
  private:
-  std::array<SyncPulse, 4> pulses;
+  std::array<SyncPulse, 4> pulses_;
 };
 
 struct ErrorCorrectionResult {
