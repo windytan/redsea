@@ -20,6 +20,32 @@ the [wiki][Wiki: Use cases].
 [Wiki: Features]: https://github.com/windytan/redsea/wiki/Supported-RDS-features
 [Wiki: Input]: https://github.com/windytan/redsea/wiki/Input-formats
 
+```json
+{
+  "di": { "dynamic_pty": true },
+  "group": "0A",
+  "is_music": true,
+  "pi": "0xD314",
+  "prog_type": "Serious classical",
+  "ps": "BR-KLASS",
+  "ta": true,
+  "tp": false
+}
+{
+  "group": "12A",
+  "pi": "0xD314",
+  "prog_type": "Serious classical",
+  "radiotext_plus": {
+    "item_running": true,
+    "item_toggle": 1,
+    "tags": [
+      { "content-type": "item.conductor", "data": "Pinchas Steinberg" }
+    ]
+  },
+  "tp": false
+}
+```
+
 ## Contents
 
   * [Installation](#installation)
