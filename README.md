@@ -86,7 +86,7 @@ Or on macOS (OSX) using Homebrew:
 
         $ make install
 
-It is also simple to later pull the latest updates and recompile:
+How to later get the latest updates and recompile:
 
         $ git pull
         $ ./autogen.sh && ./configure && make clean && make
