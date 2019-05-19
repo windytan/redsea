@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.18
+## 0.18 (2019-05-19)
 
 * Add support for loading multiple TMC location databases by specifying
   `--loctable` more than once.
