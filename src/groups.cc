@@ -137,7 +137,7 @@ float Group::bler() const {
 int Group::num_errors() const {
   return std::accumulate(blocks_.cbegin(), blocks_.cend(), 0,
       [](int a, Block b) {
-        return a + (b.had_errors || !b.is_received);
+        return a + ((b.had_errors || !b.is_received) ? 1 : 0);
       });
 }
 
