@@ -104,7 +104,11 @@ class AltFreqList {
 template<typename T, size_t N>
 class RunningSum {
  public:
-  RunningSum() = default;
+  RunningSum() {
+    for (auto& el : history_) {
+      el = 0.f;
+    }
+  }
   T sum() const {
     return std::accumulate(history_.cbegin(), history_.cend(), 0);
   }
@@ -124,7 +128,11 @@ class RunningSum {
 template<typename T, size_t N>
 class RunningAverage {
  public:
-  RunningAverage() = default;
+  RunningAverage() {
+    for (auto& el : history_) {
+      el = 0.f;
+    }
+  }
   void push(T value) {
     sum_ -= history_[ptr_];
     history_[ptr_] = value;
