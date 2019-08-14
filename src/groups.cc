@@ -278,7 +278,7 @@ void Station::UpdateAndPrint(const Group& group, std::ostream* stream) {
     json_["rx_time"] = TimePointToString(group.rx_time(), options_.time_format);
 
   if (group.has_bler())
-    json_["bler"] = int(group.bler() * 100.f + .5f);
+    json_["bler"] = int(group.bler() + .5f);
 
   if (options_.num_channels > 1)
     json_["channel"] = which_channel_;
