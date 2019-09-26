@@ -71,8 +71,8 @@ struct LocationDatabase {
 };
 std::ostream& operator<<(std::ostream& strm, const LocationDatabase& locdb);
 
-LocationDatabase LoadLocationDatabase(const std::string& directory);
-uint16_t ReadLTN(const std::string& directory);
+LocationDatabase loadLocationDatabase(const std::string& directory);
+uint16_t readLTN(const std::string& directory);
 
 }  // namespace tmc
 }  // namespace redsea

@@ -92,7 +92,7 @@ Maybe<std::complex<float>> BiphaseDecoder::push(
   return result;
 }
 
-unsigned DeltaDecoder::Decode(unsigned d) {
+unsigned DeltaDecoder::decode(unsigned d) {
   unsigned bit = (d != prev_);
   prev_ = d;
   return bit;
@@ -107,14 +107,14 @@ Subcarrier::Subcarrier(const Options& options) :
              kSymsyncBeta, 32),
     modem_(LIQUID_MODEM_PSK2),
     resampler_(resample_ratio_, 13) {
-  symsync_.set_bandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
-  symsync_.set_output_rate(1);
-  oscillator_.set_pll_bandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
+  symsync_.setBandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
+  symsync_.setOutputRate(1);
+  oscillator_.setPLLBandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
 }
 
 /** MPX to bits
  */
-std::vector<bool> Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
+std::vector<bool> Subcarrier::processChunk(MPXBuffer<>& chunk) {
   if (resample_ratio_ != 1.0f) {
     unsigned int i_resampled = 0;
     for (size_t i = 0; i < chunk.used_size; i++) {
@@ -139,7 +139,7 @@ std::vector<bool> Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
   for (size_t i = 0; i < buf.used_size; i++) {
     // Mix RDS to baseband for filtering purposes
     std::complex<float> sample_baseband =
-        oscillator_.MixDown(std::complex<float>(buf.data[i]));
+        oscillator_.mixDown(std::complex<float>(buf.data[i]));
 
     fir_lpf_.push(sample_baseband);
 
@@ -150,20 +150,20 @@ std::vector<bool> Subcarrier::ProcessChunk(MPXBuffer<>& chunk) {
 
       if (symbol.valid) {
         // Modem here is only used to track PLL phase error
-        modem_.Demodulate(symbol.data);
-        oscillator_.StepPLL(modem_.phase_error() * kPLLMultiplier);
+        modem_.demodulate(symbol.data);
+        oscillator_.stepPLL(modem_.getPhaseError() * kPLLMultiplier);
 
         auto biphase = biphase_decoder_.push(symbol.data);
 
         // One biphase symbol received for every 2 PSK symbols
         if (biphase.valid) {
-          bits.push_back(delta_decoder_.Decode(
+          bits.push_back(delta_decoder_.decode(
                            biphase.data.real() >= 0.0f));
         }
       }
     }
 
-    oscillator_.Step();
+    oscillator_.step();
 
     sample_num_++;
   }

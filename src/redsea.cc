@@ -27,7 +27,7 @@
 
 namespace redsea {
 
-void PrintUsage() {
+void printUsage() {
   std::cout <<
     "radio_command | redsea [OPTIONS]\n"
     "redsea [OPTIONS] < raw_signal_file.s16\n"
@@ -87,7 +87,7 @@ void PrintUsage() {
     "                       suppressing JSON output.\n";
 }
 
-void PrintVersion() {
+void printVersion() {
 #ifdef DEBUG
   std::cout << PACKAGE_STRING << "-debug by OH2EIQ" << '\n';
 #else
@@ -95,7 +95,7 @@ void PrintVersion() {
 #endif
 }
 
-int ProcessMPXInput(Options options) {
+int processMPXInput(Options options) {
 
 #ifndef HAVE_LIQUID
   std::cerr << "error: redsea was compiled without liquid-dsp"
@@ -108,13 +108,13 @@ int ProcessMPXInput(Options options) {
   try {
     mpx.init(options);
   } catch (BeyondEofError& e) {
-    PrintUsage();
+    printUsage();
     return EXIT_FAILURE;
   }
-  options.samplerate = mpx.samplerate();
-  options.num_channels = mpx.num_channels();
+  options.samplerate = mpx.getSamplerate();
+  options.num_channels = mpx.getNumChannels();
 
-  if (mpx.error())
+  if (mpx.hasError())
     return EXIT_FAILURE;
 
   std::vector<Channel> channels;
@@ -125,40 +125,40 @@ int ProcessMPXInput(Options options) {
   }
 
   while (!mpx.eof()) {
-    mpx.FillBuffer();
+    mpx.fillBuffer();
     for (size_t i = 0; i < size_t(options.num_channels); i++) {
-      channels[i].ProcessBits(
-        subcarriers[i]->ProcessChunk(
-          mpx.ReadChunk(int(i))
+      channels[i].processBits(
+        subcarriers[i]->processChunk(
+          mpx.readChunk(int(i))
         )
       );
     }
   }
 
   for (size_t i = 0; i < size_t(options.num_channels); i++)
-    channels[i].Flush();
+    channels[i].flush();
 
   return EXIT_SUCCESS;
 }
 
-int ProcessASCIIBitsInput(Options options) {
+int processASCIIBitsInput(Options options) {
   Channel channel(options, 0);
   AsciiBitReader ascii_reader(options);
 
   while (!ascii_reader.eof()) {
-    channel.ProcessBit(ascii_reader.ReadBit());
+    channel.processBit(ascii_reader.readBit());
   }
 
-  channel.Flush();
+  channel.flush();
 
   return EXIT_SUCCESS;
 }
 
-int ProcessHexInput(Options options) {
+int processHexInput(Options options) {
   Channel channel(options, 0);
 
   while (!std::cin.eof()) {
-    channel.ProcessGroup(ReadHexGroup(options));
+    channel.processGroup(readHexGroup(options));
   }
 
   return EXIT_SUCCESS;
@@ -167,13 +167,13 @@ int ProcessHexInput(Options options) {
 }  // namespace redsea
 
 int main(int argc, char** argv) {
-  redsea::Options options = redsea::GetOptions(argc, argv);
+  redsea::Options options = redsea::getOptions(argc, argv);
 
   if (options.print_usage)
-    redsea::PrintUsage();
+    redsea::printUsage();
 
   if (options.print_version)
-    redsea::PrintVersion();
+    redsea::printVersion();
 
   if (options.exit_failure)
     return EXIT_FAILURE;
@@ -184,15 +184,15 @@ int main(int argc, char** argv) {
   switch (options.input_type) {
     case redsea::InputType::MPX_stdin:
     case redsea::InputType::MPX_sndfile:
-      return ProcessMPXInput(options);
+      return processMPXInput(options);
       break;
 
     case redsea::InputType::ASCIIbits:
-      return ProcessASCIIBitsInput(options);
+      return processASCIIBitsInput(options);
       break;
 
     case redsea::InputType::Hex:
-      return ProcessHexInput(options);
+      return processHexInput(options);
       break;
   }
 }

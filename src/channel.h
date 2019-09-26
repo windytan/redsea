@@ -33,11 +33,11 @@ class CachedPI {
 
   CachedPI(InputType input_type) :
     bypass_(input_type == InputType::Hex) {}
-  Result Update(uint16_t pi) {
+  Result update(uint16_t pi) {
     pi_prev2_ = pi_prev1_;
     pi_prev1_ = pi;
 
-    Result status (Result::SpuriousChange);
+    Result status(Result::SpuriousChange);
 
     if (pi_prev1_ == pi_prev2_ || bypass_) {
       status = (pi == pi_confirmed_ ? Result::NoChange :
@@ -46,7 +46,7 @@ class CachedPI {
     }
     return status;
   }
-  uint16_t Get() const {
+  uint16_t get() const {
     return pi_confirmed_;
   }
 
@@ -61,10 +61,10 @@ class Channel {
  public:
   Channel(const Options& options, int which_channel);
   Channel(const Channel& other);
-  void ProcessBit(bool bit);
-  void ProcessBits(std::vector<bool> bits);
-  void ProcessGroup(Group group);
-  void Flush();
+  void processBit(bool bit);
+  void processBits(std::vector<bool> bits);
+  void processGroup(Group group);
+  void flush();
 
  private:
   Options options_;

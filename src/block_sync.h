@@ -33,8 +33,8 @@ struct SyncPulse {
 
 class SyncPulseBuffer {
  public:
-  void Push(Offset offset, int bitcount);
-  bool SequenceFound() const;
+  void push(Offset offset, int bitcount);
+  bool isSequenceFound() const;
 
  private:
   std::array<SyncPulse, 4> pulses_;
@@ -48,19 +48,19 @@ struct ErrorCorrectionResult {
 class BlockStream {
  public:
   explicit BlockStream(const Options& options);
-  void PushBit(bool bit);
-  std::vector<Group> PopGroups();
+  void pushBit(bool bit);
+  std::vector<Group> popGroups();
   bool eof() const;
-  Group FlushCurrentGroup() const;
+  Group flushCurrentGroup() const;
 
  private:
-  void AcquireSync(Block block);
-  void UncorrectableErrorEncountered();
-  void FindBlockInInputRegister();
-  void NewGroupReceived();
+  void acquireSync(Block block);
+  void handleUncorrectableError();
+  void findBlockInInputRegister();
+  void handleNewlyReceivedGroup();
 
-  unsigned bitcount_                  { 0 };
-  unsigned previous_syncing_bitcount_ { 0 };
+  int      bitcount_                  { 0 };
+  int      previous_syncing_bitcount_ { 0 };
   int      num_bits_until_next_block_ { 1 };
   uint32_t input_register_            { 0 };
   Offset   previous_syncing_offset_   { Offset::invalid };

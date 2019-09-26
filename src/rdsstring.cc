@@ -29,7 +29,7 @@ namespace redsea {
 namespace {
 
 // EN 50067:1998, Annex E (pp. 73-76)
-std::string RDSCharString(uint16_t code) {
+std::string getRDSCharString(uint16_t code) {
   std::string result(" ");
   static const std::array<std::string, 223> codetable_G0({
      " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Á", "Â", "Ã", "ã",
@@ -75,13 +75,13 @@ void RDSString::set(size_t pos, RDSChar chr) {
 
   if (pos != prev_pos_ + 1)
     for (RDSChar& c : chars_)
-      c.set_sequential(false);
+      c.setSequential(false);
 
-  chars_.at(pos).set_sequential(true);
+  chars_.at(pos).setSequential(true);
 
-  if (complete()) {
+  if (isComplete()) {
     last_complete_string_ = str();
-    last_complete_chars_ = chars();
+    last_complete_chars_ = getChars();
   }
 
   prev_pos_ = pos;
@@ -92,17 +92,17 @@ void RDSString::set(size_t pos, RDSChar chr1, RDSChar chr2) {
   set(pos + 1, chr2);
 }
 
-size_t RDSString::length_received() const {
+size_t RDSString::getReceivedLength() const {
   return size_t(std::distance(chars_.cbegin(),
       std::find_if(chars_.cbegin(), chars_.cend(), [](const RDSChar& chr) {
-        return !chr.is_sequential();
+        return !chr.isSequential();
       })) + 1);
 }
 
-size_t RDSString::length_expected() const {
+size_t RDSString::getExpectedLength() const {
   return size_t(std::distance(chars_.cbegin(),
       std::find_if(chars_.cbegin(), chars_.cend(), [](const RDSChar& chr) {
-        return chr.code() == 0x0D;
+        return chr.getCode() == 0x0D;
       })));
 }
 
@@ -111,45 +111,45 @@ void RDSString::resize(size_t n) {
 }
 
 std::string RDSString::str() const {
-  auto characters = chars();
+  auto characters = getChars();
   return std::accumulate(characters.cbegin(), characters.cend(), std::string(""),
       [](const std::string& s, const RDSChar& chr) {
-      return s + RDSCharString(chr.code()); });
+      return s + getRDSCharString(chr.getCode()); });
 }
 
-std::vector<RDSChar> RDSString::chars() const {
+std::vector<RDSChar> RDSString::getChars() const {
   std::vector<RDSChar> result;
-  size_t len = length_expected();
+  size_t len = getExpectedLength();
   for (size_t i = 0; i < len; i++)
-    result.push_back(chars_[i].is_sequential() ? chars_[i] : RDSChar(0x20));
+    result.push_back(chars_[i].isSequential() ? chars_[i] : RDSChar(0x20));
 
   return result;
 }
 
-std::string RDSString::last_complete_string() const {
+std::string RDSString::getLastCompleteString() const {
   return last_complete_string_;
 }
 
-std::string RDSString::last_complete_string(size_t start, size_t len) const {
+std::string RDSString::getLastCompleteString(size_t start, size_t len) const {
   std::string result;
   for (size_t i = start; i < start + len; i++)
     result += (i < last_complete_chars_.size() ?
-        RDSCharString(last_complete_chars_[i].code()) : " ");
+        getRDSCharString(last_complete_chars_[i].getCode()) : " ");
 
   return result;
 }
 
-bool RDSString::has_chars(size_t start, size_t len) const {
+bool RDSString::hasChars(size_t start, size_t len) const {
   return start + len <= last_complete_chars_.size();
 }
 
-bool RDSString::complete() const {
-  return length_received() >= length_expected();
+bool RDSString::isComplete() const {
+  return getReceivedLength() >= getExpectedLength();
 }
 
 void RDSString::clear() {
   for (RDSChar& c : chars_)
-    c.set_sequential(false);
+    c.setSequential(false);
   last_complete_string_ = str();
   last_complete_chars_.clear();
 }

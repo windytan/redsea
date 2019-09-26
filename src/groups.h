@@ -78,7 +78,7 @@ bool operator<(const GroupType& type1, const GroupType& type2);
 class ProgramServiceName {
   public:
    ProgramServiceName() : text(8) {}
-   void Update(size_t pos, RDSChar char1, RDSChar char2) {
+   void update(size_t pos, RDSChar char1, RDSChar char2) {
      text.set(pos, char1, char2);
    }
 
@@ -88,12 +88,12 @@ class ProgramServiceName {
 class RadioText {
  public:
   RadioText() : text(64) {}
-  bool is_ab_changed(int new_ab) {
+  bool isABChanged(int new_ab) {
     bool is = (ab != new_ab);
     ab = new_ab;
     return is;
   }
-  void Update(size_t pos, RDSChar char1, RDSChar char2) {
+  void update(size_t pos, RDSChar char1, RDSChar char2) {
     text.set(pos, char1, char2);
   }
 
@@ -117,38 +117,38 @@ class Pager {
   int ecc         { 0 };
   int ccf         { 0 };
   int interval    { 0 };
-  void Decode1ABlock4(uint16_t block4);
+  void decode1ABlock4(uint16_t block4);
 };
 
 class Group {
  public:
   Group();
 
-  uint16_t block(eBlockNumber block_num) const;
-  uint16_t block1() const;
-  uint16_t block2() const;
-  uint16_t block3() const;
-  uint16_t block4() const;
+  uint16_t getBlock(eBlockNumber block_num) const;
+  uint16_t getBlock1() const;
+  uint16_t getBlock2() const;
+  uint16_t getBlock3() const;
+  uint16_t getBlock4() const;
 
   bool has(eBlockNumber block_num) const;
-  bool empty() const;
-  GroupType type() const;
-  bool has_type() const;
-  uint16_t pi() const;
-  float bler() const;
-  int num_errors() const;
-  bool has_pi() const;
-  bool has_bler() const;
-  bool has_time() const;
-  std::chrono::time_point<std::chrono::system_clock> rx_time() const;
-  void PrintHex(std::ostream* stream,
+  bool isEmpty() const;
+  GroupType getType() const;
+  bool hasType() const;
+  uint16_t getPI() const;
+  float getBLER() const;
+  int getNumErrors() const;
+  bool hasPI() const;
+  bool hasBLER() const;
+  bool hasTime() const;
+  std::chrono::time_point<std::chrono::system_clock> getRxTime() const;
+  void printHex(std::ostream* stream,
                 const std::string& time_format) const;
 
-  void disable_offsets();
-  void set_block(eBlockNumber block_num, Block block);
-  void set_time(std::chrono::time_point<std::chrono::system_clock> t);
-  void set_average_bler(float bler);
-  void set_channel(int which_channel);
+  void disableOffsets();
+  void setBlock(eBlockNumber block_num, Block block);
+  void setTime(std::chrono::time_point<std::chrono::system_clock> t);
+  void setAverageBLER(float bler);
+  void setChannel(int which_channel);
 
  private:
   GroupType type_   {};
@@ -166,22 +166,22 @@ class Station {
  public:
   Station();
   Station(uint16_t _pi, const Options& options, int which_channel);
-  void UpdateAndPrint(const Group& group, std::ostream* stream);
-  uint16_t pi() const;
+  void updateAndPrint(const Group& group, std::ostream* stream);
+  uint16_t getPI() const;
 
  private:
-  void DecodeBasics(const Group& group);
-  void DecodeType0(const Group& group);
-  void DecodeType1(const Group& group);
-  void DecodeType2(const Group& group);
-  void DecodeType3A(const Group& group);
-  void DecodeType4A(const Group& group);
-  void DecodeType6(const Group& group);
-  void DecodeType14(const Group& group);
-  void DecodeType15B(const Group& group);
-  void DecodeODAGroup(const Group& group);
-  void AddAltFreq(uint8_t);
-  void ParseRadioTextPlus(const Group& group);
+  void decodeBasics(const Group& group);
+  void decodeType0(const Group& group);
+  void decodeType1(const Group& group);
+  void decodeType2(const Group& group);
+  void decodeType3A(const Group& group);
+  void decodeType4A(const Group& group);
+  void decodeType6(const Group& group);
+  void decodeType14(const Group& group);
+  void decodeType15B(const Group& group);
+  void decodeODAGroup(const Group& group);
+  void addAltFreq(uint8_t);
+  void parseRadioTextPlus(const Group& group);
 
   uint16_t pi_             { 0 };
   Options options_;

@@ -42,7 +42,7 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   return result;
 }
 
-float AGC::gain() const {
+float AGC::getGain() const {
   return agc_crcf_get_gain(object_);
 }
 
@@ -78,25 +78,25 @@ NCO::~NCO() {
   nco_crcf_destroy(object_);
 }
 
-std::complex<float> NCO::MixDown(std::complex<float> s) {
+std::complex<float> NCO::mixDown(std::complex<float> s) {
   std::complex<float> result;
   nco_crcf_mix_down(object_, s, &result);
   return result;
 }
 
-void NCO::Step() {
+void NCO::step() {
   nco_crcf_step(object_);
 }
 
-void NCO::set_pll_bandwidth(float bw) {
+void NCO::setPLLBandwidth(float bw) {
   nco_crcf_pll_set_bandwidth(object_, bw);
 }
 
-void NCO::StepPLL(float dphi) {
+void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
-float NCO::frequency() const {
+float NCO::getFrequency() const {
   return nco_crcf_get_frequency(object_);
 }
 
@@ -110,11 +110,11 @@ SymSync::~SymSync() {
   symsync_crcf_destroy(object_);
 }
 
-void SymSync::set_bandwidth(float bw) {
+void SymSync::setBandwidth(float bw) {
   symsync_crcf_set_lf_bw(object_, bw);
 }
 
-void SymSync::set_output_rate(unsigned r) {
+void SymSync::setOutputRate(unsigned r) {
   symsync_crcf_set_output_rate(object_, r);
 }
 
@@ -135,7 +135,7 @@ Modem::~Modem() {
   modem_destroy(object_);
 }
 
-unsigned int Modem::Demodulate(std::complex<float> sample) {
+unsigned int Modem::demodulate(std::complex<float> sample) {
   unsigned symbol_out;
 
   modem_demodulate(object_, sample, &symbol_out);
@@ -143,7 +143,7 @@ unsigned int Modem::Demodulate(std::complex<float> sample) {
   return symbol_out;
 }
 
-float Modem::phase_error() {
+float Modem::getPhaseError() {
   return modem_get_demodulator_phase_error(object_);
 }
 
@@ -156,7 +156,7 @@ Resampler::~Resampler() {
   resamp_rrrf_destroy(object_);
 }
 
-void Resampler::set_rate(float rate) {
+void Resampler::setRate(float rate) {
   resamp_rrrf_set_rate(object_, rate);
 }
 

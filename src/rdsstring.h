@@ -29,10 +29,10 @@ class RDSChar {
  public:
   RDSChar() = default;
   explicit RDSChar(uint16_t _code) : code_(_code) {};
-  uint16_t code() const        { return code_; };
-  bool is_sequential() const   { return is_sequential_; };
 
-  void set_sequential(bool is) { is_sequential_ = is; }
+  uint16_t getCode() const    { return code_; };
+  bool isSequential() const   { return is_sequential_; };
+  void setSequential(bool is) { is_sequential_ = is; }
 
  private:
   uint16_t code_      { 0 };
@@ -44,14 +44,14 @@ class RDSString {
   explicit RDSString(size_t len = 8);
   void set(size_t pos, RDSChar chr);
   void set(size_t pos, RDSChar chr1, RDSChar chr2);
-  size_t length_received() const;
-  size_t length_expected() const;
-  std::vector<RDSChar> chars() const;
+  size_t getReceivedLength() const;
+  size_t getExpectedLength() const;
+  std::vector<RDSChar> getChars() const;
   std::string str() const;
-  std::string last_complete_string() const;
-  std::string last_complete_string(size_t start, size_t len) const;
-  bool has_chars(size_t start, size_t len) const;
-  bool complete() const;
+  std::string getLastCompleteString() const;
+  std::string getLastCompleteString(size_t start, size_t len) const;
+  bool hasChars(size_t start, size_t len) const;
+  bool isComplete() const;
   void clear();
   void resize(size_t n);
 

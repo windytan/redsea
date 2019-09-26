@@ -51,7 +51,7 @@ struct Options {
   std::string time_format;
 };
 
-Options GetOptions(int argc, char** argv);
+Options getOptions(int argc, char** argv);
 
 }  // namespace redsea
 #endif  // OPTIONS_H_

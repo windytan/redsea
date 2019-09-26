@@ -40,7 +40,7 @@ class AGC {
   AGC(const AGC&) = delete;
   ~AGC();
   std::complex<float> execute(std::complex<float> s);
-  float gain() const;
+  float getGain() const;
 
  private:
   agc_crcf object_;
@@ -64,11 +64,11 @@ class NCO {
   explicit NCO(liquid_ncotype type, float freq);
   NCO(const NCO&) = delete;
   ~NCO();
-  std::complex<float> MixDown(std::complex<float> s);
-  void Step();
-  void set_pll_bandwidth(float);
-  void StepPLL(float dphi);
-  float frequency() const;
+  std::complex<float> mixDown(std::complex<float> s);
+  void step();
+  void setPLLBandwidth(float);
+  void stepPLL(float dphi);
+  float getFrequency() const;
 
  private:
   nco_crcf object_;
@@ -80,8 +80,8 @@ class SymSync {
           float beta, unsigned num_filters);
   SymSync(const SymSync&) = delete;
   ~SymSync();
-  void set_bandwidth(float);
-  void set_output_rate(unsigned);
+  void setBandwidth(float);
+  void setOutputRate(unsigned);
   Maybe<std::complex<float>> execute(std::complex<float>* in);
 
  private:
@@ -94,8 +94,8 @@ class Modem {
   explicit Modem(modulation_scheme scheme);
   Modem(const Modem&) = delete;
   ~Modem();
-  unsigned int Demodulate(std::complex<float> sample);
-  float phase_error();
+  unsigned int demodulate(std::complex<float> sample);
+  float getPhaseError();
 
  private:
   modem object_;
@@ -107,7 +107,7 @@ class Resampler {
   Resampler(const Resampler&) = delete;
   ~Resampler();
   unsigned int execute(float in, float* out);
-  void set_rate(float rate);
+  void setRate(float rate);
 
  private:
   resamp_rrrf object_;

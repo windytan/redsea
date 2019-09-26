@@ -88,7 +88,7 @@ bool MPXReader::eof() const {
  * the first channel is processed via ReadChunk().
  *
  */
-void MPXReader::FillBuffer() {
+void MPXReader::fillBuffer() {
   num_read_ = sf_read_float(file_, buffer_.data.data(), chunk_size_);
   if (num_read_ < chunk_size_)
     is_eof_ = true;
@@ -99,7 +99,7 @@ void MPXReader::FillBuffer() {
     sf_write_float(outfile_, buffer_.data.data(), num_read_);
 }
 
-MPXBuffer<>& MPXReader::ReadChunk(int channel) {
+MPXBuffer<>& MPXReader::readChunk(int channel) {
   assert(channel >= 0 && channel < num_channels_);
 
   if (is_eof_)
@@ -116,15 +116,15 @@ MPXBuffer<>& MPXReader::ReadChunk(int channel) {
   }
 }
 
-float MPXReader::samplerate() const {
+float MPXReader::getSamplerate() const {
   return sfinfo_.samplerate;
 }
 
-int MPXReader::num_channels() const {
+int MPXReader::getNumChannels() const {
   return num_channels_;
 }
 
-bool MPXReader::error() const {
+bool MPXReader::hasError() const {
   return is_error_;
 }
 
@@ -137,7 +137,7 @@ AsciiBitReader::AsciiBitReader(const Options& options) :
     feed_thru_(options.feed_thru) {
 }
 
-bool AsciiBitReader::ReadBit() {
+bool AsciiBitReader::readBit() {
   int chr = 0;
   while (chr != '0' && chr != '1' && chr != EOF) {
     chr = getchar();
@@ -159,9 +159,9 @@ bool AsciiBitReader::eof() const {
  * Read a single line containing an RDS group in the RDS Spy hex format.
  *
  */
-Group ReadHexGroup(const Options& options) {
+Group readHexGroup(const Options& options) {
   Group group;
-  group.disable_offsets();
+  group.disableOffsets();
 
   bool group_complete = false;
 
@@ -201,7 +201,7 @@ Group ReadHexGroup(const Options& options) {
 
       if (block_still_valid) {
         block.is_received = true;
-        group.set_block(block_num, block);
+        group.setBlock(block_num, block);
       }
 
       if (block_num == BLOCK4)
@@ -210,7 +210,7 @@ Group ReadHexGroup(const Options& options) {
   }
 
   if (options.timestamp)
-    group.set_time(std::chrono::system_clock::now());
+    group.setTime(std::chrono::system_clock::now());
 
   return group;
 }

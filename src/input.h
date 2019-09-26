@@ -54,11 +54,11 @@ class MPXReader {
   ~MPXReader();
   void init(const Options& options);
   bool eof() const;
-  bool error() const;
-  void FillBuffer();
-  MPXBuffer<>& ReadChunk(int channel);
-  float samplerate() const;
-  int num_channels() const;
+  bool hasError() const;
+  void fillBuffer();
+  MPXBuffer<>& readChunk(int channel);
+  float getSamplerate() const;
+  int getNumChannels() const;
 
  private:
   int num_channels_ { 0 };
@@ -79,7 +79,7 @@ class AsciiBitReader {
  public:
   explicit AsciiBitReader(const Options& options);
   ~AsciiBitReader() = default;
-  bool ReadBit();
+  bool readBit();
   bool eof() const;
 
  private:
@@ -87,7 +87,7 @@ class AsciiBitReader {
   bool feed_thru_  { false };
 };
 
-Group ReadHexGroup(const Options& options);
+Group readHexGroup(const Options& options);
 
 }  // namespace redsea
 #endif  // INPUT_H_

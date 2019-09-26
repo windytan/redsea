@@ -39,40 +39,42 @@ Channel::Channel(const Options& options, int which_channel) :
 Channel::Channel(const Channel& other) :
     options_(other.options_), which_channel_(other.which_channel_),
     cached_pi_(options_.input_type),
-    block_stream_(options_), station_(cached_pi_.Get(), options_, which_channel_) {
+    block_stream_(options_), station_(cached_pi_.get(), options_, which_channel_) {
 }
 
-void Channel::ProcessBit(bool bit) {
-  block_stream_.PushBit(bit);
+void Channel::processBit(bool bit) {
+  block_stream_.pushBit(bit);
 
-  for (Group group : block_stream_.PopGroups())
-    ProcessGroup(group);
+  for (Group group : block_stream_.popGroups())
+    processGroup(group);
 }
 
-void Channel::ProcessBits(std::vector<bool> bits) {
+void Channel::processBits(std::vector<bool> bits) {
   for (bool bit : bits)
-    ProcessBit(bit);
+    processBit(bit);
 }
 
-void Channel::ProcessGroup(Group group) {
+void Channel::processGroup(Group group) {
   if (options_.timestamp)
-    group.set_time(std::chrono::system_clock::now());
+    group.setTime(std::chrono::system_clock::now());
 
   if (options_.bler) {
-    bler_average_.push(group.num_errors() / 4.f);
-    group.set_average_bler(100.f * bler_average_.average());
+    bler_average_.push(group.getNumErrors() / 4.f);
+    group.setAverageBLER(100.f * bler_average_.getAverage());
   }
 
-  if (group.has_pi()) {
-    // Repeated PI confirms change
-    auto pi_status = cached_pi_.Update(group.pi());
+  // If the PI code changes, all previously received data for the station
+  // is cleared. We don't want this to happen on spurious bit errors, so
+  // a change of PI code is only confirmed after a repeat.
+  if (group.hasPI()) {
+    auto pi_status = cached_pi_.update(group.getPI());
     switch (pi_status) {
       case CachedPI::Result::ChangeConfirmed:
-        station_ = Station(cached_pi_.Get(), options_, which_channel_);
+        station_ = Station(cached_pi_.get(), options_, which_channel_);
         break;
 
       case CachedPI::Result::SpuriousChange:
-        group.set_block(BLOCK1, Block());
+        group.setBlock(BLOCK1, Block());
         break;
 
       case CachedPI::Result::NoChange:
@@ -81,19 +83,20 @@ void Channel::ProcessGroup(Group group) {
   }
 
   if (options_.output_type == redsea::OutputType::Hex) {
-    group.PrintHex(options_.feed_thru ?
+    group.printHex(options_.feed_thru ?
         &std::cerr : &std::cout,
         options_.time_format);
   } else {
-    station_.UpdateAndPrint(group, options_.feed_thru ?
+    station_.updateAndPrint(group, options_.feed_thru ?
         &std::cerr : &std::cout);
   }
 }
 
-void Channel::Flush() {
-  Group last_group = block_stream_.FlushCurrentGroup();
-  if (!last_group.empty())
-    ProcessGroup(last_group);
+// Process any remaining data
+void Channel::flush() {
+  Group last_group = block_stream_.flushCurrentGroup();
+  if (!last_group.isEmpty())
+    processGroup(last_group);
 }
 
 }  // namespace redsea

@@ -23,14 +23,14 @@
 
 namespace redsea {
 
-std::string PTYNameString(uint16_t pty);
-std::string PTYNameStringRBDS(uint16_t pty);
-std::string CountryString(uint16_t pi, uint16_t ecc);
-std::string LanguageString(uint16_t code);
-std::string AppNameString(uint16_t aid);
-std::string RTPlusContentTypeString(uint16_t content_type);
-std::string DICodeString(uint16_t di);
-std::string PiToCallSign(uint16_t pi);
+std::string getPTYNameString(uint16_t pty);
+std::string getPTYNameStringRBDS(uint16_t pty);
+std::string getCountryString(uint16_t pi, uint16_t ecc);
+std::string getLanguageString(uint16_t code);
+std::string getAppNameString(uint16_t aid);
+std::string getRTPlusContentTypeString(uint16_t content_type);
+std::string getDICodeString(uint16_t di);
+std::string getCallsignFromPI(uint16_t pi);
 
 }  // namespace redsea
 #endif  // TABLES_H_

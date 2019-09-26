@@ -24,8 +24,9 @@
 
 namespace redsea {
 
+// Program Type names (RDS)
 // EN 50067:1998, Annex F (pp. 77-78)
-std::string PTYNameString(uint16_t pty) {
+std::string getPTYNameString(uint16_t pty) {
   assert(pty <= 32);
 
   static const std::vector<std::string> pty_names({
@@ -41,8 +42,9 @@ std::string PTYNameString(uint16_t pty) {
   return pty_names[pty];
 }
 
+// Program Type names (U.S. / RBDS)
 // U.S. RBDS Standard, Annex F (pp. 95-96)
-std::string PTYNameStringRBDS(uint16_t pty) {
+std::string getPTYNameStringRBDS(uint16_t pty) {
   assert(pty <= 32);
 
   static const std::vector<std::string> pty_names_rbds({
@@ -58,9 +60,10 @@ std::string PTYNameStringRBDS(uint16_t pty) {
   return pty_names_rbds[pty];
 }
 
+// 2-letter country codes
 // EN 50067:1998, Annex D, Table D.1 (p. 71)
 // RDS Forum R08/008_7, Table D.2 (p. 75)
-std::string CountryString(uint16_t pi, uint16_t ecc) {
+std::string getCountryString(uint16_t pi, uint16_t ecc) {
   static const std::map<uint16_t, std::vector<std::string>> country_codes({
     {0xA0, {"us", "us", "us", "us", "us", "us", "us", "us",
             "us", "us", "us", "--", "us", "us", "--"}},
@@ -114,8 +117,9 @@ std::string CountryString(uint16_t pi, uint16_t ecc) {
   return result;
 }
 
+// Program languages
 // EN 50067:1998, Annex J (p. 84)
-std::string LanguageString(uint16_t code) {
+std::string getLanguageString(uint16_t code) {
   static const std::vector<std::string> languages({
     "Unknown",     "Albanian",      "Breton",     "Catalan",
     "Croatian",    "Welsh",         "Czech",      "Danish",
@@ -157,8 +161,9 @@ std::string LanguageString(uint16_t code) {
   return result;
 }
 
+// Open Data Application names
 // RDS Forum R13/041_2 (2013-09-05)
-std::string AppNameString(uint16_t aid) {
+std::string getAppNameString(uint16_t aid) {
   static const std::map<uint16_t, std::string> oda_apps({
     {0x0000, "None"},
     {0x0093, "Cross referencing DAB within RDS"},
@@ -223,8 +228,9 @@ std::string AppNameString(uint16_t aid) {
   return result;
 }
 
+// RadioText+ content types
 // RDS Forum R06/040_1 (2006-07-21)
-std::string RTPlusContentTypeString(uint16_t content_type) {
+std::string getRTPlusContentTypeString(uint16_t content_type) {
   static const std::vector<std::string> content_type_names({
       "dummy_class",          "item.title",         "item.album",
       "item.tracknumber",     "item.artist",        "item.composition",
@@ -253,7 +259,9 @@ std::string RTPlusContentTypeString(uint16_t content_type) {
       content_type_names[content_type] : "unknown");
 }
 
-std::string DICodeString(uint16_t di) {
+// Decoder Identification (DI) and Dynamic PTY Indicator (PTYI) codes
+// EN 50067:1998, 3.2.1.5 (p. 41)
+std::string getDICodeString(uint16_t di) {
   static const std::vector<std::string> di_codes({
       "stereo", "artificial_head", "compressed", "dynamic_pty" });
 
@@ -261,8 +269,9 @@ std::string DICodeString(uint16_t di) {
   return di_codes[di];
 }
 
+// Back-calculate callsign for a North American (RBDS) station
 // NRSC-4-B (2011), page 18, D.7
-std::string PiToCallSign(uint16_t pi) {
+std::string getCallsignFromPI(uint16_t pi) {
   static const std::map<uint16_t, std::string> three_letter_codes({
       {0x99A5, "KBW"}, {0x9992, "KOY"}, {0x9978, "WHO"}, {0x99A6, "KCY"},
       {0x9993, "KPQ"}, {0x999C, "WHP"}, {0x9990, "KDB"}, {0x9964, "KQV"},

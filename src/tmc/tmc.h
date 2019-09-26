@@ -151,16 +151,16 @@ class Message {
  public:
   explicit Message(bool is_loc_encrypted) :
     is_encrypted_(is_loc_encrypted), was_encrypted_(is_loc_encrypted) {}
-  void PushMulti(uint16_t x, uint16_t y, uint16_t z);
-  void PushSingle(uint16_t x, uint16_t y, uint16_t z);
+  void pushMulti(uint16_t x, uint16_t y, uint16_t z);
+  void pushSingle(uint16_t x, uint16_t y, uint16_t z);
   Json::Value json() const;
-  void Decrypt(const ServiceKey& key);
-  bool complete() const;
+  void decrypt(const ServiceKey& key);
+  bool isComplete() const;
   void clear();
-  uint16_t continuity_index() const;
+  uint16_t getContinuityIndex() const;
 
  private:
-  void DecodeMulti();
+  void decodeMulti();
 
   bool     is_encrypted_;
   bool     was_encrypted_;
@@ -193,8 +193,8 @@ class Message {
 class TMCService {
  public:
   explicit TMCService(const Options& options);
-  void ReceiveSystemGroup(uint16_t message, Json::Value*);
-  void ReceiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value*);
+  void receiveSystemGroup(uint16_t message, Json::Value*);
+  void receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value*);
 
  private:
   bool is_initialized_   { false };

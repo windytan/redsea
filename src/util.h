@@ -28,27 +28,27 @@
 
 namespace redsea {
 
-// extract N bits from word, starting at starting_at from the right
+// extract N-bit integer from word, starting at starting_at from the right
 template<size_t N>
-uint16_t Bits(uint16_t word, size_t starting_at) {
+uint16_t getBits(uint16_t word, size_t starting_at) {
   static_assert(N <= 16, "");
   return (word >> starting_at) & ((1 << N) - 1);
 }
 
-// extract N bits from the concatenation of word1 and word2, starting at
+// extract N-bit integer from the concatenation of word1 and word2, starting at
 // starting_at from the right
 template<size_t N>
-uint32_t Bits(uint16_t word1, uint16_t word2, size_t starting_at) {
+uint32_t getBits(uint16_t word1, uint16_t word2, size_t starting_at) {
   static_assert(N <= 32, "");
   return (((word1 << 16) + word2) >> starting_at) & ((1 << N) - 1);
 }
 
-std::string HoursMinutesString(int hour, int minute);
+std::string getHoursMinutesString(int hour, int minute);
 
-std::string Join(std::vector<std::string> strings, const std::string& d);
-std::string Join(std::vector<uint16_t> nums, const std::string& d);
+std::string join(std::vector<std::string> strings, const std::string& d);
+std::string join(std::vector<uint16_t> nums, const std::string& d);
 
-std::string HexString(uint32_t value, int num_nybbles);
+std::string getHexString(uint32_t value, int num_nybbles);
 
 using CSVRow = std::vector<std::string>;
 
@@ -58,13 +58,12 @@ class CSVTable {
   std::vector<CSVRow> rows;
 };
 
-std::vector<std::string> splitline(std::string line, char delimiter);
-std::vector<std::vector<std::string>> ReadCSV(std::vector<std::string> csvdata,
+std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
                                               char delimiter);
-std::vector<std::vector<std::string>> ReadCSV(std::string filename,
+std::vector<std::vector<std::string>> readCSV(std::string filename,
                                               char delimiter);
-CSVTable ReadCSVWithTitles(std::string filename, char delimiter);
-CSVTable ReadCSVWithTitles(std::vector<std::string> csvdata,
+CSVTable readCSVWithTitles(std::string filename, char delimiter);
+CSVTable readCSVWithTitles(std::vector<std::string> csvdata,
                                       char delimiter);
 
 class CarrierFrequency {
@@ -74,7 +73,7 @@ class CarrierFrequency {
   };
  public:
   explicit CarrierFrequency(uint16_t code, Band band = Band::FM);
-  bool valid() const;
+  bool isValid() const;
   int kHz() const;
   std::string str() const;
   friend bool operator== (const CarrierFrequency &f1,
@@ -89,9 +88,9 @@ class CarrierFrequency {
 
 class AltFreqList {
  public:
-  AltFreqList();
+  AltFreqList() = default;
   void insert(uint16_t af_code);
-  bool complete() const;
+  bool isComplete() const;
   std::set<CarrierFrequency> get() const;
   void clear();
 
@@ -109,7 +108,7 @@ class RunningSum {
       el = 0.f;
     }
   }
-  T sum() const {
+  T getSum() const {
     return std::accumulate(history_.cbegin(), history_.cend(), 0);
   }
   void push(int number) {
@@ -140,7 +139,7 @@ class RunningAverage {
     ptr_ = (ptr_ + 1) % history_.size();
   }
 
-  float average() const {
+  float getAverage() const {
     return 1.0f * sum_ / history_.size();
   }
 

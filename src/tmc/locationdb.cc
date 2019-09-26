@@ -45,10 +45,10 @@ std::string to_utf8(const std::string& input, iconvpp::converter* converter) {
 
 }  // namespace
 
-uint16_t ReadLTN(const std::string& directory) {
+uint16_t readLTN(const std::string& directory) {
   uint16_t ltn = 0;
 
-  CSVTable table = ReadCSVWithTitles(directory + "/LOCATIONDATASETS.DAT", ';');
+  CSVTable table = readCSVWithTitles(directory + "/LOCATIONDATASETS.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
       ltn = get_uint16(table, row, "TABCD");
@@ -60,12 +60,12 @@ uint16_t ReadLTN(const std::string& directory) {
   return ltn;
 }
 
-LocationDatabase LoadLocationDatabase(const std::string& directory) {
+LocationDatabase loadLocationDatabase(const std::string& directory) {
   LocationDatabase locdb;
   std::string encoding("UTF-8");
 
   for (std::vector<std::string> fields :
-       ReadCSV(directory + "/README.DAT", ';')) {
+       readCSV(directory + "/README.DAT", ';')) {
     try {
       encoding = fields.at(4);
     } catch (const std::exception& e) {
@@ -81,7 +81,7 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
 
   iconvpp::converter converter("UTF-8", encoding);
 
-  CSVTable table = ReadCSVWithTitles(directory + "/NAMES.DAT", ';');
+  CSVTable table = readCSVWithTitles(directory + "/NAMES.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
       int nid = get_int(table, row, "NID");
@@ -91,7 +91,7 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
     }
   }
 
-  table = ReadCSVWithTitles(directory + "/ROADS.DAT", ';');
+  table = readCSVWithTitles(directory + "/ROADS.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
       Road road;
@@ -108,7 +108,7 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
     }
   }
 
-  table = ReadCSVWithTitles(directory + "/SEGMENTS.DAT", ';');
+  table = readCSVWithTitles(directory + "/SEGMENTS.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
       Segment seg;
@@ -120,7 +120,7 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
     }
   }
 
-  table = ReadCSVWithTitles(directory + "/POINTS.DAT", ';');
+  table = readCSVWithTitles(directory + "/POINTS.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
       locdb.ltn = get_uint16(table, row, "TABCD");
@@ -158,7 +158,7 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
     }
   }
 
-  table = ReadCSVWithTitles(directory + "/POFFSETS.DAT", ';');
+  table = readCSVWithTitles(directory + "/POFFSETS.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
       uint16_t lcd = get_uint16(table, row, "LCD");
@@ -173,7 +173,7 @@ LocationDatabase LoadLocationDatabase(const std::string& directory) {
     }
   }
 
-  table = ReadCSVWithTitles(directory + "/ADMINISTRATIVEAREA.DAT", ';');
+  table = readCSVWithTitles(directory + "/ADMINISTRATIVEAREA.DAT", ';');
   for (CSVRow row : table.rows) {
     try {
       AdminArea area;

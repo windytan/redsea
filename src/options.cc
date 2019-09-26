@@ -24,7 +24,7 @@
 
 namespace redsea {
 
-Options GetOptions(int argc, char** argv) {
+Options getOptions(int argc, char** argv) {
   Options options;
 
   static struct option long_options[] = {

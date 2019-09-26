@@ -50,7 +50,7 @@ class DeltaDecoder {
  public:
   DeltaDecoder() = default;
   ~DeltaDecoder() = default;
-  unsigned Decode(unsigned d);
+  unsigned decode(unsigned d);
 
  private:
   unsigned prev_ { 0 };
@@ -61,7 +61,7 @@ class Subcarrier {
   explicit Subcarrier(const Options& options);
   ~Subcarrier() = default;
   bool eof() const;
-  std::vector<bool> ProcessChunk(MPXBuffer<>& chunk);
+  std::vector<bool> processChunk(MPXBuffer<>& chunk);
 
  private:
   int sample_num_ { 0 };
