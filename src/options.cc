@@ -37,6 +37,7 @@ Options getOptions(int argc, char** argv) {
     { "loctable",      1,           0, 'l'},
     { "show-partial",  no_argument, 0, 'p'},
     { "samplerate",    1,           0, 'r'},
+    { "show-raw",      no_argument, 0, 'R'},
     { "timestamp",     1,           0, 't'},
     { "rbds",          no_argument, 0, 'u'},
     { "version",       no_argument, 0, 'v'},
@@ -47,7 +48,7 @@ Options getOptions(int argc, char** argv) {
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hl:pr:t:uvx",
+  while ((option_char = getopt_long(argc, argv, "bc:eEf:hl:pr:Rt:uvx",
                                     long_options,
          &option_index)) >= 0) {
     switch (option_char) {
@@ -98,6 +99,9 @@ Options getOptions(int argc, char** argv) {
         }
         break;
       }
+      case 'R':
+        options.show_raw = true;
+        break;
       case 't':
         options.timestamp = true;
         options.time_format = std::string(optarg);

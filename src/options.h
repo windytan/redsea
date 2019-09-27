@@ -42,6 +42,7 @@ struct Options {
   bool print_version { false };
   bool timestamp     { false };
   bool bler          { false };
+  bool show_raw      { false };
   float samplerate   { kTargetSampleRate_Hz };
   int num_channels   { 1 };
   InputType input_type   { InputType::MPX_stdin };

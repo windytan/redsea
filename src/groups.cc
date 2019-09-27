@@ -205,13 +205,14 @@ void Group::setAverageBLER(float bler) {
   has_bler_ = true;
 }
 
-void Group::printHex(std::ostream* stream,
-                     const std::string& time_format) const {
+/*
+ * Print the raw group data into a stream, encoded as hex, like in RDS Spy.
+ * Invalid blocks are replaced with "----".
+ *
+ */
+void Group::printHex(std::ostream* stream) const {
   stream->fill('0');
   stream->setf(std::ios_base::uppercase);
-
-  if (isEmpty())
-    return;
 
   for (eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
     const Block& block = blocks_[block_num];
@@ -223,6 +224,14 @@ void Group::printHex(std::ostream* stream,
     if (block_num != BLOCK4)
       *stream << " ";
   }
+}
+
+void Group::printHexWithTime(std::ostream* stream,
+                             const std::string& time_format) const {
+  if (isEmpty())
+    return;
+
+  printHex(stream);
 
   if (hasTime())
     *stream << " " << getTimePointString(getRxTime(), time_format);
@@ -282,6 +291,12 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
 
   if (options_.num_channels > 1)
     json_["channel"] = which_channel_;
+
+  if (options_.show_raw) {
+    std::stringstream ss;
+    group.printHex(&ss);
+    json_["raw_data"] = ss.str();
+  }
 
   decodeBasics(group);
 

@@ -1,5 +1,10 @@
 # redsea changelog
 
+## 0.19-SNAPSHOT
+
+* Add option `--show-raw` (`-R`) for including the raw group data as a hex
+  string in the JSON output
+
 ## 0.18 (2019-05-19)
 
 * Add support for loading multiple TMC location databases by specifying

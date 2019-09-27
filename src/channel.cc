@@ -83,7 +83,7 @@ void Channel::processGroup(Group group) {
   }
 
   if (options_.output_type == redsea::OutputType::Hex) {
-    group.printHex(options_.feed_thru ?
+    group.printHexWithTime(options_.feed_thru ?
         &std::cerr : &std::cout,
         options_.time_format);
   } else {

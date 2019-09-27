@@ -71,6 +71,8 @@ void printUsage() {
     "-r, --samplerate RATE  Set stdin sample frequency in Hz. Will resample\n"
     "                       (slow) if this differs from 171000 Hz.\n"
     "\n"
+    "-R, --show-raw         Show raw group data as hex in the JSON stream.\n"
+    "\n"
     "-t, --timestamp FORMAT Add time of decoding to JSON groups; see\n"
     "                       man strftime for formatting options (or\n"
     "                       try \"%c\").\n"
