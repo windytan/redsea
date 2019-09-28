@@ -4,6 +4,7 @@
 
 * Add option `--show-raw` (`-R`) for including the raw group data as a hex
   string in the JSON output
+* Print usage help if there are non-option arguments on the command line
 
 ## 0.18 (2019-05-19)
 

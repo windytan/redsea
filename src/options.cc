@@ -49,8 +49,7 @@ Options getOptions(int argc, char** argv) {
   int option_char;
 
   while ((option_char = getopt_long(argc, argv, "bc:eEf:hl:pr:Rt:uvx",
-                                    long_options,
-         &option_index)) >= 0) {
+                                    long_options, &option_index)) >= 0) {
     switch (option_char) {
       case 'b':
         options.input_type = InputType::ASCIIbits;
@@ -127,6 +126,11 @@ Options getOptions(int argc, char** argv) {
     }
     if (options.exit_success)
       break;
+  }
+
+  if (argc > optind) {
+    options.print_usage = true;
+    options.exit_failure = true;
   }
 
   if (options.feed_thru && options.input_type == InputType::MPX_sndfile) {
