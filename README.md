@@ -1,7 +1,7 @@
 # redsea RDS decoder
 
-redsea is a lightweight command-line [FM-RDS][Wikipedia: RDS] decoder for
-Linux/macOS. It supports a large [subset of RDS features][Wiki: Features].
+redsea is a lightweight command-line FM-RDS decoder for Linux/macOS. It
+supports a large [subset of RDS features][Wiki: Features].
 
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
 
@@ -15,35 +15,18 @@ decode raw ASCII bitstream, the hex format used by RDS Spy, and audio files
 containing multiplex signals (MPX). These use cases are documented in
 the [wiki][Wiki: Use cases].
 
-[Wikipedia: RDS]: http://en.wikipedia.org/wiki/Radio_Data_System
 [About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
 [Wiki: Features]: https://github.com/windytan/redsea/wiki/Supported-RDS-features
 [Wiki: Input]: https://github.com/windytan/redsea/wiki/Input-formats
 
+Example output:
+
 ```json
-{
-  "di": { "dynamic_pty": true },
-  "group": "0A",
-  "is_music": true,
-  "pi": "0xD314",
-  "prog_type": "Serious classical",
-  "ps": "BR-KLASS",
-  "ta": true,
-  "tp": false
-}
-{
-  "group": "12A",
-  "pi": "0xD314",
-  "prog_type": "Serious classical",
-  "radiotext_plus": {
-    "item_running": true,
-    "item_toggle": 1,
-    "tags": [
-      { "content-type": "item.conductor", "data": "Pinchas Steinberg" }
-    ]
-  },
-  "tp": false
-}
+{"di":{"dynamic_pty":true},"group":"0A","is_music":true,"pi":"0xD314",
+ "prog_type":"Serious classical","ps":"BR-KLASS","ta":true,"tp":false}
+{"group":"12A","pi":"0xD314","prog_type":"Serious classical",
+ "radiotext_plus":{"item_running":true,"item_toggle":1,"tags":
+ [{"content-type":"item.conductor","data":"Pinchas Steinberg"}]},"tp":false}
 ```
 
 ## Contents
@@ -151,6 +134,8 @@ redsea -f WAVFILE
 
 -r, --samplerate RATE  Set sample frequency of the raw input signal in Hz.
                        Will resample (slow) if this differs from 171000 Hz.
+
+-R, --show-raw         Show raw group data as hex in the JSON stream.
 
 -t, --timestamp FORMAT Add time of decoding to JSON groups; see
                        man strftime for formatting options (or
