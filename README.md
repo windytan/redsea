@@ -53,7 +53,7 @@ beginning.
 
 Or on macOS (OSX) using Homebrew:
 
-        $ brew install autoconf libsndfile liquid-dsp
+        $ brew install autoconf automake libsndfile liquid-dsp
         $ xcode-select --install
 
 2. Clone the repository (unless you downloaded a release zip file):
