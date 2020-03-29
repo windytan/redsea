@@ -145,7 +145,7 @@ class RunningAverage {
 
  private:
   std::array<T, N> history_;
-  T      sum_;
+  T      sum_ { 0 };
   size_t ptr_ { 0 };
 };
 
