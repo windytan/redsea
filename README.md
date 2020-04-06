@@ -196,12 +196,13 @@ Try running this in the terminal:
 
 ## Contributing
 
-[Bug reports](https://github.com/windytan/redsea/issues) are welcome. Be
-prepared to check back with GitHub occasionally for clarifying questions.
+Bug reports are welcome. See [CONTRIBUTING](CONTRIBUTING.md) for more
+information.
 
 Also, if a station in your area is transmitting an interesting RDS feature
 that should be implemented in redsea, I would be happy to see a minute or
-two's worth of hex data using the `-x` switch.
+two's worth of hex data using the `-x` switch. You could use a gist or an
+external pastebin service and post a link to it.
 
 ## Licensing
 
