@@ -4,6 +4,7 @@ redsea is a lightweight command-line FM-RDS decoder for Linux/macOS. It
 supports a large [subset of RDS features][Wiki: Features].
 
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
+![build](https://github.com/windytan/redsea/workflows/build/badge.svg)
 
 Decoded RDS groups are printed to the terminal as line-delimited JSON objects
 or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
