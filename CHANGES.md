@@ -1,5 +1,10 @@
 # redsea changelog
 
+## 0.20
+
+* Place some JSON fields in the beginning of the line for easier visual
+  inspection (pi, group, ps...)
+
 ## 0.19 (2020-04-06)
 
 * Add option `--show-raw` (`-R`) for including the raw group data as a hex
