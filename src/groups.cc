@@ -272,19 +272,19 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
     return;
 
   json_.clear();
-  json_["pi"] = "0x" + getHexString(getPI(), 4);
+  json_["*SORT00*pi"] = "0x" + getHexString(getPI(), 4);
   if (options_.rbds) {
     std::string callsign = getCallsignFromPI(getPI());
     if (!callsign.empty()) {
       if ((getPI() & 0xF000) == 0x1000)
-        json_["callsign_uncertain"] = callsign;
+        json_["*SORT02*callsign_uncertain"] = callsign;
       else
-        json_["callsign"] = callsign;
+        json_["*SORT02*callsign"] = callsign;
     }
   }
 
   if (options_.timestamp)
-    json_["rx_time"] = getTimePointString(group.getRxTime(), options_.time_format);
+    json_["*SORT01*rx_time"] = getTimePointString(group.getRxTime(), options_.time_format);
 
   if (group.hasBLER())
     json_["bler"] = int(group.getBLER() + .5f);
@@ -341,7 +341,7 @@ void Station::decodeBasics(const Group& group) {
     uint16_t pty = getBits<5>(group.getBlock2(), 5);
 
     if (group.hasType())
-      json_["group"] = group.getType().str();
+      json_["*SORT03*group"] = group.getType().str();
 
     bool tp = getBits<1>(group.getBlock2(), 10);
     json_["tp"] = tp;
@@ -352,7 +352,7 @@ void Station::decodeBasics(const Group& group) {
       group.has(BLOCK4)) {
     uint16_t pty = getBits<5>(group.getBlock4(), 5);
 
-    json_["group"] = group.getType().str();
+    json_["*SORT03*group"] = group.getType().str();
 
     bool tp = getBits<1>(group.getBlock4(), 10);
     json_["tp"] = tp;
@@ -396,9 +396,9 @@ void Station::decodeType0(const Group& group) {
              RDSChar(getBits<8>(group.getBlock4(), 0)));
 
   if (ps_.text.isComplete())
-    json_["ps"] = ps_.text.getLastCompleteString();
+    json_["*SORT04*ps"] = ps_.text.getLastCompleteString();
   else if (options_.show_partial)
-    json_["partial_ps"] = ps_.text.str();
+    json_["*SORT04*partial_ps"] = ps_.text.str();
 }
 
 // Group 1: Programme Item Number and slow labelling codes
@@ -500,9 +500,9 @@ void Station::decodeType2(const Group& group) {
   }
 
   if (radiotext_.text.isComplete())
-    json_["radiotext"] = rtrim(radiotext_.text.getLastCompleteString());
+    json_["*SORT04*radiotext"] = rtrim(radiotext_.text.getLastCompleteString());
   else if (options_.show_partial && rtrim(radiotext_.text.str()).length() > 0)
-    json_["partial_radiotext"] = rtrim(radiotext_.text.str());
+    json_["*SORT04*partial_radiotext"] = rtrim(radiotext_.text.str());
 }
 
 // Group 3A: Application identification for Open Data
@@ -622,7 +622,7 @@ void Station::decodeType14(const Group& group) {
     return;
 
   uint16_t on_pi = group.getBlock4();
-  json_["other_network"]["pi"] = "0x" + getHexString(on_pi, 4);
+  json_["other_network"]["*SORT00*pi"] = "0x" + getHexString(on_pi, 4);
 
   bool tp = getBits<1>(group.getBlock2(), 4);
 

@@ -206,8 +206,29 @@ static inline void fixNumericLocaleInput(char* begin, char* end) {
 // //////////////////////////////////////////////////////////////////////
 
 
+// //////////////////////////////////////////////////////////////////////
+// Added by windytan
+// //////////////////////////////////////////////////////////////////////
 
+// If names are prefixed with a special sorting tag, this tag
+// will be removed before printing.
+std::string removeSortingTags(const std::string& input) {
+  const std::string tag_pattern { "*SORT" };
+  const int tag_length = 8;
 
+  std::string::size_type pos = input.find(tag_pattern);
+  if (pos == 0) {
+    std::string result = input;
+    result.erase(pos, tag_length);
+    return result;
+  } else {
+    return input;
+  }
+}
+
+// //////////////////////////////////////////////////////////////////////
+// End of windytan additions
+// //////////////////////////////////////////////////////////////////////
 
 
 // //////////////////////////////////////////////////////////////////////
@@ -5106,9 +5127,10 @@ void BuiltStyledStreamWriter::writeValue(Value const& value) {
       Value::Members::iterator it = members.begin();
       for (;;) {
         JSONCPP_STRING const& name = *it;
+        std::string name_notags = removeSortingTags(name);
         Value const& childValue = value[name];
         writeCommentBeforeValue(childValue);
-        writeWithIndent(valueToQuotedStringN(name.data(), static_cast<unsigned>(name.length())));
+        writeWithIndent(valueToQuotedStringN(name_notags.data(), static_cast<unsigned>(name_notags.length())));
         *sout_ << colonSymbol_;
         writeValue(childValue);
         if (++it == members.end()) {
