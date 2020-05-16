@@ -23,11 +23,11 @@ the [wiki][Wiki: Use cases].
 Example output:
 
 ```json
-{"di":{"dynamic_pty":true},"group":"0A","is_music":true,"pi":"0xD314",
- "prog_type":"Serious classical","ps":"BR-KLASS","ta":true,"tp":false}
-{"group":"12A","pi":"0xD314","prog_type":"Serious classical",
- "radiotext_plus":{"item_running":true,"item_toggle":1,"tags":
- [{"content-type":"item.conductor","data":"Pinchas Steinberg"}]},"tp":false}
+{"pi":"0xD3C2","group":"0A","ps":"MDR JUMP","di":{"dynamic_pty":true},"is_music":true,"prog_type":"Pop music","ta":false,"tp":false}
+{"pi":"0xD3C2","group":"2A","prog_type":"Pop music","tp":false}
+{"pi":"0xD3C2","group":"2A","radiotext":"Das Leichteste der Welt von Silbermond JETZT AUF MDR JUMP","prog_type":"Pop music","tp":false}
+{"pi":"0xD3C2","group":"12A","prog_type":"Pop music","radiotext_plus":{"item_running":true,"item_toggle":1,"tags":[{"content-type":"item.title","data":"Das Leichteste der Welt"},{"content-type":"item.artist","data":"Silbermond"}]},"tp":false}
+{"pi":"0xD3C2","group":"3A","open_data_app":{"app_name":"RadioText+ (RT+)","oda_group":"12A"},"prog_type":"Pop music","tp":false}
 ```
 
 ## Contents
