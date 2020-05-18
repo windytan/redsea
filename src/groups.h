@@ -142,8 +142,6 @@ class Group {
   bool hasTime() const;
   std::chrono::time_point<std::chrono::system_clock> getRxTime() const;
   void printHex(std::ostream* stream) const;
-  void printHexWithTime(std::ostream* stream,
-                const std::string& time_format) const;
 
   void disableOffsets();
   void setBlock(eBlockNumber block_num, Block block);

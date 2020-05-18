@@ -35,23 +35,6 @@
 
 namespace redsea {
 
-std::string getTimePointString(
-    const std::chrono::time_point<std::chrono::system_clock>& timepoint,
-    const std::string& format) {
-  std::time_t t = std::chrono::system_clock::to_time_t(timepoint);
-  std::tm tm = *std::localtime(&t);
-
-  std::string result;
-  char buffer[64];
-  if (strftime(buffer, sizeof(buffer), format.c_str(), &tm) > 0) {
-    result = std::string(buffer);
-  } else {
-    result = "(format error)";
-  }
-
-  return result;
-}
-
 // Programme Item Number (IEC 62106:2015, section 6.1.5.2)
 bool decodePIN(uint16_t pin, Json::Value* json) {
   uint16_t day    = getBits<5>(pin, 11);
@@ -224,19 +207,6 @@ void Group::printHex(std::ostream* stream) const {
     if (block_num != BLOCK4)
       *stream << " ";
   }
-}
-
-void Group::printHexWithTime(std::ostream* stream,
-                             const std::string& time_format) const {
-  if (isEmpty())
-    return;
-
-  printHex(stream);
-
-  if (hasTime())
-    *stream << " " << getTimePointString(getRxTime(), time_format);
-
-  *stream << '\n' << std::flush;
 }
 
 /*

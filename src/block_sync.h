@@ -49,7 +49,8 @@ class BlockStream {
  public:
   explicit BlockStream(const Options& options);
   void pushBit(bool bit);
-  std::vector<Group> popGroups();
+  Group popGroup();
+  bool hasGroupReady() const;
   bool eof() const;
   Group flushCurrentGroup() const;
 
@@ -70,8 +71,9 @@ class BlockStream {
   const    Options options_;
   bool     is_eof_                    { false };
   RunningAverage<float, kNumBlerAverageGroups> bler_average_;
-  Group current_group_;
-  std::vector<Group> groups_;
+  Group    current_group_;
+  Group    ready_group_;
+  bool     has_group_ready_           { false };
 };
 
 } // namespace redsea

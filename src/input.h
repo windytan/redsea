@@ -41,6 +41,7 @@ class MPXBuffer {
  public:
   std::array<float, N> data;
   size_t used_size;
+  std::chrono::time_point<std::chrono::system_clock> time_received;
 };
 
 class BeyondEofError : std::exception {

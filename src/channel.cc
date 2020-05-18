@@ -39,24 +39,54 @@ Channel::Channel(const Options& options, int which_channel) :
 Channel::Channel(const Channel& other) :
     options_(other.options_), which_channel_(other.which_channel_),
     cached_pi_(options_.input_type),
-    block_stream_(options_), station_(cached_pi_.get(), options_, which_channel_) {
+    block_stream_(options_), station_(cached_pi_.get(), options_, which_channel_),
+    last_group_rx_time_(std::chrono::system_clock::now()) {
 }
 
 void Channel::processBit(bool bit) {
   block_stream_.pushBit(bit);
 
-  for (Group group : block_stream_.popGroups())
-    processGroup(group);
+  if (block_stream_.hasGroupReady())
+    processGroup(block_stream_.popGroup());
 }
 
-void Channel::processBits(std::vector<bool> bits) {
-  for (bool bit : bits)
-    processBit(bit);
+void Channel::processBits(BitBuffer buffer) {
+  for (size_t i_bit = 0; i_bit < buffer.bits.size(); i_bit++) {
+    block_stream_.pushBit(buffer.bits[i_bit]);
+
+    if (block_stream_.hasGroupReady()) {
+      Group group = block_stream_.popGroup();
+
+      // Calculate this group's rx time based on the buffer timestamp and bit offset
+      auto group_time = buffer.time_received -
+        std::chrono::milliseconds(int((buffer.bits.size() - 1 - i_bit) / 1187.5 * 1e3));
+
+      // When the source is faster than real-time, backwards timestamp calculation
+      // produces meaningless results. We want to make sure that the time stays monotonic.
+      if (group_time < last_group_rx_time_) {
+        group_time = last_group_rx_time_;
+      }
+
+      group.setTime(group_time);
+      processGroup(group);
+
+      last_group_rx_time_ = group_time;
+    }
+  }
 }
 
 void Channel::processGroup(Group group) {
-  if (options_.timestamp)
-    group.setTime(std::chrono::system_clock::now());
+  if (options_.timestamp && !group.hasTime()) {
+    auto now = std::chrono::system_clock::now();
+    group.setTime(now);
+
+    // When the source is faster than real-time, backwards timestamp calculation
+    // produces meaningless results. We want to make sure that the time stays monotonic.
+    if (now < last_group_rx_time_) {
+      group.setTime(last_group_rx_time_);
+    }
+    last_group_rx_time_ = now;
+  }
 
   if (options_.bler) {
     bler_average_.push(group.getNumErrors() / 4.f);
@@ -82,13 +112,17 @@ void Channel::processGroup(Group group) {
     }
   }
 
+  auto stream = options_.feed_thru ? &std::cerr : &std::cout;
+
   if (options_.output_type == redsea::OutputType::Hex) {
-    group.printHexWithTime(options_.feed_thru ?
-        &std::cerr : &std::cout,
-        options_.time_format);
+    if (!group.isEmpty()) {
+      group.printHex(stream);
+      if (options_.timestamp)
+        *stream << ' ' << getTimePointString(group.getRxTime(), options_.time_format);
+      *stream << '\n' << std::flush;
+    }
   } else {
-    station_.updateAndPrint(group, options_.feed_thru ?
-        &std::cerr : &std::cout);
+    station_.updateAndPrint(group, stream);
   }
 }
 

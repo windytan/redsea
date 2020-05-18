@@ -90,6 +90,9 @@ bool MPXReader::eof() const {
  */
 void MPXReader::fillBuffer() {
   num_read_ = sf_read_float(file_, buffer_.data.data(), chunk_size_);
+
+  buffer_.time_received = std::chrono::system_clock::now();
+
   if (num_read_ < chunk_size_)
     is_eof_ = true;
 

@@ -2,6 +2,8 @@
 
 ## 0.20
 
+* Add support for fractional seconds in the rx timestamp format (`%f`).
+* Add buffer delay compensation to rx timestamps.
 * Place some JSON fields in the beginning of the line for easier visual
   inspection (pi, group, ps...)
 

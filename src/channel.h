@@ -62,7 +62,7 @@ class Channel {
   Channel(const Options& options, int which_channel);
   Channel(const Channel& other);
   void processBit(bool bit);
-  void processBits(std::vector<bool> bits);
+  void processBits(BitBuffer bits);
   void processGroup(Group group);
   void flush();
 
@@ -73,6 +73,7 @@ class Channel {
   BlockStream block_stream_;
   Station station_;
   RunningAverage<float, kNumBlerAverageGroups> bler_average_;
+  std::chrono::time_point<std::chrono::system_clock> last_group_rx_time_;
 };
 
 }  // namespace redsea

@@ -114,7 +114,7 @@ Subcarrier::Subcarrier(const Options& options) :
 
 /** MPX to bits
  */
-std::vector<bool> Subcarrier::processChunk(MPXBuffer<>& chunk) {
+BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
   if (resample_ratio_ != 1.0f) {
     unsigned int i_resampled = 0;
     for (size_t i = 0; i < chunk.used_size; i++) {
@@ -134,7 +134,8 @@ std::vector<bool> Subcarrier::processChunk(MPXBuffer<>& chunk) {
   constexpr int decimate_ratio = int(kTargetSampleRate_Hz / kBitsPerSecond / 2 /
                                      kSamplesPerSymbol);
 
-  std::vector<bool> bits;
+  BitBuffer bitbuffer;
+  bitbuffer.time_received = chunk.time_received;
 
   for (size_t i = 0; i < buf.used_size; i++) {
     // Mix RDS to baseband for filtering purposes
@@ -157,8 +158,8 @@ std::vector<bool> Subcarrier::processChunk(MPXBuffer<>& chunk) {
 
         // One biphase symbol received for every 2 PSK symbols
         if (biphase.valid) {
-          bits.push_back(delta_decoder_.decode(
-                           biphase.data.real() >= 0.0f));
+          bitbuffer.bits.push_back(delta_decoder_.decode(
+                                   biphase.data.real() >= 0.0f));
         }
       }
     }
@@ -168,7 +169,7 @@ std::vector<bool> Subcarrier::processChunk(MPXBuffer<>& chunk) {
     sample_num_++;
   }
 
-  return bits;
+  return bitbuffer;
 }
 
 bool Subcarrier::eof() const {

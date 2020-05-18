@@ -282,15 +282,18 @@ void BlockStream::findBlockInInputRegister() {
 }
 
 void BlockStream::handleNewlyReceivedGroup() {
-  groups_.push_back(current_group_);
+  ready_group_ = current_group_;
+  has_group_ready_ = true;
   current_group_ = Group();
 }
 
-// TODO: this will probably never be > 1
-std::vector<Group> BlockStream::popGroups() {
-  std::vector<Group> result = groups_;
-  groups_.clear();
-  return result;
+bool BlockStream::hasGroupReady() const {
+  return has_group_ready_;
+}
+
+Group BlockStream::popGroup() {
+  has_group_ready_ = false;
+  return ready_group_;
 }
 
 Group BlockStream::flushCurrentGroup() const {

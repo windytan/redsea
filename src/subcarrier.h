@@ -61,7 +61,7 @@ class Subcarrier {
   explicit Subcarrier(const Options& options);
   ~Subcarrier() = default;
   bool eof() const;
-  std::vector<bool> processChunk(MPXBuffer<>& chunk);
+  BitBuffer processChunk(MPXBuffer<>& chunk);
 
  private:
   int sample_num_ { 0 };

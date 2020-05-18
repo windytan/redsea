@@ -17,13 +17,25 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <chrono>
 #include <string>
+#include <vector>
 
 namespace redsea {
 
 constexpr float kTargetSampleRate_Hz  = 171000.0f;
 constexpr int   kNumBlerAverageGroups = 12;
 constexpr float kMinimumSampleRate_Hz = 128000.0f;
+
+class BitBuffer {
+ public:
+  std::chrono::time_point<std::chrono::system_clock> time_received;
+  std::vector<bool> bits;
+};
+
+std::string getTimePointString(
+    const std::chrono::time_point<std::chrono::system_clock>& timepoint,
+    const std::string& format);
 
 }  // namespace redsea
 #endif  // COMMON_H_

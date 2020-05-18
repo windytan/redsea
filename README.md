@@ -140,7 +140,7 @@ redsea -f WAVFILE
 
 -t, --timestamp FORMAT Add time of decoding to JSON groups; see
                        man strftime for formatting options (or
-                       try "%c").
+                       try "%c"). Use "%f" to add hundredths of seconds.
 
 -u, --rbds             RBDS mode; use North American program type names
                        and "back-calculate" the station's call sign from
