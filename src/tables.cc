@@ -162,7 +162,8 @@ std::string getLanguageString(uint16_t code) {
 }
 
 // Open Data Application names
-// RDS Forum R13/041_2 (2013-09-05)
+// RDS Forum R13/041_2 (2013-09-05) and later
+// RDS Forum R17/032_1 (2017-07-20)
 std::string getAppNameString(uint16_t aid) {
   static const std::map<uint16_t, std::string> oda_apps({
     {0x0000, "None"},
@@ -184,17 +185,25 @@ std::string getAppNameString(uint16_t aid) {
     {0x1DC2, "CITIBUS 4"},
     {0x1DC5, "Encrypted TTI using ALERT-Plus"},
     {0x1E8F, "ELECTRABEL-DSM 17"},
+    {0x4400, "RDS-Light"},
     {0x4AA1, "RASANT"},
     {0x4AB7, "ELECTRABEL-DSM 9"},
     {0x4BA2, "ELECTRABEL-DSM 5"},
     {0x4BD7, "RadioText+ (RT+)"},
+    {0x4BD8, "RadioText Plus / RT+for eRT"},
     {0x4C59, "CITIBUS 2"},
     {0x4D87, "Radio Commerce System (RCS)"},
     {0x4D95, "ELECTRABEL-DSM 16"},
     {0x4D9A, "ELECTRABEL-DSM 11"},
+    {0x50DD, "To warn people in case of disasters or emergency"},
     {0x5757, "Personal weather station"},
+    {0x6363, "Hybradio RDS-Net(for testing use, only)"},
+    {0x6365, "RDS2 – 9 bit AF lists ODA"},
     {0x6552, "Enhanced RadioText (eRT)"},
+    {0x6A7A, "Warning receiver"},
     {0x7373, "Enhanced early warning system"},
+    {0xA112, "NL _ Alert system"},
+    {0xA911, "Data FM Selective Multipoint Messaging"},
     {0xC350, "NRSC Song Title and Artist"},
     {0xC3A1, "Personal Radio Service"},
     {0xC3B0, "iTunes Tagging"},
