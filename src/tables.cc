@@ -164,6 +164,7 @@ std::string getLanguageString(uint16_t code) {
 // Open Data Application names
 // RDS Forum R13/041_2 (2013-09-05) and later
 // RDS Forum R17/032_1 (2017-07-20)
+// DHL 7/14/2020
 std::string getAppNameString(uint16_t aid) {
   static const std::map<uint16_t, std::string> oda_apps({
     {0x0000, "None"},
@@ -204,6 +205,7 @@ std::string getAppNameString(uint16_t aid) {
     {0x7373, "Enhanced early warning system"},
     {0xA112, "NL _ Alert system"},
     {0xA911, "Data FM Selective Multipoint Messaging"},
+    {0xABCF, "RF Power Monitoring"},
     {0xC350, "NRSC Song Title and Artist"},
     {0xC3A1, "Personal Radio Service"},
     {0xC3B0, "iTunes Tagging"},
@@ -227,7 +229,9 @@ std::string getAppNameString(uint16_t aid) {
     {0xE440, "ELECTRABEL-DSM 15"},
     {0xE4A6, "ELECTRABEL-DSM 19"},
     {0xE5D7, "ELECTRABEL-DSM 6"},
-    {0xE911, "EAS open protocol"} });
+    {0xE911, "EAS open protocol"},
+    {0xFF7F, "RFT: Station logo"},
+    {0xFF80, "RFT+ (work title)"} });
 
   std::string result("(Unknown)");
   if (oda_apps.find(aid) != oda_apps.end()) {
