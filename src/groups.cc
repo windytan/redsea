@@ -682,6 +682,8 @@ void Station::decodeType14(const Group& group) {
       break;
     }
 
+    // 10, 11 unallocated
+
     case 12:
     {
       bool has_linkage = getBits<1>(group.getBlock3(), 15);
@@ -708,6 +710,12 @@ void Station::decodeType14(const Group& group) {
 
       if (pin != 0x0000)
         decodePIN(pin, &(json_["other_network"]));
+      break;
+    }
+
+    case 15:
+    {
+      json_["other_network"]["broadcaster_data"] = getHexString(group.getBlock3(), 4);
       break;
     }
 
