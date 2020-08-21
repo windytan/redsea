@@ -860,6 +860,7 @@ void Station::parseRadioTextPlus(const Group& group) {
   }
 }
 
+// ETSI EN 301 700 V1.1.1 (2000-03)
 void Station::parseDAB(const Group& group) {
   bool es_flag = getBits<1>(group.getBlock2(), 4);
 
