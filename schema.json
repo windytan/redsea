@@ -381,6 +381,53 @@
         "description": "Time of demodulation/decoding",
         "type": "string"
       },
+      "transparent_data": {
+        "description": "Freeform data",
+        "type": "object",
+        "properties": {
+          "address": {
+            "description": "Address of this transparent data channel",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31
+          },
+          "raw": {
+            "description": "Hexadecimal values of the data bytes sent in this group",
+            "type": "string"
+          },
+          "as_text": {
+            "description": "The data interpreted as RDS text",
+            "type": "string"
+          },
+          "full_text": {
+            "description": "All channels concatenated when 128 bytes are received contiguously",
+            "type": "string"
+          },
+          "full_raw": {
+            "description": "All channels concatenated when 128 bytes are received contiguously (hexadecimal)",
+            "type": "string"
+          }
+        }
+      },
+      "dab": {
+        "description": "RDS/DAB cross-referencing",
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "kilohertz": {
+            "type": "integer"
+          },
+          "ensemble_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "pty_name": {
+        "description": "Programme type name",
+        "type": "string"
+      },
       "in_house_data": {
         "description": "The contents of these bits are defined by the operator",
         "type": "array",
@@ -434,6 +481,9 @@
           },
           "prog_item_started": {
             "$ref": "#/definitions/pin"
+          },
+          "broadcaster data": {
+            "type": "string"
           }
         },
         "required": ["pi"],
