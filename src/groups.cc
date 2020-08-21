@@ -747,6 +747,13 @@ void Station::decodeODAGroup(const Group& group) {
     parseRadioTextPlus(group);
   } else if (app_id == 0x0093) {
     parseDAB(group);
+  } else {
+    json_["unknown_oda"]["app_name"] = getAppNameString(app_id);
+    json_["unknown_oda"]["raw_data"] =
+        getHexString(group.getBlock(BLOCK2) & 0b11111, 2) + " " +
+        (group.has(BLOCK3) ? getHexString(group.getBlock(BLOCK3), 4) : "----")
+        + " " +
+        (group.has(BLOCK4) ? getHexString(group.getBlock(BLOCK4), 4) : "----");
   }
 }
 
