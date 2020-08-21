@@ -2,10 +2,15 @@
 
 ## 0.20
 
+* Add support for PTY names (group 10A)
+* Add support for DAB cross-referencing (ODA 0x0093)
 * Add support for fractional seconds in the rx timestamp format (`%f`).
-* Add buffer delay compensation to rx timestamps.
+* Add buffer delay compensation to rx timestamps. Timestamps aim to represent
+  the time the PCM samples were read in.
 * Place some JSON fields in the beginning of the line for easier visual
   inspection (pi, group, ps...)
+* Recognize more ODA IDs
+* Print raw ODA data if the application is not supported
 
 ## 0.19 (2020-04-06)
 
