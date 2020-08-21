@@ -270,36 +270,68 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
 
   decodeBasics(group);
 
+  // ODA support in groups
+  // ---------------------
+  //
+  // -  can't be used for ODA
+  // o  can be used for ODA
+  // O  ODA only
+  //
+  //             111111
+  //   0123456789012345
+  // A -----ooooo-OOo--
+  // B ---OOooOOOOOOO--
+
   if (group.hasType()) {
     const GroupType& type = group.getType();
 
-    if      (type.number == 0)
+    // These groups can't be used for ODA
+    if      (type.number == 0) {
       decodeType0(group);
-    else if (type.number == 1)
+    } else if (type.number == 1) {
       decodeType1(group);
-    else if (type.number == 2)
+    } else if (type.number == 2) {
       decodeType2(group);
-    else if (type.number == 3 && type.version == GroupType::Version::A)
+    } else if (type.number == 3 && type.version == GroupType::Version::A) {
       decodeType3A(group);
-    else if (type.number == 4 && type.version == GroupType::Version::A)
+    } else if (type.number == 4 && type.version == GroupType::Version::A) {
       decodeType4A(group);
-    else if (type.number == 14)
+    } else if (type.number == 10 && type.version == GroupType::Version::A) {
+      decodeType10A(group);
+    } else if (type.number == 14) {
       decodeType14(group);
-    else if (type.number == 15 && type.version == GroupType::Version::B)
+    } else if (type.number == 15 && type.version == GroupType::Version::B) {
       decodeType15B(group);
-    else if (oda_app_for_group_.count(type) > 0)
+
+    // Other groups can be reassigned for ODA by a 3A group
+    } else if (oda_app_for_group_.count(type) > 0) {
       decodeODAGroup(group);
 
     // Below: Groups that could optionally be used for ODA but have
     // another primary function
-    else if (type.number == 5)
+    } else if (type.number == 5) {
       decodeType5(group);
-    else if (type.number == 6)
+    } else if (type.number == 6) {
       decodeType6(group);
-    else if (type.number == 10 && type.version == GroupType::Version::A)
-      decodeType10A(group);
-    else
-      json_["debug"].append("TODO " + type.str());
+    } else if (type.number == 7 && type.version == GroupType::Version::A) {
+      decodeType7A(group);
+    } else if (type.number == 8 && type.version == GroupType::Version::A) {
+#ifdef ENABLE_TMC
+
+      if (group.has(BLOCK2) && group.has(BLOCK3) && group.has(BLOCK4))
+        tmc_.receiveUserGroup(getBits<5>(group.getBlock2(), 0), group.getBlock3(),
+                              group.getBlock4(), &json_);
+#endif
+    } else if (type.number == 9 && type.version == GroupType::Version::A) {
+      decodeType9A(group);
+
+    // ODA-only groups
+    // 3B, 4B, 7B, 8B, 9B, 10B, 11A, 11B, 12A, 12B, 13B
+    } else {
+      decodeODAGroup(group);
+
+    // Not allowed by standard: 15A
+    }
   }
 
   std::stringstream ss;
@@ -647,6 +679,16 @@ void Station::decodeType6(const Group& group) {
   }
 }
 
+// Group 7A: Radio Paging
+void Station::decodeType7A(const Group& group) {
+  json_["debug"].append("TODO: 7A");
+}
+
+// Group 9A: Emergency warning systems
+void Station::decodeType9A(const Group& group) {
+  json_["debug"].append("TODO: 9A");
+}
+
 // Group 10A: Programme Type Name
 void Station::decodeType10A(const Group& group) {
   if (!group.has(BLOCK3) || !group.has(BLOCK4))
@@ -791,8 +833,15 @@ void Station::decodeType15B(const Group& group) {
 
 /* Open Data Application */
 void Station::decodeODAGroup(const Group& group) {
-  if (oda_app_for_group_.count(group.getType()) == 0)
+  if (oda_app_for_group_.count(group.getType()) == 0) {
+    json_["unknown_oda"]["raw_data"] =
+        getHexString(group.getBlock(BLOCK2) & 0b11111, 2) + " " +
+        (group.has(BLOCK3) ? getHexString(group.getBlock(BLOCK3), 4) : "----")
+        + " " +
+        (group.has(BLOCK4) ? getHexString(group.getBlock(BLOCK4), 4) : "----");
+
     return;
+  }
 
   uint16_t app_id = oda_app_for_group_[group.getType()];
 

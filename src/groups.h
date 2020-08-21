@@ -57,11 +57,11 @@ class Block {
 };
 
 class GroupType {
-  public:
-   enum class Version {
-     A, B
-   };
  public:
+  enum class Version {
+    A, B
+  };
+
   GroupType() = default;
   explicit GroupType(uint16_t type_code);
 
@@ -194,6 +194,8 @@ class Station {
   void decodeType4A(const Group& group);
   void decodeType5(const Group& group);
   void decodeType6(const Group& group);
+  void decodeType7A(const Group& group);
+  void decodeType9A(const Group& group);
   void decodeType10A(const Group& group);
   void decodeType14(const Group& group);
   void decodeType15B(const Group& group);

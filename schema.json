@@ -372,6 +372,19 @@
         },
         "additionalProperties": false
       },
+      "unknown_oda": {
+        "description": "Data for an unsupported or unknown Open Data Application",
+        "type": "object",
+        "properties": {
+          "app_name": {
+            "description": "Name of the application, if available",
+            "type": "string"
+          },
+          "raw_data": {
+            "type": "string"
+          }
+        }
+      },
       "clock_time": {
         "description": "Time and date at transmitter (formatted to RFC 3339, section 5.6)",
         "type": "string",
