@@ -289,8 +289,13 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
       decodeType15B(group);
     else if (oda_app_for_group_.count(type) > 0)
       decodeODAGroup(group);
+
+    // Below: Groups that could optionally be used for ODA but have
+    // another primary function
     else if (type.number == 6)
       decodeType6(group);
+    else if (type.number == 10 && type.version == GroupType::Version::A)
+      decodeType10A(group);
     else
       json_["debug"].append("TODO " + type.str());
   }
@@ -583,6 +588,28 @@ void Station::decodeType6(const Group& group) {
     if (group.has(BLOCK4)) {
       json_["in_house_data"].append(getBits<16>(group.getBlock4(), 0));
     }
+  }
+}
+
+// Group 10A: Programme Type Name
+void Station::decodeType10A(const Group& group) {
+  if (!group.has(BLOCK3) || !group.has(BLOCK4))
+    return;
+
+  uint16_t segment_address = getBits<1>(group.getBlock2(), 0);
+
+  if (ptyname_.isABChanged(getBits<1>(group.getBlock2(), 4)))
+    ptyname_.text.clear();
+
+  ptyname_.update(segment_address * 4,
+      RDSChar(getBits<8>(group.getBlock3(), 8)),
+      RDSChar(getBits<8>(group.getBlock3(), 0)),
+      RDSChar(getBits<8>(group.getBlock4(), 8)),
+      RDSChar(getBits<8>(group.getBlock4(), 0))
+  );
+
+  if (ptyname_.text.isComplete()) {
+    json_["pty_name"] = ptyname_.text.getLastCompleteString();
   }
 }
 

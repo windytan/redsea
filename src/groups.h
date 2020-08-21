@@ -101,6 +101,23 @@ class RadioText {
   int       ab { 0 };
 };
 
+class PTYName {
+ public:
+  PTYName() : text(8) {}
+  bool isABChanged(int new_ab) {
+    bool is = (ab != new_ab);
+    ab = new_ab;
+    return is;
+  }
+  void update(size_t pos, RDSChar char1, RDSChar char2, RDSChar char3, RDSChar char4) {
+    text.set(pos, char1, char2);
+    text.set(pos + 2, char3, char4);
+  }
+
+  RDSString text;
+  int       ab { 0 };
+};
+
 struct RadioTextPlus {
   bool     cb           { false };
   uint16_t scb          { 0 };
@@ -176,6 +193,7 @@ class Station {
   void decodeType3A(const Group& group);
   void decodeType4A(const Group& group);
   void decodeType6(const Group& group);
+  void decodeType10A(const Group& group);
   void decodeType14(const Group& group);
   void decodeType15B(const Group& group);
   void decodeODAGroup(const Group& group);
@@ -187,6 +205,7 @@ class Station {
   int which_channel_       { 0 };
   ProgramServiceName ps_;
   RadioText radiotext_;
+  PTYName ptyname_;
   uint16_t pin_            { 0 };
   uint16_t ecc_            { 0 };
   int cc_                  { 0 };
