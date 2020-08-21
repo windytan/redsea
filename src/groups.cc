@@ -514,6 +514,10 @@ void Station::decodeType3A(const Group& group) {
       radiotext_plus_.template_num = getBits<8>(oda_message, 0);
       break;
 
+    case 0x0093:
+      // Message bits are not used for DAB cross-referencing
+      break;
+
     default:
       json_["debug"].append("TODO: Unimplemented ODA app " +
           std::to_string(oda_app_id));
@@ -741,6 +745,8 @@ void Station::decodeODAGroup(const Group& group) {
 #endif
   } else if (app_id == 0x4BD7) {
     parseRadioTextPlus(group);
+  } else if (app_id == 0x0093) {
+    parseDAB(group);
   }
 }
 
@@ -784,6 +790,29 @@ void Station::parseRadioTextPlus(const Group& group) {
       tag_json["data"] = text;
       json_["radiotext_plus"]["tags"].append(tag_json);
     }
+  }
+}
+
+void Station::parseDAB(const Group& group) {
+  bool es_flag = getBits<1>(group.getBlock2(), 4);
+
+  if (es_flag) {
+    // Service table
+    json_["debug"].append("TODO: DAB service table");
+
+  } else {
+    // Ensemble table
+
+    int mode = getBits<2>(group.getBlock2(), 2);
+    const std::vector<std::string> modes({"unspecified", "I", "II or III", "IV"});
+    json_["dab"]["mode"] = modes[mode];
+
+    int freq = getBits<18>(group.getBlock2(), group.getBlock3(), 0);
+
+    json_["dab"]["kilohertz"] = freq * 16;
+
+    json_["dab"]["ensemble_id"] = group.getBlock4();
+
   }
 }
 

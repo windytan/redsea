@@ -199,6 +199,7 @@ class Station {
   void decodeODAGroup(const Group& group);
   void addAltFreq(uint8_t);
   void parseRadioTextPlus(const Group& group);
+  void parseDAB(const Group& group);
 
   uint16_t pi_             { 0 };
   Options options_;
