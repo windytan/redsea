@@ -292,6 +292,8 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
 
     // Below: Groups that could optionally be used for ODA but have
     // another primary function
+    else if (type.number == 5)
+      decodeType5(group);
     else if (type.number == 6)
       decodeType6(group);
     else if (type.number == 10 && type.version == GroupType::Version::A)
@@ -574,6 +576,56 @@ void Station::decodeType4A(const Group& group) {
     json_["clock_time"] = clock_time_;
   } else {
     json_["debug"].append("invalid date/time");
+  }
+}
+
+// Group 5: Transparent data channels
+void Station::decodeType5(const Group& group) {
+  int address = getBits<5>(group.getBlock2(), 0);
+  json_["transparent_data"]["address"] = address;
+
+  if (group.getType().version == GroupType::Version::A) {
+    std::vector<int> data = {
+      getBits<8>(group.getBlock3(), 8),
+      getBits<8>(group.getBlock3(), 0),
+      getBits<8>(group.getBlock4(), 8),
+      getBits<8>(group.getBlock4(), 0)};
+
+    json_["transparent_data"]["raw"] =
+      getHexString(data[0], 2) + " " +
+      getHexString(data[1], 2) + " " +
+      getHexString(data[2], 2) + " " +
+      getHexString(data[3], 2);
+
+    RDSString decoded_text(4);
+    decoded_text.set(0, RDSChar(data[0]), RDSChar(data[1]));
+    decoded_text.set(2, RDSChar(data[2]), RDSChar(data[3]));
+
+    full_tdc_.set(address * 4,     RDSChar(data[0]), RDSChar(data[1]));
+    full_tdc_.set(address * 4 + 2, RDSChar(data[2]), RDSChar(data[3]));
+    if (full_tdc_.isComplete()) {
+      json_["transparent_data"]["full_text"] = full_tdc_.str();
+
+      std::string full_raw;
+      for (auto c : full_tdc_.getChars()) {
+        full_raw += getHexString(c.getCode(), 2) + " ";
+      }
+      json_["transparent_data"]["full_raw"] = full_raw;
+    }
+
+    json_["transparent_data"]["as_text"] = decoded_text.str();
+  } else {
+    std::vector<int> data = {
+      getBits<8>(group.getBlock4(), 8),
+      getBits<8>(group.getBlock4(), 0)};
+
+    json_["transparent_data"]["raw"] =
+      getHexString(data[0], 2) + " " +
+      getHexString(data[1], 2);
+
+    RDSString decoded_text(2);
+    decoded_text.set(0, RDSChar(data[0]), RDSChar(data[1]));
+    json_["transparent_data"]["as_text"] = decoded_text.str();
   }
 }
 

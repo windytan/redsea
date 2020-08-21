@@ -192,6 +192,7 @@ class Station {
   void decodeType2(const Group& group);
   void decodeType3A(const Group& group);
   void decodeType4A(const Group& group);
+  void decodeType5(const Group& group);
   void decodeType6(const Group& group);
   void decodeType10A(const Group& group);
   void decodeType14(const Group& group);
@@ -207,6 +208,7 @@ class Station {
   ProgramServiceName ps_;
   RadioText radiotext_;
   PTYName ptyname_;
+  RDSString full_tdc_      { 32 * 4 };
   uint16_t pin_            { 0 };
   uint16_t ecc_            { 0 };
   int cc_                  { 0 };
