@@ -7,6 +7,7 @@
 * Add support for raw broadcaster data in EON (variant 15)
 * Add support for transparent data channels (groups 5A, 5B)
 * Add support for fractional seconds in the rx timestamp format (`%f`).
+* Add support for TMC tuning info variant 8
 * Add buffer delay compensation to rx timestamps. Timestamps aim to represent
   the time the PCM samples were read in.
 * Place some JSON fields in the beginning of the line for easier visual

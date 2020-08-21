@@ -574,6 +574,16 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
         break;
       }
 
+      case 8: {
+        if (y == 0 || z == 0 || y == z) {
+          (*jsonroot)["tmc"]["other_network"]["pi"] = "0x" + getHexString(y, 4);
+        } else {
+          (*jsonroot)["tmc"]["other_network"]["pi_codes"].append("0x" + getHexString(y, 4));
+          (*jsonroot)["tmc"]["other_network"]["pi_codes"].append("0x" + getHexString(z, 4));
+        }
+        break;
+      }
+
       case 9: {
         uint16_t on_pi = z;
         uint16_t on_sid = getBits<6>(y, 0);
