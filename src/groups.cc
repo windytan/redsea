@@ -924,11 +924,33 @@ void Station::parseDAB(const Group& group) {
     const std::vector<std::string> modes({"unspecified", "I", "II or III", "IV"});
     json_["dab"]["mode"] = modes[mode];
 
-    int freq = getBits<18>(group.getBlock2(), group.getBlock3(), 0);
+    int freq = 16 * getBits<18>(group.getBlock2(), group.getBlock3(), 0);
 
-    json_["dab"]["kilohertz"] = freq * 16;
+    json_["dab"]["kilohertz"] = freq;
 
-    json_["dab"]["ensemble_id"] = group.getBlock4();
+    static const std::map<int, std::string> dab_channels({
+      { 174928,  "5A"}, { 176640,  "5B"}, { 178352,  "5C"}, { 180064,  "5D"},
+      { 181936,  "6A"}, { 183648,  "6B"}, { 185360,  "6C"}, { 187072,  "6D"},
+      { 188928,  "7A"}, { 190640,  "7B"}, { 192352,  "7C"}, { 194064,  "7D"},
+      { 195936,  "8A"}, { 197648,  "8B"}, { 199360,  "8C"}, { 201072,  "8D"},
+      { 202928,  "9A"}, { 204640,  "9B"}, { 206352,  "9C"}, { 208064,  "9D"},
+      { 209936, "10A"}, { 211648, "10B"}, { 213360, "10C"}, { 215072, "10D"},
+      { 216928, "11A"}, { 218640, "11B"}, { 220352, "11C"}, { 222064, "11D"},
+      { 223936, "12A"}, { 225648, "12B"}, { 227360, "12C"}, { 229072, "12D"},
+      { 230784, "13A"}, { 232496, "13B"}, { 237488, "13E"}, { 239200, "13F"},
+      {1452960,  "LA"}, {1454672,  "LB"}, {1456384,  "LC"}, {1458096,  "LD"},
+      {1459808,  "LE"}, {1461520,  "LF"}, {1463232,  "LG"}, {1464944,  "LH"},
+      {1466656,  "LI"}, {1468368,  "LJ"}, {1470080,  "LK"}, {1471792,  "LL"},
+      {1473504,  "LM"}, {1475216,  "LN"}, {1476928,  "LO"}, {1478640,  "LP"},
+      {1480352,  "LQ"}, {1482064,  "LR"}, {1483776,  "LS"}, {1485488,  "LT"},
+      {1487200,  "LU"}, {1488912,  "LV"}, {1490624,  "LW"},
+    });
+
+    if (dab_channels.count(freq) != 0) {
+      json_["dab"]["channel"] = dab_channels.at(freq);
+    }
+
+    json_["dab"]["ensemble_id"] = getPrefixedHexString(group.getBlock4(), 4);
 
   }
 }
