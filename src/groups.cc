@@ -242,7 +242,7 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
     return;
 
   json_.clear();
-  json_["*SORT00*pi"] = "0x" + getHexString(getPI(), 4);
+  json_["*SORT00*pi"] = getPrefixedHexString(getPI(), 4);
   if (options_.rbds) {
     std::string callsign = getCallsignFromPI(getPI());
     if (!callsign.empty()) {
@@ -717,7 +717,7 @@ void Station::decodeType14(const Group& group) {
     return;
 
   uint16_t on_pi = group.getBlock4();
-  json_["other_network"]["*SORT00*pi"] = "0x" + getHexString(on_pi, 4);
+  json_["other_network"]["*SORT00*pi"] = getPrefixedHexString(on_pi, 4);
 
   bool tp = getBits<1>(group.getBlock2(), 4);
 

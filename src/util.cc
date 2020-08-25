@@ -62,6 +62,10 @@ std::string getHexString(uint32_t value, int num_nybbles) {
   return ss.str();
 }
 
+std::string getPrefixedHexString(uint32_t value, int num_nybbles) {
+  return "0x" + getHexString(value, num_nybbles);
+}
+
 // 3.2.1.6
 CarrierFrequency::CarrierFrequency(uint16_t code, Band band) :
     code_(code), band_(band) {

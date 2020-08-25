@@ -49,6 +49,7 @@ std::string join(std::vector<std::string> strings, const std::string& d);
 std::string join(std::vector<uint16_t> nums, const std::string& d);
 
 std::string getHexString(uint32_t value, int num_nybbles);
+std::string getPrefixedHexString(uint32_t value, int num_nybbles);
 
 using CSVRow = std::vector<std::string>;
 

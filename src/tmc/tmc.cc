@@ -567,7 +567,7 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
         /* Here, the alternative frequencies are printed out right away -
            DKULTUR, for example, does not transmit information about the total
            length of the list */
-        (*jsonroot)["tmc"]["other_network"]["pi"] = "0x" + getHexString(on_pi, 4);
+        (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString(on_pi, 4);
         for (CarrierFrequency f : other_network_freqs_.at(on_pi).get())
           (*jsonroot)["tmc"]["other_network"]["frequencies"].append(f.str());
         other_network_freqs_.clear();
@@ -576,10 +576,10 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
 
       case 8: {
         if (y == 0 || z == 0 || y == z) {
-          (*jsonroot)["tmc"]["other_network"]["pi"] = "0x" + getHexString(y, 4);
+          (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString(y, 4);
         } else {
-          (*jsonroot)["tmc"]["other_network"]["pi_codes"].append("0x" + getHexString(y, 4));
-          (*jsonroot)["tmc"]["other_network"]["pi_codes"].append("0x" + getHexString(z, 4));
+          (*jsonroot)["tmc"]["other_network"]["pi_codes"].append(getPrefixedHexString(y, 4));
+          (*jsonroot)["tmc"]["other_network"]["pi_codes"].append(getPrefixedHexString(z, 4));
         }
         break;
       }
@@ -590,7 +590,7 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
         uint16_t on_mgs = getBits<4>(y, 6);
         uint16_t on_ltn = getBits<6>(y, 10);
 
-        (*jsonroot)["tmc"]["other_network"]["pi"] = getHexString(on_pi, 4);
+        (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString(on_pi, 4);
         (*jsonroot)["tmc"]["other_network"]["service_id"] = on_sid;
         (*jsonroot)["tmc"]["other_network"]["location_table"] = on_ltn;
 
@@ -713,7 +713,7 @@ void Message::decodeMulti() {
 
   // First group
   direction_ = getBits<1>(parts_[0].data[0], 14) ? Direction::Negative :
-                                                Direction::Positive;
+                                                   Direction::Positive;
   extent_    = getBits<3>(parts_[0].data[0], 11);
   events_.push_back(getBits<11>(parts_[0].data[0], 0));
   if (is_encrypted_)
