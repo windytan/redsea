@@ -27,8 +27,6 @@ namespace redsea {
 // Program Type names (RDS)
 // EN 50067:1998, Annex F (pp. 77-78)
 std::string getPTYNameString(uint16_t pty) {
-  assert(pty <= 32);
-
   static const std::vector<std::string> pty_names({
     "No PTY",         "News",            "Current affairs",       "Information",
     "Sport",          "Education",       "Drama",                 "Culture",
@@ -45,8 +43,6 @@ std::string getPTYNameString(uint16_t pty) {
 // Program Type names (U.S. / RBDS)
 // U.S. RBDS Standard, Annex F (pp. 95-96)
 std::string getPTYNameStringRBDS(uint16_t pty) {
-  assert(pty <= 32);
-
   static const std::vector<std::string> pty_names_rbds({
     "No PTY",           "News",                  "Information",    "Sports",
     "Talk",             "Rock",                  "Classic rock",   "Adult hits",

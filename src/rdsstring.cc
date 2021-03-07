@@ -31,7 +31,6 @@ namespace {
 // EN 50067:1998, Annex E (pp. 73-76)
 // plus UCS-2 control codes
 std::string getRDSCharString(uint16_t code) {
-  std::string result(" ");
   static const std::array<std::string, 256> codetable_G0({
      " ", " ", " ", "0", "@", "P", "‖", "p", "á", "â", "ª", "º", "Á", "Â", "Ã", "ã",
      " ", " ", "!", "1", "A", "Q", "a", "q", "à", "ä", "α", "¹", "À", "Ä", "Å", "å",

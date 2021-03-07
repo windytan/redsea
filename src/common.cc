@@ -39,7 +39,7 @@ std::string getTimePointString(
   }
 
   char buffer[64];
-  if (std::strftime(buffer, sizeof(buffer), format_with_fractional.c_str(), std::localtime(&t)) <= 0) {
+  if (std::strftime(buffer, sizeof(buffer), format_with_fractional.c_str(), std::localtime(&t)) == 0) {
     return "(format error)";
   }
 

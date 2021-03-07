@@ -131,9 +131,7 @@ int processMPXInput(Options options) {
     mpx.fillBuffer();
     for (size_t i = 0; i < size_t(options.num_channels); i++) {
       channels[i].processBits(
-        subcarriers[i]->processChunk(
-          mpx.readChunk(int(i))
-        )
+        subcarriers[i]->processChunk(mpx.readChunk(int(i)))
       );
     }
   }

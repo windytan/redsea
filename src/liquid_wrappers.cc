@@ -42,10 +42,6 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   return result;
 }
 
-float AGC::getGain() const {
-  return agc_crcf_get_gain(object_);
-}
-
 FIRFilter::FIRFilter(unsigned int len, float fc, float As, float mu) :
     object_(firfilt_crcf_create_kaiser(len, fc, As, mu)) {
   firfilt_crcf_set_scale(object_, 2.0f * fc);
@@ -94,10 +90,6 @@ void NCO::setPLLBandwidth(float bw) {
 
 void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
-}
-
-float NCO::getFrequency() const {
-  return nco_crcf_get_frequency(object_);
 }
 
 SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
@@ -154,10 +146,6 @@ Resampler::Resampler(float ratio, unsigned int length) :
 
 Resampler::~Resampler() {
   resamp_rrrf_destroy(object_);
-}
-
-void Resampler::setRate(float rate) {
-  resamp_rrrf_set_rate(object_, rate);
 }
 
 unsigned int Resampler::execute(float in,

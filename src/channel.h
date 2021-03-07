@@ -62,7 +62,7 @@ class Channel {
   Channel(const Options& options, int which_channel);
   Channel(const Channel& other);
   void processBit(bool bit);
-  void processBits(BitBuffer bits);
+  void processBits(BitBuffer buffer);
   void processGroup(Group group);
   void flush();
 

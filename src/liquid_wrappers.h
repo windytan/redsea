@@ -40,7 +40,6 @@ class AGC {
   AGC(const AGC&) = delete;
   ~AGC();
   std::complex<float> execute(std::complex<float> s);
-  float getGain() const;
 
  private:
   agc_crcf object_;
@@ -68,7 +67,6 @@ class NCO {
   void step();
   void setPLLBandwidth(float);
   void stepPLL(float dphi);
-  float getFrequency() const;
 
  private:
   nco_crcf object_;
@@ -107,7 +105,6 @@ class Resampler {
   Resampler(const Resampler&) = delete;
   ~Resampler();
   unsigned int execute(float in, float* out);
-  void setRate(float rate);
 
  private:
   resamp_rrrf object_;

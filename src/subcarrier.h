@@ -74,7 +74,7 @@ class Subcarrier {
   liquid::Modem modem_;
   liquid::Resampler resampler_;
 
-  MPXBuffer<> resampled_buffer_;
+  MPXBuffer<> resampled_buffer_{};
 
   bool is_eof_ { false };
 

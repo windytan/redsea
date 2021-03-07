@@ -68,24 +68,8 @@ Offset getOffsetForSyndrome(uint16_t syndrome) {
   }
 }
 
-// EN 50067:1998, section B.1.1: '-- calculated by the modulo-two addition of
-// all the rows of the -- matrix for which the corresponding coefficient in the
-// -- vector is 1.'
-uint32_t matrixMultiply(uint32_t vec, const std::vector<uint32_t>& matrix) {
-  uint32_t result = 0;
-
-  for (size_t k = 0; k < matrix.size(); k++)
-    if ((vec >> k) & 0b1)
-      result ^= matrix[matrix.size() - 1 - k];
-
-  return result;
-}
-
-// EN 50067:1998, section B.2.1: 'The calculation of the syndromes for the
-// different offset words can easily be done by multiplying each word with the
-// parity matrix H.'
-uint32_t calculateSyndrome(uint32_t vec) {
-  static const std::vector<uint32_t> parity_check_matrix({
+unsigned calculateSyndrome(unsigned vec) {
+  static const std::array<unsigned, 26> parity_check_matrix({
     0b1000000000,
     0b0100000000,
     0b0010000000,
@@ -114,7 +98,16 @@ uint32_t calculateSyndrome(uint32_t vec) {
     0b1100011011
   });
 
-  return matrixMultiply(vec, parity_check_matrix);
+  // EN 50067:1998, section B.1.1: Matrix multiplication is '-- calculated by
+  // the modulo-two addition of all the rows of the -- matrix for which the
+  // corresponding coefficient in the -- vector is 1.'
+
+  unsigned result = 0;
+
+  for (size_t k = 0; k < parity_check_matrix.size(); k++)
+    result ^= parity_check_matrix[parity_check_matrix.size() - 1 - k] * ((vec >> k) & 0b1);
+
+  return result;
 }
 
 // Precompute mapping of syndromes to error vectors
