@@ -1,6 +1,6 @@
 # redsea changelog
 
-## 0.20
+## 0.20 (2021-03-08)
 
 * Recognize more ODAs and features - thanks Andreas Mikula
 * Add support for PTY names (group 10A)
