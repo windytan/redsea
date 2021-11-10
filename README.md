@@ -82,7 +82,7 @@ be disabled (`./configure --disable-tmc`).
 If you only need to decode hex or binary input and don't need demodulation,
 you can compile redsea without liquid-dsp (`./configure --without-liquid`).
 
-[liquid-dsp]: https://github.com/jgaeddert/liquid-dsp
+[liquid-dsp]: https://github.com/jgaeddert/liquid-dsp/releases/tag/v1.3.2
 
 ## Usage
 
@@ -173,9 +173,9 @@ type:
 * ~8 MB of free memory (~128 MB for RDS-TMC)
 * C++14 compiler
 * GNU autotools
-* libiconv
-* libsndfile
-* [liquid-dsp][liquid-dsp]
+* libiconv 1.16
+* libsndfile 1.0.31
+* [liquid-dsp][liquid-dsp] release 1.3.2
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals
 
@@ -211,3 +211,6 @@ Redsea is released under the MIT license, which means it is copyrighted to Oona
 Räisänen OH2EIQ yet you're free to use it provided that the copyright
 information is not removed. (jsoncpp and iconvpp have their own licenses.)
 See LICENSE.
+
+This software should never be relied on for emergency communication, accurate
+traffic / weather information, or when your life is on the line.

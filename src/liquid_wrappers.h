@@ -96,7 +96,11 @@ class Modem {
   float getPhaseError();
 
  private:
+#ifdef MODEM_IS_MODEMCF
+  modemcf object_;
+#else
   modem object_;
+#endif
 };
 
 class Resampler {

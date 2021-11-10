@@ -35,6 +35,11 @@ AS_IF([test "x$with_liquid" != xno],
     [AC_MSG_FAILURE(
        [Could not find liquid-dsp (use --without-liquid to disable)])])])
 
+AS_IF([test "x$with_liquid" != xno],
+  [AC_CHECK_LIB([liquid], [modemcf],
+    [AC_DEFINE([MODEM_IS_MODEMCF], [1],
+               [modem is called modemcf])])])
+
 MACPORTS_LD=
 AS_IF([test "x$with_macports" != xno],
   [AC_CHECK_FILE(/opt/local/lib,

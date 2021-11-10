@@ -120,23 +120,42 @@ Maybe<std::complex<float>> SymSync::execute(std::complex<float>* in) {
 }
 
 Modem::Modem(modulation_scheme scheme) :
-    object_(modem_create(scheme)) {
+    object_(
+#ifdef MODEM_IS_MODEMCF
+        modemcf_create(scheme)
+#else
+        modem_create(scheme)
+#endif
+    ) {
 }
 
 Modem::~Modem() {
+#ifdef MODEM_IS_MODEMCF
+  modemcf_destroy(object_);
+#else
   modem_destroy(object_);
+#endif
+
 }
 
 unsigned int Modem::demodulate(std::complex<float> sample) {
   unsigned symbol_out;
 
+#ifdef MODEM_IS_MODEMCF
+  modemcf_demodulate(object_, sample, &symbol_out);
+#else
   modem_demodulate(object_, sample, &symbol_out);
+#endif
 
   return symbol_out;
 }
 
 float Modem::getPhaseError() {
+#ifdef MODEM_IS_MODEMCF
+  return modemcf_get_demodulator_phase_error(object_);
+#else
   return modem_get_demodulator_phase_error(object_);
+#endif
 }
 
 Resampler::Resampler(float ratio, unsigned int length) :
