@@ -58,10 +58,29 @@ AC_CHECK_LIB([sndfile], [main],
   [AC_MSG_FAILURE(
      [Could not find libsndfile])])
 
+WIN_CF=
+LIBC=
+
+AC_MSG_CHECKING([whether compiling for Windows])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#if !defined(_WIN32) && !defined(_WIN64)
+#error not compiling for Windows
+#endif
+]])], 
+  # Windows
+  [AC_MSG_RESULT([yes]); AC_SUBST([WIN_CF], ["-D_USE_MATH_DEFINES=1"])],
+  # Unix
+  [AC_MSG_RESULT([no]); AC_SUBST([LIBC], ["-lc"])])
+
+CPP_STD=c++14
 AC_CANONICAL_HOST
 case "${host_os}" in
-  darwin*)
+  darwin*|msys*|mingw*)
       AC_SUBST([ICONV], ["-liconv"])
+      ;;
+  cygwin*)
+      AC_SUBST([ICONV], ["-liconv"])
+      AC_SUBST([CPP_STD], ["gnu++14"])
       ;;
 esac
 
