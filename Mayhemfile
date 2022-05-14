@@ -1,0 +1,5 @@
+project: jbgreenh/redsea
+target: redsea
+
+cmds:
+  - cmd: /redsea -f @@
