@@ -28,14 +28,14 @@ namespace redsea {
 class RDSChar {
  public:
   RDSChar() = default;
-  explicit RDSChar(uint16_t _code) : code_(_code) {};
+  explicit RDSChar(uint8_t _code) : code_(_code) {};
 
-  uint16_t getCode() const    { return code_; };
+  uint8_t getCode() const     { return code_; };
   bool isSequential() const   { return is_sequential_; };
   void setSequential(bool is) { is_sequential_ = is; }
 
  private:
-  uint16_t code_      { 0 };
+  uint8_t code_       { 0 };
   bool is_sequential_ { false };
 };
 
