@@ -508,10 +508,12 @@ void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
     (*jsonroot)["tmc"]["system_info"]["gap"] = gap_values[g];
 
     int ltcc = getBits<4>(message, 0);
-    (*jsonroot)["tmc"]["system_info"]["ltcc"] = ltcc;
+    if (ltcc)
+      (*jsonroot)["tmc"]["system_info"]["ltcc"] = ltcc;
   } else if (variant == 2) {
     int ltecc = getBits<8>(message, 0);
-    (*jsonroot)["tmc"]["system_info"]["ltecc"] = ltecc;
+    if (ltecc)
+      (*jsonroot)["tmc"]["system_info"]["ltecc"] = ltecc;
   }
 }
 
