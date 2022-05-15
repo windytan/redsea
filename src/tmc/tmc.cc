@@ -494,7 +494,6 @@ void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
 
     bool     afi = getBits<1>(message, 5);
     uint16_t mgs = getBits<4>(message, 0);
-    is_enhanced_mode_ = getBits<1>(message, 4);
 
     (*jsonroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
 
@@ -508,15 +507,11 @@ void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
     static const int gap_values[4] = {3, 5, 8, 11};
     (*jsonroot)["tmc"]["system_info"]["gap"] = gap_values[g];
 
-    if (is_enhanced_mode_) {
-      uint16_t t_d = getBits<2>(message, 0);
-      uint16_t t_w = getBits<2>(message, 2);
-      uint16_t t_a = getBits<2>(message, 4);
-
-      (*jsonroot)["tmc"]["system_info"]["delay_time"] = t_d;
-      (*jsonroot)["tmc"]["system_info"]["activity_time"] = 1 << t_a;
-      (*jsonroot)["tmc"]["system_info"]["window_time"] = 1 << t_w;
-    }
+    int ltcc = getBits<4>(message, 0);
+    (*jsonroot)["tmc"]["system_info"]["ltcc"] = ltcc;
+  } else if (variant == 2) {
+    int ltecc = getBits<8>(message, 0);
+    (*jsonroot)["tmc"]["system_info"]["ltecc"] = ltecc;
   }
 }
 

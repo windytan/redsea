@@ -681,11 +681,13 @@ void Station::decodeType6(const Group& group) {
 
 // Group 7A: Radio Paging
 void Station::decodeType7A(const Group& group) {
+  (void)group;
   json_["debug"].append("TODO: 7A");
 }
 
 // Group 9A: Emergency warning systems
 void Station::decodeType9A(const Group& group) {
+  (void)group;
   json_["debug"].append("TODO: 9A");
 }
 
