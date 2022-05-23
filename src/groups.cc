@@ -225,6 +225,7 @@ Station::Station(uint16_t _pi, const Options& options, int which_channel) :
 {
   writer_builder_["indentation"] = "";
   writer_builder_["precision"] = 7;
+  writer_builder_.settings_["emitUTF8"] = true;
   writer_ =
       std::unique_ptr<Json::StreamWriter>(writer_builder_.newStreamWriter());
 }
