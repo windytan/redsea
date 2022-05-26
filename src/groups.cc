@@ -587,15 +587,14 @@ void Station::decodeType4A(const Group& group) {
   double local_offset = (getBits<1>(group.getBlock4(), 5) ? -1 : 1) *
                          getBits<5>(group.getBlock4(), 0) / 2.0;
 
-  struct tm utc_plus_offset_tm = {
-    .tm_year  = year_utc - 1900,
-    .tm_mon   = month_utc - 1,
-    .tm_mday  = day_utc,
-    .tm_isdst = -1,
-    .tm_hour  = hour_utc,
-    .tm_min   = minute_utc,
-    .tm_sec   = static_cast<int>(local_offset * 3600)
-  };
+  struct tm utc_plus_offset_tm;
+  utc_plus_offset_tm.tm_year  = year_utc - 1900;
+  utc_plus_offset_tm.tm_mon   = month_utc - 1;
+  utc_plus_offset_tm.tm_mday  = day_utc;
+  utc_plus_offset_tm.tm_isdst = -1;
+  utc_plus_offset_tm.tm_hour  = hour_utc;
+  utc_plus_offset_tm.tm_min   = minute_utc;
+  utc_plus_offset_tm.tm_sec   = static_cast<int>(local_offset * 3600);
 
   time_t local_t      = mktime(&utc_plus_offset_tm);
   struct tm* local_tm = localtime(&local_t);
