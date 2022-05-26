@@ -17,6 +17,7 @@
 #include "src/groups.h"
 
 #include <cmath>
+#include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -567,42 +568,54 @@ void Station::decodeType4A(const Group& group) {
     return;
 
   uint32_t modified_julian_date = getBits<17>(group.getBlock2(), group.getBlock3(), 1);
+
+  int year_utc  = int((modified_julian_date - 15078.2) / 365.25);
+  int month_utc = int((modified_julian_date - 14956.1 -
+                std::trunc(year_utc * 365.25)) / 30.6001);
+  int day_utc   = int(modified_julian_date - 14956 - std::trunc(year_utc * 365.25) -
+                std::trunc(month_utc * 30.6001));
+  if (month_utc == 14 || month_utc == 15) {
+    year_utc += 1;
+    month_utc -= 12;
+  }
+  year_utc += 1900;
+  month_utc -= 1;
+
+  int hour_utc   = getBits<5>(group.getBlock3(), group.getBlock4(), 12);
+  int minute_utc = getBits<6>(group.getBlock4(), 6);
+
   double local_offset = (getBits<1>(group.getBlock4(), 5) ? -1 : 1) *
                          getBits<5>(group.getBlock4(), 0) / 2.0;
-  modified_julian_date += local_offset / 24.0;
 
-  int year  = int((modified_julian_date - 15078.2) / 365.25);
-  int month = int((modified_julian_date - 14956.1 -
-                std::trunc(year * 365.25)) / 30.6001);
-  int day   = int(modified_julian_date - 14956 - std::trunc(year * 365.25) -
-                std::trunc(month * 30.6001));
-  if (month == 14 || month == 15) {
-    year += 1;
-    month -= 12;
-  }
-  year += 1900;
-  month -= 1;
+  struct tm utc_plus_offset_tm = {
+    .tm_year  = year_utc - 1900,
+    .tm_mon   = month_utc - 1,
+    .tm_mday  = day_utc,
+    .tm_isdst = -1,
+    .tm_hour  = hour_utc,
+    .tm_min   = minute_utc,
+    .tm_sec   = static_cast<int>(local_offset * 3600)
+  };
 
-  int local_offset_min = int((local_offset - std::trunc(local_offset)) * 60.0);
+  time_t local_t      = mktime(&utc_plus_offset_tm);
+  struct tm* local_tm = localtime(&local_t);
 
-  int hour = static_cast<int>(getBits<5>(group.getBlock3(), group.getBlock4(), 12) +
-                              + local_offset) % 24;
-  int minute = getBits<6>(group.getBlock4(), 6) + local_offset_min;
-
-  bool is_date_valid = (month >= 1 && month <= 12 && day >= 1 && day <= 31 &&
-                        hour >= 0 && hour <= 23 && minute >= 0 &&
-                        minute <= 59 && fabs(std::trunc(local_offset)) <= 14.0);
+  bool is_date_valid = hour_utc <= 23 && minute_utc <= 59 &&
+                       fabs(std::trunc(local_offset)) <= 14.0;
   if (is_date_valid) {
     char buffer[100];
     int local_offset_hour = int(fabs(std::trunc(local_offset)));
+    int local_offset_min  = int((local_offset - std::trunc(local_offset)) * 60.0);
 
     if (local_offset_hour == 0 && local_offset_min == 0) {
       snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00Z",
-               year, month, day, hour, minute);
+               local_tm->tm_year + 1900, local_tm->tm_mon + 1, local_tm->tm_mday,
+               local_tm->tm_hour, local_tm->tm_min);
     } else {
       snprintf(buffer, sizeof(buffer),
                "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
-               year, month, day, hour, minute, local_offset > 0 ? "+" : "-",
+               local_tm->tm_year + 1900, local_tm->tm_mon + 1, local_tm->tm_mday,
+               local_tm->tm_hour, local_tm->tm_min, local_offset > 0 ? "+" : "-",
                local_offset_hour, abs(local_offset_min));
     }
     clock_time_ = std::string(buffer);
