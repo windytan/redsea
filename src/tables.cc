@@ -272,7 +272,7 @@ std::string getRTPlusContentTypeString(uint16_t content_type) {
 // EN 50067:1998, 3.2.1.5 (p. 41)
 std::string getDICodeString(uint16_t di) {
   static const std::vector<std::string> di_codes({
-      "stereo", "artificial_head", "compressed", "dynamic_pty" });
+      "dynamic_pty", "compressed", "artificial_head", "stereo" });
 
   assert(di < di_codes.size());
   return di_codes[di];
