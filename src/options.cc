@@ -34,6 +34,7 @@ Options getOptions(int argc, char** argv) {
     { "bler",          no_argument, 0, 'E'},
     { "file",          1,           0, 'f'},
     { "input-hex",     no_argument, 0, 'h'},
+    { "input",         1,           0, 'i'},
     { "loctable",      1,           0, 'l'},
     { "show-partial",  no_argument, 0, 'p'},
     { "samplerate",    1,           0, 'r'},
@@ -48,10 +49,10 @@ Options getOptions(int argc, char** argv) {
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hl:pr:Rt:uvx",
+  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:pr:Rt:uvx",
                                     long_options, &option_index)) >= 0) {
     switch (option_char) {
-      case 'b':
+      case 'b': // For backwards compatibility
         options.input_type = InputType::ASCIIbits;
         break;
       case 'c':
@@ -72,9 +73,25 @@ Options getOptions(int argc, char** argv) {
         options.sndfilename = std::string(optarg);
         options.input_type = InputType::MPX_sndfile;
         break;
-      case 'h':
+      case 'h': // For backwards compatibility
         options.input_type = InputType::Hex;
         break;
+      case 'i': {
+        std::string input_type(optarg);
+        if (input_type == "hex") {
+          options.input_type = InputType::Hex;
+        } else if (input_type == "mpx") {
+          options.input_type = InputType::MPX_stdin;
+        } else if (input_type == "tef") {
+          options.input_type = InputType::TEF6686;
+        } else if (input_type == "bits") {
+          options.input_type = InputType::ASCIIbits;
+        } else {
+          std::cerr << "error: unknown input format" << std::endl;
+          options.exit_failure = true;
+        }
+        break;
+      }
       case 'x':
         options.output_type = OutputType::Hex;
         break;

@@ -103,10 +103,6 @@ Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 radio_command | redsea [OPTIONS]
 redsea -f WAVFILE
 
--b, --input-bits       Input is an unsynchronized ASCII bit stream
-                       (011010110...). All characters but '0' and '1'
-                       are ignored.
-
 -c, --channels CHANS   Number of channels in the raw input signal. Each
                        channel is demodulated independently.
 
@@ -122,7 +118,12 @@ redsea -f WAVFILE
 -f, --file FILENAME    Use an audio file as MPX input. All formats
                        readable by libsndfile should work.
 
--h, --input-hex        The input is in the RDS Spy hex format.
+-i, --input FORMAT     Decode stdin as FORMAT (see the wiki for more info):
+                        bits Unsynchronized ASCII bit stream (011010110...).
+                             All characters but '0' and '1' are ignored.
+                        hex  RDS Spy hex format.
+                        mpx  Mono S16LE PCM-encoded MPX waveform (default).
+                        tef  Serial data from the TEF6686 tuner.
 
 -l, --loctable DIR     Load TMC location table from a directory in TMC
                        Exchange format. This option can be specified
@@ -133,7 +134,7 @@ redsea -f WAVFILE
                        frequencies). partial_ will be prepended to their
                        names. This is good for noisy conditions.
 
--r, --samplerate RATE  Set sample frequency of the raw input signal in Hz.
+-r, --samplerate RATE  Set sample frequency of the raw MPX input signal in Hz.
                        Will resample (slow) if this differs from 171000 Hz.
 
 -R, --show-raw         Show raw group data as hex in the JSON stream.

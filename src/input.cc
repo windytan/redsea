@@ -218,4 +218,47 @@ Group readHexGroup(const Options& options) {
   return group;
 }
 
+// Read one group in the TEF6686 output format
+Group readTEFGroup(const Options& options) {
+  Group group;
+  group.disableOffsets();
+
+  while (!std::cin.eof()) {
+    std::string line;
+    std::getline(std::cin, line);
+    if (options.feed_thru)
+      std::cout << line << '\n';
+
+    if (line.substr(0, 1) == "P") {
+      Block block1;
+      try {
+        line = line.substr(1);
+        int64_t data = std::stol(line, nullptr, 16);
+        block1.data = data & 0xFFFF;
+        block1.is_received = true;
+      } catch (std::exception& e) {
+      }
+      group.setBlock(BLOCK1, block1);
+    } else if (line.substr(0, 1) == "R") {
+      int64_t data{0};
+      uint16_t rdsErr{0xFF};
+      try {
+        line = line.substr(1);
+        data = std::stol(line, nullptr, 16);
+        rdsErr = (data & 0xFF);
+      } catch (std::exception& e) {
+      }
+      for (auto blockNum : { BLOCK2, BLOCK3, BLOCK4 }) {
+        Block block;
+        block.data = (data >> 8) >> (16 * (3 - blockNum));
+        block.is_received = (rdsErr >> (2 * (3 - blockNum))) == 0;
+        group.setBlock(blockNum, block);
+      }
+      break;
+    }
+  }
+
+  return group;
+}
+
 }  // namespace redsea

@@ -35,10 +35,6 @@ void printUsage() {
     "By default, a 171 kHz single-channel 16-bit MPX signal is expected via\n"
     "stdin.\n"
     "\n"
-    "-b, --input-bits       Input is an unsynchronized ASCII bit stream\n"
-    "                       (011010110...). All characters but '0' and '1'\n"
-    "                       are ignored.\n"
-    "\n"
     "-c, --channels CHANS   Number of channels in the raw input signal.\n"
     "                       Channels are interleaved streams of samples that\n"
     "                       are demodulated independently.\n"
@@ -55,7 +51,12 @@ void printUsage() {
     "-f, --file FILENAME    Use an audio file as MPX input. All formats\n"
     "                       readable by libsndfile should work.\n"
     "\n"
-    "-h, --input-hex        The input is in the RDS Spy hex format.\n"
+    "-i, --input FORMAT     Decode stdin as FORMAT (see the wiki for more info):\n"
+    "                        bits Unsynchronized ASCII bit stream (011010110...).\n"
+    "                             All characters but '0' and '1' are ignored.\n"
+    "                        hex  RDS Spy hex format.\n"
+    "                        mpx  Mono S16LE PCM-encoded MPX waveform (default).\n"
+    "                        tef  Serial data from the TEF6686 tuner.\n"
     "\n"
     "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
     "                       Exchange format. This option can be specified\n"
@@ -165,6 +166,16 @@ int processHexInput(Options options) {
   return EXIT_SUCCESS;
 }
 
+int processTEFInput(Options options) {
+  Channel channel(options, 0);
+
+  while (!std::cin.eof()) {
+    channel.processGroup(readTEFGroup(options));
+  }
+
+  return EXIT_SUCCESS;
+}
+
 }  // namespace redsea
 
 int main(int argc, char** argv) {
@@ -194,6 +205,10 @@ int main(int argc, char** argv) {
 
     case redsea::InputType::Hex:
       return processHexInput(options);
+      break;
+
+    case redsea::InputType::TEF6686:
+      return processTEFInput(options);
       break;
   }
 }

@@ -89,6 +89,7 @@ class AsciiBitReader {
 };
 
 Group readHexGroup(const Options& options);
+Group readTEFGroup(const Options& options);
 
 }  // namespace redsea
 #endif  // INPUT_H_

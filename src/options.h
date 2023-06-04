@@ -25,7 +25,7 @@
 namespace redsea {
 
 enum class InputType {
-  MPX_stdin, MPX_sndfile, ASCIIbits, Hex
+  MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686
 };
 
 enum class OutputType {
