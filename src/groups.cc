@@ -374,6 +374,9 @@ void Station::decodeBasics(const Group& group) {
 
 // Group 0: Basic tuning and switching information
 void Station::decodeType0(const Group& group) {
+  if (!group.has(BLOCK2))
+    return;
+
   uint16_t segment_address = getBits<2>(group.getBlock2(), 0);
   bool is_di = getBits<1>(group.getBlock2(), 2);
   json_["di"][getDICodeString(segment_address)] = is_di;
