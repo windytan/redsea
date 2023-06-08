@@ -52,6 +52,8 @@ std::string getRDSCharString(uint8_t code) {
   return codetable_G0[code];
 }
 
+constexpr uint8_t kStringTerminator { 0x0D };
+
 }  // namespace
 
 RDSString::RDSString(size_t len) : chars_(len),
@@ -66,9 +68,9 @@ void RDSString::set(size_t pos, RDSChar chr) {
 
   if (pos != prev_pos_ + 1)
     for (RDSChar& c : chars_)
-      c.setSequential(false);
+      c.is_sequential = false;
 
-  chars_.at(pos).setSequential(true);
+  chars_.at(pos).is_sequential = true;
 
   if (isComplete()) {
     last_complete_string_ = str();
@@ -83,18 +85,28 @@ void RDSString::set(size_t pos, RDSChar chr1, RDSChar chr2) {
   set(pos + 1, chr2);
 }
 
+// Length is exactly the position of the first non-received character
 size_t RDSString::getReceivedLength() const {
   return size_t(std::distance(chars_.cbegin(),
-      std::find_if(chars_.cbegin(), chars_.cend(), [](const RDSChar& chr) {
-        return !chr.isSequential();
-      })) + 1);
+      std::find_if_not(chars_.cbegin(), chars_.cend(), [](const RDSChar& chr) {
+        return chr.is_sequential;
+      })));
 }
 
+// Length up to the first string terminator, or the full allocated length
 size_t RDSString::getExpectedLength() const {
-  return size_t(std::distance(chars_.cbegin(),
+  auto terminated_length = std::distance(chars_.cbegin(),
       std::find_if(chars_.cbegin(), chars_.cend(), [](const RDSChar& chr) {
-        return chr.getCode() == 0x0D;
-      })));
+        return chr.code == kStringTerminator;
+      })) + 1;
+
+  return std::min(static_cast<size_t>(terminated_length), chars_.size());
+}
+
+bool RDSString::hasPreviouslyReceivedTerminators() const {
+  return std::find_if(chars_.cbegin(), chars_.cend(), [](const RDSChar& chr) {
+        return chr.code == kStringTerminator;
+    }) != chars_.cend();
 }
 
 void RDSString::resize(size_t n) {
@@ -105,14 +117,14 @@ std::string RDSString::str() const {
   auto characters = getChars();
   return std::accumulate(characters.cbegin(), characters.cend(), std::string(""),
       [](const std::string& s, const RDSChar& chr) {
-      return s + getRDSCharString(chr.getCode()); });
+      return s + getRDSCharString(chr.code); });
 }
 
 std::vector<RDSChar> RDSString::getChars() const {
-  std::vector<RDSChar> result;
   size_t len = getExpectedLength();
+  std::vector<RDSChar> result(len);
   for (size_t i = 0; i < len; i++)
-    result.push_back(chars_[i].isSequential() ? chars_[i] : RDSChar(0x20));
+    result[i] = chars_[i].is_sequential && chars_[i].code != kStringTerminator ? chars_[i] : RDSChar(0x20);
 
   return result;
 }
@@ -121,11 +133,12 @@ std::string RDSString::getLastCompleteString() const {
   return last_complete_string_;
 }
 
+// Used in RT+
 std::string RDSString::getLastCompleteString(size_t start, size_t len) const {
   std::string result;
   for (size_t i = start; i < start + len; i++)
     result += (i < last_complete_chars_.size() ?
-        getRDSCharString(last_complete_chars_[i].getCode()) : " ");
+        getRDSCharString(last_complete_chars_[i].code) : " ");
 
   return result;
 }
@@ -140,7 +153,7 @@ bool RDSString::isComplete() const {
 
 void RDSString::clear() {
   for (RDSChar& c : chars_)
-    c.setSequential(false);
+    c.is_sequential = false;
   last_complete_string_ = str();
   last_complete_chars_.clear();
 }

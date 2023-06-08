@@ -4,14 +4,18 @@
 
 * Decode LTCC and LTECC in TMC (#80)
 * Decode RDS output from the TEF6686 tuner (#89)
-* Add option `-i` to specify the stdin input format (bits, hex, mpx, tef).
-  The old options will still work.
+* Add option `--input` / `-i` to specify the stdin input format (bits, hex,
+  mpx, tef). The old options will still work.
 * Don't try to decode a Type 0 group if Block 2 wasn't received
 * Fix automake script on Windows (#81)
 * Fix compatibility with current liquid-dsp (#78)
 * Fix output for UTF-8 encoded TMC location tables (#82)
 * Fix `clock_time` displaying wrong date around midnight (#83)
 * Fix misinterpretation of the Decoder Identification bits (#87)
+* Fix decoding of RadioText for stations that don't use string terminators
+  (#77)
+* Fix an off-by-one bug in the RadioText decoder that sometimes caused missing
+  characters at the end of messages
 
 ## 0.20 (2021-03-08)
 

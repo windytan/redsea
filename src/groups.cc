@@ -487,14 +487,45 @@ void Station::decodeType1(const Group& group) {
 }
 
 // Group 2: RadioText
+// Regarding the length of the message, at least three different practices are seen in the wild:
+//   Case (1): The end of the message is marked with a string terminator (0x0D). It's simple to
+//             convert this to a string.
+//   Case (2): The message is always 64 characters long, and is padded with blank spaces. Simple
+//             to decode, and we can remove the spaces.
+//   Case (3): There is no string terminator and the message is of random length. Harder to decode
+//             reliably in noisy conditions.
 void Station::decodeType2(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  size_t radiotext_position = getBits<4>(group.getBlock2(), 0) *
+  const size_t radiotext_position = getBits<4>(group.getBlock2(), 0) *
     (group.getType().version == GroupType::Version::A ? 4 : 2);
 
-  if (radiotext_.isABChanged(getBits<1>(group.getBlock2(), 4)))
+  const bool is_ab_changed = radiotext_.isABChanged(getBits<1>(group.getBlock2(), 4));
+
+  // If these heuristics match it's possible that we just received a full random-length message
+  // with no string terminator (method 3 above).
+  std::string potentially_complete_message;
+  bool has_potentially_complete_message =
+    radiotext_position == 0 &&
+    radiotext_.text.getReceivedLength() > 1 &&
+    not radiotext_.text.isComplete() &&
+    not radiotext_.text.hasPreviouslyReceivedTerminators();
+
+  if (has_potentially_complete_message) {
+    potentially_complete_message = rtrim(radiotext_.text.str());
+
+    // No, perhaps we just lost the terminator in noise [could we use the actual BLER figure?],
+    // or maybe the message got interrupted by an A/B change. Let's wait for a repeat.
+    if (potentially_complete_message != radiotext_.previous_potentially_complete_message) {
+      has_potentially_complete_message = false;
+    }
+    radiotext_.previous_potentially_complete_message = potentially_complete_message;
+  }
+
+  // The transmitter requests us to clear the buffer (message contents will change).
+  // Note: This is sometimes overused in the wild.
+  if (is_ab_changed)
     radiotext_.text.clear();
 
   if (group.getType().version == GroupType::Version::A) {
@@ -513,10 +544,18 @@ void Station::decodeType2(const Group& group) {
                       RDSChar(getBits<8>(group.getBlock4(), 0)));
   }
 
-  if (radiotext_.text.isComplete())
+  // Transmitter used Method 1 or 2 convey the length of the string.
+  if (radiotext_.text.isComplete()) {
     json_["*SORT04*radiotext"] = rtrim(radiotext_.text.getLastCompleteString());
-  else if (options_.show_partial && rtrim(radiotext_.text.str()).length() > 0)
-    json_["*SORT04*partial_radiotext"] = rtrim(radiotext_.text.str());
+
+  // Method 3 was used instead (and was confirmed by a repeat).
+  } else if (has_potentially_complete_message) {
+    json_["*SORT04*radiotext"] = rtrim(potentially_complete_message);
+
+  // The string is not complete yet, but user wants to see it anyway.
+  } else if (options_.show_partial && rtrim(radiotext_.text.str()).length() > 0) {
+    json_["*SORT04*partial_radiotext"] = radiotext_.text.str();
+  }
 }
 
 // Group 3A: Application identification for Open Data
@@ -656,7 +695,7 @@ void Station::decodeType5(const Group& group) {
 
       std::string full_raw;
       for (auto c : full_tdc_.getChars()) {
-        full_raw += getHexString(c.getCode(), 2) + " ";
+        full_raw += getHexString(c.code, 2) + " ";
       }
       json_["transparent_data"]["full_raw"] = full_raw;
     }

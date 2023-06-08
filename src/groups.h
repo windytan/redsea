@@ -98,6 +98,7 @@ class RadioText {
   }
 
   RDSString text;
+  std::string previous_potentially_complete_message;
   int       ab { 0 };
 };
 

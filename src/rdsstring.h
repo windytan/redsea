@@ -25,20 +25,13 @@
 
 namespace redsea {
 
-class RDSChar {
- public:
-  RDSChar() = default;
-  explicit RDSChar(uint8_t _code) : code_(_code) {};
-
-  uint8_t getCode() const     { return code_; };
-  bool isSequential() const   { return is_sequential_; };
-  void setSequential(bool is) { is_sequential_ = is; }
-
- private:
-  uint8_t code_       { 0 };
-  bool is_sequential_ { false };
+struct RDSChar {
+  explicit RDSChar(uint8_t _code = 0) : code(_code) {}
+  uint8_t code       { 0 };
+  bool is_sequential { false };
 };
 
+// An RDSString can be RadioText or a Program Service name.
 class RDSString {
  public:
   explicit RDSString(size_t len = 8);
@@ -52,6 +45,7 @@ class RDSString {
   std::string getLastCompleteString(size_t start, size_t len) const;
   bool hasChars(size_t start, size_t len) const;
   bool isComplete() const;
+  bool hasPreviouslyReceivedTerminators() const;
   void clear();
   void resize(size_t n);
 
