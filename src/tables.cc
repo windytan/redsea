@@ -59,7 +59,7 @@ std::string getPTYNameStringRBDS(uint16_t pty) {
 // 2-letter country codes
 // EN 50067:1998, Annex D, Table D.1 (p. 71)
 // RDS Forum R08/008_7, Table D.2 (p. 75)
-std::string getCountryString(uint16_t pi, uint16_t ecc) {
+std::string getCountryString(uint16_t cc, uint16_t ecc) {
   static const std::map<uint16_t, std::vector<std::string>> country_codes({
     {0xA0, {"us", "us", "us", "us", "us", "us", "us", "us",
             "us", "us", "us", "--", "us", "us", "--"}},
@@ -104,10 +104,8 @@ std::string getCountryString(uint16_t pi, uint16_t ecc) {
 
   std::string result("--");
 
-  uint16_t pi_cc = pi >> 12;
-
-  if (country_codes.find(ecc) != country_codes.end() && pi_cc > 0) {
-    result = country_codes.at(ecc).at(pi_cc-1);
+  if (country_codes.find(ecc) != country_codes.end() && cc > 0) {
+    result = country_codes.at(ecc).at(cc - 1);
   }
 
   return result;

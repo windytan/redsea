@@ -203,6 +203,7 @@ class TMCService {
   uint16_t ltn_          { 0 };
   uint16_t sid_          { 0 };
   uint16_t encid_        { 0 };
+  int      ltcc_         { -1 };
   Message message_;
   std::map<uint16_t, ServiceKey> service_key_table_;
   RDSString ps_;

@@ -450,7 +450,7 @@ void Station::decodeType1(const Group& group) {
 
         if (ecc_ != 0x00) {
           has_country_ = true;
-          json_["country"] = getCountryString(pi_, ecc_);
+          json_["country"] = getCountryString(cc_, ecc_);
         }
         break;
 

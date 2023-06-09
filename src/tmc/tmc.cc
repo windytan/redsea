@@ -32,6 +32,7 @@
 #include <json/json.h>
 
 #include "src/common.h"
+#include "src/tables.h"
 #include "src/tmc/event_list.h"
 #include "src/tmc/locationdb.h"
 #include "src/util.h"
@@ -507,13 +508,17 @@ void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
     static const int gap_values[4] = {3, 5, 8, 11};
     (*jsonroot)["tmc"]["system_info"]["gap"] = gap_values[g];
 
-    int ltcc = getBits<4>(message, 0);
-    if (ltcc)
-      (*jsonroot)["tmc"]["system_info"]["ltcc"] = ltcc;
+    ltcc_ = getBits<4>(message, 0);
+    if (ltcc_ > 0)
+      (*jsonroot)["tmc"]["system_info"]["ltcc"] = ltcc_;
   } else if (variant == 2) {
     int ltecc = getBits<8>(message, 0);
-    if (ltecc)
+    if (ltecc > 0) {
       (*jsonroot)["tmc"]["system_info"]["ltecc"] = ltecc;
+      if (ltcc_ > 0) {
+        (*jsonroot)["tmc"]["system_info"]["country"] = getCountryString(ltcc_, ltecc);
+      }
+    }
   }
 }
 
