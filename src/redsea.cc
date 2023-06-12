@@ -67,7 +67,7 @@ void printUsage() {
     "                       such as PS names, RadioText, and alternative\n"
     "                       frequencies are especially vulnerable. This option\n"
     "                       makes it display them even if not fully received,\n"
-    "                       as partial_{ps,radiotext,alt_kilohertz}.\n"
+    "                       as partial_{ps,radiotext,alt_frequencies}.\n"
     "\n"
     "-r, --samplerate RATE  Set stdin sample frequency in Hz. Will resample\n"
     "                       (slow) if this differs from 171000 Hz.\n"

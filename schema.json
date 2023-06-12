@@ -89,6 +89,33 @@
       },
       "additionalProperties": false
     },
+    "alt_freq_b": {
+      "type": "object",
+      "properties": {
+        "tuned_frequency": {
+          "type": "integer",
+          "minimum": 153,
+          "maximum": 107900
+        },
+        "same_programme": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 153,
+            "maximum": 107900
+          }
+        },
+        "regional_variants": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 153,
+            "maximum": 107900
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "tmc": {
       "type": "object",
       "oneOf": [{
@@ -300,12 +327,16 @@
         "description": "Traffic Message Channel",
         "$ref": "#/definitions/tmc"
       },
-      "alt_kilohertz": {
-        "description": "Alternative Frequencies",
+      "alt_kilohertz_a": {
+        "description": "Alternative Frequencies (Method A)",
         "type": "array",
         "items": {
           "type": "integer"
         }
+      },
+      "alt_kilohertz_b": {
+        "description": "Alternative Frequencies (Method B)",
+        "$ref": "#/definitions/alt_freq_b"
       },
       "prog_item_number": {
         "description": "A numeric identifier for the currently running program",
@@ -349,7 +380,7 @@
         "description": "Incompletely received Program Service name",
         "$ref": "#/definitions/ps"
       },
-      "partial_alt_kilohertz": {
+      "partial_alt_frequencies": {
         "description": "Incomplete list of Alternative Frequencies",
         "type": "array",
         "items": {

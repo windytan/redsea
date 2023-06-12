@@ -22,6 +22,7 @@
 #include <iostream>
 #include <map>
 #include <numeric>
+#include <set>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -374,37 +375,92 @@ void Station::decodeBasics(const Group& group) {
 
 // Group 0: Basic tuning and switching information
 void Station::decodeType0(const Group& group) {
-  if (!group.has(BLOCK2))
-    return;
-
+  // Block 2: Flags
   uint16_t segment_address = getBits<2>(group.getBlock2(), 0);
   bool is_di = getBits<1>(group.getBlock2(), 2);
   json_["di"][getDICodeString(segment_address)] = is_di;
-
   json_["ta"]       = static_cast<bool>(getBits<1>(group.getBlock2(), 4));
   json_["is_music"] = static_cast<bool>(getBits<1>(group.getBlock2(), 3));
 
-  if (!group.has(BLOCK3))
+  if (!group.has(BLOCK3)) {
+    // Reset a Method B list to prevent mixing up different lists
+    if (alt_freq_list_.isMethodB())
+      alt_freq_list_.clear();
     return;
+  }
 
+  // Block 3: Alternative frequencies
   if (group.getType().version == GroupType::Version::A) {
     alt_freq_list_.insert(getBits<8>(group.getBlock3(), 8));
     alt_freq_list_.insert(getBits<8>(group.getBlock3(), 0));
 
     if (alt_freq_list_.isComplete()) {
-      for (CarrierFrequency f : alt_freq_list_.get())
-        json_["alt_kilohertz"].append(f.kHz());
+      auto raw_frequencies = alt_freq_list_.getRawList();
+
+      // AF Method B sends longer lists with possible regional variants
+      if (alt_freq_list_.isMethodB()) {
+        int tuned_frequency = raw_frequencies[0];
+
+        // We use std::sets for detecting duplicates
+        std::set<int> unique_alternative_frequencies;
+        std::set<int> unique_regional_variants;
+        std::vector<int> alternative_frequencies;
+        std::vector<int> regional_variants;
+
+        // Frequency pairs
+        for (size_t i = 1; i < raw_frequencies.size(); i += 2) {
+          int freq1 = raw_frequencies[i];
+          int freq2 = raw_frequencies[i + 1];
+
+          int non_tuned_frequency = (freq1 == tuned_frequency ? freq2 : freq1);
+
+          // "General case"
+          if (freq1 < freq2) {
+            alternative_frequencies.push_back(non_tuned_frequency);
+            unique_alternative_frequencies.insert(non_tuned_frequency);
+
+          // "Special case": Non-tuned frequency is a regional variant
+          } else {
+            regional_variants.push_back(non_tuned_frequency);
+            unique_regional_variants.insert(non_tuned_frequency);
+          }
+        }
+
+        // In noisy conditions we may miss a lot of 0A groups. This check catches
+        // the case where there's multiple copies of some frequencies.
+        const size_t expected_number_of_afs = raw_frequencies.size() / 2;
+        const size_t number_of_unique_afs = unique_alternative_frequencies.size() +
+                     unique_regional_variants.size();
+        if (number_of_unique_afs == expected_number_of_afs) {
+          json_["alt_frequencies_b"]["*SORT01*tuned_frequency"] = tuned_frequency;
+
+          for (int frequency : alternative_frequencies)
+            json_["alt_frequencies_b"]["*SORT02*same_programme"].append(frequency);
+
+          for (int frequency : regional_variants)
+            json_["alt_frequencies_b"]["*SORT03*regional_variants"].append(frequency);
+      }
+
+      // AF Method A is a simple list
+      } else {
+        for (int frequency : raw_frequencies)
+          json_["alt_frequencies_a"].append(frequency);
+      }
+
       alt_freq_list_.clear();
 
+    // If partial list is requested we'll print the raw list and not attempt to
+    // deduce whether it's Method A or B
     } else if (options_.show_partial) {
-      for (CarrierFrequency f : alt_freq_list_.get())
-        json_["partial_alt_kilohertz"].append(f.kHz());
+      for (int f : alt_freq_list_.getRawList())
+        json_["partial_alt_frequencies"].append(f);
     }
   }
 
   if (!group.has(BLOCK4))
     return;
 
+  // Block 4: Program Service Name
   ps_.update(segment_address * 2,
              RDSChar(getBits<8>(group.getBlock4(), 8)),
              RDSChar(getBits<8>(group.getBlock4(), 0)));
@@ -813,8 +869,8 @@ void Station::decodeType14(const Group& group) {
       eon_alt_freqs_[on_pi].insert(getBits<8>(group.getBlock3(), 0));
 
       if (eon_alt_freqs_[on_pi].isComplete()) {
-        for (CarrierFrequency freq : eon_alt_freqs_[on_pi].get())
-          json_["other_network"]["alt_kilohertz"].append(freq.kHz());
+        for (int freq : eon_alt_freqs_[on_pi].getRawList())
+          json_["other_network"]["alt_frequencies"].append(freq);
         eon_alt_freqs_[on_pi].clear();
       }
       break;

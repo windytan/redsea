@@ -570,8 +570,8 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
            DKULTUR, for example, does not transmit information about the total
            length of the list */
         (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString(on_pi, 4);
-        for (CarrierFrequency f : other_network_freqs_.at(on_pi).get())
-          (*jsonroot)["tmc"]["other_network"]["frequencies"].append(f.str());
+        for (int f : other_network_freqs_.at(on_pi).getRawList())
+          (*jsonroot)["tmc"]["other_network"]["frequencies_khz"].append(f);
         other_network_freqs_.clear();
         break;
       }

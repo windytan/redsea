@@ -121,7 +121,7 @@ std::string CarrierFrequency::str() const {
 
 bool operator== (const CarrierFrequency &f1,
                  const CarrierFrequency &f2) {
-  return (f1.kHz() == f2.kHz());
+  return (f1.code_ == f2.code_);
 }
 
 bool operator< (const CarrierFrequency &f1,
@@ -134,31 +134,68 @@ void AltFreqList::insert(uint16_t af_code) {
                                                        CarrierFrequency::Band::FM);
   lf_mf_follows_ = false;
 
-  if (frequency.isValid()) {
-    alt_freqs_.insert(frequency);
+  // AF code encodes a frequency
+  if (frequency.isValid() && num_expected_ > 0) {
+    if (num_received_ < num_expected_) {
+      int kHz = frequency.kHz();
+      alt_freqs_[num_received_] = kHz;
+      num_received_++;
+
+    // Error; no space left in the list.
+    } else {
+      clear();
+    }
+
+  // Filler
   } else if (af_code == 205) {
-    // filler
+
+  // No AF exists
   } else if (af_code == 224) {
-    // no AF exists
+
+  // Number of AFs
   } else if (af_code >= 225 && af_code <= 249) {
-    num_alt_freqs_ = af_code - 224;
+    num_expected_ = af_code - 224;
+    num_received_ = 0;
+
+  // AM/LF freq follows
   } else if (af_code == 250) {
-    // AM/LF freq follows
     lf_mf_follows_ = true;
+
+  // Error; invalid AF code.
+  } else {
+    clear();
   }
 }
 
-bool AltFreqList::isComplete() const {
-  return (alt_freqs_.size() == num_alt_freqs_ &&
-          num_alt_freqs_ > 0);
+bool AltFreqList::isMethodB() const {
+  // Method B has an odd number of elements, at least 3
+  if (num_expected_ % 2 != 1 || num_received_ < 3)
+    return false;
+
+  // Method B is composed of pairs where one is always the tuned frequency
+  int tuned_frequency = alt_freqs_[0];
+  for (size_t i = 1; i < num_received_; i += 2) {
+    int freq1 = alt_freqs_[i];
+    int freq2 = alt_freqs_[i + 1];
+    if (freq1 != tuned_frequency && freq2 != tuned_frequency)
+      return false;
+  }
+
+  return true;
 }
 
-std::set<CarrierFrequency> AltFreqList::get() const {
-  return alt_freqs_;
+bool AltFreqList::isComplete() const {
+  return num_expected_ == num_received_ &&
+         num_received_ > 0;
+}
+
+// Return the sequence of frequencies as they were received (excluding special AF codes)
+std::vector<int> AltFreqList::getRawList() const {
+  return std::vector<int>(alt_freqs_.begin(), alt_freqs_.begin() + num_received_);
 }
 
 void AltFreqList::clear() {
-  alt_freqs_.clear();
+  num_expected_ = num_received_ = 0;
 }
 
 std::vector<std::string> splitLine(const std::string& line, char delimiter) {

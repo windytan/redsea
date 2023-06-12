@@ -20,9 +20,9 @@
 #include <cstdint>
 
 #include <algorithm>
+#include <array>
 #include <map>
 #include <numeric>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -83,7 +83,7 @@ class CarrierFrequency {
                          const CarrierFrequency &f2);
 
  private:
-  uint16_t code_;
+  uint16_t code_ {};
   Band band_ { Band::FM };
 };
 
@@ -92,13 +92,15 @@ class AltFreqList {
   AltFreqList() = default;
   void insert(uint16_t af_code);
   bool isComplete() const;
-  std::set<CarrierFrequency> get() const;
+  bool isMethodB() const;
+  std::vector<int> getRawList() const;
   void clear();
 
  private:
-  std::set<CarrierFrequency> alt_freqs_;
-  unsigned num_alt_freqs_ { 0 };
-  bool lf_mf_follows_     { false };
+  std::array<int, 25> alt_freqs_;
+  size_t num_expected_ { 0 };
+  size_t num_received_ { 0 };
+  bool lf_mf_follows_  { false };
 };
 
 template<typename T, size_t N>
