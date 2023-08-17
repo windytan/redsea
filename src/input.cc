@@ -194,7 +194,7 @@ Group readHexGroup(const Options& options) {
           try {
             int nval = std::stoi(std::string(single), nullptr, 16);
             block.data = uint16_t((block.data << 4) + nval);
-          } catch (std::exception) {
+          } catch (std::exception&) {
             block_still_valid = false;
           }
           which_nibble++;
