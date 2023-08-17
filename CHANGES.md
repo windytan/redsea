@@ -20,6 +20,7 @@
   (#77)
 * Fix an off-by-one bug in the RadioText decoder that sometimes caused missing
   characters at the end of messages
+* Fix runaway PLL after digital silence by clamping the phase error (#94)
 
 ## 0.20 (2021-03-08)
 

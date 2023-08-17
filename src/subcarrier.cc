@@ -152,7 +152,10 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
       if (symbol.valid) {
         // Modem here is only used to track PLL phase error
         modem_.demodulate(symbol.data);
-        oscillator_.stepPLL(modem_.getPhaseError() * kPLLMultiplier);
+
+        float phase_error = std::min(std::max(modem_.getPhaseError(),
+                            -float(M_PI)), float(M_PI));
+        oscillator_.stepPLL(phase_error * kPLLMultiplier);
 
         auto biphase = biphase_decoder_.push(symbol.data);
 
