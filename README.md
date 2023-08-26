@@ -86,7 +86,8 @@ you can compile redsea without liquid-dsp (`./configure --without-liquid`).
 
 ## Usage
 
-By default, a 171 kHz single-channel 16-bit MPX signal is expected via stdin.
+By default, an MPX signal is expected via stdin (raw 16-bit signed-integer PCM
+sampled at 171 kHz).
 
 The simplest way to view RDS groups using `rtl_fm` is:
 
@@ -101,7 +102,7 @@ Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 
 ```
 radio_command | redsea [OPTIONS]
-redsea -f WAVFILE
+redsea -f WAVEFILE
 
 -c, --channels CHANS   Number of channels in the raw input signal. Each
                        channel is demodulated independently.
