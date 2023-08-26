@@ -44,7 +44,7 @@ constexpr float kLowpassCutoff_Hz     = 2400.0f;
 constexpr float kSymsyncBandwidth_Hz  = 2200.0f;
 constexpr int   kSymsyncDelay         = 3;
 constexpr float kSymsyncBeta          = 0.8f;
-constexpr float kPLLBandwidth_Hz      = 0.01f;
+constexpr float kPLLBandwidth_Hz      = 0.03f;
 constexpr float kPLLMultiplier        = 12.0f;
 
 constexpr float hertz2step(float Hz) {
