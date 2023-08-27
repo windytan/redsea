@@ -45,8 +45,8 @@ uint32_t getBits(uint16_t word1, uint16_t word2, size_t starting_at) {
 
 std::string getHoursMinutesString(int hour, int minute);
 
-std::string join(std::vector<std::string> strings, const std::string& d);
-std::string join(std::vector<uint16_t> nums, const std::string& d);
+std::string join(const std::vector<std::string>& strings, const std::string& d);
+std::string join(const std::vector<uint16_t>& nums, const std::string& d);
 
 std::string getHexString(uint32_t value, int num_nybbles);
 std::string getPrefixedHexString(uint32_t value, int num_nybbles);
@@ -59,12 +59,12 @@ class CSVTable {
   std::vector<CSVRow> rows;
 };
 
-std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
+std::vector<std::vector<std::string>> readCSV(const std::vector<std::string>& csvdata,
                                               char delimiter);
-std::vector<std::vector<std::string>> readCSV(std::string filename,
+std::vector<std::vector<std::string>> readCSV(const std::string& filename,
                                               char delimiter);
-CSVTable readCSVWithTitles(std::string filename, char delimiter);
-CSVTable readCSVWithTitles(std::vector<std::string> csvdata,
+CSVTable readCSVWithTitles(const std::string& filename, char delimiter);
+CSVTable readCSVWithTitles(const std::vector<std::string>& csvdata,
                                       char delimiter);
 
 class CarrierFrequency {

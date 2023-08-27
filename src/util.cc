@@ -31,7 +31,7 @@ std::string getHoursMinutesString(int hour, int minute) {
   return ss.str();
 }
 
-std::string join(std::vector<std::string> strings, const std::string& d) {
+std::string join(const std::vector<std::string>& strings, const std::string& d) {
   std::string result("");
   for (size_t i = 0; i < strings.size(); i++) {
     result += strings[i];
@@ -41,7 +41,7 @@ std::string join(std::vector<std::string> strings, const std::string& d) {
   return result;
 }
 
-std::string join(std::vector<uint16_t> nums, const std::string& d) {
+std::string join(const std::vector<uint16_t>& nums, const std::string& d) {
   std::string result("");
   for (size_t i = 0; i < nums.size(); i++) {
     result += std::to_string(nums[i]);
@@ -211,7 +211,7 @@ std::vector<std::string> splitLine(const std::string& line, char delimiter) {
   return result;
 }
 
-std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
+std::vector<std::vector<std::string>> readCSV(const std::vector<std::string>& csvdata,
                                               char delimiter) {
   std::vector<std::vector<std::string>> lines;
 
@@ -223,7 +223,7 @@ std::vector<std::vector<std::string>> readCSV(std::vector<std::string> csvdata,
   return lines;
 }
 
-std::vector<std::vector<std::string>> readCSV(std::string filename,
+std::vector<std::vector<std::string>> readCSV(const std::string& filename,
                                               char delimiter) {
   std::vector<std::vector<std::string>> lines;
 
@@ -247,7 +247,7 @@ std::vector<std::vector<std::string>> readCSV(std::string filename,
   return lines;
 }
 
-CSVTable readCSVWithTitles(std::vector<std::string> csvdata,
+CSVTable readCSVWithTitles(const std::vector<std::string>& csvdata,
                            char delimiter) {
   CSVTable table;
 
@@ -257,7 +257,7 @@ CSVTable readCSVWithTitles(std::vector<std::string> csvdata,
     line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
-    std::vector<std::string> fields = splitLine(line, delimiter);
+    const std::vector<std::string> fields = splitLine(line, delimiter);
     if (is_title_row) {
       for (size_t i = 0; i < fields.size(); i++)
         table.titles[fields[i]] = i;
@@ -271,7 +271,7 @@ CSVTable readCSVWithTitles(std::vector<std::string> csvdata,
   return table;
 }
 
-CSVTable readCSVWithTitles(std::string filename, char delimiter) {
+CSVTable readCSVWithTitles(const std::string& filename, char delimiter) {
   std::vector<std::string> lines;
 
   std::ifstream in(filename);

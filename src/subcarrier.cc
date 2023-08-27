@@ -56,18 +56,19 @@ constexpr float hertz2step(float Hz) {
 BiphaseDecoder::BiphaseDecoder() : clock_history_(128) {
 }
 
-// At correct clock phase, return binary symbol in
+// At correct clock phase, evaluate symbol in
 // constellation {-1,0} => 0, {1,0} => 1
-Maybe<std::complex<float>> BiphaseDecoder::push(
+Maybe<bool> BiphaseDecoder::push(
     std::complex<float> psk_symbol) {
 
-  Maybe<std::complex<float>> result;
+  Maybe<bool> result;
 
-  result.data = (psk_symbol - prev_psk_symbol_) * 0.5f;
+  auto biphase_symbol = (psk_symbol - prev_psk_symbol_) * 0.5f;
+  result.data = biphase_symbol.real() >= 0.0f;
   result.valid = (clock_ % 2 == clock_polarity_);
   prev_psk_symbol_ = psk_symbol;
 
-  clock_history_[clock_] = std::fabs(result.data.real());
+  clock_history_[clock_] = std::fabs(biphase_symbol.real());
   clock_++;
 
   // Periodically evaluate validity of the chosen biphase clock polarity
@@ -161,8 +162,7 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
 
         // One biphase symbol received for every 2 PSK symbols
         if (biphase.valid) {
-          bitbuffer.bits.push_back(delta_decoder_.decode(
-                                   biphase.data.real() >= 0.0f));
+          bitbuffer.bits.push_back(delta_decoder_.decode(biphase.data));
         }
       }
     }

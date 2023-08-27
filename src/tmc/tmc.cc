@@ -464,7 +464,7 @@ Event getEvent(uint16_t code) {
 TMCService::TMCService(const Options& options) : message_(is_encrypted_),
                        service_key_table_(loadServiceKeyTable()), ps_(8) {
   if (!options.loctable_dirs.empty() && g_location_databases.empty()) {
-    for (std::string loctable_dir : options.loctable_dirs) {
+    for (const std::string& loctable_dir : options.loctable_dirs) {
       uint16_t ltn = readLTN(loctable_dir);
       g_location_databases[ltn] = loadLocationDatabase(loctable_dir);
       if (options.feed_thru)
