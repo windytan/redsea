@@ -133,4 +133,8 @@ void Channel::flush() {
     processGroup(last_group);
 }
 
+float Channel::getSecondsSinceCarrierLost() const {
+  return block_stream_.getNumBitsSinceSyncLost() / kBitsPerSecond;
+}
+
 }  // namespace redsea

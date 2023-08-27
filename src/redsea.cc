@@ -133,6 +133,10 @@ int processMPXInput(Options options) {
       channels[i].processBits(
         subcarriers[i]->processChunk(mpx.readChunk(int(i)))
       );
+      if (channels[i].getSecondsSinceCarrierLost() > 10.f &&
+          subcarriers[i]->getSecondsSinceLastReset() > 5.f) {
+        subcarriers[i]->reset();
+      }
     }
   }
 

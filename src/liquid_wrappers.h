@@ -60,16 +60,19 @@ class FIRFilter {
 
 class NCO {
  public:
-  explicit NCO(liquid_ncotype type, float freq);
+  NCO(liquid_ncotype type, float freq);
   NCO(const NCO&) = delete;
   ~NCO();
   std::complex<float> mixDown(std::complex<float> s);
   void step();
   void setPLLBandwidth(float);
   void stepPLL(float dphi);
+  void reset();
+  float getFrequency();
 
  private:
   nco_crcf object_;
+  float initial_frequency_;
 };
 
 class SymSync {
@@ -78,6 +81,7 @@ class SymSync {
           float beta, unsigned num_filters);
   SymSync(const SymSync&) = delete;
   ~SymSync();
+  void reset();
   void setBandwidth(float);
   void setOutputRate(unsigned);
   Maybe<std::complex<float>> execute(std::complex<float>* in);

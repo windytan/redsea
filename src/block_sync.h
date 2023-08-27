@@ -51,8 +51,8 @@ class BlockStream {
   void pushBit(bool bit);
   Group popGroup();
   bool hasGroupReady() const;
-  bool eof() const;
   Group flushCurrentGroup() const;
+  size_t getNumBitsSinceSyncLost() const;
 
  private:
   void acquireSync(Block block);
@@ -61,19 +61,17 @@ class BlockStream {
   void handleNewlyReceivedGroup();
 
   int      bitcount_                  { 0 };
-  int      previous_syncing_bitcount_ { 0 };
   int      num_bits_until_next_block_ { 1 };
   uint32_t input_register_            { 0 };
-  Offset   previous_syncing_offset_   { Offset::invalid };
   Offset   expected_offset_           { Offset::A };
   bool     is_in_sync_                { false };
   RunningSum<int, 50> block_error_sum50_;
   const    Options options_;
-  bool     is_eof_                    { false };
   RunningAverage<float, kNumBlerAverageGroups> bler_average_;
   Group    current_group_;
   Group    ready_group_;
   bool     has_group_ready_           { false };
+  size_t   num_bits_since_sync_lost_  { 0 };
 };
 
 } // namespace redsea

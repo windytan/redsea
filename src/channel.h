@@ -65,6 +65,7 @@ class Channel {
   void processBits(BitBuffer buffer);
   void processGroup(Group group);
   void flush();
+  float getSecondsSinceCarrierLost() const;
 
  private:
   Options options_;

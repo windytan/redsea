@@ -62,6 +62,8 @@ class Subcarrier {
   ~Subcarrier() = default;
   bool eof() const;
   BitBuffer processChunk(MPXBuffer<>& chunk);
+  void reset();
+  float getSecondsSinceLastReset() const;
 
  private:
   int sample_num_ { 0 };

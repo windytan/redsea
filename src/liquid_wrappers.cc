@@ -66,12 +66,17 @@ size_t FIRFilter::length() const {
 }
 
 NCO::NCO(liquid_ncotype type, float freq) :
-    object_(nco_crcf_create(type)) {
+    object_(nco_crcf_create(type)), initial_frequency_(freq) {
   nco_crcf_set_frequency(object_, freq);
 }
 
 NCO::~NCO() {
   nco_crcf_destroy(object_);
+}
+
+void NCO::reset() {
+  nco_crcf_reset(object_);
+  nco_crcf_set_frequency(object_, initial_frequency_);
 }
 
 std::complex<float> NCO::mixDown(std::complex<float> s) {
@@ -92,6 +97,10 @@ void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
+float NCO::getFrequency() {
+  return nco_crcf_get_frequency(object_);
+}
+
 SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
                  float beta, unsigned num_filters) :
     object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)),
@@ -100,6 +109,10 @@ SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
 
 SymSync::~SymSync() {
   symsync_crcf_destroy(object_);
+}
+
+void SymSync::reset() {
+  symsync_crcf_reset(object_);
 }
 
 void SymSync::setBandwidth(float bw) {

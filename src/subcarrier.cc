@@ -36,7 +36,6 @@ namespace redsea {
 namespace {
 
 constexpr float kCarrierFrequency_Hz  = 57000.0f;
-constexpr float kBitsPerSecond        = 1187.5f;
 constexpr int   kSamplesPerSymbol     = 3;
 constexpr float kAGCBandwidth_Hz      = 500.0f;
 constexpr float kAGCInitialGain       = 0.08f;
@@ -113,6 +112,12 @@ Subcarrier::Subcarrier(const Options& options) :
   oscillator_.setPLLBandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
 }
 
+void Subcarrier::reset() {
+  symsync_.reset();
+  oscillator_.reset();
+  sample_num_ = 0;
+}
+
 /** MPX to bits
  */
 BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
@@ -177,6 +182,10 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
 
 bool Subcarrier::eof() const {
   return is_eof_;
+}
+
+float Subcarrier::getSecondsSinceLastReset() const {
+  return sample_num_ / kTargetSampleRate_Hz;
 }
 
 }  // namespace redsea

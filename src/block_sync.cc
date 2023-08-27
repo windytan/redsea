@@ -208,6 +208,8 @@ void BlockStream::acquireSync(Block block) {
   if (is_in_sync_)
     return;
 
+  num_bits_since_sync_lost_++;
+
   // Try to find a repeating offset sequence
   if (block.offset != Offset::invalid) {
     sync_buffer.push(block.offset, bitcount_);
@@ -216,9 +218,7 @@ void BlockStream::acquireSync(Block block) {
       is_in_sync_ = true;
       expected_offset_ = block.offset;
       current_group_ = Group();
-    } else {
-      previous_syncing_bitcount_= bitcount_;
-      previous_syncing_offset_  = block.offset;
+      num_bits_since_sync_lost_ = 0;
     }
   }
 }
@@ -291,6 +291,10 @@ Group BlockStream::popGroup() {
 
 Group BlockStream::flushCurrentGroup() const {
   return current_group_;
+}
+
+size_t BlockStream::getNumBitsSinceSyncLost() const {
+  return num_bits_since_sync_lost_;
 }
 
 }  // namespace redsea

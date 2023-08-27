@@ -23,12 +23,12 @@
 
 namespace redsea {
 
-constexpr float kTargetSampleRate_Hz  = 171000.0f;
-constexpr int   kNumBlerAverageGroups = 12;
+constexpr float kBitsPerSecond        = 1187.5f;
 constexpr float kMinimumSampleRate_Hz = 128000.0f;
+constexpr int   kNumBlerAverageGroups = 12;
+constexpr float kTargetSampleRate_Hz  = 171000.0f;
 
-class BitBuffer {
- public:
+struct BitBuffer {
   std::chrono::time_point<std::chrono::system_clock> time_received;
   std::vector<bool> bits;
 };
