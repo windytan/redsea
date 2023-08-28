@@ -105,6 +105,7 @@ bool Group::isEmpty() const {
   return !(has(BLOCK1) || has(BLOCK2) || has(BLOCK3) || has(BLOCK4));
 }
 
+// Remember to check if hasPI()
 uint16_t Group::getPI() const {
   if (blocks_[BLOCK1].is_received)
     return blocks_[BLOCK1].data;
@@ -219,8 +220,8 @@ void Group::printHex(std::ostream* stream) const {
 Station::Station() : Station(0x0000, Options(), 0) {
 }
 
-Station::Station(uint16_t _pi, const Options& options, int which_channel) :
-  pi_(_pi), options_(options), which_channel_(which_channel)
+Station::Station(uint16_t _pi, const Options& options, int which_channel, bool has_pi) :
+  pi_(_pi), has_pi_(has_pi), options_(options), which_channel_(which_channel)
 #ifdef ENABLE_TMC
                     , tmc_(options)
 #endif
@@ -233,7 +234,10 @@ Station::Station(uint16_t _pi, const Options& options, int which_channel) :
 }
 
 void Station::updateAndPrint(const Group& group, std::ostream* stream) {
-  // Allow 1 group with missed PI
+  if (!has_pi_)
+    return;
+
+  // Allow 1 group with missed PI. For subsequent misses, don't process at all.
   if (group.hasPI())
     last_group_had_pi_ = true;
   else if (last_group_had_pi_)

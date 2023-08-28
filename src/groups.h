@@ -65,8 +65,6 @@ class GroupType {
   GroupType() = default;
   explicit GroupType(uint16_t type_code);
 
-  bool operator==(const GroupType& other);
-
   std::string str() const;
 
   uint16_t number  { 0x00 };
@@ -165,7 +163,6 @@ class Group {
   void setBlock(eBlockNumber block_num, Block block);
   void setTime(std::chrono::time_point<std::chrono::system_clock> t);
   void setAverageBLER(float bler);
-  void setChannel(int which_channel);
 
  private:
   GroupType type_   {};
@@ -182,7 +179,7 @@ class Group {
 class Station {
  public:
   Station();
-  Station(uint16_t _pi, const Options& options, int which_channel);
+  Station(uint16_t _pi, const Options& options, int which_channel, bool has_pi=true);
   void updateAndPrint(const Group& group, std::ostream* stream);
   uint16_t getPI() const;
 
@@ -201,11 +198,11 @@ class Station {
   void decodeType14(const Group& group);
   void decodeType15B(const Group& group);
   void decodeODAGroup(const Group& group);
-  void addAltFreq(uint8_t);
   void parseRadioTextPlus(const Group& group);
   void parseDAB(const Group& group);
 
-  uint16_t pi_             { 0 };
+  uint16_t pi_             { 0x0000 };
+  bool     has_pi_         { false };
   Options options_;
   int which_channel_       { 0 };
   ProgramServiceName ps_;

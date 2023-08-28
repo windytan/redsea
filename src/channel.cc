@@ -32,15 +32,7 @@ namespace redsea {
 Channel::Channel(const Options& options, int which_channel) :
     options_(options),
     which_channel_(which_channel),
-    cached_pi_(options.input_type),
-    block_stream_(options), station_(0x0000, options, which_channel) {
-}
-
-Channel::Channel(const Channel& other) :
-    options_(other.options_), which_channel_(other.which_channel_),
-    cached_pi_(options_.input_type),
-    block_stream_(options_), station_(cached_pi_.get(), options_, which_channel_),
-    last_group_rx_time_(std::chrono::system_clock::now()) {
+    block_stream_(options), station_(0x0000, options, which_channel, false) {
 }
 
 void Channel::processBit(bool bit) {
@@ -104,7 +96,6 @@ void Channel::processGroup(Group group) {
         break;
 
       case CachedPI::Result::SpuriousChange:
-        group.setBlock(BLOCK1, Block());
         break;
 
       case CachedPI::Result::NoChange:
@@ -135,6 +126,10 @@ void Channel::flush() {
 
 float Channel::getSecondsSinceCarrierLost() const {
   return block_stream_.getNumBitsSinceSyncLost() / kBitsPerSecond;
+}
+
+void Channel::resetPI() {
+  cached_pi_.reset();
 }
 
 }  // namespace redsea

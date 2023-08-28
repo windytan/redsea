@@ -31,46 +31,59 @@ class CachedPI {
     ChangeConfirmed, NoChange, SpuriousChange
   };
 
-  CachedPI(InputType input_type) :
-    bypass_(input_type == InputType::Hex) {}
+  CachedPI() = default;
   Result update(uint16_t pi) {
     pi_prev2_ = pi_prev1_;
     pi_prev1_ = pi;
 
     Result status(Result::SpuriousChange);
 
-    if (pi_prev1_ == pi_prev2_ || bypass_) {
+    // Repeated PI confirms that it changed
+    if (has_previous_ && pi_prev1_ == pi_prev2_) {
       status = (pi == pi_confirmed_ ? Result::NoChange :
                                       Result::ChangeConfirmed);
       pi_confirmed_ = pi;
+    }
+
+    // So noisy that two PIs in a row get corrupted
+    if (has_previous_ && (pi_prev1_ != pi_confirmed_ &&
+                          pi_prev2_ != pi_confirmed_ &&
+                          pi_prev1_ != pi_prev2_)) {
+      reset();
+    } else {
+      has_previous_ = true;
     }
     return status;
   }
   uint16_t get() const {
     return pi_confirmed_;
   }
+  void reset() {
+    pi_confirmed_ = pi_prev1_ = pi_prev2_ = 0;
+    has_previous_ = false;
+  }
 
  private:
   uint16_t pi_confirmed_ { 0 };
   uint16_t pi_prev1_     { 0 };
   uint16_t pi_prev2_     { 0 };
-  bool     bypass_       { false };
+  bool     has_previous_ { false };
 };
 
 class Channel {
  public:
   Channel(const Options& options, int which_channel);
-  Channel(const Channel& other);
   void processBit(bool bit);
   void processBits(BitBuffer buffer);
   void processGroup(Group group);
   void flush();
   float getSecondsSinceCarrierLost() const;
+  void resetPI();
 
  private:
   Options options_;
   int which_channel_;
-  CachedPI cached_pi_;
+  CachedPI cached_pi_{};
   BlockStream block_stream_;
   Station station_;
   RunningAverage<float, kNumBlerAverageGroups> bler_average_;

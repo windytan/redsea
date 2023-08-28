@@ -136,6 +136,7 @@ int processMPXInput(Options options) {
       if (channels[i].getSecondsSinceCarrierLost() > 10.f &&
           subcarriers[i]->getSecondsSinceLastReset() > 5.f) {
         subcarriers[i]->reset();
+        channels[i].resetPI();
       }
     }
   }
