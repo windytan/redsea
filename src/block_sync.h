@@ -20,7 +20,6 @@
 #include <map>
 #include <vector>
 
-#include "config.h"
 #include "src/groups.h"
 #include "src/options.h"
 

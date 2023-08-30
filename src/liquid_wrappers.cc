@@ -16,14 +16,12 @@
  */
 #include "src/liquid_wrappers.h"
 
-#include "config.h"
-#ifdef HAVE_LIQUID
-
 #include <cassert>
 #include <complex>
 
-// https://github.com/jgaeddert/liquid-dsp/issues/229
 #pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+// https://github.com/jgaeddert/liquid-dsp/issues/229
 #pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
 extern "C" {
 #include "liquid/liquid.h"
@@ -195,5 +193,3 @@ unsigned int Resampler::execute(float in,
 }
 
 }  // namespace liquid
-
-#endif

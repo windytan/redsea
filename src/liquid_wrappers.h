@@ -17,15 +17,13 @@
 #ifndef LIQUID_WRAPPERS_H_
 #define LIQUID_WRAPPERS_H_
 
-#include "config.h"
-#ifdef HAVE_LIQUID
-
 #include <complex>
 #include <utility>
 #include <vector>
 
-// https://github.com/jgaeddert/liquid-dsp/issues/229
 #pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+// https://github.com/jgaeddert/liquid-dsp/issues/229
 #pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
 extern "C" {
 #include "liquid/liquid.h"
@@ -125,7 +123,5 @@ class Resampler {
 };
 
 }  // namespace liquid
-
-#endif // HAVE_LIQUID
 
 #endif // LIQUID_WRAPPERS_H_

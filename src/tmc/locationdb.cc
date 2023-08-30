@@ -16,9 +16,6 @@
  */
 #include "src/tmc/locationdb.h"
 
-#include "config.h"
-#ifdef ENABLE_TMC
-
 #include <climits>
 #include <fstream>
 #include <regex>
@@ -198,5 +195,3 @@ std::ostream& operator<<(std::ostream& strm, const LocationDatabase& locdb) {
 
 }  // namespace tmc
 }  // namespace redsea
-
-#endif  // ENABLE_TMC

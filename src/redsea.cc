@@ -18,7 +18,7 @@
 #include <iostream>
 #include <memory>
 
-#include "config.h"
+#include "build/config.h"
 #include "src/channel.h"
 #include "src/common.h"
 #include "src/groups.h"
@@ -92,20 +92,13 @@ void printUsage() {
 
 void printVersion() {
 #ifdef DEBUG
-  std::cout << PACKAGE_STRING << "-debug by OH2EIQ" << '\n';
+  std::cout << "redsea " << VERSION << "-debug by OH2EIQ" << '\n';
 #else
-  std::cout << PACKAGE_STRING << " by OH2EIQ" << '\n';
+  std::cout << "redsea " << VERSION << " by OH2EIQ" << '\n';
 #endif
 }
 
 int processMPXInput(Options options) {
-
-#ifndef HAVE_LIQUID
-  std::cerr << "error: redsea was compiled without liquid-dsp"
-            << '\n';
-  return EXIT_FAILURE;
-#endif
-
   MPXReader mpx;
 
   try {

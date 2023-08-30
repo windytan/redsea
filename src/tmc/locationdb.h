@@ -17,9 +17,6 @@
 #ifndef TMC_LOCATIONDB_H_
 #define TMC_LOCATIONDB_H_
 
-#include "config.h"
-#ifdef ENABLE_TMC
-
 #include <iostream>
 #include <map>
 #include <string>
@@ -77,5 +74,4 @@ uint16_t readLTN(const std::string& directory);
 }  // namespace tmc
 }  // namespace redsea
 
-#endif  // ENABLE_TMC
 #endif  // TMC_LOCATIONDB_H_

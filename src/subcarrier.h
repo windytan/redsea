@@ -22,14 +22,10 @@
 #include <utility>
 #include <vector>
 
-#include "config.h"
-
 #include "src/common.h"
 #include "src/input.h"
 #include "src/liquid_wrappers.h"
 #include "src/options.h"
-
-#ifdef HAVE_LIQUID
 
 namespace redsea {
 
@@ -88,5 +84,4 @@ class Subcarrier {
 
 }  // namespace redsea
 
-#endif  // HAVE_LIQUID
 #endif  // SUBCARRIER_H_

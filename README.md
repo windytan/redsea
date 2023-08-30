@@ -1,12 +1,11 @@
 # redsea RDS decoder
 
-redsea is a lightweight command-line FM-RDS decoder for Linux/macOS. It
-supports a large [subset of RDS features][Wiki: Features].
+redsea is a lightweight command-line FM-RDS decoder supporting a large [subset of RDS features][Wiki: Features].
 
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
 ![build](https://github.com/windytan/redsea/workflows/build/badge.svg)
 
-Decoded RDS groups are printed to the terminal as [line-delimited JSON][https://jsonlines.org/] objects
+Decoded RDS groups are printed to the terminal as [line-delimited JSON](https://jsonlines.org/) objects
 or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
 [input data formats][Wiki: Input].
 
@@ -50,11 +49,12 @@ beginning.
 
 1. Install the prerequisites. On Ubuntu:
 
-        $ sudo apt install git build-essential autoconf libsndfile1-dev libliquid-dev
+        $ sudo apt install git ninja-build build-essential python3-pip libsndfile1-dev libliquid-dev
+        $ pip3 install --user meson
 
-Or on macOS (OSX) using Homebrew:
+Or on macOS using Homebrew:
 
-        $ brew install autoconf automake libsndfile liquid-dsp
+        $ brew install meson libsndfile liquid-dsp
         $ xcode-select --install
 
 2. Clone the repository (unless you downloaded a release zip file):
@@ -64,25 +64,19 @@ Or on macOS (OSX) using Homebrew:
 
 3. Compile redsea:
 
-        $ ./autogen.sh && ./configure && make
-
-4. Install:
-
-        $ make install
+        $ meson setup build && cd build && meson compile
 
 How to later get the latest updates and recompile:
 
         $ git pull
-        $ ./autogen.sh && ./configure && make clean && make
-        $ make install
-
-For a slower machine it can take some time to compile the TMC support. This can
-be disabled (`./configure --disable-tmc`).
-
-If you only need to decode hex or binary input and don't need demodulation,
-you can compile redsea without liquid-dsp (`./configure --without-liquid`).
+        $ cd build && meson compile
 
 [liquid-dsp]: https://github.com/jgaeddert/liquid-dsp/releases/tag/v1.3.2
+
+Build instructions for Windows are in [the wiki][Wiki: Windows build], for both Cygwin and
+building an .exe with MSYS2/MinGW.
+
+[Wiki: Windows build]: (https://github.com/windytan/redsea/wiki/Installation#windows).
 
 ## Usage
 
@@ -170,22 +164,28 @@ type:
 
 ## Requirements
 
-* Linux or macOS
+### Runtime
+
+* Linux/macOS/Windows
 * For realtime decoding, a Raspberry Pi 1 or faster
 * ~8 MB of free memory (~128 MB for RDS-TMC)
-* C++14 compiler
-* GNU autotools
 * libiconv 1.16
 * libsndfile 1.0.31
 * [liquid-dsp][liquid-dsp] release 1.3.2
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals
 
+### Build
+
+* Linux/macOS/Cygwin/MSYS2+MinGW
+* C++14 compiler
+* meson + ninja
+
 ## Troubleshooting
 
 ### Can't find liquid-dsp on macOS
 
-If you've installed [liquid-dsp][liquid-dsp] yet `configure` can't find it, it's
+If you've installed [liquid-dsp][liquid-dsp] yet meson can't find it, it's
 possible that XCode command line tools aren't installed. Run this command to fix
 it:
 

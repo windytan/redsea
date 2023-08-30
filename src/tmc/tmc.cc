@@ -16,9 +16,6 @@
  */
 #include "src/tmc/tmc.h"
 
-#include "config.h"
-#ifdef ENABLE_TMC
-
 #include <climits>
 #include <deque>
 #include <fstream>
@@ -926,5 +923,3 @@ void Message::decrypt(const ServiceKey& key) {
 
 }  // namespace tmc
 }  // namespace redsea
-
-#endif  // ENABLE_TMC

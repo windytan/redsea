@@ -159,6 +159,8 @@ std::string RDSString::str() const {
     case Encoding::UTF8:
       return std::string((const char*)bytes.data(), bytes.size());
   }
+
+  return "";
 }
 
 std::vector<uint8_t> RDSString::getData() const {

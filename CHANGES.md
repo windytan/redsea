@@ -2,8 +2,11 @@
 
 ## HEAD
 
+* Migrate build system from autotools to meson (#90)
+* Add GitHub Workflows CI builds for macOS and Windows (MSYS2/MinGW + Cygwin)
+* Remove unmaintained build options for non-liquid, non-TMC builds
 * Add support for enhanced RadioText (eRT)
-* Add support for Long PS in Group 15A
+* Add support for Long PS in Group 15A (#104)
 * Fix detection of invalid date/time (timestamps >2000 years ago)
 * Fix compiler warnings and other code cleanup
 

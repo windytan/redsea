@@ -17,8 +17,6 @@
 #ifndef CHANNEL_H_
 #define CHANNEL_H_
 
-#include "config.h"
-
 #include "src/block_sync.h"
 #include "src/common.h"
 #include "src/options.h"

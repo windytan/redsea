@@ -22,8 +22,6 @@
 #include <array>
 #include <vector>
 
-#include "config.h"
-
 #include <sndfile.h>
 
 #include "src/common.h"

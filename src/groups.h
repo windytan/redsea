@@ -28,7 +28,6 @@
 
 #include <ext/json/json.h>
 
-#include "config.h"
 #include "src/common.h"
 #include "src/options.h"
 #include "src/rdsstring.h"
@@ -250,9 +249,7 @@ class Station {
   std::unique_ptr<Json::StreamWriter> writer_;
   Json::Value json_;
 
-#ifdef ENABLE_TMC
   tmc::TMCService tmc_;
-#endif
 };
 
 void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el);

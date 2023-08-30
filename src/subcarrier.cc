@@ -16,8 +16,6 @@
  */
 #include "src/subcarrier.h"
 
-#ifdef HAVE_LIQUID
-
 #include <cmath>
 #include <complex>
 #include <cstdio>
@@ -189,5 +187,3 @@ float Subcarrier::getSecondsSinceLastReset() const {
 }
 
 }  // namespace redsea
-
-#endif  // HAVE_LIQUID

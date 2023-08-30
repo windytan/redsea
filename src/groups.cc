@@ -221,11 +221,7 @@ Station::Station() : Station(0x0000, Options(), 0) {
 }
 
 Station::Station(uint16_t _pi, const Options& options, int which_channel, bool has_pi) :
-  pi_(_pi), has_pi_(has_pi), options_(options), which_channel_(which_channel)
-#ifdef ENABLE_TMC
-                    , tmc_(options)
-#endif
-{
+  pi_(_pi), has_pi_(has_pi), options_(options), which_channel_(which_channel), tmc_(options) {
   writer_builder_["indentation"] = "";
   writer_builder_["precision"] = 7;
   writer_builder_.settings_["emitUTF8"] = true;
@@ -323,12 +319,9 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
     } else if (type.number == 7 && type.version == GroupType::Version::A) {
       decodeType7A(group);
     } else if (type.number == 8 && type.version == GroupType::Version::A) {
-#ifdef ENABLE_TMC
-
       if (group.has(BLOCK2) && group.has(BLOCK3) && group.has(BLOCK4))
         tmc_.receiveUserGroup(getBits<5>(group.getBlock2(), 0), group.getBlock3(),
                               group.getBlock4(), &json_);
-#endif
     } else if (type.number == 9 && type.version == GroupType::Version::A) {
       decodeType9A(group);
 
@@ -666,11 +659,7 @@ void Station::decodeType3A(const Group& group) {
     // RDS-TMC
     case 0xCD46:
     case 0xCD47:
-#ifdef ENABLE_TMC
       tmc_.receiveSystemGroup(oda_message, &json_);
-#else
-      json_["debug"].append("redsea compiled without TMC support");
-#endif
       break;
 
     default:
@@ -1024,11 +1013,9 @@ void Station::decodeODAGroup(const Group& group) {
     // RDS-TMC
     case 0xCD46:
     case 0xCD47:
-#ifdef ENABLE_TMC
     if (group.has(BLOCK2) && group.has(BLOCK3) && group.has(BLOCK4))
       tmc_.receiveUserGroup(getBits<5>(group.getBlock2(), 0), group.getBlock3(),
                             group.getBlock4(), &json_);
-#endif
     break;
 
   default:
