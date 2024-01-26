@@ -1,14 +1,14 @@
 # redsea changelog
 
-## HEAD
+## 0.21 (2024-01-26)
 
 * Add support for decoding LTCC and LTECC in TMC (#80)
 * Add support for decoding RDS output from the TEF6686 tuner (#89)
 * Add support for Alternative Frequencies Method B (#88)
-* Change the name of the field `alt_kilohertz` to either `alt_frequencies_a`
-  or `alt_frequencies_b`. The type of data sent by these methods differs.
-  When `--show-partial` is set, the AF list will be in `partial_alt_frequencies`
-  regardless of method.
+* Breaking: Change the name of the field `alt_kilohertz` to either
+  `alt_frequencies_a` or `alt_frequencies_b`. The type of data sent by these
+  methods differs. When `--show-partial` is set, the AF list will be in
+  `partial_alt_frequencies` regardless of method.
 * Add option `--input` / `-i` to specify the stdin input format (bits, hex,
   mpx, tef). The old options will still work.
 * Fix automake script on Windows (#81)
