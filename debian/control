@@ -4,7 +4,7 @@ Section: hamradio
 Priority: optional
 Rules-Requires-Root: no
 Standards-Version: 4.3.0
-Build-Depends: debhelper (>= 10), build-essential, autoconf, libsndfile1-dev, libliquid-dev
+Build-Depends: debhelper (>= 12), build-essential, autoconf, libsndfile1-dev, libliquid-dev
 
 Package: redsea
 Architecture: any
