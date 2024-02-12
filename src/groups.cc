@@ -669,12 +669,18 @@ void Station::decodeType4A(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  uint32_t modified_julian_date = getBits<17>(group.getBlock2(), group.getBlock3(), 1);
+  const double modified_julian_date{static_cast<double>(getBits<17>(group.getBlock2(), group.getBlock3(), 1))};
 
-  int year_utc  = int((modified_julian_date - 15078.2) / 365.25);
-  int month_utc = int((modified_julian_date - 14956.1 -
+  // Would result in negative years/months
+  if (modified_julian_date < 15079.0) {
+    json_["debug"].append("invalid date/time");
+    return;
+  }
+
+  int year_utc  = static_cast<int>((modified_julian_date - 15078.2) / 365.25);
+  int month_utc = static_cast<int>((modified_julian_date - 14956.1 -
                 std::trunc(year_utc * 365.25)) / 30.6001);
-  int day_utc   = int(modified_julian_date - 14956 - std::trunc(year_utc * 365.25) -
+  int day_utc   = static_cast<int>(modified_julian_date - 14956.0 - std::trunc(year_utc * 365.25) -
                 std::trunc(month_utc * 30.6001));
   if (month_utc == 14 || month_utc == 15) {
     year_utc += 1;
@@ -683,11 +689,11 @@ void Station::decodeType4A(const Group& group) {
   year_utc += 1900;
   month_utc -= 1;
 
-  int hour_utc   = getBits<5>(group.getBlock3(), group.getBlock4(), 12);
-  int minute_utc = getBits<6>(group.getBlock4(), 6);
+  const int hour_utc   = getBits<5>(group.getBlock3(), group.getBlock4(), 12);
+  const int minute_utc = getBits<6>(group.getBlock4(), 6);
 
-  double local_offset = (getBits<1>(group.getBlock4(), 5) ? -1 : 1) *
-                         getBits<5>(group.getBlock4(), 0) / 2.0;
+  const double local_offset = (getBits<1>(group.getBlock4(), 5) ? -1.0 : 1.0) *
+                               getBits<5>(group.getBlock4(), 0) / 2.0;
 
   struct tm utc_plus_offset_tm;
   utc_plus_offset_tm.tm_year  = year_utc - 1900;
@@ -696,17 +702,17 @@ void Station::decodeType4A(const Group& group) {
   utc_plus_offset_tm.tm_isdst = -1;
   utc_plus_offset_tm.tm_hour  = hour_utc;
   utc_plus_offset_tm.tm_min   = minute_utc;
-  utc_plus_offset_tm.tm_sec   = static_cast<int>(local_offset * 3600);
+  utc_plus_offset_tm.tm_sec   = static_cast<int>(local_offset * 3600.0);
 
-  time_t local_t      = mktime(&utc_plus_offset_tm);
-  struct tm* local_tm = localtime(&local_t);
+  const time_t local_t            = mktime(&utc_plus_offset_tm);
+  const struct tm* const local_tm = localtime(&local_t);
 
-  bool is_date_valid = hour_utc <= 23 && minute_utc <= 59 &&
-                       fabs(std::trunc(local_offset)) <= 14.0;
+  const bool is_date_valid = hour_utc <= 23 && minute_utc <= 59 &&
+                             fabs(std::trunc(local_offset)) <= 14.0;
   if (is_date_valid) {
     char buffer[100];
-    int local_offset_hour = int(fabs(std::trunc(local_offset)));
-    int local_offset_min  = int((local_offset - std::trunc(local_offset)) * 60.0);
+    const int local_offset_hour = int(fabs(std::trunc(local_offset)));
+    const int local_offset_min  = int((local_offset - std::trunc(local_offset)) * 60.0);
 
     if (local_offset_hour == 0 && local_offset_min == 0) {
       snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00Z",
