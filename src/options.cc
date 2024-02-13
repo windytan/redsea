@@ -77,7 +77,7 @@ Options getOptions(int argc, char** argv) {
         options.input_type = InputType::Hex;
         break;
       case 'i': {
-        std::string input_type(optarg);
+        const std::string input_type(optarg);
         if (input_type == "hex") {
           options.input_type = InputType::Hex;
         } else if (input_type == "mpx") {
@@ -99,7 +99,7 @@ Options getOptions(int argc, char** argv) {
         options.show_partial = true;
         break;
       case 'r': {
-        std::string optstr(optarg);
+        const std::string optstr(optarg);
         double factor = 1.0;
         if (optstr.size() > 1) {
           if (tolower(optstr.back()) == 'k')
@@ -107,7 +107,7 @@ Options getOptions(int argc, char** argv) {
           else if (toupper(optstr.back()) == 'M')
             factor = 1000000.0;
         }
-        options.samplerate = float(std::atof(optarg) * factor);
+        options.samplerate = static_cast<float>(std::atof(optarg) * factor);
         if (options.samplerate < kMinimumSampleRate_Hz) {
           std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
                     << " Hz or higher\n";

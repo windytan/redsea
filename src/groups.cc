@@ -39,9 +39,9 @@ namespace redsea {
 
 // Programme Item Number (IEC 62106:2015, section 6.1.5.2)
 bool decodePIN(uint16_t pin, Json::Value* json) {
-  uint16_t day    = getBits<5>(pin, 11);
-  uint16_t hour   = getBits<5>(pin, 6);
-  uint16_t minute = getBits<6>(pin, 0);
+  const uint16_t day    = getBits<5>(pin, 11);
+  const uint16_t hour   = getBits<5>(pin, 6);
+  const uint16_t minute = getBits<6>(pin, 0);
   if (day >= 1 && hour <= 24 && minute <= 59) {
     (*json)["prog_item_number"] = pin;
     (*json)["prog_item_started"]["day"] = day;
@@ -168,7 +168,7 @@ void Group::setBlock(eBlockNumber block_num, Block block) {
 
   } else if (block_num == BLOCK4) {
     if (has_c_prime_ && !has_type_) {
-      GroupType potential_type(getBits<5>(block.data, 11));
+      const GroupType potential_type(getBits<5>(block.data, 11));
       if (potential_type.number == 15 &&
           potential_type.version == GroupType::Version::B) {
         type_ = potential_type;
@@ -264,7 +264,7 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
     json_["*SORT01*rx_time"] = getTimePointString(group.getRxTime(), options_.time_format);
 
   if (group.hasBLER())
-    json_["bler"] = int(group.getBLER() + .5f);
+    json_["bler"] = static_cast<int>(group.getBLER() + .5f);
 
   if (options_.num_channels > 1)
     json_["channel"] = which_channel_;
@@ -397,11 +397,11 @@ void Station::decodeType0(const Group& group) {
     alt_freq_list_.insert(getBits<8>(group.getBlock3(), 0));
 
     if (alt_freq_list_.isComplete()) {
-      auto raw_frequencies = alt_freq_list_.getRawList();
+      const auto raw_frequencies = alt_freq_list_.getRawList();
 
       // AF Method B sends longer lists with possible regional variants
       if (alt_freq_list_.isMethodB()) {
-        int tuned_frequency = raw_frequencies[0];
+        const int tuned_frequency = raw_frequencies[0];
 
         // We use std::sets for detecting duplicates
         std::set<int> unique_alternative_frequencies;
@@ -411,10 +411,10 @@ void Station::decodeType0(const Group& group) {
 
         // Frequency pairs
         for (size_t i = 1; i < raw_frequencies.size(); i += 2) {
-          int freq1 = raw_frequencies[i];
-          int freq2 = raw_frequencies[i + 1];
+          const int freq1 = raw_frequencies[i];
+          const int freq2 = raw_frequencies[i + 1];
 
-          int non_tuned_frequency = (freq1 == tuned_frequency ? freq2 : freq1);
+          const int non_tuned_frequency = (freq1 == tuned_frequency ? freq2 : freq1);
 
           // "General case"
           if (freq1 < freq2) {
@@ -436,16 +436,16 @@ void Station::decodeType0(const Group& group) {
         if (number_of_unique_afs == expected_number_of_afs) {
           json_["alt_frequencies_b"]["*SORT01*tuned_frequency"] = tuned_frequency;
 
-          for (int frequency : alternative_frequencies)
+          for (const int frequency : alternative_frequencies)
             json_["alt_frequencies_b"]["*SORT02*same_programme"].append(frequency);
 
-          for (int frequency : regional_variants)
+          for (const int frequency : regional_variants)
             json_["alt_frequencies_b"]["*SORT03*regional_variants"].append(frequency);
       }
 
       // AF Method A is a simple list
       } else {
-        for (int frequency : raw_frequencies)
+        for (const int frequency : raw_frequencies)
           json_["alt_frequencies_a"].append(frequency);
       }
 
@@ -454,7 +454,7 @@ void Station::decodeType0(const Group& group) {
     // If partial list is requested we'll print the raw list and not attempt to
     // deduce whether it's Method A or B
     } else if (options_.show_partial) {
-      for (int f : alt_freq_list_.getRawList())
+      for (const int f : alt_freq_list_.getRawList())
         json_["partial_alt_frequencies"].append(f);
     }
   }
@@ -491,7 +491,7 @@ void Station::decodeType1(const Group& group) {
     linkage_la_ = getBool(group.getBlock3(), 15);
     json_["has_linkage"] = linkage_la_;
 
-    int slow_label_variant = getBits<3>(group.getBlock3(), 12);
+    const int slow_label_variant = getBits<3>(group.getBlock3(), 12);
 
     switch (slow_label_variant) {
       case 0:
@@ -727,8 +727,8 @@ void Station::decodeType4A(const Group& group) {
                              fabs(std::trunc(local_offset)) <= 14.0;
   if (is_date_valid) {
     char buffer[100];
-    const int local_offset_hour = int(fabs(std::trunc(local_offset)));
-    const int local_offset_min  = int((local_offset - std::trunc(local_offset)) * 60.0);
+    const int local_offset_hour = static_cast<int>(std::fabs(std::trunc(local_offset)));
+    const int local_offset_min  = static_cast<int>((local_offset - std::trunc(local_offset)) * 60.0);
 
     if (local_offset_hour == 0 && local_offset_min == 0) {
       snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00Z",
@@ -754,7 +754,7 @@ void Station::decodeType5(const Group& group) {
   json_["transparent_data"]["address"] = address;
 
   if (group.getType().version == GroupType::Version::A) {
-    std::vector<uint16_t> data = {
+    const std::vector<uint16_t> data = {
       getBits<8>(group.getBlock3(), 8),
       getBits<8>(group.getBlock3(), 0),
       getBits<8>(group.getBlock4(), 8),
@@ -776,7 +776,7 @@ void Station::decodeType5(const Group& group) {
       json_["transparent_data"]["full_text"] = full_tdc_.str();
 
       std::string full_raw;
-      for (auto b : full_tdc_.getData()) {
+      for (const auto b : full_tdc_.getData()) {
         full_raw += getHexString(b, 2) + " ";
       }
       json_["transparent_data"]["full_raw"] = full_raw;
@@ -784,7 +784,7 @@ void Station::decodeType5(const Group& group) {
 
     json_["transparent_data"]["as_text"] = decoded_text.str();
   } else {
-    std::vector<int> data = {
+    const std::vector<int> data = {
       getBits<8>(group.getBlock4(), 8),
       getBits<8>(group.getBlock4(), 0)};
 
@@ -818,13 +818,13 @@ void Station::decodeType6(const Group& group) {
 
 // Group 7A: Radio Paging
 void Station::decodeType7A(const Group& group) {
-  (void)group;
+  static_cast<void>(group);
   json_["debug"].append("TODO: 7A");
 }
 
 // Group 9A: Emergency warning systems
 void Station::decodeType9A(const Group& group) {
-  (void)group;
+  static_cast<void>(group);
   json_["debug"].append("TODO: 9A");
 }
 
@@ -833,7 +833,7 @@ void Station::decodeType10A(const Group& group) {
   if (!group.has(BLOCK3) || !group.has(BLOCK4))
     return;
 
-  uint16_t segment_address = getBits<1>(group.getBlock2(), 0);
+  const uint16_t segment_address = getBits<1>(group.getBlock2(), 0);
 
   if (ptyname_.isABChanged(getBits<1>(group.getBlock2(), 4)))
     ptyname_.text.clear();
@@ -855,7 +855,7 @@ void Station::decodeType14(const Group& group) {
   if (!(group.has(BLOCK4)))
     return;
 
-  uint16_t on_pi = group.getBlock4();
+  const uint16_t on_pi = group.getBlock4();
   json_["other_network"]["*SORT00*pi"] = getPrefixedHexString(on_pi, 4);
   json_["other_network"]["tp"] = getBool(group.getBlock2(), 4);
 
@@ -867,7 +867,7 @@ void Station::decodeType14(const Group& group) {
   if (!group.has(BLOCK3))
     return;
 
-  uint16_t eon_variant = getBits<4>(group.getBlock2(), 0);
+  const uint16_t eon_variant = getBits<4>(group.getBlock2(), 0);
   switch (eon_variant) {
     case 0:
     case 1:
@@ -891,7 +891,7 @@ void Station::decodeType14(const Group& group) {
       eon_alt_freqs_[on_pi].insert(getBits<8>(group.getBlock3(), 0));
 
       if (eon_alt_freqs_[on_pi].isComplete()) {
-        for (int freq : eon_alt_freqs_[on_pi].getRawList())
+        for (const int freq : eon_alt_freqs_[on_pi].getRawList())
           json_["other_network"]["alt_frequencies"].append(freq);
         eon_alt_freqs_[on_pi].clear();
       }
@@ -903,7 +903,7 @@ void Station::decodeType14(const Group& group) {
     case 8:
     case 9:
     {
-      CarrierFrequency freq_other(getBits<8>(group.getBlock3(), 0));
+      const CarrierFrequency freq_other(getBits<8>(group.getBlock3(), 0));
 
       if (freq_other.isValid())
         json_["other_network"]["kilohertz"] = freq_other.kHz();
@@ -915,8 +915,8 @@ void Station::decodeType14(const Group& group) {
 
     case 12:
     {
-      bool has_linkage = getBool(group.getBlock3(), 15);
-      uint16_t lsn = getBits<12>(group.getBlock3(), 0);
+      const bool has_linkage = getBool(group.getBlock3(), 15);
+      const uint16_t lsn = getBits<12>(group.getBlock3(), 0);
       json_["other_network"]["has_linkage"] = has_linkage;
       if (has_linkage && lsn != 0)
         json_["other_network"]["linkage_set"] = lsn;
@@ -925,8 +925,8 @@ void Station::decodeType14(const Group& group) {
 
     case 13:
     {
-      uint16_t pty = getBits<5>(group.getBlock3(), 11);
-      bool ta      = getBool(group.getBlock3(), 0);
+      const uint16_t pty = getBits<5>(group.getBlock3(), 11);
+      const bool ta      = getBool(group.getBlock3(), 0);
       json_["other_network"]["prog_type"] =
         options_.rbds ? getPTYNameStringRBDS(pty) : getPTYNameString(pty);
       json_["other_network"]["ta"] = ta;
@@ -935,7 +935,7 @@ void Station::decodeType14(const Group& group) {
 
     case 14:
     {
-      uint16_t pin = group.getBlock3();
+      const uint16_t pin = group.getBlock3();
 
       if (pin != 0x0000)
         decodePIN(pin, &(json_["other_network"]));
@@ -1037,19 +1037,19 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el)
   std::vector<RadioText::Plus::Tag> tags(num_tags);
 
   if (num_tags > 0) {
-    tags[0].content_type = uint16_t(getBits<6>(group.getBlock2(), group.getBlock3(), 13));
+    tags[0].content_type = static_cast<uint16_t>(getBits<6>(group.getBlock2(), group.getBlock3(), 13));
     tags[0].start        = getBits<6>(group.getBlock3(), 7);
     tags[0].length       = getBits<6>(group.getBlock3(), 1) + 1;
 
     if (num_tags == 2) {
-      tags[1].content_type = uint16_t(getBits<6>(group.getBlock3(), group.getBlock4(), 11));
+      tags[1].content_type = static_cast<uint16_t>(getBits<6>(group.getBlock3(), group.getBlock4(), 11));
       tags[1].start        = getBits<6>(group.getBlock4(), 5);
       tags[1].length       = getBits<5>(group.getBlock4(), 0) + 1;
     }
   }
 
-  for (auto tag : tags) {
-    std::string text =
+  for (const auto& tag : tags) {
+    const std::string text =
       rt.text.getLastCompleteString(tag.start, tag.length);
 
     if (text.length() > 0 && tag.content_type != 0) {
@@ -1090,11 +1090,11 @@ void Station::parseDAB(const Group& group) {
   } else {
     // Ensemble table
 
-    int mode = getBits<2>(group.getBlock2(), 2);
+    const int mode = getBits<2>(group.getBlock2(), 2);
     const std::vector<std::string> modes({"unspecified", "I", "II or III", "IV"});
     json_["dab"]["mode"] = modes[mode];
 
-    int freq = 16 * getBits<18>(group.getBlock2(), group.getBlock3(), 0);
+    const int freq = 16 * getBits<18>(group.getBlock2(), group.getBlock3(), 0);
 
     json_["dab"]["kilohertz"] = freq;
 
@@ -1127,12 +1127,12 @@ void Station::parseDAB(const Group& group) {
 }
 
 void Pager::decode1ABlock4(uint16_t block4) {
-  int sub_type = getBits<1>(block4, 10);
+  const int sub_type = getBits<1>(block4, 10);
   if (sub_type == 0) {
     pac = getBits<6>(block4, 4);
     opc = getBits<4>(block4, 0);
   } else if (sub_type == 1) {
-    int sub_usage = getBits<2>(block4, 8);
+    const int sub_usage = getBits<2>(block4, 8);
     if (sub_usage == 0)
       ecc = getBits<6>(block4, 0);
     else if (sub_usage == 3)

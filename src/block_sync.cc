@@ -68,8 +68,8 @@ Offset getOffsetForSyndrome(uint16_t syndrome) {
   }
 }
 
-unsigned calculateSyndrome(unsigned vec) {
-  static const std::array<unsigned, 26> parity_check_matrix({
+uint32_t calculateSyndrome(uint32_t vec) {
+  static const std::array<uint32_t, 26> parity_check_matrix({
     0b1000000000,
     0b0100000000,
     0b0010000000,
@@ -102,7 +102,7 @@ unsigned calculateSyndrome(unsigned vec) {
   // the modulo-two addition of all the rows of the -- matrix for which the
   // corresponding coefficient in the -- vector is 1.'
 
-  unsigned result = 0;
+  uint32_t result{};
 
   for (size_t k = 0; k < parity_check_matrix.size(); k++)
     result ^= parity_check_matrix[parity_check_matrix.size() - 1 - k] * ((vec >> k) & 0b1);
@@ -129,11 +129,11 @@ std::map<std::pair<uint16_t, Offset>, uint32_t> makeErrorLookupTable() {
     // "...the error-correction system should be enabled, but should be
     // restricted by attempting to correct bursts of errors spanning one or two
     // bits."
-    for (uint32_t error_bits : {0b1u, 0b11u}) {
-      for (unsigned shift = 0; shift < kBlockLength; shift++) {
-        uint32_t error_vector = ((error_bits << shift) & kBlockBitmask);
+    for (const uint32_t error_bits : {0b1u, 0b11u}) {
+      for (uint32_t shift = 0; shift < kBlockLength; shift++) {
+        const uint32_t error_vector = ((error_bits << shift) & kBlockBitmask);
 
-        uint32_t syndrome =
+        const uint32_t syndrome =
             calculateSyndrome(error_vector ^ offset.second);
         lookup_table.insert({{syndrome, offset.first}, error_vector});
       }
@@ -148,10 +148,10 @@ ErrorCorrectionResult correctBurstErrors(Block block, Offset expected_offset) {
 
   ErrorCorrectionResult result;
 
-  uint16_t syndrome = uint16_t(calculateSyndrome(block.raw));
+  const uint16_t syndrome = static_cast<uint16_t>(calculateSyndrome(block.raw));
   result.corrected_bits = block.raw;
 
-  auto search = error_lookup_table.find({syndrome, expected_offset});
+  const auto search = error_lookup_table.find({syndrome, expected_offset});
   if (search != error_lookup_table.end()) {
     uint32_t err = search->second;
     result.corrected_bits ^= err;
@@ -175,11 +175,11 @@ void SyncPulseBuffer::push(Offset offset, int bitcount) {
 
 bool SyncPulseBuffer::isSequenceFound() const {
   for (size_t prev_i = 0; prev_i < pulses_.size() - 1; prev_i++) {
-    int sync_distance = pulses_.back().bitcount - pulses_[prev_i].bitcount;
+    const int sync_distance = pulses_.back().bitcount - pulses_[prev_i].bitcount;
 
-    bool found = (sync_distance % kBlockLength == 0 &&
-                  sync_distance / kBlockLength <= 6 &&
-                  pulses_[prev_i].offset != Offset::invalid &&
+    const bool found = (sync_distance % kBlockLength == 0 &&
+                        sync_distance / kBlockLength <= 6 &&
+                        pulses_[prev_i].offset != Offset::invalid &&
       (getBlockNumberForOffset(pulses_[prev_i].offset) + sync_distance / kBlockLength) % 4 ==
        getBlockNumberForOffset(pulses_.back().offset));
 
@@ -238,7 +238,7 @@ void BlockStream::pushBit(bool bit) {
 void BlockStream::findBlockInInputRegister() {
   Block block;
   block.raw    = input_register_ & kBlockBitmask;
-  block.offset = getOffsetForSyndrome(uint16_t(calculateSyndrome(block.raw)));
+  block.offset = getOffsetForSyndrome(static_cast<uint16_t>(calculateSyndrome(block.raw)));
 
   acquireSync(block);
 
@@ -249,12 +249,12 @@ void BlockStream::findBlockInInputRegister() {
     block.had_errors = (block.offset != expected_offset_);
     block_error_sum50_.push(block.had_errors);
 
-    block.data = uint16_t(block.raw >> kCheckwordLength);
+    block.data = static_cast<uint16_t>(block.raw >> kCheckwordLength);
 
     if (block.had_errors) {
       auto correction = correctBurstErrors(block, expected_offset_);
       if (correction.succeeded) {
-        block.data   = uint16_t(correction.corrected_bits >> kCheckwordLength);
+        block.data   = static_cast<uint16_t>(correction.corrected_bits >> kCheckwordLength);
         block.offset = expected_offset_;
       } else {
         handleUncorrectableError();

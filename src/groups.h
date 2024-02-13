@@ -242,7 +242,7 @@ class Station {
 #endif
 };
 
-void parseRadioTextPlus(const Group& group, RadioText& which_radiotext, Json::Value& json_el);
+void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el);
 
 }  // namespace redsea
 #endif  // GROUPS_H_

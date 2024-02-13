@@ -24,7 +24,13 @@
 #include <utility>
 #include <vector>
 
+// https://github.com/jgaeddert/liquid-dsp/issues/229
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
+extern "C" {
 #include "liquid/liquid.h"
+}
+#pragma clang diagnostic pop
 
 template<typename T>
 struct Maybe {
@@ -84,7 +90,7 @@ class SymSync {
   void reset();
   void setBandwidth(float);
   void setOutputRate(unsigned);
-  Maybe<std::complex<float>> execute(std::complex<float>* in);
+  Maybe<std::complex<float>> execute(std::complex<float>& in);
 
  private:
   symsync_crcf object_;

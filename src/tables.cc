@@ -321,8 +321,8 @@ std::string getCallsignFromPI(uint16_t pi) {
 
   // P1 0 P3 P4 --> A P1 P3 P4
   } else if ((pi & 0xF000) == 0xA000) {
-    pi = uint16_t(((pi & 0x0F00) << 4) |
-                   (pi & 0x00FF));
+    pi = static_cast<uint16_t>(((pi & 0x0F00) << 4) |
+                                (pi & 0x00FF));
   }
 
   std::string callsign = "";

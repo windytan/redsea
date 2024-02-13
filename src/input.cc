@@ -29,7 +29,7 @@ namespace redsea {
  * An MPXReader deals with reading an FM multiplex signal from an audio file or
  * raw PCM via stdin, separating it into channels and converting to chunks of
  * floating-point samples.
- *
+ * @throws if attempting to read beyond EOF
  */
 void MPXReader::init(const Options& options) {
   num_channels_ = options.num_channels;
@@ -43,7 +43,7 @@ void MPXReader::init(const Options& options) {
   if (options.input_type == InputType::MPX_stdin) {
     sfinfo_.channels = 1;
     sfinfo_.format = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
-    sfinfo_.samplerate = int(options.samplerate);
+    sfinfo_.samplerate = static_cast<int>(options.samplerate + .5f);
     sfinfo_.frames = 0;
     file_ = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
     if (feed_thru_)
@@ -55,7 +55,7 @@ void MPXReader::init(const Options& options) {
 
   if (!file_) {
     if (sf_error(file_) == 26 || options.input_type == InputType::MPX_stdin)
-      throw (BeyondEofError());
+      throw BeyondEofError();
 
     std::cerr << "error: failed to open file: " <<
               sf_error_number(sf_error(file_)) << '\n';
@@ -65,7 +65,7 @@ void MPXReader::init(const Options& options) {
               << " Hz or higher\n";
     is_error_ = true;
   } else {
-    assert(num_channels_ < int(buffer_.data.size()));
+    assert(num_channels_ < static_cast<int>(buffer_.data.size()));
     chunk_size_ = (kInputChunkSize / num_channels_) * num_channels_;
 
     is_eof_ = false;
@@ -192,8 +192,8 @@ Group readHexGroup(const Options& options) {
 
         if (single != " ") {
           try {
-            int nval = std::stoi(std::string(single), nullptr, 16);
-            block.data = uint16_t((block.data << 4) + nval);
+            const int nval = std::stoi(std::string(single), nullptr, 16);
+            block.data = static_cast<uint16_t>((block.data << 4) + nval);
           } catch (std::exception&) {
             block_still_valid = false;
           }
@@ -233,7 +233,7 @@ Group readTEFGroup(const Options& options) {
       Block block1;
       try {
         line = line.substr(1);
-        int64_t data = std::stol(line, nullptr, 16);
+        const int64_t data = std::stol(line, nullptr, 16);
         block1.data = data & 0xFFFF;
         block1.is_received = true;
       } catch (std::exception& e) {

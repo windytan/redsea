@@ -74,7 +74,7 @@ class Channel {
  public:
   Channel(const Options& options, int which_channel);
   void processBit(bool bit);
-  void processBits(BitBuffer buffer);
+  void processBits(const BitBuffer& buffer);
   void processGroup(Group group);
   void flush();
   float getSecondsSinceCarrierLost() const;

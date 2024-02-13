@@ -129,9 +129,9 @@ int processMPXInput(Options options) {
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
-    for (size_t i = 0; i < size_t(options.num_channels); i++) {
+    for (int i = 0; i < options.num_channels; i++) {
       channels[i].processBits(
-        subcarriers[i]->processChunk(mpx.readChunk(int(i)))
+        subcarriers[i]->processChunk(mpx.readChunk(i))
       );
       if (channels[i].getSecondsSinceCarrierLost() > 10.f &&
           subcarriers[i]->getSecondsSinceLastReset() > 5.f) {
@@ -147,7 +147,7 @@ int processMPXInput(Options options) {
   return EXIT_SUCCESS;
 }
 
-int processASCIIBitsInput(Options options) {
+int processASCIIBitsInput(const Options& options) {
   Channel channel(options, 0);
   AsciiBitReader ascii_reader(options);
 
@@ -160,7 +160,7 @@ int processASCIIBitsInput(Options options) {
   return EXIT_SUCCESS;
 }
 
-int processHexInput(Options options) {
+int processHexInput(const Options& options) {
   Channel channel(options, 0);
 
   while (!std::cin.eof()) {
@@ -170,7 +170,7 @@ int processHexInput(Options options) {
   return EXIT_SUCCESS;
 }
 
-int processTEFInput(Options options) {
+int processTEFInput(const Options& options) {
   Channel channel(options, 0);
 
   while (!std::cin.eof()) {
@@ -183,7 +183,7 @@ int processTEFInput(Options options) {
 }  // namespace redsea
 
 int main(int argc, char** argv) {
-  redsea::Options options = redsea::getOptions(argc, argv);
+  const redsea::Options options = redsea::getOptions(argc, argv);
 
   if (options.print_usage)
     redsea::printUsage();

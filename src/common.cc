@@ -24,16 +24,17 @@ std::string getTimePointString(
     const std::string& format) {
 
   // This is done to ensure we get truncation and not rounding to integer seconds
-  auto seconds_since_epoch(
+  const auto seconds_since_epoch(
       std::chrono::duration_cast<std::chrono::seconds>(timepoint.time_since_epoch()));
-  std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::time_point(seconds_since_epoch));
+  const std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::time_point(seconds_since_epoch));
 
   std::string format_with_fractional(format);
-  std::size_t found = format_with_fractional.find("%f");
+  const std::size_t found = format_with_fractional.find("%f");
   if (found != std::string::npos) {
-    int ms         = (std::chrono::duration_cast<std::chrono::milliseconds>(timepoint.time_since_epoch() - seconds_since_epoch)).count();
-    int hundredths = (ms / 10)  % 10;
-    int tenths     = (ms / 100) % 10;
+    const int ms         = (std::chrono::duration_cast<std::chrono::milliseconds>(timepoint.time_since_epoch() -
+                            seconds_since_epoch)).count();
+    const int hundredths = (ms / 10)  % 10;
+    const int tenths     = (ms / 100) % 10;
 
     format_with_fractional.replace(found, 2, std::to_string(tenths) + std::to_string(hundredths));
   }
@@ -43,9 +44,7 @@ std::string getTimePointString(
     return "(format error)";
   }
 
-  std::string result = std::string(buffer);
-
-  return result;
+  return std::string(buffer);
 }
 
 }  // namespace redsea

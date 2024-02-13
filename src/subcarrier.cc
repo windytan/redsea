@@ -47,7 +47,7 @@ constexpr float kPLLBandwidth_Hz      = 0.03f;
 constexpr float kPLLMultiplier        = 12.0f;
 
 constexpr float hertz2step(float Hz) {
-  return Hz * 2.0f * float(M_PI) / kTargetSampleRate_Hz;
+  return Hz * 2.0f * static_cast<float>(M_PI) / kTargetSampleRate_Hz;
 }
 
 }  // namespace
@@ -62,7 +62,7 @@ Maybe<bool> BiphaseDecoder::push(
 
   Maybe<bool> result;
 
-  auto biphase_symbol = (psk_symbol - prev_psk_symbol_) * 0.5f;
+  const auto biphase_symbol = (psk_symbol - prev_psk_symbol_) * 0.5f;
   result.data = biphase_symbol.real() >= 0.0f;
   result.valid = (clock_ % 2 == clock_polarity_);
   prev_psk_symbol_ = psk_symbol;
@@ -72,8 +72,8 @@ Maybe<bool> BiphaseDecoder::push(
 
   // Periodically evaluate validity of the chosen biphase clock polarity
   if (clock_ == clock_history_.size()) {
-    float a = 0;
-    float b = 0;
+    float a{};
+    float b{};
 
     for (size_t i = 0; i < clock_history_.size(); i++) {
       if (i % 2 == 0)
@@ -93,7 +93,7 @@ Maybe<bool> BiphaseDecoder::push(
 }
 
 unsigned DeltaDecoder::decode(unsigned d) {
-  unsigned bit = (d != prev_);
+  const unsigned bit = (d != prev_);
   prev_ = d;
   return bit;
 }
@@ -125,7 +125,7 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
     unsigned int i_resampled = 0;
     for (size_t i = 0; i < chunk.used_size; i++) {
       static float buf[4];
-      unsigned int num_resampled = resampler_.execute(chunk.data[i], buf);
+      const auto num_resampled = resampler_.execute(chunk.data[i], buf);
 
       for (unsigned int j = 0; j < num_resampled; j++) {
         resampled_buffer_.data[i_resampled] = buf[j];
@@ -137,15 +137,15 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
 
   MPXBuffer<>& buf = (resample_ratio_ == 1.0f ? chunk : resampled_buffer_);
 
-  constexpr int decimate_ratio = int(kTargetSampleRate_Hz / kBitsPerSecond / 2 /
-                                     kSamplesPerSymbol);
+  constexpr int decimate_ratio = static_cast<int>(kTargetSampleRate_Hz / kBitsPerSecond / 2 /
+                                                  kSamplesPerSymbol);
 
   BitBuffer bitbuffer;
   bitbuffer.time_received = chunk.time_received;
 
   for (size_t i = 0; i < buf.used_size; i++) {
     // Mix RDS to baseband for filtering purposes
-    std::complex<float> sample_baseband =
+    const std::complex<float> sample_baseband =
         oscillator_.mixDown(std::complex<float>(buf.data[i]));
 
     fir_lpf_.push(sample_baseband);
@@ -153,17 +153,17 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
     if (sample_num_ % decimate_ratio == 0) {
       std::complex<float> sample_lopass = agc_.execute(fir_lpf_.execute());
 
-      auto symbol = symsync_.execute(&sample_lopass);
+      const auto symbol = symsync_.execute(sample_lopass);
 
       if (symbol.valid) {
         // Modem here is only used to track PLL phase error
         modem_.demodulate(symbol.data);
 
-        float phase_error = std::min(std::max(modem_.getPhaseError(),
-                            -float(M_PI)), float(M_PI));
+        const float phase_error = std::min(std::max(modem_.getPhaseError(),
+                                           -static_cast<float>(M_PI)), static_cast<float>(M_PI));
         oscillator_.stepPLL(phase_error * kPLLMultiplier);
 
-        auto biphase = biphase_decoder_.push(symbol.data);
+        const auto biphase = biphase_decoder_.push(symbol.data);
 
         // One biphase symbol received for every 2 PSK symbols
         if (biphase.valid) {

@@ -22,7 +22,13 @@
 #include <cassert>
 #include <complex>
 
+// https://github.com/jgaeddert/liquid-dsp/issues/229
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
+extern "C" {
 #include "liquid/liquid.h"
+}
+#pragma clang diagnostic pop
 
 namespace liquid {
 
@@ -123,9 +129,9 @@ void SymSync::setOutputRate(unsigned r) {
   symsync_crcf_set_output_rate(object_, r);
 }
 
-Maybe<std::complex<float>> SymSync::execute(std::complex<float>* in) {
+Maybe<std::complex<float>> SymSync::execute(std::complex<float>& in) {
   unsigned n_out = 0;
-  symsync_crcf_execute(object_, in, 1, out_.data(), &n_out);
+  symsync_crcf_execute(object_, &in, 1, out_.data(), &n_out);
 
   // assert(n_out <= 1);
 

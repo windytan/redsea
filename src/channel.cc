@@ -42,7 +42,7 @@ void Channel::processBit(bool bit) {
     processGroup(block_stream_.popGroup());
 }
 
-void Channel::processBits(BitBuffer buffer) {
+void Channel::processBits(const BitBuffer& buffer) {
   for (size_t i_bit = 0; i_bit < buffer.bits.size(); i_bit++) {
     block_stream_.pushBit(buffer.bits[i_bit]);
 
@@ -51,7 +51,7 @@ void Channel::processBits(BitBuffer buffer) {
 
       // Calculate this group's rx time based on the buffer timestamp and bit offset
       auto group_time = buffer.time_received -
-        std::chrono::milliseconds(int((buffer.bits.size() - 1 - i_bit) / 1187.5 * 1e3));
+        std::chrono::milliseconds(static_cast<int>((buffer.bits.size() - 1 - i_bit) / 1187.5 * 1e3));
 
       // When the source is faster than real-time, backwards timestamp calculation
       // produces meaningless results. We want to make sure that the time stays monotonic.
@@ -89,7 +89,7 @@ void Channel::processGroup(Group group) {
   // is cleared. We don't want this to happen on spurious bit errors, so
   // a change of PI code is only confirmed after a repeat.
   if (group.hasPI()) {
-    auto pi_status = cached_pi_.update(group.getPI());
+    const auto pi_status = cached_pi_.update(group.getPI());
     switch (pi_status) {
       case CachedPI::Result::ChangeConfirmed:
         station_ = Station(cached_pi_.get(), options_, which_channel_);
@@ -119,7 +119,7 @@ void Channel::processGroup(Group group) {
 
 // Process any remaining data
 void Channel::flush() {
-  Group last_group = block_stream_.flushCurrentGroup();
+  const Group last_group = block_stream_.flushCurrentGroup();
   if (!last_group.isEmpty())
     processGroup(last_group);
 }

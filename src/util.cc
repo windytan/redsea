@@ -101,14 +101,14 @@ std::string CarrierFrequency::str() const {
   if (isValid()) {
     switch (band_) {
       case Band::FM : {
-        float num = kHz() / 1000.0f;
+        const float num = kHz() / 1000.0f;
         ss.precision(1);
         ss << std::fixed << num << " MHz";
         break;
       }
 
       case Band::LF_MF : {
-        float num = kHz();
+        const float num = kHz();
         ss.precision(0);
         ss << std::fixed << num << " kHz";
       }
@@ -137,7 +137,7 @@ void AltFreqList::insert(uint16_t af_code) {
   // AF code encodes a frequency
   if (frequency.isValid() && num_expected_ > 0) {
     if (num_received_ < num_expected_) {
-      int kHz = frequency.kHz();
+      const int kHz = frequency.kHz();
       alt_freqs_[num_received_] = kHz;
       num_received_++;
 
@@ -173,10 +173,10 @@ bool AltFreqList::isMethodB() const {
     return false;
 
   // Method B is composed of pairs where one is always the tuned frequency
-  int tuned_frequency = alt_freqs_[0];
+  const int tuned_frequency = alt_freqs_[0];
   for (size_t i = 1; i < num_received_; i += 2) {
-    int freq1 = alt_freqs_[i];
-    int freq2 = alt_freqs_[i + 1];
+    const int freq1 = alt_freqs_[i];
+    const int freq2 = alt_freqs_[i + 1];
     if (freq1 != tuned_frequency && freq2 != tuned_frequency)
       return false;
   }
@@ -297,12 +297,14 @@ std::string get_string(const CSVTable& table, const CSVRow& row, const std::stri
   return row.at(table.titles.at(title));
 }
 
+// @throws exceptions from std::stoi
 int get_int(const CSVTable& table, const CSVRow& row, const std::string& title) {
   return std::stoi(row.at(table.titles.at(title)));
 }
 
+// @throws exceptions from std::stoi
 uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title) {
-  return uint16_t(get_int(table, row, title));
+  return static_cast<uint16_t>(get_int(table, row, title));
 }
 
 bool row_contains(const CSVTable& table, const CSVRow& row, const std::string& title) {
