@@ -152,20 +152,16 @@ std::string getTimeString(uint16_t field_data) {
 }
 
 std::vector<std::string> getScopeStrings(uint16_t mgs) {
-  bool mgs_i = getBits<1>(mgs, 3);
-  bool mgs_n = getBits<1>(mgs, 2);
-  bool mgs_r = getBits<1>(mgs, 1);
-  bool mgs_u = getBits<1>(mgs, 0);
+  const bool mgs_i{getBool(mgs, 3)};
+  const bool mgs_n{getBool(mgs, 2)};
+  const bool mgs_r{getBool(mgs, 1)};
+  const bool mgs_u{getBool(mgs, 0)};
 
   std::vector<std::string> scope;
-  if (mgs_i)
-    scope.push_back("inter-road");
-  if (mgs_n)
-    scope.push_back("national");
-  if (mgs_r)
-    scope.push_back("regional");
-  if (mgs_u)
-    scope.push_back("urban");
+  if (mgs_i) scope.push_back("inter-road");
+  if (mgs_n) scope.push_back("national");
+  if (mgs_r) scope.push_back("regional");
+  if (mgs_u) scope.push_back("urban");
 
   return scope;
 }
@@ -493,7 +489,7 @@ void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
       (*jsonroot)["tmc"]["system_info"]["location_table"] = ltn_;
     }
 
-    bool     afi = getBits<1>(message, 5);
+    bool     afi = getBool(message, 5);
     uint16_t mgs = getBits<4>(message, 0);
 
     (*jsonroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
@@ -526,7 +522,7 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
   if (!is_initialized_)
     return;
 
-  bool t = getBits<1>(x, 4);
+  bool t = getBool(x, 4);
 
   // Encryption administration group
   if (getBits<5>(x, 0) == 0x00) {
@@ -548,10 +544,10 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
       case 5: {
         int pos = 4 * (variant - 4);
 
-        ps_.set(pos,   RDSChar(getBits<8>(y, 8)));
-        ps_.set(pos+1, RDSChar(getBits<8>(y, 0)));
-        ps_.set(pos+2, RDSChar(getBits<8>(z, 8)));
-        ps_.set(pos+3, RDSChar(getBits<8>(z, 0)));
+        ps_.set(pos,   getBits<8>(y, 8));
+        ps_.set(pos+1, getBits<8>(y, 0));
+        ps_.set(pos+2, getBits<8>(z, 8));
+        ps_.set(pos+3, getBits<8>(z, 0));
 
         if (ps_.isComplete())
           (*jsonroot)["tmc"]["service_provider"] = ps_.getLastCompleteString();
@@ -613,7 +609,7 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
     if (is_encrypted_ && !has_encid_)
       return;
 
-    bool f = getBits<1>(x, 3);
+    bool f = getBool(x, 3);
 
     // Single-group message
     if (f) {
@@ -660,8 +656,8 @@ uint16_t Message::getContinuityIndex() const {
 
 void Message::pushSingle(uint16_t x, uint16_t y, uint16_t z) {
   duration_          = getBits<3>(x, 0);
-  diversion_advised_ = getBits<1>(y, 15);
-  direction_         = getBits<1>(y, 14) ? Direction::Negative :
+  diversion_advised_ = getBool(y, 15);
+  direction_         = getBool(y, 14) ? Direction::Negative :
                                         Direction::Positive;
   extent_            = getBits<3>(y, 11);
   events_.push_back(getBits<11>(y, 0));
@@ -682,13 +678,13 @@ void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
     //*stream_ << jsonVal("debug", "ERR: wrong continuity index!");
   }
   continuity_index_ = new_continuity_index;
-  bool is_first_group = getBits<1>(y, 15);
+  bool is_first_group = getBool(y, 15);
   int current_group;
   int group_sequence_indicator = -1;
 
   if (is_first_group) {
     current_group = 0;
-  } else if (getBits<1>(y, 14)) {  // SG
+  } else if (getBool(y, 14)) {  // SG
     group_sequence_indicator = getBits<2>(y, 12);
     current_group = 1;
   } else {
@@ -714,8 +710,8 @@ void Message::decodeMulti() {
   is_complete_ = true;
 
   // First group
-  direction_ = getBits<1>(parts_[0].data[0], 14) ? Direction::Negative :
-                                                   Direction::Positive;
+  direction_ = getBool(parts_[0].data[0], 14) ? Direction::Negative :
+                                                Direction::Positive;
   extent_    = getBits<3>(parts_[0].data[0], 11);
   events_.push_back(getBits<11>(parts_[0].data[0], 0));
   if (is_encrypted_)

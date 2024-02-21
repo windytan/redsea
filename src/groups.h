@@ -76,8 +76,8 @@ bool operator<(const GroupType& type1, const GroupType& type2);
 class ProgramServiceName {
   public:
    ProgramServiceName() : text(8) {}
-   void update(size_t pos, RDSChar char1, RDSChar char2) {
-     text.set(pos, char1, char2);
+   void update(size_t pos, uint8_t byte1, uint8_t byte2) {
+     text.set(pos, byte1, byte2);
    }
 
    RDSString text;
@@ -87,17 +87,33 @@ class RadioText {
  public:
   RadioText() : text(64) {}
   bool isABChanged(int new_ab) {
-    bool is = (ab != new_ab);
+    const bool is = (ab != new_ab);
     ab = new_ab;
     return is;
   }
-  void update(size_t pos, RDSChar char1, RDSChar char2) {
-    text.set(pos, char1, char2);
+  void update(size_t pos, uint8_t byte1, uint8_t byte2) {
+    text.set(pos, byte1, byte2);
   }
 
-  RDSString text;
+  struct Plus {
+    bool     exists       {};
+    bool     cb           {};
+    uint16_t scb          {};
+    uint16_t template_num {};
+    bool     toggle       {};
+    bool     item_running {};
+
+    struct Tag {
+      uint16_t content_type {};
+      uint16_t start        {};
+      uint16_t length       {};
+    };
+  };
+
+  RDSString   text;
+  Plus        plus;
   std::string previous_potentially_complete_message;
-  int       ab { 0 };
+  int         ab { 0 };
 };
 
 class PTYName {
@@ -108,21 +124,13 @@ class PTYName {
     ab = new_ab;
     return is;
   }
-  void update(size_t pos, RDSChar char1, RDSChar char2, RDSChar char3, RDSChar char4) {
+  void update(size_t pos, uint8_t char1, uint8_t char2, uint8_t char3, uint8_t char4) {
     text.set(pos, char1, char2);
     text.set(pos + 2, char3, char4);
   }
 
   RDSString text;
   int       ab { 0 };
-};
-
-struct RadioTextPlus {
-  bool     cb           { false };
-  uint16_t scb          { 0 };
-  uint16_t template_num { 0 };
-  bool     toggle       { false };
-  bool     item_running { false };
 };
 
 class Pager {
@@ -198,7 +206,7 @@ class Station {
   void decodeType14(const Group& group);
   void decodeType15B(const Group& group);
   void decodeODAGroup(const Group& group);
-  void parseRadioTextPlus(const Group& group);
+  void parseEnhancedRT(const Group& group);
   void parseDAB(const Group& group);
 
   uint16_t pi_             { 0x0000 };
@@ -207,6 +215,7 @@ class Station {
   int which_channel_       { 0 };
   ProgramServiceName ps_;
   RadioText radiotext_;
+  RadioText ert_;
   PTYName ptyname_;
   RDSString full_tdc_      { 32 * 4 };
   uint16_t pin_            { 0 };
@@ -217,8 +226,7 @@ class Station {
   std::string clock_time_  { "" };
   bool has_country_        { false };
   std::map<GroupType, uint16_t> oda_app_for_group_;
-  bool has_radiotext_plus_ { false };
-  RadioTextPlus radiotext_plus_;
+  bool ert_uses_chartable_e3_ { false };
   std::map<uint16_t, RDSString> eon_ps_names_;
   std::map<uint16_t, AltFreqList> eon_alt_freqs_;
   bool last_group_had_pi_  { false };
@@ -234,11 +242,7 @@ class Station {
 #endif
 };
 
-struct RTPlusTag {
-  uint16_t content_type { 0 };
-  uint16_t start        { 0 };
-  uint16_t length       { 0 };
-};
+void parseRadioTextPlus(const Group& group, RadioText& which_radiotext, Json::Value& json_el);
 
 }  // namespace redsea
 #endif  // GROUPS_H_

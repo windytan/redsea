@@ -25,35 +25,43 @@
 
 namespace redsea {
 
-struct RDSChar {
-  explicit RDSChar(uint8_t _code = 0) : code(_code) {}
-  uint8_t code       { 0 };
-  bool is_sequential { false };
-};
-
-// An RDSString can be RadioText or a Program Service name.
+// An RDSString can be RadioText, Program Service name, or Enhanced RadioText.
 class RDSString {
  public:
+  enum class Encoding {
+    Basic, UCS2, UTF8
+  };
+  enum class Direction {
+    LTR, RTL
+  };
+
   explicit RDSString(size_t len = 8);
-  void set(size_t pos, RDSChar chr);
-  void set(size_t pos, RDSChar chr1, RDSChar chr2);
+  void set(size_t pos, uint8_t byte);
+  void set(size_t pos, uint8_t byte1, uint8_t byte2);
   size_t getReceivedLength() const;
   size_t getExpectedLength() const;
-  std::vector<RDSChar> getChars() const;
+  std::vector<uint8_t> getData() const;
   std::string str() const;
   std::string getLastCompleteString() const;
   std::string getLastCompleteString(size_t start, size_t len) const;
-  bool hasChars(size_t start, size_t len) const;
   bool isComplete() const;
   bool hasPreviouslyReceivedTerminators() const;
   void clear();
   void resize(size_t n);
+  void setEncoding(Encoding encoding);
+  void setDirection(Direction direction);
 
  private:
-  std::vector<RDSChar> chars_;
-  std::vector<RDSChar> last_complete_chars_;
-  size_t prev_pos_ { 0 };
-  std::string last_complete_string_;
+  Encoding encoding_{Encoding::Basic};
+  Direction direction_{Direction::LTR};
+  // Raw bytes.
+  std::vector<uint8_t> data_;
+  // Raw bytes.
+  std::vector<uint8_t> last_complete_data_;
+  size_t prev_pos_ {};
+  size_t sequential_length_ {};
+  // Decoded string.
+  std::string last_complete_string_{};
 };
 
 }  // namespace redsea

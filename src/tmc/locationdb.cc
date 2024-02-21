@@ -37,9 +37,9 @@ namespace tmc {
 
 namespace {
 
-std::string to_utf8(const std::string& input, iconvpp::converter* converter) {
+std::string to_utf8(const std::string& input, iconvpp::converter& converter) {
   std::string converted;
-  converter->convert(input, converted);
+  converter.convert(input, converted);
   return converted;
 }
 
@@ -85,7 +85,7 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
   for (CSVRow row : table.rows) {
     try {
       int nid = get_int(table, row, "NID");
-      locdb.names[nid] = to_utf8(get_string(table, row, "NAME"), &converter);
+      locdb.names[nid] = to_utf8(get_string(table, row, "NAME"), converter);
     } catch (const std::exception& e) {
       continue;
     }

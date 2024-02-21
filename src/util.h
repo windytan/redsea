@@ -17,10 +17,9 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
-#include <cstdint>
-
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <map>
 #include <numeric>
 #include <string>
@@ -31,7 +30,7 @@ namespace redsea {
 // extract N-bit integer from word, starting at starting_at from the right
 template<size_t N>
 uint16_t getBits(uint16_t word, size_t starting_at) {
-  static_assert(N <= 16, "");
+  static_assert(N > 0 && N <= 16, "");
   return (word >> starting_at) & ((1 << N) - 1);
 }
 
@@ -39,8 +38,13 @@ uint16_t getBits(uint16_t word, size_t starting_at) {
 // starting_at from the right
 template<size_t N>
 uint32_t getBits(uint16_t word1, uint16_t word2, size_t starting_at) {
-  static_assert(N <= 32, "");
+  static_assert(N > 0 && N <= 32, "");
   return (((word1 << 16) + word2) >> starting_at) & ((1 << N) - 1);
+}
+
+// extract boolean flag at bit position bit_pos
+inline bool getBool(uint16_t word, size_t bit_pos) {
+  return static_cast<bool>(getBits<1>(word, bit_pos));
 }
 
 std::string getHoursMinutesString(int hour, int minute);

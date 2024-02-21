@@ -185,7 +185,7 @@ std::string getAppNameString(uint16_t aid) {
     {0x4AB7, "ELECTRABEL-DSM 9"},
     {0x4BA2, "ELECTRABEL-DSM 5"},
     {0x4BD7, "RadioText+ (RT+)"},
-    {0x4BD8, "RadioText Plus / RT+for eRT"},
+    {0x4BD8, "RadioText Plus / RT+ for eRT"},
     {0x4C59, "CITIBUS 2"},
     {0x4D87, "Radio Commerce System (RCS)"},
     {0x4D95, "ELECTRABEL-DSM 16"},
