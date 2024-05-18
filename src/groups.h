@@ -82,6 +82,18 @@ class ProgramServiceName {
    RDSString text;
 };
 
+class LongPS {
+  public:
+   LongPS() : text(32) {
+    text.setEncoding(RDSString::Encoding::UTF8);
+   }
+   void update(size_t pos, uint8_t byte1, uint8_t byte2) {
+     text.set(pos, byte1, byte2);
+   }
+
+   RDSString text;
+};
+
 class RadioText {
  public:
   RadioText() : text(64) {}
@@ -203,6 +215,7 @@ class Station {
   void decodeType9A(const Group& group);
   void decodeType10A(const Group& group);
   void decodeType14(const Group& group);
+  void decodeType15A(const Group& group);
   void decodeType15B(const Group& group);
   void decodeODAGroup(const Group& group);
   void parseEnhancedRT(const Group& group);
@@ -213,6 +226,7 @@ class Station {
   Options options_;
   int which_channel_       { 0 };
   ProgramServiceName ps_;
+  LongPS long_ps_;
   RadioText radiotext_;
   RadioText ert_;
   PTYName ptyname_;

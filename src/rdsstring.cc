@@ -165,7 +165,7 @@ std::vector<uint8_t> RDSString::getData() const {
   const size_t len{getExpectedLength()};
   std::vector<uint8_t> result(len);
   for (size_t i = 0; i < len; i++)
-    result[i] = sequential_length_ > i && data_[i] != kStringTerminator ? data_[i] : kBlankSpace;
+    result[i] = sequential_length_ > i && data_[i] != kStringTerminator && data_[i] != 0x00 ? data_[i] : kBlankSpace;
 
   return result;
 }

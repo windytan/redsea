@@ -1,5 +1,12 @@
 # redsea changelog
 
+## HEAD
+
+* Add support for enhanced RadioText (eRT)
+* Add support for Long PS in Group 15A
+* Fix detection of invalid date/time (timestamps >2000 years ago)
+* Fix compiler warnings and other code cleanup
+
 ## 0.21 (2024-01-26)
 
 * Add support for decoding LTCC and LTECC in TMC (#80)

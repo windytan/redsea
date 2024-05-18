@@ -332,12 +332,13 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
     } else if (type.number == 9 && type.version == GroupType::Version::A) {
       decodeType9A(group);
 
+    } else if (type.number == 15 && type.version == GroupType::Version::A) {
+      decodeType15A(group);
+
     // ODA-only groups
     // 3B, 4B, 7B, 8B, 9B, 10B, 11A, 11B, 12A, 12B, 13B
     } else {
       decodeODAGroup(group);
-
-    // Not allowed by standard: 15A
     }
   }
 
@@ -953,6 +954,28 @@ void Station::decodeType14(const Group& group) {
           std::to_string(getBits<4>(group.getBlock2(), 0)));
       break;
   }
+}
+
+/* Group 15A: Long PS or ODA */
+// @note Based on captures and https://www.rds.org.uk/2010/Glossary-Of-Terms.htm
+void Station::decodeType15A(const Group& group) {
+  const uint16_t segment_address = getBits<3>(group.getBlock2(), 0);
+
+  if (group.has(BLOCK3)) {
+    long_ps_.update(segment_address * 4,
+              getBits<8>(group.getBlock3(), 8),
+              getBits<8>(group.getBlock3(), 0));
+  }
+  if (group.has(BLOCK4)) {
+    long_ps_.update(segment_address * 4 + 2,
+             getBits<8>(group.getBlock4(), 8),
+             getBits<8>(group.getBlock4(), 0));
+  }
+
+  if ((group.has(BLOCK3) || group.has(BLOCK4)) && long_ps_.text.isComplete())
+    json_["long_ps"] = rtrim(long_ps_.text.getLastCompleteString());
+  else if (options_.show_partial)
+    json_["partial_long_ps"] = long_ps_.text.str();
 }
 
 /* Group 15B: Fast basic tuning and switching information */
