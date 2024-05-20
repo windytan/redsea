@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-#include <json/json.h>
+#include <ext/json/json.h>
 
 #include "src/rdsstring.h"
 

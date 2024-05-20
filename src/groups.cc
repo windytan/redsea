@@ -27,7 +27,7 @@
 #include <sstream>
 #include <vector>
 
-#include <json/json.h>
+#include <ext/json/json.h>
 
 #include "config.h"
 #include "src/common.h"

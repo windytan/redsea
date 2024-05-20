@@ -29,7 +29,7 @@
 #include <string>
 #include <utility>
 
-#include <json/json.h>
+#include <ext/json/json.h>
 
 #include "src/common.h"
 #include "src/tables.h"

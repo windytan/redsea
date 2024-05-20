@@ -17,9 +17,8 @@
 #ifndef GROUPS_H_
 #define GROUPS_H_
 
-#include <chrono>
-
 #include <array>
+#include <chrono>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -27,7 +26,7 @@
 #include <string>
 #include <vector>
 
-#include <json/json.h>
+#include <ext/json/json.h>
 
 #include "config.h"
 #include "src/common.h"
