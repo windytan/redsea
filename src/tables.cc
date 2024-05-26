@@ -16,9 +16,9 @@
  */
 #include "src/tables.h"
 
-#include <cassert>
+#include <array>
 #include <map>
-#include <vector>
+#include <string>
 
 #include "src/common.h"
 
@@ -27,7 +27,7 @@ namespace redsea {
 // Program Type names (RDS)
 // EN 50067:1998, Annex F (pp. 77-78)
 std::string getPTYNameString(uint16_t pty) {
-  static const std::vector<std::string> pty_names({
+  const std::array<std::string, 64> pty_names{
     "No PTY",         "News",            "Current affairs",       "Information",
     "Sport",          "Education",       "Drama",                 "Culture",
     "Science",        "Varied",          "Pop music",             "Rock music",
@@ -35,15 +35,15 @@ std::string getPTYNameString(uint16_t pty) {
     "Weather",        "Finance",         "Children's programmes", "Social affairs",
     "Religion",       "Phone-in",        "Travel",                "Leisure",
     "Jazz music",     "Country music",   "National music",        "Oldies music",
-    "Folk music",     "Documentary",     "Alarm test",            "Alarm" });
+    "Folk music",     "Documentary",     "Alarm test",            "Alarm" };
 
-  return pty_names[pty];
+  return pty < pty_names.size() ? pty_names[pty] : "Unknown";
 }
 
 // Program Type names (U.S. / RBDS)
 // U.S. RBDS Standard, Annex F (pp. 95-96)
 std::string getPTYNameStringRBDS(uint16_t pty) {
-  static const std::vector<std::string> pty_names_rbds({
+  const std::array<std::string, 64> pty_names_rbds{
     "No PTY",           "News",                  "Information",    "Sports",
     "Talk",             "Rock",                  "Classic rock",   "Adult hits",
     "Soft rock",        "Top 40",                "Country",        "Oldies",
@@ -51,16 +51,16 @@ std::string getPTYNameStringRBDS(uint16_t pty) {
     "Rhythm and blues", "Soft rhythm and blues", "Language",       "Religious music",
     "Religious talk",   "Personality",           "Public",         "College",
     "Spanish talk",     "Spanish music",         "Hip hop",        "",
-    "",                 "Weather",               "Emergency test", "Emergency" });
+    "",                 "Weather",               "Emergency test", "Emergency" };
 
-  return pty_names_rbds[pty];
+  return pty < pty_names_rbds.size() ? pty_names_rbds[pty] : "Unknown";
 }
 
 // 2-letter country codes
 // EN 50067:1998, Annex D, Table D.1 (p. 71)
 // RDS Forum R08/008_7, Table D.2 (p. 75)
 std::string getCountryString(uint16_t cc, uint16_t ecc) {
-  static const std::map<uint16_t, std::vector<std::string>> country_codes({
+  const std::map<uint16_t, std::array<std::string, 15>> country_codes{
     {0xA0, {"us", "us", "us", "us", "us", "us", "us", "us",
             "us", "us", "us", "--", "us", "us", "--"}},
     {0xA1, {"--", "--", "--", "--", "--", "--", "--", "--",
@@ -100,21 +100,16 @@ std::string getCountryString(uint16_t cc, uint16_t ecc) {
     {0xF2, {"kw", "qa", "kh", "ws", "in", "mo", "vn", "ph",
             "jp", "sg", "mv", "id", "ae", "np", "vu"}},
     {0xF3, {"la", "th", "to", "--", "--", "--", "--", "--",
-            "pg", "--", "ye", "--", "--", "fm", "mn"}} });
+            "pg", "--", "ye", "--", "--", "fm", "mn"}} };
 
-  std::string result("--");
-
-  if (country_codes.find(ecc) != country_codes.end() && cc > 0) {
-    result = country_codes.at(ecc).at(cc - 1);
-  }
-
-  return result;
+  return (country_codes.find(ecc) != country_codes.end() && cc > 0) ?
+      country_codes.at(ecc).at(cc - 1) : "--";
 }
 
 // Program languages
 // EN 50067:1998, Annex J (p. 84)
 std::string getLanguageString(uint16_t code) {
-  static const std::vector<std::string> languages({
+  const std::array<std::string, 128> languages{
     "Unknown",     "Albanian",      "Breton",     "Catalan",
     "Croatian",    "Welsh",         "Czech",      "Danish",
     "German",      "English",       "Spanish",    "Esperanto",
@@ -146,13 +141,9 @@ std::string getLanguageString(uint16_t code) {
     "Greek",       "Georgian",      "Fulani",     "Dari",
     "Churash",     "Chinese",       "Burmese",    "Bulgarian",
     "Bengali",     "Belorussian",   "Bambora",    "Azerbaijan",
-    "Assamese",    "Armenian",      "Arabic",     "Amharic" });
+    "Assamese",    "Armenian",      "Arabic",     "Amharic" };
 
-  std::string result("");
-  if (code < languages.size())
-    result = languages[code];
-
-  return result;
+  return code < languages.size() ? languages[code] : "";
 }
 
 // Open Data Application names
@@ -160,7 +151,7 @@ std::string getLanguageString(uint16_t code) {
 // RDS Forum R17/032_1 (2017-07-20)
 // DHL 7/14/2020
 std::string getAppNameString(uint16_t aid) {
-  static const std::map<uint16_t, std::string> oda_apps({
+  const std::map<uint16_t, std::string> oda_apps{
     {0x0000, "None"},
     {0x0093, "Cross referencing DAB within RDS"},
     {0x0BCB, "Leisure & Practical Info for Drivers"},
@@ -225,20 +216,15 @@ std::string getAppNameString(uint16_t aid) {
     {0xE5D7, "ELECTRABEL-DSM 6"},
     {0xE911, "EAS open protocol"},
     {0xFF7F, "RFT: Station logo"},
-    {0xFF80, "RFT+ (work title)"} });
+    {0xFF80, "RFT+ (work title)"} };
 
-  std::string result("(Unknown)");
-  if (oda_apps.find(aid) != oda_apps.end()) {
-    result = oda_apps.at(aid);
-  }
-
-  return result;
+  return oda_apps.find(aid) != oda_apps.end() ? oda_apps.at(aid) : "(Unknown)";
 }
 
 // RadioText+ content types
 // RDS Forum R06/040_1 (2006-07-21)
 std::string getRTPlusContentTypeString(uint16_t content_type) {
-  static const std::vector<std::string> content_type_names({
+  const std::array<std::string, 66> content_type_names{
       "dummy_class",          "item.title",         "item.album",
       "item.tracknumber",     "item.artist",        "item.composition",
       "item.movement",        "item.conductor",     "item.composer",
@@ -260,26 +246,25 @@ std::string getRTPlusContentTypeString(uint16_t content_type) {
       "unknown",              "unknown",            "unknown",
       "unknown",              "unknown",            "place",
       "appointment",          "identifier",         "purchase",
-      "get_data" });
+      "get_data" };
 
-  return (content_type < content_type_names.size() ?
-      content_type_names[content_type] : "unknown");
+  return content_type < content_type_names.size() ?
+      content_type_names[content_type] : "unknown";
 }
 
 // Decoder Identification (DI) and Dynamic PTY Indicator (PTYI) codes
 // EN 50067:1998, 3.2.1.5 (p. 41)
 std::string getDICodeString(uint16_t di) {
-  static const std::vector<std::string> di_codes({
-      "dynamic_pty", "compressed", "artificial_head", "stereo" });
+  const std::array<std::string, 4> di_codes{
+      "dynamic_pty", "compressed", "artificial_head", "stereo"};
 
-  assert(di < di_codes.size());
-  return di_codes[di];
+  return di < di_codes.size() ? di_codes[di] : "unknown";
 }
 
 // Back-calculate callsign for a North American (RBDS) station
 // NRSC-4-B (2011), page 18, D.7
 std::string getCallsignFromPI(uint16_t pi) {
-  static const std::map<uint16_t, std::string> three_letter_codes({
+  const std::map<uint16_t, std::string> three_letter_codes{
       {0x99A5, "KBW"}, {0x9992, "KOY"}, {0x9978, "WHO"}, {0x99A6, "KCY"},
       {0x9993, "KPQ"}, {0x999C, "WHP"}, {0x9990, "KDB"}, {0x9964, "KQV"},
       {0x999D, "WIL"}, {0x99A7, "KDF"}, {0x9994, "KSD"}, {0x997A, "WIP"},
@@ -297,16 +282,16 @@ std::string getCallsignFromPI(uint16_t pi) {
       {0x99B9, "WRC"}, {0x995D, "KMA"}, {0x9973, "WGR"}, {0x99A2, "WRR"},
       {0x995E, "KMJ"}, {0x999B, "WGY"}, {0x99A3, "WSB"}, {0x995F, "KNX"},
       {0x9975, "WHA"}, {0x99A4, "WSM"}, {0x9960, "KOA"}, {0x9976, "WHB"},
-      {0x9988, "WWJ"}, {0x99AB, "KOB"}, {0x9977, "WHK"}, {0x9989, "WWL"} });
+      {0x9988, "WWJ"}, {0x99AB, "KOB"}, {0x9977, "WHK"}, {0x9989, "WWL"} };
 
-  static const std::map<uint16_t, std::string> linked_station_codes({
+  const std::map<uint16_t, std::string> linked_station_codes{
       {0xB001, "NPR-1"},
       {0xB002, "CBC English - Radio One"}, {0xB003, "CBC English - Radio Two"},
       {0xB004, "CBC French => Radio-Canada - Première Chaîne"},
       {0xB005, "CBC French => Radio-Canada - Espace Musique"},
       {0xB006, "CBC"},   {0xB007, "CBC"},   {0xB008, "CBC"},   {0xB009, "CBC"},
       {0xB00A, "NPR-2"}, {0xB00B, "NPR-3"}, {0xB00C, "NPR-4"},
-      {0xB00D, "NPR-5"}, {0xB00E, "NPR-6"} });
+      {0xB00D, "NPR-5"}, {0xB00E, "NPR-6"} };
 
   // Exceptions for zero nybbles
 
@@ -348,7 +333,7 @@ std::string getCallsignFromPI(uint16_t pi) {
     four_letters[1] = 0x41 + (pi / 676) % 26;
     four_letters[2] = 0x41 + (pi / 26) % 26;
     four_letters[3] = 0x41 + pi % 26;
-    callsign = std::string(four_letters);
+    callsign = std::string{four_letters};
   }
 
   return callsign;

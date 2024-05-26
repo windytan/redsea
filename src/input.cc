@@ -96,7 +96,7 @@ void MPXReader::fillBuffer() {
   if (num_read_ < chunk_size_)
     is_eof_ = true;
 
-  buffer_.used_size = size_t(num_read_);
+  buffer_.used_size = static_cast<size_t>(num_read_);
 
   if (feed_thru_)
     sf_write_float(outfile_, buffer_.data.data(), num_read_);
@@ -188,7 +188,7 @@ Group readHexGroup(const Options& options) {
           break;
         }
 
-        std::string single = line.substr(0, 1);
+        const std::string single = line.substr(0, 1);
 
         if (single != " ") {
           try {
@@ -248,7 +248,7 @@ Group readTEFGroup(const Options& options) {
         rdsErr = (data & 0xFF);
       } catch (std::exception& e) {
       }
-      for (auto blockNum : { BLOCK2, BLOCK3, BLOCK4 }) {
+      for (const auto blockNum : { BLOCK2, BLOCK3, BLOCK4 }) {
         Block block;
         block.data = (data >> 8) >> (16 * (3 - blockNum));
         block.is_received = (rdsErr >> (2 * (3 - blockNum))) == 0;

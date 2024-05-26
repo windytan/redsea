@@ -20,9 +20,6 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <vector>
-
-#include <ext/json/json.h>
 
 #include "src/rdsstring.h"
 

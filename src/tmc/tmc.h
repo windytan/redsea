@@ -18,7 +18,7 @@
 #define TMC_TMC_H_
 
 #include <array>
-
+#include <cstdint>
 #include <iostream>
 #include <map>
 #include <string>
@@ -29,7 +29,6 @@
 #include "src/common.h"
 #include "src/options.h"
 #include "src/rdsstring.h"
-#include "src/tmc/locationdb.h"
 #include "src/util.h"
 
 namespace redsea {

@@ -24,7 +24,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include <ext/json/json.h>
 
@@ -156,7 +155,7 @@ class Pager {
 
 class Group {
  public:
-  Group();
+  Group() = default;
 
   uint16_t getBlock(eBlockNumber block_num) const;
   uint16_t getBlock1() const;

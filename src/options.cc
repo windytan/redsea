@@ -27,7 +27,7 @@ namespace redsea {
 Options getOptions(int argc, char** argv) {
   Options options;
 
-  static struct option long_options[] = {
+  constexpr struct option long_options[] = {
     { "input-bits",    no_argument, 0, 'b'},
     { "channels",      1,           0, 'c'},
     { "feed-through",  no_argument, 0, 'e'},

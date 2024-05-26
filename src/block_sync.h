@@ -17,8 +17,7 @@
 #ifndef BLOCK_SYNC_H_
 #define BLOCK_SYNC_H_
 
-#include <map>
-#include <vector>
+#include <cstdint>
 
 #include "src/groups.h"
 #include "src/options.h"
@@ -71,6 +70,7 @@ class BlockStream {
   Group    ready_group_;
   bool     has_group_ready_           { false };
   size_t   num_bits_since_sync_lost_  { 0 };
+  SyncPulseBuffer sync_buffer_;
 };
 
 } // namespace redsea

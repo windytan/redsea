@@ -16,6 +16,7 @@
  */
 #include "src/groups.h"
 
+#include <array>
 #include <cmath>
 #include <ctime>
 #include <iomanip>
@@ -74,9 +75,6 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
  * A single RDS group transmitted as four 16-bit blocks.
  *
  */
-Group::Group() {
-}
-
 uint16_t Group::getBlock(eBlockNumber block_num) const {
   return blocks_[block_num].data;
 }
@@ -247,7 +245,7 @@ void Station::updateAndPrint(const Group& group, std::ostream* stream) {
   json_.clear();
   json_["*SORT00*pi"] = getPrefixedHexString(getPI(), 4);
   if (options_.rbds) {
-    std::string callsign = getCallsignFromPI(getPI());
+    const std::string callsign{getCallsignFromPI(getPI())};
     if (!callsign.empty()) {
       if ((getPI() & 0xF000) == 0x1000)
         json_["*SORT02*callsign_uncertain"] = callsign;
@@ -744,7 +742,7 @@ void Station::decodeType5(const Group& group) {
   json_["transparent_data"]["address"] = address;
 
   if (group.getType().version == GroupType::Version::A) {
-    const std::vector<uint16_t> data = {
+    const std::array<uint16_t, 4> data{
       getBits<8>(group.getBlock3(), 8),
       getBits<8>(group.getBlock3(), 0),
       getBits<8>(group.getBlock4(), 8),
@@ -774,7 +772,7 @@ void Station::decodeType5(const Group& group) {
 
     json_["transparent_data"]["as_text"] = decoded_text.str();
   } else {
-    const std::vector<int> data = {
+    const std::array<int, 2> data{
       getBits<8>(group.getBlock4(), 8),
       getBits<8>(group.getBlock4(), 0)};
 
@@ -1101,14 +1099,14 @@ void Station::parseDAB(const Group& group) {
     // Ensemble table
 
     const int mode = getBits<2>(group.getBlock2(), 2);
-    const std::vector<std::string> modes({"unspecified", "I", "II or III", "IV"});
+    const std::array<std::string, 4> modes{"unspecified", "I", "II or III", "IV"};
     json_["dab"]["mode"] = modes[mode];
 
     const int freq = 16 * getBits<18>(group.getBlock2(), group.getBlock3(), 0);
 
     json_["dab"]["kilohertz"] = freq;
 
-    static const std::map<int, std::string> dab_channels({
+    const std::map<int, std::string> dab_channels({
       { 174'928,  "5A"}, { 176'640,  "5B"}, { 178'352,  "5C"}, { 180'064,  "5D"},
       { 181'936,  "6A"}, { 183'648,  "6B"}, { 185'360,  "6C"}, { 187'072,  "6D"},
       { 188'928,  "7A"}, { 190'640,  "7B"}, { 192'352,  "7C"}, { 194'064,  "7D"},

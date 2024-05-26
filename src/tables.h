@@ -17,6 +17,7 @@
 #ifndef TABLES_H_
 #define TABLES_H_
 
+#include <cstdint>
 #include <string>
 
 #include "src/common.h"

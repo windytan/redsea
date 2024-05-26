@@ -17,10 +17,9 @@
 #ifndef INPUT_H_
 #define INPUT_H_
 
+#include <array>
 #include <cstdint>
 #include <exception>
-#include <array>
-#include <vector>
 
 #include <sndfile.h>
 

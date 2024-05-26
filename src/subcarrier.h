@@ -17,10 +17,9 @@
 #ifndef SUBCARRIER_H_
 #define SUBCARRIER_H_
 
-#include <deque>
+#include <array>
 #include <complex>
 #include <utility>
-#include <vector>
 
 #include "src/common.h"
 #include "src/input.h"
@@ -31,13 +30,13 @@ namespace redsea {
 
 class BiphaseDecoder {
  public:
-  BiphaseDecoder();
+  BiphaseDecoder() = default;
   ~BiphaseDecoder() = default;
   Maybe<bool> push(std::complex<float> psk_symbol);
 
  private:
   std::complex<float> prev_psk_symbol_ { 0.0f, 0.0f };
-  std::vector<float> clock_history_;
+  std::array<float, 128> clock_history_;
   unsigned clock_                      { 0 };
   unsigned clock_polarity_             { 0 };
 };

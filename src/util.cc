@@ -130,8 +130,8 @@ bool operator< (const CarrierFrequency &f1,
 }
 
 void AltFreqList::insert(uint16_t af_code) {
-  CarrierFrequency frequency(af_code, lf_mf_follows_ ? CarrierFrequency::Band::LF_MF :
-                                                       CarrierFrequency::Band::FM);
+  const CarrierFrequency frequency(af_code, lf_mf_follows_ ? CarrierFrequency::Band::LF_MF :
+                                                             CarrierFrequency::Band::FM);
   lf_mf_follows_ = false;
 
   // AF code encodes a frequency
@@ -211,18 +211,6 @@ std::vector<std::string> splitLine(const std::string& line, char delimiter) {
   return result;
 }
 
-std::vector<std::vector<std::string>> readCSV(const std::vector<std::string>& csvdata,
-                                              char delimiter) {
-  std::vector<std::vector<std::string>> lines;
-
-  std::transform(csvdata.cbegin(), csvdata.cend(), std::back_inserter(lines),
-                 [&](const std::string& line) {
-                   return splitLine(line, delimiter);
-                 });
-
-  return lines;
-}
-
 std::vector<std::vector<std::string>> readCSV(const std::string& filename,
                                               char delimiter) {
   std::vector<std::vector<std::string>> lines;
@@ -238,37 +226,12 @@ std::vector<std::vector<std::string>> readCSV(const std::string& filename,
     line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
-    std::vector<std::string> fields = splitLine(line, delimiter);
-    lines.push_back(fields);
+    lines.push_back(splitLine(line, delimiter));
   }
 
   in.close();
 
   return lines;
-}
-
-CSVTable readCSVWithTitles(const std::vector<std::string>& csvdata,
-                           char delimiter) {
-  CSVTable table;
-
-  bool is_title_row = true;
-
-  for (std::string line : csvdata) {
-    line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
-    line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-
-    const std::vector<std::string> fields = splitLine(line, delimiter);
-    if (is_title_row) {
-      for (size_t i = 0; i < fields.size(); i++)
-        table.titles[fields[i]] = i;
-      is_title_row = false;
-    } else {
-      if (fields.size() <= table.titles.size())
-        table.rows.push_back(fields);
-    }
-  }
-
-  return table;
 }
 
 CSVTable readCSVWithTitles(const std::string& filename, char delimiter) {
@@ -286,7 +249,7 @@ CSVTable readCSVWithTitles(const std::string& filename, char delimiter) {
     in.close();
   }
 
-  return readCSVWithTitles(lines, delimiter);
+  return readCSVContainerWithTitles(lines, delimiter);
 }
 
 std::string rtrim(std::string s) {

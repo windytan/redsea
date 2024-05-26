@@ -16,6 +16,7 @@
  */
 #include "src/tmc/tmc.h"
 
+#include <array>
 #include <climits>
 #include <deque>
 #include <fstream>
@@ -44,12 +45,12 @@ std::map<uint16_t, Event> g_event_data;
 std::map<uint16_t, std::string> g_supplementary_data;
 std::map<uint16_t, LocationDatabase> g_location_databases;
 
-uint16_t popBits(std::deque<int>* bit_deque, size_t len) {
+uint16_t popBits(std::deque<int>& bit_deque, size_t len) {
   uint16_t result = 0x00;
-  if (bit_deque->size() >= len) {
+  if (bit_deque.size() >= len) {
     for (size_t i = 0; i < len; i++) {
-      result = (result << 1) | bit_deque->at(0);
-      bit_deque->pop_front();
+      result = (result << 1) | bit_deque.at(0);
+      bit_deque.pop_front();
     }
   }
   return result;
@@ -64,8 +65,8 @@ uint16_t rotl16(uint16_t value, unsigned int count) {
 // label, field_data (ISO 14819-1: 5.5)
 std::vector<FreeformField> getFreeformFields(
     const std::array<MessagePart, 5>& parts) {
-  static constexpr std::array<size_t, 16> field_size(
-      {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0});
+  constexpr std::array<size_t, 16> field_size
+      {3, 3, 5, 5, 5, 8, 8, 8, 8, 11, 16, 16, 16, 16, 0, 0};
 
   const uint16_t second_gsi = getBits<2>(parts[1].data[0], 12);
 
@@ -87,11 +88,11 @@ std::vector<FreeformField> getFreeformFields(
   // Separate freeform data into fields
   std::vector<FreeformField> result;
   while (freeform_data_bits.size() > 4) {
-    const uint16_t label = popBits(&freeform_data_bits, 4);
+    const uint16_t label = popBits(freeform_data_bits, 4);
     if (freeform_data_bits.size() < field_size.at(label))
       break;
 
-    const uint16_t field_data = popBits(&freeform_data_bits, field_size.at(label));
+    const uint16_t field_data = popBits(freeform_data_bits, field_size.at(label));
 
     if (label == 0x00 && field_data == 0x00)
       break;
@@ -137,12 +138,12 @@ std::string getTimeString(uint16_t field_data) {
   } else {
     const uint16_t month      = (field_data - 232) / 2;
     const bool     end_or_mid = (field_data - 232) % 2;
-    static const std::vector<std::string> month_names({
+    const std::array<std::string, 12> month_names{
         "January",   "February", "March",    "April",
         "May",       "June",     "July",     "August",
-        "September", "October",  "November", "December"});
+        "September", "October",  "November", "December"};
     if (month < 12)
-      ss << (end_or_mid ? "end of " : "mid-") + month_names.at(month);
+      ss << (end_or_mid ? "end of " : "mid-") + month_names[month];
   }
 
   return ss.str();
@@ -305,7 +306,7 @@ std::string ucfirst(std::string in) {
 }
 
 void loadEventData() {
-  const CSVTable table = readCSVWithTitles(tmc_data_events, ';');
+  const CSVTable table{readCSVContainerWithTitles(tmc_data_events, ';')};
   for (const CSVRow& row : table.rows) {
     try {
       const uint16_t code = get_uint16(table, row, "Code");
@@ -350,7 +351,7 @@ void loadEventData() {
     }
   }
 
-  for (const std::vector<std::string>& fields : readCSV(tmc_data_suppl, ';')) {
+  for (const std::vector<std::string>& fields : readCSVContainer(tmc_data_suppl, ';')) {
     if (fields.size() < 2)
       continue;
 

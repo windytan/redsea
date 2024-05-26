@@ -33,16 +33,16 @@ namespace redsea {
 
 namespace {
 
-constexpr float kCarrierFrequency_Hz  = 57000.0f;
-constexpr int   kSamplesPerSymbol     = 3;
-constexpr float kAGCBandwidth_Hz      = 500.0f;
-constexpr float kAGCInitialGain       = 0.08f;
-constexpr float kLowpassCutoff_Hz     = 2400.0f;
-constexpr float kSymsyncBandwidth_Hz  = 2200.0f;
-constexpr int   kSymsyncDelay         = 3;
-constexpr float kSymsyncBeta          = 0.8f;
-constexpr float kPLLBandwidth_Hz      = 0.03f;
-constexpr float kPLLMultiplier        = 12.0f;
+constexpr float kCarrierFrequency_Hz = 57000.0f;
+constexpr int kSamplesPerSymbol      = 3;
+constexpr float kAGCBandwidth_Hz     = 500.0f;
+constexpr float kAGCInitialGain      = 0.08f;
+constexpr float kLowpassCutoff_Hz    = 2400.0f;
+constexpr float kSymsyncBandwidth_Hz = 2200.0f;
+constexpr int kSymsyncDelay          = 3;
+constexpr float kSymsyncBeta         = 0.8f;
+constexpr float kPLLBandwidth_Hz     = 0.03f;
+constexpr float kPLLMultiplier       = 12.0f;
 
 constexpr float hertz2step(float Hz) {
   return Hz * 2.0f * static_cast<float>(M_PI) / kTargetSampleRate_Hz;
@@ -50,20 +50,15 @@ constexpr float hertz2step(float Hz) {
 
 }  // namespace
 
-BiphaseDecoder::BiphaseDecoder() : clock_history_(128) {
-}
-
 // At correct clock phase, evaluate symbol in
 // constellation {-1,0} => 0, {1,0} => 1
-Maybe<bool> BiphaseDecoder::push(
-    std::complex<float> psk_symbol) {
-
+Maybe<bool> BiphaseDecoder::push(std::complex<float> psk_symbol) {
   Maybe<bool> result;
 
   const auto biphase_symbol = (psk_symbol - prev_psk_symbol_) * 0.5f;
-  result.data = biphase_symbol.real() >= 0.0f;
-  result.valid = (clock_ % 2 == clock_polarity_);
-  prev_psk_symbol_ = psk_symbol;
+  result.data               = biphase_symbol.real() >= 0.0f;
+  result.valid              = (clock_ % 2 == clock_polarity_);
+  prev_psk_symbol_          = psk_symbol;
 
   clock_history_[clock_] = std::fabs(biphase_symbol.real());
   clock_++;
@@ -81,8 +76,10 @@ Maybe<bool> BiphaseDecoder::push(
       clock_history_[i] = 0.f;
     }
 
-    if      (a > b) clock_polarity_ = 0;
-    else if (b > a) clock_polarity_ = 1;
+    if (a > b)
+      clock_polarity_ = 0;
+    else if (b > a)
+      clock_polarity_ = 1;
 
     clock_ = 0;
   }
@@ -92,19 +89,18 @@ Maybe<bool> BiphaseDecoder::push(
 
 unsigned DeltaDecoder::decode(unsigned d) {
   const unsigned bit = (d != prev_);
-  prev_ = d;
+  prev_              = d;
   return bit;
 }
 
-Subcarrier::Subcarrier(const Options& options) :
-    resample_ratio_(kTargetSampleRate_Hz / options.samplerate),
-    fir_lpf_(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
-    agc_(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain),
-    oscillator_(LIQUID_NCO, hertz2step(kCarrierFrequency_Hz)),
-    symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay,
-             kSymsyncBeta, 32),
-    modem_(LIQUID_MODEM_PSK2),
-    resampler_(resample_ratio_, 13) {
+Subcarrier::Subcarrier(const Options& options)
+    : resample_ratio_(kTargetSampleRate_Hz / options.samplerate),
+      fir_lpf_(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
+      agc_(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain),
+      oscillator_(LIQUID_NCO, hertz2step(kCarrierFrequency_Hz)),
+      symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay, kSymsyncBeta, 32),
+      modem_(LIQUID_MODEM_PSK2),
+      resampler_(resample_ratio_, 13) {
   symsync_.setBandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
   symsync_.setOutputRate(1);
   oscillator_.setPLLBandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
@@ -135,8 +131,8 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
 
   MPXBuffer<>& buf = (resample_ratio_ == 1.0f ? chunk : resampled_buffer_);
 
-  constexpr int decimate_ratio = static_cast<int>(kTargetSampleRate_Hz / kBitsPerSecond / 2 /
-                                                  kSamplesPerSymbol);
+  constexpr int decimate_ratio =
+      static_cast<int>(kTargetSampleRate_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol);
 
   BitBuffer bitbuffer;
   bitbuffer.time_received = chunk.time_received;
@@ -157,8 +153,8 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
         // Modem here is only used to track PLL phase error
         modem_.demodulate(symbol.data);
 
-        const float phase_error = std::min(std::max(modem_.getPhaseError(),
-                                           -static_cast<float>(M_PI)), static_cast<float>(M_PI));
+        const float phase_error = std::min(
+            std::max(modem_.getPhaseError(), -static_cast<float>(M_PI)), static_cast<float>(M_PI));
         oscillator_.stepPLL(phase_error * kPLLMultiplier);
 
         const auto biphase = biphase_decoder_.push(symbol.data);

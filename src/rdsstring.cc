@@ -154,10 +154,10 @@ std::string RDSString::str() const {
           return s + getRDSCharString(b); });
 
     case Encoding::UCS2:
-      return decodeUCS2(std::string((const char*)bytes.data(), bytes.size()));
+      return decodeUCS2(std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size()));
 
     case Encoding::UTF8:
-      return std::string((const char*)bytes.data(), bytes.size());
+      return std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
   }
 
   return "";
