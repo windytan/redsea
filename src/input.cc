@@ -16,8 +16,8 @@
  */
 #include "src/input.h"
 
-#include <cassert>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 #include "src/groups.h"
@@ -61,14 +61,13 @@ void MPXReader::init(const Options& options) {
               sf_error_number(sf_error(file_)) << '\n';
     is_error_ = true;
   } else if (sfinfo_.samplerate < kMinimumSampleRate_Hz) {
-    std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
+    std::cerr << "error: sample rate is " << sfinfo_.samplerate << ", must be " << kMinimumSampleRate_Hz
               << " Hz or higher\n";
     is_error_ = true;
   } else {
-    assert(num_channels_ < static_cast<int>(buffer_.data.size()));
     chunk_size_ = (kInputChunkSize / num_channels_) * num_channels_;
 
-    is_eof_ = false;
+    is_eof_ = (num_channels_ >= static_cast<int>(buffer_.data.size()));
   }
 }
 
@@ -102,8 +101,12 @@ void MPXReader::fillBuffer() {
     sf_write_float(outfile_, buffer_.data.data(), num_read_);
 }
 
+// @throws logic_error if channel is out-of-bounds
 MPXBuffer<>& MPXReader::readChunk(int channel) {
-  assert(channel >= 0 && channel < num_channels_);
+  if (channel < 0 || channel >= num_channels_) {
+    throw std::logic_error("Tried to access channel " + std::to_string(channel) + " of " +
+                           std::to_string(num_channels_) + "-channel signal");
+  }
 
   if (is_eof_)
     return buffer_;

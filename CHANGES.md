@@ -9,6 +9,10 @@
 * Add support for Long PS in Group 15A (#104)
 * Fix detection of invalid date/time (timestamps >2000 years ago)
 * Fix compiler warnings and other code cleanup
+* UX changes:
+* * Print a warning if the raw MPX input sample rate is not specified
+* * Improve error reporting in general
+* * Add `--output hex` (same as `--output-hex`) to mirror `--input hex`
 
 ## 0.21 (2024-01-26)
 

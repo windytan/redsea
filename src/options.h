@@ -43,7 +43,8 @@ struct Options {
   bool timestamp     { false };
   bool bler          { false };
   bool show_raw      { false };
-  float samplerate   { kTargetSampleRate_Hz };
+  bool rate_defined  { false };
+  float samplerate   {};
   int num_channels   { 1 };
   InputType input_type   { InputType::MPX_stdin };
   OutputType output_type { OutputType::JSON };

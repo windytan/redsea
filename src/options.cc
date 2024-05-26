@@ -87,7 +87,7 @@ Options getOptions(int argc, char** argv) {
         } else if (input_type == "bits") {
           options.input_type = InputType::ASCIIbits;
         } else {
-          std::cerr << "error: unknown input format" << std::endl;
+          std::cerr << "error: unknown input format '" << input_type << "'" << std::endl;
           options.exit_failure = true;
         }
         break;
@@ -109,10 +109,11 @@ Options getOptions(int argc, char** argv) {
         }
         options.samplerate = static_cast<float>(std::atof(optarg) * factor);
         if (options.samplerate < kMinimumSampleRate_Hz) {
-          std::cerr << "error: sample rate must be " << kMinimumSampleRate_Hz
+          std::cerr << "error: sample rate set to " << options.samplerate << ", must be " << kMinimumSampleRate_Hz
                     << " Hz or higher\n";
           options.exit_failure = true;
         }
+        options.rate_defined = true;
         break;
       }
       case 'R':
@@ -152,7 +153,7 @@ Options getOptions(int argc, char** argv) {
 
   if (options.feed_thru && options.input_type == InputType::MPX_sndfile) {
     std::cerr << "error: feed-thru is not supported for audio file inputs"
-      << '\n';
+              << '\n';
     options.exit_failure = true;
   }
 
@@ -161,6 +162,15 @@ Options getOptions(int argc, char** argv) {
     std::cerr << "error: multi-channel input is only supported for MPX signals"
               << '\n';
     options.exit_failure = true;
+  }
+
+  const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin &&
+      !options.print_usage && !options.exit_failure && !options.exit_success};
+
+  if (assuming_raw_mpx && !options.rate_defined) {
+    std::cerr << "{\"warning\":\"raw MPX sample rate not defined, assuming " << kTargetSampleRate_Hz << " Hz\"}"
+              << '\n';
+    options.samplerate = kTargetSampleRate_Hz;
   }
 
   return options;

@@ -16,8 +16,8 @@
  */
 #include "src/liquid_wrappers.h"
 
-#include <cassert>
 #include <complex>
+#include <stdexcept>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -130,9 +130,6 @@ void SymSync::setOutputRate(unsigned r) {
 Maybe<std::complex<float>> SymSync::execute(std::complex<float>& in) {
   unsigned n_out = 0;
   symsync_crcf_execute(object_, &in, 1, out_.data(), &n_out);
-
-  // assert(n_out <= 1);
-
   return Maybe<std::complex<float>> { out_[0], n_out == 1 };
 }
 
@@ -177,7 +174,9 @@ float Modem::getPhaseError() {
 
 Resampler::Resampler(float ratio, unsigned int length) :
     object_(resamp_rrrf_create(ratio, length, 0.47f, 60.0f, 32)) {
-  assert(ratio <= 2.0f);
+  if (ratio > 2.f) {
+    throw std::runtime_error("error: Can't support this sample rate");
+  }
 }
 
 Resampler::~Resampler() {
