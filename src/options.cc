@@ -36,6 +36,7 @@ Options getOptions(int argc, char** argv) {
     { "input-hex",     no_argument, 0, 'h'},
     { "input",         1,           0, 'i'},
     { "loctable",      1,           0, 'l'},
+    { "output",        1,           0, 'o'},
     { "show-partial",  no_argument, 0, 'p'},
     { "samplerate",    1,           0, 'r'},
     { "show-raw",      no_argument, 0, 'R'},
@@ -49,7 +50,7 @@ Options getOptions(int argc, char** argv) {
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:pr:Rt:uvx",
+  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rt:uvx",
                                     long_options, &option_index)) >= 0) {
     switch (option_char) {
       case 'b': // For backwards compatibility
@@ -92,7 +93,19 @@ Options getOptions(int argc, char** argv) {
         }
         break;
       }
-      case 'x':
+      case 'o': {
+        const std::string output_type(optarg);
+        if (output_type == "hex") {
+          options.output_type = OutputType::Hex;
+        } else if (output_type == "json") {
+          options.output_type = OutputType::JSON;
+        } else {
+          std::cerr << "error: unknown output format '" << output_type << "'" << std::endl;
+          options.exit_failure = true;
+        }
+        break;
+      }
+      case 'x': // For backwards compatibility
         options.output_type = OutputType::Hex;
         break;
       case 'p':

@@ -2,17 +2,21 @@
 
 ## HEAD
 
-* Migrate build system from autotools to meson (#90)
-* Add GitHub Workflows CI builds for macOS and Windows (MSYS2/MinGW + Cygwin)
-* Remove unmaintained build options for non-liquid, non-TMC builds
-* Add support for enhanced RadioText (eRT)
+* Maintainability changes:
+  * Migrate build system from autotools to meson (#90)
+  * Add GitHub Workflows CI builds for macOS and Windows via MSYS2/MinGW + Cygwin
+  * Add basic Catch2 unit tests (#84)
+  * Add .clang-format (not automated)
+  * Remove unmaintained build options for non-liquid, non-TMC builds
+  * Fix compiler warnings and other code cleanup
+* UX changes:
+  * Breaking: Print a warning to stderr if the raw MPX input sample rate is
+    not specified
+  * Improve error reporting in general
+  * Add `--output hex` (same as `--output-hex`) to mirror `--input hex`
+* Add support for Enhanced RadioText (eRT)
 * Add support for Long PS in Group 15A (#104)
 * Fix detection of invalid date/time (timestamps >2000 years ago)
-* Fix compiler warnings and other code cleanup
-* UX changes:
-* * Print a warning if the raw MPX input sample rate is not specified
-* * Improve error reporting in general
-* * Add `--output hex` (same as `--output-hex`) to mirror `--input hex`
 * Noise resistance improvements:
   * Require three (instead of two) repeats of a new PI before accepting it
   * Require three (instead of two) synchronization pulses before locking

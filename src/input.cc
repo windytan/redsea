@@ -25,7 +25,7 @@
 
 namespace redsea {
 
-/*
+/**
  * An MPXReader deals with reading an FM multiplex signal from an audio file or
  * raw PCM via stdin, separating it into channels and converting to chunks of
  * floating-point samples.

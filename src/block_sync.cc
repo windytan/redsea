@@ -183,6 +183,9 @@ bool SyncPulse::couldFollow(const SyncPulse& other) const {
              getBlockNumberForOffset(offset);
 }
 
+// Push a detected sync pulse to the buffer for determination of validity.
+// @param offset The calculated cyclic offset
+// @param bitcount Bit position where the detection happened
 void SyncPulseBuffer::push(Offset offset, int bitcount) {
   for (size_t i = 0; i < pulses_.size() - 1; i++) {
     pulses_[i] = pulses_[i + 1];
@@ -210,6 +213,7 @@ bool SyncPulseBuffer::isSequenceFound() const {
 
 BlockStream::BlockStream(const Options& options) : options_(options) {}
 
+// The data had errors that couldn't be corrected.
 void BlockStream::handleUncorrectableError() {
   // EN 50067:1998, section C.1.2:
   // Sync is lost when >45 out of last 50 blocks are erroneous
@@ -219,13 +223,13 @@ void BlockStream::handleUncorrectableError() {
   }
 }
 
+// Try to find a cyclic pattern in the offset words.
 void BlockStream::acquireSync(Block block) {
   if (is_in_sync_)
     return;
 
   num_bits_since_sync_lost_++;
 
-  // Try to find a repeating offset sequence
   if (block.offset != Offset::invalid) {
     sync_buffer_.push(block.offset, bitcount_);
 
@@ -250,6 +254,7 @@ void BlockStream::pushBit(bool bit) {
   }
 }
 
+// Search the input register for block data + offset. If found, add it to the group.
 void BlockStream::findBlockInInputRegister() {
   Block block;
   block.raw    = input_register_ & kBlockBitmask;
@@ -289,6 +294,7 @@ void BlockStream::findBlockInInputRegister() {
   }
 }
 
+// A whole group of four blocks was received.
 void BlockStream::handleNewlyReceivedGroup() {
   ready_group_     = current_group_;
   has_group_ready_ = true;

@@ -30,64 +30,69 @@ namespace redsea {
 void printUsage() {
   std::cout <<
     "radio_command | redsea [OPTIONS]\n"
-    "redsea [OPTIONS] < raw_signal_file.s16\n"
+    "redsea [OPTIONS] < raw_signal_file.s16\n\n"
+    "-b, --input-bits       Same as --input bits (for backwards compatibility).\n"
     "\n"
-    "By default, an MPX signal (raw mono S16LE PCM sampled at 171 kHz) is expected via stdin.\n"
+    "-c, --channels CHANS   Number of channels in the raw input signal. Channels are\n"
+    "                       interleaved streams of samples that are demodulated\n"
+    "                       independently.\n"
     "\n"
-    "-c, --channels CHANS   Number of channels in the raw input signal.\n"
-    "                       Channels are interleaved streams of samples that\n"
-    "                       are demodulated independently.\n"
+    "-e, --feed-through     Echo the input signal to stdout and print decoded groups\n"
+    "                       to stderr. This only works for raw PCM.\n"
     "\n"
-    "-e, --feed-through     Echo the input signal to stdout and print\n"
-    "                       decoded groups to stderr.\n"
+    "-E, --bler             Display the average block error rate, or the percentage\n"
+    "                       of blocks that had errors before error correction.\n"
+    "                       Averaged over the last 12 groups. For hex input, this is\n"
+    "                       the percentage of missing blocks.\n"
     "\n"
-    "-E, --bler             Display the average block error rate, or the\n"
-    "                       percentage of blocks that had errors before\n"
-    "                       error correction. Averaged over the last 12\n"
-    "                       groups. For hex input, this is the percentage\n"
-    "                       of missing blocks.\n"
+    "-f, --file FILENAME    Read MPX input from a wave file with headers (.wav,\n"
+    "                       .flac, ...). If you have headered wave data via stdin,\n"
+    "                       use '-'. Or you can specify another format with --input.\n"
     "\n"
-    "-f, --file FILENAME    Use an audio file as MPX input. All formats\n"
-    "                       readable by libsndfile should work.\n"
+    "-h, --input-hex        Same as --input hex (for backwards compatibility).\n"
     "\n"
-    "-i, --input FORMAT     Decode stdin as FORMAT (see the wiki for more info):\n"
-    "                        bits Unsynchronized ASCII bit stream (011010110...).\n"
-    "                             All characters but '0' and '1' are ignored.\n"
-    "                        hex  RDS Spy hex format.\n"
-    "                        mpx  Mono S16LE PCM-encoded MPX waveform (default).\n"
-    "                        tef  Serial data from the TEF6686 tuner.\n"
+    "-i, --input FORMAT     Decode input as FORMAT (see the redsea wiki in github\n"
+    "                       for more info).\n"
+    "                         bits Unsynchronized ASCII bit stream (011010110...). All characters\n"
+    "                              but '0' and '1' are ignored.\n"
+    "                         hex  RDS Spy hex format. (Timestamps will be ignored)\n"
+    "                         pcm  MPX as raw mono S16LE PCM. Remember to also specify --samplerate. If you're\n"
+    "                              reading from a sound file with headers (WAV, FLAC, ...) don't specify this.\n"
+    "                         tef  Serial data from the TEF6686 tuner.\n"
     "\n"
-    "-l, --loctable DIR     Load TMC location table from a directory in TMC\n"
-    "                       Exchange format. This option can be specified\n"
-    "                       multiple times to load several location tables.\n"
+    "-l, --loctable DIR     Load TMC location table from a directory in TMC Exchange\n"
+    "                       format. This option can be specified multiple times to\n"
+    "                       load several location tables.\n"
     "\n"
-    "-p, --show-partial     Under noisy conditions, redsea may not be able to\n"
-    "                       fully receive all information. Multi-group data\n"
-    "                       such as PS names, RadioText, and alternative\n"
-    "                       frequencies are especially vulnerable. This option\n"
-    "                       makes it display them even if not fully received,\n"
-    "                       as partial_{ps,radiotext,alt_frequencies}.\n"
+    "-o, --output FORMAT    Print output as FORMAT:\n"
+    "                         hex  RDS Spy hex format.\n"
+    "                         json Newline-delimited JSON (default).\n"
     "\n"
-    "-r, --samplerate RATE  Set stdin sample frequency in Hz. Will resample\n"
-    "                       (slow) if this differs from 171000 Hz.\n"
+    "-p, --show-partial     Under noisy conditions, redsea may not be able to fully\n"
+    "                       receive all information. Multi-group data such as PS\n"
+    "                       names, RadioText, and alternative frequencies are\n"
+    "                       especially vulnerable. This option makes it display them\n"
+    "                       even if not fully received, as\n"
+    "                       partial_{ps,radiotext,alt_frequencies}.\n"
     "\n"
-    "-R, --show-raw         Show raw group data as hex in the JSON stream.\n"
+    "-r, --samplerate RATE  Set sample frequency of raw PCM input in Hz. Will\n"
+    "                       resample if this differs from 171000 Hz.\n"
     "\n"
-    "-t, --timestamp FORMAT Add time of decoding to JSON groups; see\n"
-    "                       man strftime for formatting options (or\n"
-    "                       try \"%c\"). Use \"%f\" to add hundredths of\n"
-    "                       seconds.\n"
+    "-R, --show-raw         Include raw group data as hex in the JSON stream.\n"
     "\n"
-    "-u, --rbds             RBDS mode; use North American program type names\n"
-    "                       and \"back-calculate\" the station's call sign from\n"
-    "                       its PI code. Note that this calculation gives an\n"
-    "                       incorrect call sign for most stations that transmit\n"
-    "                       TMC.\n"
+    "-t, --timestamp FORMAT Add time of decoding to JSON groups; see man strftime\n"
+    "                       for formatting options (or try \"%c\"). Use \"%f\" to add\n"
+    "                       hundredths of seconds.\n"
+    "\n"
+    "-u, --rbds             RBDS mode; use North American program type names and\n"
+    "                       \"back-calculate\" the station's call sign from its PI\n"
+    "                       code. Note that this calculation gives an incorrect call\n"
+    "                       sign for most stations that transmit TMC.\n"
     "\n"
     "-v, --version          Print version string and exit.\n"
     "\n"
-    "-x, --output-hex       Output hex groups in the RDS Spy format,\n"
-    "                       suppressing JSON output.\n";
+    "-x, --output-hex       Same as --output hex (for backwards compatibility).\n"
+    "\n";
 }
 
 void printVersion() {
@@ -113,10 +118,12 @@ int processMPXInput(Options options) {
   if (mpx.hasError())
     return EXIT_FAILURE;
 
+  auto& output_stream = options.feed_thru ? std::cerr : std::cout;
+
   std::vector<Channel> channels;
   std::vector<std::unique_ptr<Subcarrier>> subcarriers;
   for (int i = 0; i < options.num_channels; i++) {
-    channels.emplace_back(options, i);
+    channels.emplace_back(options, i, output_stream);
     subcarriers.push_back(std::make_unique<Subcarrier>(options));
   }
 
@@ -134,14 +141,14 @@ int processMPXInput(Options options) {
     }
   }
 
-  for (size_t i = 0; i < size_t(options.num_channels); i++)
+  for (int i = 0; i < options.num_channels; i++)
     channels[i].flush();
 
   return EXIT_SUCCESS;
 }
 
 int processASCIIBitsInput(const Options& options) {
-  Channel channel(options, 0);
+  Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
   AsciiBitReader ascii_reader(options);
 
   while (!ascii_reader.eof()) {
@@ -154,7 +161,7 @@ int processASCIIBitsInput(const Options& options) {
 }
 
 int processHexInput(const Options& options) {
-  Channel channel(options, 0);
+  Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
 
   while (!std::cin.eof()) {
     channel.processGroup(readHexGroup(options));
@@ -164,7 +171,7 @@ int processHexInput(const Options& options) {
 }
 
 int processTEFInput(const Options& options) {
-  Channel channel(options, 0);
+  Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
 
   while (!std::cin.eof()) {
     channel.processGroup(readTEFGroup(options));

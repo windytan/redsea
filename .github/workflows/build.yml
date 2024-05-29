@@ -21,17 +21,19 @@ jobs:
     - name: compile
       run: cd build && meson compile
 
-  macos-build:
+  macos-build-and-test:
     runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies (brew)
-      run: brew install meson libsndfile liquid-dsp
+      run: brew install meson libsndfile liquid-dsp catch2
     - name: meson setup
       run: meson setup build
     - name: compile
       run: cd build && meson compile
+    - name: test
+      run: cd build && meson test
 
   windows-msys2-mingw-build:
     runs-on: windows-latest
@@ -107,7 +109,8 @@ jobs:
         ./bootstrap.sh &&
         ./configure --prefix=/usr &&
         make && make install
-    # Cygwin does not allow underscore variables that start with an uppercase when compiling with gcc
+    # Cygwin does not allow underscore variables that start with an uppercase when
+    # compiling with gcc
     - name: Patch liquid-dsp
       shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
       run: perl -i -p -e 's/(?<=\s)(_[A-Z])(?=[,\)])/\L\1__/g' /usr/include/liquid/liquid.h

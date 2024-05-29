@@ -54,7 +54,7 @@ else
   add_project_arguments('-std=c++14', language : 'cpp')
 endif
 
-sources = [
+sources_no_main = [
   'ext/json/jsoncpp.cpp',
   'src/block_sync.cc',
   'src/channel.cc',
@@ -64,7 +64,6 @@ sources = [
   'src/liquid_wrappers.cc',
   'src/options.cc',
   'src/rdsstring.cc',
-  'src/redsea.cc',
   'src/subcarrier.cc',
   'src/tables.cc',
   'src/tmc/tmc.cc',
@@ -72,4 +71,13 @@ sources = [
   'src/util.cc'
 ]
 
-executable('redsea', sources, dependencies: [iconv, sndfile, liquid])
+executable('redsea', [sources_no_main, 'src/redsea.cc'], dependencies: [iconv, sndfile, liquid])
+
+### Unit tests ###
+
+catch2_dep = dependency('catch2-with-main', required: false)
+
+if catch2_dep.found()
+  test_exec = executable('redsea-test', [sources_no_main, 'test/unit.cc'], dependencies: [ iconv, sndfile, liquid, catch2_dep ])
+  test('Smoke tests', test_exec)
+endif

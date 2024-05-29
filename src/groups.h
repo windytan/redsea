@@ -72,29 +72,29 @@ bool operator<(const GroupType& type1, const GroupType& type2);
 
 class ProgramServiceName {
   public:
-   ProgramServiceName() : text(8) {}
+   ProgramServiceName() = default;
    void update(size_t pos, uint8_t byte1, uint8_t byte2) {
      text.set(pos, byte1, byte2);
    }
 
-   RDSString text;
+   RDSString text{8};
 };
 
 class LongPS {
   public:
-   LongPS() : text(32) {
+   LongPS() {
     text.setEncoding(RDSString::Encoding::UTF8);
    }
    void update(size_t pos, uint8_t byte1, uint8_t byte2) {
      text.set(pos, byte1, byte2);
    }
 
-   RDSString text;
+   RDSString text{32};
 };
 
 class RadioText {
  public:
-  RadioText() : text(64) {}
+  RadioText() = default;
   bool isABChanged(int new_ab) {
     const bool is = (ab != new_ab);
     ab = new_ab;
@@ -119,10 +119,10 @@ class RadioText {
     };
   };
 
-  RDSString   text;
+  RDSString   text{64};
   Plus        plus;
   std::string previous_potentially_complete_message;
-  int         ab { 0 };
+  int         ab{};
 };
 
 class PTYName {
@@ -174,7 +174,7 @@ class Group {
   bool hasBLER() const;
   bool hasTime() const;
   std::chrono::time_point<std::chrono::system_clock> getRxTime() const;
-  void printHex(std::ostream* stream) const;
+  void printHex(std::ostream& stream) const;
 
   void disableOffsets();
   void setBlock(eBlockNumber block_num, Block block);
@@ -195,9 +195,10 @@ class Group {
 
 class Station {
  public:
-  Station();
-  Station(uint16_t _pi, const Options& options, int which_channel, bool has_pi=true);
-  void updateAndPrint(const Group& group, std::ostream* stream);
+  Station() = delete;
+  Station(const Options& options, int which_channel, uint16_t _pi);
+  Station(const Options& options, int which_channel);
+  void updateAndPrint(const Group& group, std::ostream& stream);
   uint16_t getPI() const;
 
  private:

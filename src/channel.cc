@@ -16,6 +16,9 @@
  */
 #include "src/channel.h"
 
+#include <chrono>
+#include <iostream>
+
 #include "src/common.h"
 
 namespace redsea {
@@ -29,10 +32,22 @@ namespace redsea {
  * bits, or groups. Usage of these inputs shouldn't be intermixed.
  *
  */
-Channel::Channel(const Options& options, int which_channel) :
-    options_(options),
-    which_channel_(which_channel),
-    block_stream_(options), station_(0x0000, options, which_channel, false) {
+Channel::Channel(const Options& options, int which_channel, std::ostream& output_stream = std::cout)
+    : options_(options),
+      which_channel_(which_channel),
+      output_stream_(output_stream),
+      block_stream_(options),
+      station_(options, which_channel) {}
+
+// Used for testing (PI is already known)
+Channel::Channel(const Options& options, std::ostream& output_stream, uint16_t pi)
+    : options_(options),
+      which_channel_(0),
+      output_stream_(output_stream),
+      block_stream_(options),
+      station_(options, 0, pi) {
+  cached_pi_.update(pi);
+  cached_pi_.update(pi);
 }
 
 void Channel::processBit(bool bit) {
@@ -51,7 +66,8 @@ void Channel::processBits(const BitBuffer& buffer) {
 
       // Calculate this group's rx time based on the buffer timestamp and bit offset
       auto group_time = buffer.time_received -
-        std::chrono::milliseconds(static_cast<int>((buffer.bits.size() - 1 - i_bit) / 1187.5 * 1e3));
+                        std::chrono::milliseconds(
+                            static_cast<int>((buffer.bits.size() - 1 - i_bit) / 1187.5 * 1e3));
 
       // When the source is faster than real-time, backwards timestamp calculation
       // produces meaningless results. We want to make sure that the time stays monotonic.
@@ -67,6 +83,7 @@ void Channel::processBits(const BitBuffer& buffer) {
   }
 }
 
+// Handle this group as if it was just received.
 void Channel::processGroup(Group group) {
   if (options_.timestamp && !group.hasTime()) {
     auto now = std::chrono::system_clock::now();
@@ -92,7 +109,7 @@ void Channel::processGroup(Group group) {
     const auto pi_status = cached_pi_.update(group.getPI());
     switch (pi_status) {
       case CachedPI::Result::ChangeConfirmed:
-        station_ = Station(cached_pi_.get(), options_, which_channel_);
+        station_ = Station(options_, which_channel_, cached_pi_.get());
         break;
 
       case CachedPI::Result::SpuriousChange:
@@ -103,17 +120,15 @@ void Channel::processGroup(Group group) {
     }
   }
 
-  auto stream = options_.feed_thru ? &std::cerr : &std::cout;
-
   if (options_.output_type == redsea::OutputType::Hex) {
     if (!group.isEmpty()) {
-      group.printHex(stream);
+      group.printHex(output_stream_);
       if (options_.timestamp)
-        *stream << ' ' << getTimePointString(group.getRxTime(), options_.time_format);
-      *stream << '\n' << std::flush;
+        output_stream_ << ' ' << getTimePointString(group.getRxTime(), options_.time_format);
+      output_stream_ << '\n' << std::flush;
     }
   } else {
-    station_.updateAndPrint(group, stream);
+    station_.updateAndPrint(group, output_stream_);
   }
 }
 

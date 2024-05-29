@@ -97,56 +97,69 @@ Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 radio_command | redsea [OPTIONS]
 redsea -f WAVEFILE
 
--c, --channels CHANS   Number of channels in the raw input signal. Each
-                       channel is demodulated independently.
+-b, --input-bits       Same as --input bits (for backwards compatibility).
 
--e, --feed-through     Echo the input signal to stdout and print
-                       decoded groups to stderr.
+-c, --channels CHANS   Number of channels in the raw input signal. Channels are
+                       interleaved streams of samples that are demodulated
+                       independently.
 
--E, --bler             Display the average block error rate, or the
-                       percentage of blocks that had errors before
-                       error correction. Averaged over the last 12
-                       groups. For hex input, this is the percentage
-                       of missing blocks.
+-e, --feed-through     Echo the input signal to stdout and print decoded groups
+                       to stderr. This only works for raw PCM.
 
--f, --file FILENAME    Use an audio file as MPX input. All formats
-                       readable by libsndfile should work.
+-E, --bler             Display the average block error rate, or the percentage
+                       of blocks that had errors before error correction.
+                       Averaged over the last 12 groups. For hex input, this is
+                       the percentage of missing blocks.
 
--i, --input FORMAT     Decode stdin as FORMAT (see the wiki for more info):
-                        bits Unsynchronized ASCII bit stream (011010110...).
-                             All characters but '0' and '1' are ignored.
-                        hex  RDS Spy hex format.
-                        mpx  Mono S16LE PCM-encoded MPX waveform (default).
-                        tef  Serial data from the TEF6686 tuner.
+-f, --file FILENAME    Read MPX input from a wave file with headers (.wav,
+                       .flac, ...). If you have headered wave data via stdin,
+                       use '-'. Or you can specify another format with --input.
 
--l, --loctable DIR     Load TMC location table from a directory in TMC
-                       Exchange format. This option can be specified
-                       multiple times to load several location tables.
+-h, --input-hex        Same as --input hex (for backwards compatibility).
 
--p, --show-partial     Show some multi-group data even before they've been
-                       fully received (PS names, RadioText, alternative
-                       frequencies). partial_ will be prepended to their
-                       names. This is good for noisy conditions.
+-i, --input FORMAT     Decode input as FORMAT (see the redsea wiki in github
+                       for more info).
+                         bits Unsynchronized ASCII bit stream (011010110...).
+                              All characters but '0' and '1' are ignored.
+                         hex  RDS Spy hex format. (Timestamps will be ignored)
+                         pcm  MPX as raw mono S16LE PCM. Remember to also
+                              specify --samplerate. If you're reading from a
+                              sound file with headers (WAV, FLAC, ...) don't
+                              specify this.
+                         tef  Serial data from the TEF6686 tuner.
 
--r, --samplerate RATE  Set sample frequency of the raw MPX input signal in Hz.
-                       Will resample (slow) if this differs from 171000 Hz.
+-l, --loctable DIR     Load TMC location table from a directory in TMC Exchange
+                       format. This option can be specified multiple times to
+                       load several location tables.
 
--R, --show-raw         Show raw group data as hex in the JSON stream.
+-o, --output FORMAT    Print output as FORMAT:
+                         hex  RDS Spy hex format.
+                         json Newline-delimited JSON (default).
 
--t, --timestamp FORMAT Add time of decoding to JSON groups; see
-                       man strftime for formatting options (or
-                       try "%c"). Use "%f" to add hundredths of seconds.
+-p, --show-partial     Under noisy conditions, redsea may not be able to fully
+                       receive all information. Multi-group data such as PS
+                       names, RadioText, and alternative frequencies are
+                       especially vulnerable. This option makes it display them
+                       even if not fully received, as
+                       partial_{ps,radiotext,alt_frequencies}.
 
--u, --rbds             RBDS mode; use North American program type names
-                       and "back-calculate" the station's call sign from
-                       its PI code. Note that this calculation gives an
-                       incorrect call sign for most stations that transmit
-                       TMC.
+-r, --samplerate RATE  Set sample frequency of raw PCM input in Hz. Will
+                       resample if this differs from 171000 Hz.
+
+-R, --show-raw         Include raw group data as hex in the JSON stream.
+
+-t, --timestamp FORMAT Add time of decoding to JSON groups; see man strftime
+                       for formatting options (or try "%c"). Use "%f" to add
+                       hundredths of seconds.
+
+-u, --rbds             RBDS mode; use North American program type names and
+                       "back-calculate" the station's call sign from its PI
+                       code. Note that this calculation gives an incorrect call
+                       sign for most stations that transmit TMC.
 
 -v, --version          Print version string and exit.
 
--x, --output-hex       Output hex groups in the RDS Spy format,
-                       suppressing JSON output.
+-x, --output-hex       Same as --output hex (for backwards compatibility).
 ```
 
 ### Formatting and filtering the JSON output
@@ -179,6 +192,10 @@ type:
 * Linux/macOS/Cygwin/MSYS2+MinGW
 * C++14 compiler
 * meson + ninja
+
+### Testing
+
+* Catch2
 
 ## Troubleshooting
 

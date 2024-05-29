@@ -17,6 +17,8 @@
 #ifndef CHANNEL_H_
 #define CHANNEL_H_
 
+#include <iostream>
+
 #include "src/block_sync.h"
 #include "src/common.h"
 #include "src/options.h"
@@ -70,7 +72,8 @@ class CachedPI {
 
 class Channel {
  public:
-  Channel(const Options& options, int which_channel);
+  Channel(const Options& options, int which_channel, std::ostream& output_stream);
+  Channel(const Options& options, std::ostream& output_stream, uint16_t pi);
   void processBit(bool bit);
   void processBits(const BitBuffer& buffer);
   void processGroup(Group group);
@@ -81,6 +84,7 @@ class Channel {
  private:
   Options options_;
   int which_channel_;
+  std::ostream& output_stream_;
   CachedPI cached_pi_{};
   BlockStream block_stream_;
   Station station_;
