@@ -23,34 +23,34 @@
 
 namespace redsea {
 
+// Normally, the PI code is not expected to change. This class keeps track of the current PI
+// code and ignores spurious bit errors.
 class CachedPI {
  public:
-  enum class Result {
-    ChangeConfirmed, NoChange, SpuriousChange
-  };
+  enum class Result { ChangeConfirmed, NoChange, SpuriousChange };
 
   CachedPI() = default;
-  Result update(uint16_t pi) {
-    pi_prev2_ = pi_prev1_;
-    pi_prev1_ = pi;
 
+  // Input the most recently received PI code.
+  Result update(const uint16_t pi) {
     Result status(Result::SpuriousChange);
 
-    // Repeated PI confirms that it changed
-    if (has_previous_ && pi_prev1_ == pi_prev2_) {
-      status = (pi == pi_confirmed_ ? Result::NoChange :
-                                      Result::ChangeConfirmed);
+    // Three repeats of the same PI --> confirmed change
+    if (has_previous_ && pi_prev1_ == pi_prev2_ && pi == pi_prev1_) {
+      status        = (pi == pi_confirmed_ ? Result::NoChange : Result::ChangeConfirmed);
       pi_confirmed_ = pi;
     }
 
-    // So noisy that two PIs in a row get corrupted
-    if (has_previous_ && (pi_prev1_ != pi_confirmed_ &&
-                          pi_prev2_ != pi_confirmed_ &&
-                          pi_prev1_ != pi_prev2_)) {
+    // So noisy that two PIs in a row get corrupted --> drop
+    if (has_previous_ && (pi != pi_confirmed_ && pi_prev1_ != pi_confirmed_ && pi != pi_prev1_)) {
       reset();
     } else {
       has_previous_ = true;
     }
+
+    pi_prev2_ = pi_prev1_;
+    pi_prev1_ = pi;
+
     return status;
   }
   uint16_t get() const {
@@ -58,14 +58,14 @@ class CachedPI {
   }
   void reset() {
     pi_confirmed_ = pi_prev1_ = pi_prev2_ = 0;
-    has_previous_ = false;
+    has_previous_                         = false;
   }
 
  private:
-  uint16_t pi_confirmed_ { 0 };
-  uint16_t pi_prev1_     { 0 };
-  uint16_t pi_prev2_     { 0 };
-  bool     has_previous_ { false };
+  uint16_t pi_confirmed_{0};
+  uint16_t pi_prev1_{0};
+  uint16_t pi_prev2_{0};
+  bool has_previous_{false};
 };
 
 class Channel {

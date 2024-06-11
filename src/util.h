@@ -28,7 +28,7 @@
 namespace redsea {
 
 // extract N-bit integer from word, starting at starting_at from the right
-template<size_t N>
+template <size_t N>
 uint16_t getBits(uint16_t word, size_t starting_at) {
   static_assert(N > 0 && N <= 16, "");
   return (word >> starting_at) & ((1 << N) - 1);
@@ -36,7 +36,7 @@ uint16_t getBits(uint16_t word, size_t starting_at) {
 
 // extract N-bit integer from the concatenation of word1 and word2, starting at
 // starting_at from the right
-template<size_t N>
+template <size_t N>
 uint32_t getBits(uint16_t word1, uint16_t word2, size_t starting_at) {
   static_assert(N > 0 && N <= 32, "");
   return (((word1 << 16) + word2) >> starting_at) & ((1 << N) - 1);
@@ -65,24 +65,20 @@ class CSVTable {
 
 std::vector<std::string> splitLine(const std::string& line, char delimiter);
 
-template<typename Container>
-std::vector<std::vector<std::string>> readCSVContainer(const Container& csvdata,
-                                              char delimiter) {
+template <typename Container>
+std::vector<std::vector<std::string>> readCSVContainer(const Container& csvdata, char delimiter) {
   std::vector<std::vector<std::string>> lines;
 
   std::transform(csvdata.cbegin(), csvdata.cend(), std::back_inserter(lines),
-                 [&](const std::string& line) {
-                   return splitLine(line, delimiter);
-                 });
+                 [&](const std::string& line) { return splitLine(line, delimiter); });
 
   return lines;
 }
 
-std::vector<std::vector<std::string>> readCSV(const std::string& filename,
-                                              char delimiter);
+std::vector<std::vector<std::string>> readCSV(const std::string& filename, char delimiter);
 CSVTable readCSVWithTitles(const std::string& filename, char delimiter);
 
-template<typename Container>
+template <typename Container>
 CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {
   CSVTable table;
 
@@ -94,8 +90,7 @@ CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {
 
     const std::vector<std::string> fields = splitLine(line, delimiter);
     if (is_title_row) {
-      for (size_t i = 0; i < fields.size(); i++)
-        table.titles[fields[i]] = i;
+      for (size_t i = 0; i < fields.size(); i++) table.titles[fields[i]] = i;
       is_title_row = false;
     } else {
       if (fields.size() <= table.titles.size())
@@ -108,22 +103,19 @@ CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {
 
 class CarrierFrequency {
  public:
-  enum class Band {
-    LF_MF, FM
-  };
+  enum class Band { LF_MF, FM };
+
  public:
   explicit CarrierFrequency(uint16_t code, Band band = Band::FM);
   bool isValid() const;
   int kHz() const;
   std::string str() const;
-  friend bool operator== (const CarrierFrequency &f1,
-                          const CarrierFrequency &f2);
-  friend bool operator< (const CarrierFrequency &f1,
-                         const CarrierFrequency &f2);
+  friend bool operator==(const CarrierFrequency& f1, const CarrierFrequency& f2);
+  friend bool operator<(const CarrierFrequency& f1, const CarrierFrequency& f2);
 
  private:
-  uint16_t code_ {};
-  Band band_ { Band::FM };
+  uint16_t code_{};
+  Band band_{Band::FM};
 };
 
 class AltFreqList {
@@ -137,38 +129,38 @@ class AltFreqList {
 
  private:
   std::array<int, 25> alt_freqs_;
-  size_t num_expected_ { 0 };
-  size_t num_received_ { 0 };
-  bool lf_mf_follows_  { false };
+  size_t num_expected_{0};
+  size_t num_received_{0};
+  bool lf_mf_follows_{false};
 };
 
-template<typename T, size_t N>
+template <typename T, size_t N>
 class RunningSum {
  public:
   RunningSum() {
-    std::fill(history_.begin(), history_.end(), 0.f);
+    clear();
   }
   T getSum() const {
-    return std::accumulate(history_.cbegin(), history_.cend(), 0);
+    return std::accumulate(history_.cbegin(), history_.cend(), T{0});
   }
   void push(int number) {
     history_[pointer_] = number;
-    pointer_ = (pointer_ + 1) % history_.size();
+    pointer_           = (pointer_ + 1) % history_.size();
   }
   void clear() {
-    std::fill(history_.begin(), history_.end(), 0);
+    std::fill(history_.begin(), history_.end(), T{0});
   }
 
  private:
-  std::array<T, N> history_;
-  size_t pointer_ { 0 };
+  std::array<T, N> history_{};
+  size_t pointer_{};
 };
 
-template<typename T, size_t N>
+template <typename T, size_t N>
 class RunningAverage {
  public:
   RunningAverage() {
-    std::fill(history_.begin(), history_.end(), 0.f);
+    std::fill(history_.begin(), history_.end(), T{0});
   }
   void push(T value) {
     sum_ -= history_[ptr_];
@@ -178,13 +170,13 @@ class RunningAverage {
   }
 
   float getAverage() const {
-    return 1.0f * sum_ / history_.size();
+    return static_cast<float>(sum_) / history_.size();
   }
 
  private:
-  std::array<T, N> history_;
-  T      sum_ { 0 };
-  size_t ptr_ { 0 };
+  std::array<T, N> history_{};
+  T sum_{};
+  size_t ptr_{};
 };
 
 std::string rtrim(std::string s);

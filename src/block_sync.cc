@@ -173,30 +173,37 @@ ErrorCorrectionResult correctBurstErrors(Block block, Offset expected_offset) {
   return result;
 }
 
+// Could this pulse realistically follow other?
+bool SyncPulse::couldFollow(const SyncPulse& other) const {
+  const int sync_distance = bit_position - other.bit_position;
+
+  return sync_distance % kBlockLength == 0 && sync_distance / kBlockLength <= 6 &&
+         offset != Offset::invalid && other.offset != Offset::invalid &&
+         (getBlockNumberForOffset(other.offset) + sync_distance / kBlockLength) % 4 ==
+             getBlockNumberForOffset(offset);
+}
+
 void SyncPulseBuffer::push(Offset offset, int bitcount) {
   for (size_t i = 0; i < pulses_.size() - 1; i++) {
     pulses_[i] = pulses_[i + 1];
   }
 
   SyncPulse new_pulse;
-  new_pulse.offset   = offset;
-  new_pulse.bitcount = bitcount;
+  new_pulse.offset       = offset;
+  new_pulse.bit_position = bitcount;
 
   pulses_.back() = new_pulse;
 }
 
+// Search for three sync pulses in the correct cyclic rhythm
 bool SyncPulseBuffer::isSequenceFound() const {
-  for (size_t prev_i = 0; prev_i < pulses_.size() - 1; prev_i++) {
-    const int sync_distance = pulses_.back().bitcount - pulses_[prev_i].bitcount;
+  const auto& third = pulses_.back();
 
-    const bool found =
-        (sync_distance % kBlockLength == 0 && sync_distance / kBlockLength <= 6 &&
-         pulses_[prev_i].offset != Offset::invalid &&
-         (getBlockNumberForOffset(pulses_[prev_i].offset) + sync_distance / kBlockLength) % 4 ==
-             getBlockNumberForOffset(pulses_.back().offset));
-
-    if (found)
-      return true;
+  for (size_t i_first = 0; i_first < pulses_.size() - 2; i_first++) {
+    for (size_t i_second = i_first + 1; i_second < pulses_.size() - 1; i_second++) {
+      if (third.couldFollow(pulses_[i_second]) && pulses_[i_second].couldFollow(pulses_[i_first]))
+        return true;
+    }
   }
   return false;
 }

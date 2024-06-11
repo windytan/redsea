@@ -13,6 +13,9 @@
 * * Print a warning if the raw MPX input sample rate is not specified
 * * Improve error reporting in general
 * * Add `--output hex` (same as `--output-hex`) to mirror `--input hex`
+* Noise resistance improvements:
+  * Require three (instead of two) repeats of a new PI before accepting it
+  * Require three (instead of two) synchronization pulses before locking
 
 ## 0.21 (2024-01-26)
 

@@ -25,8 +25,10 @@
 namespace redsea {
 
 struct SyncPulse {
-  Offset offset { Offset::invalid };
-  int bitcount  { -1 };
+  Offset offset{Offset::invalid};
+  int bit_position{-1};
+
+  bool couldFollow(const SyncPulse& other) const;
 };
 
 class SyncPulseBuffer {
@@ -39,8 +41,8 @@ class SyncPulseBuffer {
 };
 
 struct ErrorCorrectionResult {
-  bool     succeeded      { false };
-  uint32_t corrected_bits { 0 };
+  bool succeeded{false};
+  uint32_t corrected_bits{0};
 };
 
 class BlockStream {
@@ -58,20 +60,20 @@ class BlockStream {
   void findBlockInInputRegister();
   void handleNewlyReceivedGroup();
 
-  int      bitcount_                  { 0 };
-  int      num_bits_until_next_block_ { 1 };
-  uint32_t input_register_            { 0 };
-  Offset   expected_offset_           { Offset::A };
-  bool     is_in_sync_                { false };
+  int bitcount_{0};
+  int num_bits_until_next_block_{1};
+  uint32_t input_register_{0};
+  Offset expected_offset_{Offset::A};
+  bool is_in_sync_{false};
   RunningSum<int, 50> block_error_sum50_;
-  const    Options options_;
+  const Options options_;
   RunningAverage<float, kNumBlerAverageGroups> bler_average_;
-  Group    current_group_;
-  Group    ready_group_;
-  bool     has_group_ready_           { false };
-  size_t   num_bits_since_sync_lost_  { 0 };
+  Group current_group_;
+  Group ready_group_;
+  bool has_group_ready_{false};
+  size_t num_bits_since_sync_lost_{0};
   SyncPulseBuffer sync_buffer_;
 };
 
-} // namespace redsea
-#endif // BLOCK_SYNC_H_
+}  // namespace redsea
+#endif  // BLOCK_SYNC_H_
