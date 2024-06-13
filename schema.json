@@ -31,6 +31,10 @@
       "minLength": 8,
       "maxLength": 8
     },
+    "long_ps": {
+      "type": "string",
+      "maxLength": 32
+    },
     "rtplus": {
       "type": "object",
       "properties": {
@@ -303,6 +307,10 @@
         "description": "Program Service name",
         "$ref": "#/definitions/ps"
       },
+      "long_ps": {
+        "description": "Long PS",
+        "$ref": "#/definitions/long_ps"
+      },
       "country": {
         "description": "ISO country code",
         "type": "string",
@@ -327,14 +335,14 @@
         "description": "Traffic Message Channel",
         "$ref": "#/definitions/tmc"
       },
-      "alt_kilohertz_a": {
+      "alt_frequencies_a": {
         "description": "Alternative Frequencies (Method A)",
         "type": "array",
         "items": {
           "type": "integer"
         }
       },
-      "alt_kilohertz_b": {
+      "alt_frequencies_b": {
         "description": "Alternative Frequencies (Method B)",
         "$ref": "#/definitions/alt_freq_b"
       },
@@ -386,6 +394,10 @@
         "items": {
           "type": "integer"
         }
+      },
+      "partial_long_ps": {
+        "description": "Incomplete Long PS message",
+        "$ref": "#/definitions/long_ps"
       },
       "open_data_app": {
         "type": "object",
@@ -500,7 +512,7 @@
           "prog_type": {
             "type": "string"
           },
-          "alt_kilohertz": {
+          "alt_frequencies": {
             "type": "array",
             "items": {
               "type": "integer"

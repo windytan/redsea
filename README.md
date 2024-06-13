@@ -140,8 +140,7 @@ redsea -f WAVEFILE
                        receive all information. Multi-group data such as PS
                        names, RadioText, and alternative frequencies are
                        especially vulnerable. This option makes it display them
-                       even if not fully received, as
-                       partial_{ps,radiotext,alt_frequencies}.
+                       even if not fully received, prefixed with partial_.
 
 -r, --samplerate RATE  Set sample frequency of raw PCM input in Hz. Will
                        resample if this differs from 171000 Hz.
