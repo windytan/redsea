@@ -239,7 +239,7 @@ Group readTEFGroup(const Options& options) {
         const int64_t data = std::stol(line, nullptr, 16);
         block1.data = data & 0xFFFF;
         block1.is_received = true;
-      } catch (std::exception& e) {
+      } catch (const std::exception&) {
       }
       group.setBlock(BLOCK1, block1);
     } else if (line.substr(0, 1) == "R") {
@@ -249,7 +249,7 @@ Group readTEFGroup(const Options& options) {
         line = line.substr(1);
         data = std::stol(line, nullptr, 16);
         rdsErr = (data & 0xFF);
-      } catch (std::exception& e) {
+      } catch (const std::exception&) {
       }
       for (const auto blockNum : { BLOCK2, BLOCK3, BLOCK4 }) {
         Block block;

@@ -95,7 +95,7 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
       int rnid = 0;
       if (row_contains(table, row, "RNID"))
         rnid = get_int(table, row, "RNID");
-      if (locdb.names.count(rnid) > 0)
+      if (locdb.names.find(rnid) != locdb.names.end())
         road.name = locdb.names[rnid];
       locdb.roads[road.lcd] = road;
     } catch (const std::exception& e) {
@@ -124,7 +124,7 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
       int n1id = 0;
       if (row_contains(table, row, "N1ID"))
         n1id = get_int(table, row, "N1ID");
-      if (locdb.names.count(n1id) > 0)
+      if (locdb.names.find(n1id) != locdb.names.end())
         point.name1 = locdb.names[n1id];
       if (row_contains(table, row, "XCOORD"))
         point.lon = get_int(table, row, "XCOORD") * 1e-5f;
@@ -138,10 +138,10 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
       int rnid = 0;
       if (row_contains(table, row, "RNID"))
         rnid = get_int(table, row, "RNID");
-      if (locdb.names.count(rnid) > 0)
+      if (locdb.names.find(rnid) != locdb.names.end())
         point.road_name = locdb.names[rnid];
 
-      if (point.roa_lcd == 0 && locdb.segments.count(point.seg_lcd) > 0) {
+      if (point.roa_lcd == 0 && locdb.segments.find(point.seg_lcd) != locdb.segments.end()) {
         point.roa_lcd = locdb.segments.at(point.seg_lcd).roa_lcd;
         point.road_name = locdb.roads.at(point.roa_lcd).name;
         point.road_name = locdb.names[rnid];
@@ -159,7 +159,7 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
       const uint16_t lcd = get_uint16(table, row, "LCD");
       const uint16_t neg = get_uint16(table, row, "NEG_OFF_LCD");
       const uint16_t pos = get_uint16(table, row, "POS_OFF_LCD");
-      if (locdb.points.count(lcd) > 0) {
+      if (locdb.points.find(lcd) != locdb.points.end()) {
         locdb.points[lcd].neg_off = neg;
         locdb.points[lcd].pos_off = pos;
       }

@@ -172,7 +172,7 @@ std::vector<uint8_t> RDSString::getData() const {
   return result;
 }
 
-std::string RDSString::getLastCompleteString() const {
+const std::string& RDSString::getLastCompleteString() const {
   return last_complete_string_;
 }
 

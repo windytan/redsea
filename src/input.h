@@ -29,15 +29,15 @@
 
 namespace redsea {
 
-constexpr int   kInputChunkSize   = 8192;
+constexpr int kInputChunkSize     = 8192;
 constexpr float kMaxResampleRatio = kTargetSampleRate_Hz / kMinimumSampleRate_Hz;
-constexpr int   kBufferSize       = static_cast<int>(kInputChunkSize * kMaxResampleRatio) + 1;
+constexpr int kBufferSize         = static_cast<int>(kInputChunkSize * kMaxResampleRatio) + 1;
 
-template<int N=kBufferSize>
+template <int N = kBufferSize>
 class MPXBuffer {
  public:
-  std::array<float, N> data;
-  size_t used_size;
+  std::array<float, N> data{};
+  size_t used_size{};
   std::chrono::time_point<std::chrono::system_clock> time_received;
 };
 
@@ -59,18 +59,18 @@ class MPXReader {
   int getNumChannels() const;
 
  private:
-  int num_channels_ { 0 };
-  sf_count_t chunk_size_;
-  bool is_eof_      { true };
-  bool is_error_    { false };
-  bool feed_thru_   { false };
-  std::string filename_ { "" };
-  MPXBuffer<> buffer_;
-  MPXBuffer<> buffer_singlechan_;
-  SF_INFO sfinfo_   { 0, 0, 0, 0, 0, 0 };
-  SNDFILE* file_    { nullptr };
-  SNDFILE* outfile_ { nullptr };
-  sf_count_t num_read_ { 0 };
+  int num_channels_{0};
+  sf_count_t chunk_size_{0};
+  bool is_eof_{true};
+  bool is_error_{false};
+  bool feed_thru_{false};
+  std::string filename_{""};
+  MPXBuffer<> buffer_{};
+  MPXBuffer<> buffer_singlechan_{};
+  SF_INFO sfinfo_{0, 0, 0, 0, 0, 0};
+  SNDFILE* file_{nullptr};
+  SNDFILE* outfile_{nullptr};
+  sf_count_t num_read_{0};
 };
 
 class AsciiBitReader {
@@ -81,8 +81,8 @@ class AsciiBitReader {
   bool eof() const;
 
  private:
-  bool is_eof_     { false };
-  bool feed_thru_  { false };
+  bool is_eof_{false};
+  bool feed_thru_{false};
 };
 
 Group readHexGroup(const Options& options);

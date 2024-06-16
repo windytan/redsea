@@ -28,39 +28,39 @@ Options getOptions(int argc, char** argv) {
   Options options;
 
   constexpr struct option long_options[] = {
-    { "input-bits",    no_argument, 0, 'b'},
-    { "channels",      1,           0, 'c'},
-    { "feed-through",  no_argument, 0, 'e'},
-    { "bler",          no_argument, 0, 'E'},
-    { "file",          1,           0, 'f'},
-    { "input-hex",     no_argument, 0, 'h'},
-    { "input",         1,           0, 'i'},
-    { "loctable",      1,           0, 'l'},
-    { "output",        1,           0, 'o'},
-    { "show-partial",  no_argument, 0, 'p'},
-    { "samplerate",    1,           0, 'r'},
-    { "show-raw",      no_argument, 0, 'R'},
-    { "timestamp",     1,           0, 't'},
-    { "rbds",          no_argument, 0, 'u'},
-    { "version",       no_argument, 0, 'v'},
-    { "output-hex",    no_argument, 0, 'x'},
-    { "help",          no_argument, 0, '?'},
-    {0,                0,           0,  0}};
+      {"input-bits",   no_argument, 0, 'b'},
+      {"channels",     1,           0, 'c'},
+      {"feed-through", no_argument, 0, 'e'},
+      {"bler",         no_argument, 0, 'E'},
+      {"file",         1,           0, 'f'},
+      {"input-hex",    no_argument, 0, 'h'},
+      {"input",        1,           0, 'i'},
+      {"loctable",     1,           0, 'l'},
+      {"output",       1,           0, 'o'},
+      {"show-partial", no_argument, 0, 'p'},
+      {"samplerate",   1,           0, 'r'},
+      {"show-raw",     no_argument, 0, 'R'},
+      {"timestamp",    1,           0, 't'},
+      {"rbds",         no_argument, 0, 'u'},
+      {"version",      no_argument, 0, 'v'},
+      {"output-hex",   no_argument, 0, 'x'},
+      {"help",         no_argument, 0, '?'},
+      {0,              0,           0, 0  }
+  };
 
   int option_index = 0;
   int option_char;
 
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rt:uvx",
-                                    long_options, &option_index)) >= 0) {
+  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rt:uvx", long_options,
+                                    &option_index)) >= 0) {
     switch (option_char) {
-      case 'b': // For backwards compatibility
+      case 'b':  // For backwards compatibility
         options.input_type = InputType::ASCIIbits;
         break;
       case 'c':
         options.num_channels = std::atoi(optarg);
         if (options.num_channels < 1) {
-          std::cerr << "error: number of channels must be greater than 0"
-                    << '\n';
+          std::cerr << "error: number of channels must be greater than 0" << '\n';
           options.exit_failure = true;
         }
         break;
@@ -72,9 +72,9 @@ Options getOptions(int argc, char** argv) {
         break;
       case 'f':
         options.sndfilename = std::string(optarg);
-        options.input_type = InputType::MPX_sndfile;
+        options.input_type  = InputType::MPX_sndfile;
         break;
-      case 'h': // For backwards compatibility
+      case 'h':  // For backwards compatibility
         options.input_type = InputType::Hex;
         break;
       case 'i': {
@@ -105,7 +105,7 @@ Options getOptions(int argc, char** argv) {
         }
         break;
       }
-      case 'x': // For backwards compatibility
+      case 'x':  // For backwards compatibility
         options.output_type = OutputType::Hex;
         break;
       case 'p':
@@ -122,8 +122,8 @@ Options getOptions(int argc, char** argv) {
         }
         options.samplerate = static_cast<float>(std::atof(optarg) * factor);
         if (options.samplerate < kMinimumSampleRate_Hz) {
-          std::cerr << "error: sample rate set to " << options.samplerate << ", must be " << kMinimumSampleRate_Hz
-                    << " Hz or higher\n";
+          std::cerr << "error: sample rate set to " << options.samplerate << ", must be "
+                    << kMinimumSampleRate_Hz << " Hz or higher\n";
           options.exit_failure = true;
         }
         options.rate_defined = true;
@@ -133,7 +133,7 @@ Options getOptions(int argc, char** argv) {
         options.show_raw = true;
         break;
       case 't':
-        options.timestamp = true;
+        options.timestamp   = true;
         options.time_format = std::string(optarg);
         break;
       case 'u':
@@ -144,14 +144,14 @@ Options getOptions(int argc, char** argv) {
         break;
       case 'v':
         options.print_version = true;
-        options.exit_success = true;
+        options.exit_success  = true;
         break;
       case '?':
-        options.print_usage = true;
+        options.print_usage  = true;
         options.exit_success = true;
         break;
       default:
-        options.print_usage = true;
+        options.print_usage  = true;
         options.exit_failure = true;
         break;
     }
@@ -160,29 +160,27 @@ Options getOptions(int argc, char** argv) {
   }
 
   if (argc > optind) {
-    options.print_usage = true;
+    options.print_usage  = true;
     options.exit_failure = true;
   }
 
   if (options.feed_thru && options.input_type == InputType::MPX_sndfile) {
-    std::cerr << "error: feed-thru is not supported for audio file inputs"
-              << '\n';
+    std::cerr << "error: feed-thru is not supported for audio file inputs" << '\n';
     options.exit_failure = true;
   }
 
   if (options.num_channels > 1 && options.input_type != InputType::MPX_stdin &&
       options.input_type != InputType::MPX_sndfile) {
-    std::cerr << "error: multi-channel input is only supported for MPX signals"
-              << '\n';
+    std::cerr << "error: multi-channel input is only supported for MPX signals" << '\n';
     options.exit_failure = true;
   }
 
-  const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin &&
-      !options.print_usage && !options.exit_failure && !options.exit_success};
+  const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin && !options.print_usage &&
+                              !options.exit_failure && !options.exit_success};
 
   if (assuming_raw_mpx && !options.rate_defined) {
-    std::cerr << "{\"warning\":\"raw MPX sample rate not defined, assuming " << kTargetSampleRate_Hz << " Hz\"}"
-              << '\n';
+    std::cerr << "{\"warning\":\"raw MPX sample rate not defined, assuming " << kTargetSampleRate_Hz
+              << " Hz\"}" << '\n';
     options.samplerate = kTargetSampleRate_Hz;
   }
 

@@ -140,7 +140,7 @@ struct MessagePart {
     is_received(_is_received), data(_data) {}
 
   bool is_received { false };
-  std::array<uint16_t, 2> data;
+  std::array<uint16_t, 2> data{};
 };
 
 class Message {
@@ -183,7 +183,7 @@ class Message {
   EventDirectionality directionality_ { EventDirectionality::Single };
   EventUrgency urgency_        { EventUrgency::None };
   uint16_t continuity_index_   { 0 };
-  std::array<MessagePart, 5> parts_;
+  std::array<MessagePart, 5> parts_{};
 };
 
 class TMCService {

@@ -19,28 +19,29 @@
 
 namespace redsea {
 
-std::string getTimePointString(
-    const std::chrono::time_point<std::chrono::system_clock>& timepoint,
-    const std::string& format) {
-
+std::string getTimePointString(const std::chrono::time_point<std::chrono::system_clock>& timepoint,
+                               const std::string& format) {
   // This is done to ensure we get truncation and not rounding to integer seconds
   const auto seconds_since_epoch(
       std::chrono::duration_cast<std::chrono::seconds>(timepoint.time_since_epoch()));
-  const std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::time_point(seconds_since_epoch));
+  const std::time_t t = std::chrono::system_clock::to_time_t(
+      std::chrono::system_clock::time_point(seconds_since_epoch));
 
   std::string format_with_fractional(format);
   const std::size_t found = format_with_fractional.find("%f");
   if (found != std::string::npos) {
-    const int ms         = (std::chrono::duration_cast<std::chrono::milliseconds>(timepoint.time_since_epoch() -
-                            seconds_since_epoch)).count();
-    const int hundredths = (ms / 10)  % 10;
+    const int ms = (std::chrono::duration_cast<std::chrono::milliseconds>(
+                        timepoint.time_since_epoch() - seconds_since_epoch))
+                       .count();
+    const int hundredths = (ms / 10) % 10;
     const int tenths     = (ms / 100) % 10;
 
     format_with_fractional.replace(found, 2, std::to_string(tenths) + std::to_string(hundredths));
   }
 
   char buffer[64];
-  if (std::strftime(buffer, sizeof(buffer), format_with_fractional.c_str(), std::localtime(&t)) == 0) {
+  if (std::strftime(buffer, sizeof(buffer), format_with_fractional.c_str(), std::localtime(&t)) ==
+      0) {
     return "(format error)";
   }
 

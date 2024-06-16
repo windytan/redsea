@@ -128,7 +128,7 @@ class AltFreqList {
   void clear();
 
  private:
-  std::array<int, 25> alt_freqs_;
+  std::array<int, 25> alt_freqs_{};
   size_t num_expected_{0};
   size_t num_received_{0};
   bool lf_mf_follows_{false};

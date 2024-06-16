@@ -78,10 +78,6 @@ uint16_t Group::getBlock(eBlockNumber block_num) const {
   return blocks_[block_num].data;
 }
 
-uint16_t Group::getBlock1() const {
-  return blocks_[0].data;
-}
-
 uint16_t Group::getBlock2() const {
   return blocks_[1].data;
 }
@@ -191,6 +187,9 @@ void Group::setAverageBLER(float bler) {
  *
  */
 void Group::printHex(std::ostream& stream) const {
+  std::ios old_stream_state(nullptr);
+  old_stream_state.copyfmt(stream);
+
   stream.fill('0');
   stream.setf(std::ios_base::uppercase);
 
@@ -204,6 +203,9 @@ void Group::printHex(std::ostream& stream) const {
     if (block_num != BLOCK4)
       stream << " ";
   }
+
+  // Restore ostream format
+  stream.copyfmt(old_stream_state);
 }
 
 /*
@@ -303,7 +305,7 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
       decodeType15B(group);
 
       // Other groups can be reassigned for ODA by a 3A group
-    } else if (oda_app_for_group_.count(type) > 0) {
+    } else if (oda_app_for_group_.find(type) != oda_app_for_group_.end()) {
       decodeODAGroup(group);
 
       // Below: Groups that could optionally be used for ODA but have
@@ -539,8 +541,8 @@ void Station::decodeType2(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  const size_t radiotext_position =
-      getBits<4>(group.getBlock2(), 0) * (group.getType().version == GroupType::Version::A ? 4 : 2);
+  const size_t radiotext_position = getBits<4>(group.getBlock2(), 0) *
+                                    (group.getType().version == GroupType::Version::A ? 4UL : 2UL);
 
   const bool is_ab_changed = radiotext_.isABChanged(getBits<1>(group.getBlock2(), 4));
 
@@ -587,7 +589,7 @@ void Station::decodeType2(const Group& group) {
 
     // Method 3 was used instead (and was confirmed by a repeat).
   } else if (has_potentially_complete_message) {
-    json_["*SORT04*radiotext"] = rtrim(potentially_complete_message);
+    json_["*SORT04*radiotext"] = rtrim(std::move(potentially_complete_message));
 
     // The string is not complete yet, but user wants to see it anyway.
   } else if (options_.show_partial && rtrim(radiotext_.text.str()).length() > 0) {
@@ -838,8 +840,8 @@ void Station::decodeType14(const Group& group) {
     case 1:
     case 2:
     case 3:
-      if (eon_ps_names_.count(on_pi) == 0)
-        eon_ps_names_[on_pi] = RDSString(8);
+      if (eon_ps_names_.find(on_pi) == eon_ps_names_.end())
+        eon_ps_names_.emplace(on_pi, RDSString(8));
 
       eon_ps_names_[on_pi].set(2 * eon_variant, getBits<8>(group.getBlock3(), 8));
       eon_ps_names_[on_pi].set(2 * eon_variant + 1, getBits<8>(group.getBlock3(), 0));
@@ -942,7 +944,7 @@ void Station::decodeType15B(const Group& group) {
 
 /* Open Data Application */
 void Station::decodeODAGroup(const Group& group) {
-  if (oda_app_for_group_.count(group.getType()) == 0) {
+  if (oda_app_for_group_.find(group.getType()) == oda_app_for_group_.end()) {
     json_["unknown_oda"]["raw_data"] =
         getHexString(group.getBlock(BLOCK2) & 0b11111, 2) + " " +
         (group.has(BLOCK3) ? getHexString(group.getBlock(BLOCK3), 4) : "----") + " " +
@@ -1088,7 +1090,7 @@ void Station::parseDAB(const Group& group) {
         // clang-format on
     });
 
-    if (dab_channels.count(freq) != 0) {
+    if (dab_channels.find(freq) != dab_channels.end()) {
       json_["dab"]["channel"] = dab_channels.at(freq);
     }
 

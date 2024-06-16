@@ -30,25 +30,25 @@ namespace redsea {
 
 class BiphaseDecoder {
  public:
-  BiphaseDecoder() = default;
+  BiphaseDecoder()  = default;
   ~BiphaseDecoder() = default;
   Maybe<bool> push(std::complex<float> psk_symbol);
 
  private:
-  std::complex<float> prev_psk_symbol_ { 0.0f, 0.0f };
-  std::array<float, 128> clock_history_;
-  unsigned clock_                      { 0 };
-  unsigned clock_polarity_             { 0 };
+  std::complex<float> prev_psk_symbol_{0.0f, 0.0f};
+  std::array<float, 128> clock_history_{};
+  uint32_t clock_{};
+  uint32_t clock_polarity_{};
 };
 
 class DeltaDecoder {
  public:
-  DeltaDecoder() = default;
+  DeltaDecoder()  = default;
   ~DeltaDecoder() = default;
   unsigned decode(unsigned d);
 
  private:
-  unsigned prev_ { 0 };
+  unsigned prev_{0};
 };
 
 class Subcarrier {
@@ -61,7 +61,7 @@ class Subcarrier {
   float getSecondsSinceLastReset() const;
 
  private:
-  int sample_num_ { 0 };
+  int sample_num_{0};
   const float resample_ratio_;
 
   liquid::FIRFilter fir_lpf_;
@@ -73,7 +73,7 @@ class Subcarrier {
 
   MPXBuffer<> resampled_buffer_{};
 
-  bool is_eof_ { false };
+  bool is_eof_{false};
 
   DeltaDecoder delta_decoder_;
   BiphaseDecoder biphase_decoder_;

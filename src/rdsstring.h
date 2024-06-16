@@ -42,7 +42,7 @@ class RDSString {
   size_t getExpectedLength() const;
   std::vector<uint8_t> getData() const;
   std::string str() const;
-  std::string getLastCompleteString() const;
+  const std::string& getLastCompleteString() const;
   std::string getLastCompleteString(size_t start, size_t len) const;
   bool isComplete() const;
   bool hasPreviouslyReceivedTerminators() const;
