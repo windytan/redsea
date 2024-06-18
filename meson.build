@@ -7,7 +7,11 @@ conf.set_quoted('VERSION', meson.project_version())
 configure_file(output : 'config.h',
                configuration : conf)
 
+
+########################
 ### Compiler options ###
+########################
+
 
 cc = meson.get_compiler('cpp')
 add_project_arguments(cc.get_supported_arguments([
@@ -17,12 +21,44 @@ if get_option('buildtype') == 'release'
   add_project_arguments('-O3', language : 'cpp')
 endif
 
-### Dependencies ###
+# We want to use M_PI on Windows
+if build_machine.system() == 'windows'
+  add_project_arguments('-D_USE_MATH_DEFINES=1', language : 'cpp')
+endif
 
-iconv = dependency('iconv')
+# Explicit GNU extensions on Cygwin
+if build_machine.system() == 'cygwin'
+  add_project_arguments('-std=gnu++14', language : 'cpp')
+else
+  add_project_arguments('-std=c++14', language : 'cpp')
+endif
+
+
+####################
+### Dependencies ###
+####################
+
+
+# Find libsndfile
 sndfile = dependency('sndfile')
 
-# Detecting liquid-dsp in a portable fashion
+# Find iconv; may require -liconv
+foreach linker_args : [ ['-liconv'], [] ]
+  if cc.links('''
+    #include <iconv.h>
+    int main() {
+      iconv_open("UTF-8", "ISO-8859-1");
+    }''', args: linker_args)
+    iconv = declare_dependency(link_args: linker_args)
+    break
+  endif
+endforeach
+if not iconv.found()
+  # Last resort
+  iconv = dependency('iconv')
+endif
+
+# Find liquid-dsp
 if build_machine.system() == 'darwin'
   fs = import('fs')
   # Homebrew system
@@ -42,17 +78,11 @@ else
   liquid = cc.find_library('liquid')
 endif
 
-# We want to use M_PI on Windows
-if build_machine.system() == 'windows'
-  add_project_arguments('-D_USE_MATH_DEFINES=1', language : 'cpp')
-endif
 
-# Explicit GNU extensions on Cygwin
-if build_machine.system() == 'cygwin'
-  add_project_arguments('-std=gnu++14', language : 'cpp')
-else
-  add_project_arguments('-std=c++14', language : 'cpp')
-endif
+############################
+### Sources & Executable ###
+############################
+
 
 sources_no_main = [
   'ext/json/jsoncpp.cpp',
@@ -73,11 +103,15 @@ sources_no_main = [
 
 executable('redsea', [sources_no_main, 'src/redsea.cc'], dependencies: [iconv, sndfile, liquid])
 
+
+##################
 ### Unit tests ###
+##################
 
 catch2_dep = dependency('catch2-with-main', required: false)
 
 if catch2_dep.found()
-  test_exec = executable('redsea-test', [sources_no_main, 'test/unit.cc'], dependencies: [ iconv, sndfile, liquid, catch2_dep ])
+  test_exec = executable('redsea-test', [sources_no_main, 'test/unit.cc'],
+                         dependencies: [ iconv, sndfile, liquid, catch2_dep ])
   test('Smoke tests', test_exec)
 endif
