@@ -44,6 +44,7 @@ struct Options {
   bool bler          { false };
   bool show_raw      { false };
   bool rate_defined  { false };
+  bool use_fec       { true  };
   float samplerate   {};
   int num_channels   { 1 };
   InputType input_type   { InputType::MPX_stdin };

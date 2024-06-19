@@ -56,7 +56,6 @@ class BlockStream {
 
  private:
   void acquireSync(Block block);
-  void handleUncorrectableError();
   void findBlockInInputRegister();
   void handleNewlyReceivedGroup();
 

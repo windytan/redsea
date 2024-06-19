@@ -153,17 +153,17 @@ class Pager {
   void decode1ABlock4(uint16_t block4);
 };
 
+/*
+ * A single RDS group transmitted as four 16-bit blocks.
+ *
+ */
 class Group {
  public:
   Group() = default;
 
-  uint16_t getBlock(eBlockNumber block_num) const;
-  uint16_t getBlock1() const;
-  uint16_t getBlock2() const;
-  uint16_t getBlock3() const;
-  uint16_t getBlock4() const;
-
+  uint16_t get(eBlockNumber block_num) const;
   bool has(eBlockNumber block_num) const;
+
   bool isEmpty() const;
   GroupType getType() const;
   bool hasType() const;

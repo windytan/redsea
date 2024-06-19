@@ -132,6 +132,11 @@ redsea -f WAVEFILE
                        format. This option can be specified multiple times to
                        load several location tables.
 
+--no-fec               Disable forward error correction; always reject blocks
+                       with incorrect syndromes. In noisy conditions, fewer errors
+                       will slip through, but also fewer blocks in total; see wiki
+                       for discussion.
+
 -o, --output FORMAT    Print output as FORMAT:
                          hex  RDS Spy hex format.
                          json Newline-delimited JSON (default).

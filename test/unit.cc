@@ -45,6 +45,7 @@ TEST_CASE("Decodes basic info") {
   CHECK(json_lines[3]["ps"].asString() == "YLE X3M ");
 }
 
+// https://github.com/windytan/redsea/wiki/Some-RadioText-research
 TEST_CASE("Decodes radiotext") {
   redsea::Options options;
 

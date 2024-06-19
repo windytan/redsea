@@ -12,6 +12,7 @@
 * New features:
   * Add support for Enhanced RadioText (eRT)
   * Add support for Long PS in Group 15A (#104)
+  * Add runtime option to disable error correction with --no-fec
 * UX changes:
   * Breaking: Print a warning to stderr if the raw MPX input sample rate is
     not specified

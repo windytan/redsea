@@ -22,6 +22,12 @@
 
 namespace redsea {
 
+// If the block error rate (0-100) exceeds this value over a longer period, assume that it's
+// because we lost synchronization. A lower value will make redsea give up in noisy conditions.
+constexpr int kMaxTolerableBLER = 85;
+
+constexpr int kMaxErrorsToleratedOver50Blocks{kMaxTolerableBLER / 2};
+
 constexpr int kBlockLength       = 26;
 constexpr unsigned kBlockBitmask = (1 << kBlockLength) - 1;
 constexpr int kCheckwordLength   = 10;
@@ -60,7 +66,7 @@ Offset getNextOffsetFor(Offset this_offset) {
 }
 
 // IEC 62106:2015 section B.3.1 Table B.1
-Offset getOffsetForSyndrome(uint16_t syndrome) {
+Offset getOffsetForSyndrome(uint32_t syndrome) {
   // clang-format off
   switch (syndrome) {
     case 0b1111011000 : return Offset::A;       break;
@@ -120,12 +126,12 @@ uint32_t calculateSyndrome(uint32_t vec) {
 
 // Precompute mapping of syndromes to error vectors
 // IEC 62106:2015 section B.3.1
-std::map<std::pair<uint16_t, Offset>, uint32_t> makeErrorLookupTable() {
-  std::map<std::pair<uint16_t, Offset>, uint32_t> lookup_table;
+std::map<std::pair<uint32_t, Offset>, uint32_t> makeErrorLookupTable() {
+  std::map<std::pair<uint32_t, Offset>, uint32_t> lookup_table;
 
   // Table B.1
   // clang-format off
-  constexpr std::array<std::pair<Offset, uint16_t>, 5> offset_words{{
+  constexpr std::array<std::pair<Offset, uint32_t>, 5> offset_words{{
       { Offset::A,      0b0011111100 },
       { Offset::B,      0b0110011000 },
       { Offset::C,      0b0101101000 },
@@ -160,7 +166,7 @@ ErrorCorrectionResult correctBurstErrors(Block block, Offset expected_offset) {
 
   ErrorCorrectionResult result;
 
-  const uint16_t syndrome = static_cast<uint16_t>(calculateSyndrome(block.raw));
+  const uint32_t syndrome = calculateSyndrome(block.raw);
   result.corrected_bits   = block.raw;
 
   const auto search = error_lookup_table.find({syndrome, expected_offset});
@@ -213,16 +219,6 @@ bool SyncPulseBuffer::isSequenceFound() const {
 
 BlockStream::BlockStream(const Options& options) : options_(options) {}
 
-// The data had errors that couldn't be corrected.
-void BlockStream::handleUncorrectableError() {
-  // EN 50067:1998, section C.1.2:
-  // Sync is lost when >45 out of last 50 blocks are erroneous
-  if (is_in_sync_ && block_error_sum50_.getSum() > 45) {
-    is_in_sync_ = false;
-    block_error_sum50_.clear();
-  }
-}
-
 // Try to find a cyclic pattern in the offset words.
 void BlockStream::acquireSync(Block block) {
   if (is_in_sync_)
@@ -258,7 +254,7 @@ void BlockStream::pushBit(bool bit) {
 void BlockStream::findBlockInInputRegister() {
   Block block;
   block.raw    = input_register_ & kBlockBitmask;
-  block.offset = getOffsetForSyndrome(static_cast<uint16_t>(calculateSyndrome(block.raw)));
+  block.offset = getOffsetForSyndrome(calculateSyndrome(block.raw));
 
   acquireSync(block);
 
@@ -268,16 +264,21 @@ void BlockStream::findBlockInInputRegister() {
 
     block.had_errors = (block.offset != expected_offset_);
     block_error_sum50_.push(block.had_errors);
+    // EN 50067:1998, section C.1.2:
+    // Sync is dropped when too many of the previous syndromes failed
+    if (block_error_sum50_.getSum() > kMaxErrorsToleratedOver50Blocks) {
+      is_in_sync_ = false;
+      block_error_sum50_.clear();
+      return;
+    }
 
     block.data = static_cast<uint16_t>(block.raw >> kCheckwordLength);
 
-    if (block.had_errors) {
+    if (block.had_errors && options_.use_fec) {
       const auto correction = correctBurstErrors(block, expected_offset_);
       if (correction.succeeded) {
         block.data   = static_cast<uint16_t>(correction.corrected_bits >> kCheckwordLength);
         block.offset = expected_offset_;
-      } else {
-        handleUncorrectableError();
       }
     }
 

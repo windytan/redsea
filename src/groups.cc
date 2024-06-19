@@ -70,24 +70,8 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
          (type1.number == type2.number && type1.version < type2.version);
 }
 
-/*
- * A single RDS group transmitted as four 16-bit blocks.
- *
- */
-uint16_t Group::getBlock(eBlockNumber block_num) const {
+uint16_t Group::get(eBlockNumber block_num) const {
   return blocks_[block_num].data;
-}
-
-uint16_t Group::getBlock2() const {
-  return blocks_[1].data;
-}
-
-uint16_t Group::getBlock3() const {
-  return blocks_[2].data;
-}
-
-uint16_t Group::getBlock4() const {
-  return blocks_[3].data;
 }
 
 bool Group::has(eBlockNumber block_num) const {
@@ -318,8 +302,8 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
       decodeType7A(group);
     } else if (type.number == 8 && type.version == GroupType::Version::A) {
       if (group.has(BLOCK2) && group.has(BLOCK3) && group.has(BLOCK4))
-        tmc_.receiveUserGroup(getBits<5>(group.getBlock2(), 0), group.getBlock3(),
-                              group.getBlock4(), &json_);
+        tmc_.receiveUserGroup(getBits<5>(group.get(BLOCK2), 0), group.get(BLOCK3),
+                              group.get(BLOCK4), &json_);
     } else if (type.number == 9 && type.version == GroupType::Version::A) {
       decodeType9A(group);
 
@@ -346,21 +330,21 @@ uint16_t Station::getPI() const {
 
 void Station::decodeBasics(const Group& group) {
   if (group.has(BLOCK2)) {
-    const uint16_t pty = getBits<5>(group.getBlock2(), 5);
+    const uint16_t pty = getBits<5>(group.get(BLOCK2), 5);
 
     if (group.hasType())
       json_["*SORT03*group"] = group.getType().str();
 
-    json_["tp"] = getBool(group.getBlock2(), 10);
+    json_["tp"] = getBool(group.get(BLOCK2), 10);
 
     json_["prog_type"] = options_.rbds ? getPTYNameStringRBDS(pty) : getPTYNameString(pty);
   } else if (group.getType().number == 15 && group.getType().version == GroupType::Version::B &&
              group.has(BLOCK4)) {
-    const uint16_t pty = getBits<5>(group.getBlock4(), 5);
+    const uint16_t pty = getBits<5>(group.get(BLOCK4), 5);
 
     json_["*SORT03*group"] = group.getType().str();
 
-    json_["tp"]        = getBool(group.getBlock4(), 10);
+    json_["tp"]        = getBool(group.get(BLOCK4), 10);
     json_["prog_type"] = options_.rbds ? getPTYNameStringRBDS(pty) : getPTYNameString(pty);
   }
 }
@@ -368,11 +352,11 @@ void Station::decodeBasics(const Group& group) {
 // Group 0: Basic tuning and switching information
 void Station::decodeType0(const Group& group) {
   // Block 2: Flags
-  const uint16_t segment_address                = getBits<2>(group.getBlock2(), 0);
-  const bool is_di                              = getBool(group.getBlock2(), 2);
+  const uint16_t segment_address                = getBits<2>(group.get(BLOCK2), 0);
+  const bool is_di                              = getBool(group.get(BLOCK2), 2);
   json_["di"][getDICodeString(segment_address)] = is_di;
-  json_["ta"]                                   = getBool(group.getBlock2(), 4);
-  json_["is_music"]                             = getBool(group.getBlock2(), 3);
+  json_["ta"]                                   = getBool(group.get(BLOCK2), 4);
+  json_["is_music"]                             = getBool(group.get(BLOCK2), 3);
 
   if (!group.has(BLOCK3)) {
     // Reset a Method B list to prevent mixing up different lists
@@ -383,8 +367,8 @@ void Station::decodeType0(const Group& group) {
 
   // Block 3: Alternative frequencies
   if (group.getType().version == GroupType::Version::A) {
-    alt_freq_list_.insert(getBits<8>(group.getBlock3(), 8));
-    alt_freq_list_.insert(getBits<8>(group.getBlock3(), 0));
+    alt_freq_list_.insert(getBits<8>(group.get(BLOCK3), 8));
+    alt_freq_list_.insert(getBits<8>(group.get(BLOCK3), 0));
 
     if (alt_freq_list_.isComplete()) {
       const auto raw_frequencies = alt_freq_list_.getRawList();
@@ -450,8 +434,8 @@ void Station::decodeType0(const Group& group) {
     return;
 
   // Block 4: Program Service Name
-  ps_.update(segment_address * 2, getBits<8>(group.getBlock4(), 8),
-             getBits<8>(group.getBlock4(), 0));
+  ps_.update(segment_address * 2, getBits<8>(group.get(BLOCK4), 8),
+             getBits<8>(group.get(BLOCK4), 0));
 
   if (ps_.text.isComplete())
     json_["*SORT04*ps"] = ps_.text.getLastCompleteString();
@@ -464,32 +448,32 @@ void Station::decodeType1(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  pin_ = group.getBlock4();
+  pin_ = group.get(BLOCK4);
 
   if (pin_ != 0x0000)
     if (!decodePIN(pin_, &json_))
       json_["debug"].append("invalid PIN");
 
   if (group.getType().version == GroupType::Version::A) {
-    pager_.paging_code = getBits<3>(group.getBlock2(), 2);
+    pager_.paging_code = getBits<3>(group.get(BLOCK2), 2);
     if (pager_.paging_code != 0)
-      pager_.interval = getBits<2>(group.getBlock2(), 0);
-    linkage_la_          = getBool(group.getBlock3(), 15);
+      pager_.interval = getBits<2>(group.get(BLOCK2), 0);
+    linkage_la_          = getBool(group.get(BLOCK3), 15);
     json_["has_linkage"] = linkage_la_;
 
-    const int slow_label_variant = getBits<3>(group.getBlock3(), 12);
+    const int slow_label_variant = getBits<3>(group.get(BLOCK3), 12);
 
     switch (slow_label_variant) {
       case 0:
         if (pager_.paging_code != 0) {
-          pager_.opc = getBits<4>(group.getBlock3(), 8);
+          pager_.opc = getBits<4>(group.get(BLOCK3), 8);
 
           // No PIN (IEC 62106:2015, section M.3.2.5.3)
-          if (group.has(BLOCK4) && getBits<5>(group.getBlock4(), 11) == 0)
-            pager_.decode1ABlock4(group.getBlock4());
+          if (group.has(BLOCK4) && getBits<5>(group.get(BLOCK4), 11) == 0)
+            pager_.decode1ABlock4(group.get(BLOCK4));
         }
 
-        ecc_ = getBits<8>(group.getBlock3(), 0);
+        ecc_ = getBits<8>(group.get(BLOCK3), 0);
         cc_  = getBits<4>(pi_, 12);
 
         if (ecc_ != 0x00) {
@@ -499,27 +483,27 @@ void Station::decodeType1(const Group& group) {
         break;
 
       case 1:
-        tmc_id_         = getBits<12>(group.getBlock3(), 0);
+        tmc_id_         = getBits<12>(group.get(BLOCK3), 0);
         json_["tmc_id"] = tmc_id_;
         break;
 
       case 2:
         if (pager_.paging_code != 0) {
-          pager_.pac = getBits<6>(group.getBlock3(), 0);
-          pager_.opc = getBits<4>(group.getBlock3(), 8);
+          pager_.pac = getBits<6>(group.get(BLOCK3), 0);
+          pager_.opc = getBits<4>(group.get(BLOCK3), 8);
 
           // No PIN (IEC 62105:2015, section M.3.2.5.3)
-          if (group.has(BLOCK4) && getBits<5>(group.getBlock4(), 11) == 0)
-            pager_.decode1ABlock4(group.getBlock4());
+          if (group.has(BLOCK4) && getBits<5>(group.get(BLOCK4), 11) == 0)
+            pager_.decode1ABlock4(group.get(BLOCK4));
         }
         break;
 
       case 3:
-        json_["language"] = getLanguageString(getBits<8>(group.getBlock3(), 0));
+        json_["language"] = getLanguageString(getBits<8>(group.get(BLOCK3), 0));
         break;
 
       case 7:
-        json_["ews"] = getBits<12>(group.getBlock3(), 0);
+        json_["ews"] = getBits<12>(group.get(BLOCK3), 0);
         break;
 
       default:
@@ -541,10 +525,10 @@ void Station::decodeType2(const Group& group) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  const size_t radiotext_position = getBits<4>(group.getBlock2(), 0) *
+  const size_t radiotext_position = getBits<4>(group.get(BLOCK2), 0) *
                                     (group.getType().version == GroupType::Version::A ? 4UL : 2UL);
 
-  const bool is_ab_changed = radiotext_.isABChanged(getBits<1>(group.getBlock2(), 4));
+  const bool is_ab_changed = radiotext_.isABChanged(getBits<1>(group.get(BLOCK2), 4));
 
   // If these heuristics match it's possible that we just received a full random-length message
   // with no string terminator (method 3 above).
@@ -571,8 +555,8 @@ void Station::decodeType2(const Group& group) {
 
   if (group.getType().version == GroupType::Version::A) {
     radiotext_.text.resize(64);
-    radiotext_.update(radiotext_position, getBits<8>(group.getBlock3(), 8),
-                      getBits<8>(group.getBlock3(), 0));
+    radiotext_.update(radiotext_position, getBits<8>(group.get(BLOCK3), 8),
+                      getBits<8>(group.get(BLOCK3), 0));
   } else {
     radiotext_.text.resize(32);
   }
@@ -580,7 +564,7 @@ void Station::decodeType2(const Group& group) {
   if (group.has(BLOCK4)) {
     radiotext_.update(
         radiotext_position + (group.getType().version == GroupType::Version::A ? 2 : 0),
-        getBits<8>(group.getBlock4(), 8), getBits<8>(group.getBlock4(), 0));
+        getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0));
   }
 
   // Transmitter used Method 1 or 2 convey the length of the string.
@@ -605,9 +589,9 @@ void Station::decodeType3A(const Group& group) {
   if (group.getType().version != GroupType::Version::A)
     return;
 
-  const GroupType oda_group_type(getBits<5>(group.getBlock2(), 0));
-  const uint16_t oda_message{group.getBlock3()};
-  const uint16_t oda_app_id{group.getBlock4()};
+  const GroupType oda_group_type(getBits<5>(group.get(BLOCK2), 0));
+  const uint16_t oda_message{group.get(BLOCK3)};
+  const uint16_t oda_app_id{group.get(BLOCK4)};
 
   oda_app_for_group_[oda_group_type] = oda_app_id;
 
@@ -664,7 +648,7 @@ void Station::decodeType4A(const Group& group) {
     return;
 
   const double modified_julian_date{
-      static_cast<double>(getBits<17>(group.getBlock2(), group.getBlock3(), 1))};
+      static_cast<double>(getBits<17>(group.get(BLOCK2), group.get(BLOCK3), 1))};
 
   // Would result in negative years/months
   if (modified_julian_date < 15079.0) {
@@ -684,11 +668,11 @@ void Station::decodeType4A(const Group& group) {
   year_utc += 1900;
   month_utc -= 1;
 
-  const int hour_utc   = getBits<5>(group.getBlock3(), group.getBlock4(), 12);
-  const int minute_utc = getBits<6>(group.getBlock4(), 6);
+  const int hour_utc   = getBits<5>(group.get(BLOCK3), group.get(BLOCK4), 12);
+  const int minute_utc = getBits<6>(group.get(BLOCK4), 6);
 
   const double local_offset =
-      (getBool(group.getBlock4(), 5) ? -1.0 : 1.0) * getBits<5>(group.getBlock4(), 0) / 2.0;
+      (getBool(group.get(BLOCK4), 5) ? -1.0 : 1.0) * getBits<5>(group.get(BLOCK4), 0) / 2.0;
 
   struct tm utc_plus_offset_tm;
   utc_plus_offset_tm.tm_year  = year_utc - 1900;
@@ -727,13 +711,13 @@ void Station::decodeType4A(const Group& group) {
 
 // Group 5: Transparent data channels
 void Station::decodeType5(const Group& group) {
-  const auto address                   = getBits<5>(group.getBlock2(), 0);
+  const auto address                   = getBits<5>(group.get(BLOCK2), 0);
   json_["transparent_data"]["address"] = address;
 
   if (group.getType().version == GroupType::Version::A) {
     const std::array<uint16_t, 4> data{
-        getBits<8>(group.getBlock3(), 8), getBits<8>(group.getBlock3(), 0),
-        getBits<8>(group.getBlock4(), 8), getBits<8>(group.getBlock4(), 0)};
+        getBits<8>(group.get(BLOCK3), 8), getBits<8>(group.get(BLOCK3), 0),
+        getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0)};
 
     json_["transparent_data"]["raw"] = getHexString(data[0], 2) + " " + getHexString(data[1], 2) +
                                        " " + getHexString(data[2], 2) + " " +
@@ -757,8 +741,8 @@ void Station::decodeType5(const Group& group) {
 
     json_["transparent_data"]["as_text"] = decoded_text.str();
   } else {
-    const std::array<int, 2> data{getBits<8>(group.getBlock4(), 8),
-                                  getBits<8>(group.getBlock4(), 0)};
+    const std::array<int, 2> data{getBits<8>(group.get(BLOCK4), 8),
+                                  getBits<8>(group.get(BLOCK4), 0)};
 
     json_["transparent_data"]["raw"] = getHexString(data[0], 2) + " " + getHexString(data[1], 2);
 
@@ -770,18 +754,18 @@ void Station::decodeType5(const Group& group) {
 
 // Group 6: In-house applications
 void Station::decodeType6(const Group& group) {
-  json_["in_house_data"].append(getBits<5>(group.getBlock2(), 0));
+  json_["in_house_data"].append(getBits<5>(group.get(BLOCK2), 0));
 
   if (group.getType().version == GroupType::Version::A) {
     if (group.has(BLOCK3)) {
-      json_["in_house_data"].append(getBits<16>(group.getBlock3(), 0));
+      json_["in_house_data"].append(getBits<16>(group.get(BLOCK3), 0));
       if (group.has(BLOCK4)) {
-        json_["in_house_data"].append(getBits<16>(group.getBlock4(), 0));
+        json_["in_house_data"].append(getBits<16>(group.get(BLOCK4), 0));
       }
     }
   } else {
     if (group.has(BLOCK4)) {
-      json_["in_house_data"].append(getBits<16>(group.getBlock4(), 0));
+      json_["in_house_data"].append(getBits<16>(group.get(BLOCK4), 0));
     }
   }
 }
@@ -803,14 +787,14 @@ void Station::decodeType10A(const Group& group) {
   if (!group.has(BLOCK3) || !group.has(BLOCK4))
     return;
 
-  const uint16_t segment_address = getBits<1>(group.getBlock2(), 0);
+  const uint16_t segment_address = getBits<1>(group.get(BLOCK2), 0);
 
-  if (ptyname_.isABChanged(getBits<1>(group.getBlock2(), 4)))
+  if (ptyname_.isABChanged(getBits<1>(group.get(BLOCK2), 4)))
     ptyname_.text.clear();
 
-  ptyname_.update(segment_address * 4, getBits<8>(group.getBlock3(), 8),
-                  getBits<8>(group.getBlock3(), 0), getBits<8>(group.getBlock4(), 8),
-                  getBits<8>(group.getBlock4(), 0));
+  ptyname_.update(segment_address * 4, getBits<8>(group.get(BLOCK3), 8),
+                  getBits<8>(group.get(BLOCK3), 0), getBits<8>(group.get(BLOCK4), 8),
+                  getBits<8>(group.get(BLOCK4), 0));
 
   if (ptyname_.text.isComplete()) {
     json_["pty_name"] = ptyname_.text.getLastCompleteString();
@@ -822,19 +806,19 @@ void Station::decodeType14(const Group& group) {
   if (!(group.has(BLOCK4)))
     return;
 
-  const uint16_t on_pi                 = group.getBlock4();
+  const uint16_t on_pi                 = group.get(BLOCK4);
   json_["other_network"]["*SORT00*pi"] = getPrefixedHexString(on_pi, 4);
-  json_["other_network"]["tp"]         = getBool(group.getBlock2(), 4);
+  json_["other_network"]["tp"]         = getBool(group.get(BLOCK2), 4);
 
   if (group.getType().version == GroupType::Version::B) {
-    json_["other_network"]["ta"] = getBool(group.getBlock2(), 3);
+    json_["other_network"]["ta"] = getBool(group.get(BLOCK2), 3);
     return;
   }
 
   if (!group.has(BLOCK3))
     return;
 
-  const uint16_t eon_variant = getBits<4>(group.getBlock2(), 0);
+  const uint16_t eon_variant = getBits<4>(group.get(BLOCK2), 0);
   switch (eon_variant) {
     case 0:
     case 1:
@@ -843,16 +827,16 @@ void Station::decodeType14(const Group& group) {
       if (eon_ps_names_.find(on_pi) == eon_ps_names_.end())
         eon_ps_names_.emplace(on_pi, RDSString(8));
 
-      eon_ps_names_[on_pi].set(2 * eon_variant, getBits<8>(group.getBlock3(), 8));
-      eon_ps_names_[on_pi].set(2 * eon_variant + 1, getBits<8>(group.getBlock3(), 0));
+      eon_ps_names_[on_pi].set(2 * eon_variant, getBits<8>(group.get(BLOCK3), 8));
+      eon_ps_names_[on_pi].set(2 * eon_variant + 1, getBits<8>(group.get(BLOCK3), 0));
 
       if (eon_ps_names_[on_pi].isComplete())
         json_["other_network"]["ps"] = eon_ps_names_[on_pi].getLastCompleteString();
       break;
 
     case 4:
-      eon_alt_freqs_[on_pi].insert(getBits<8>(group.getBlock3(), 8));
-      eon_alt_freqs_[on_pi].insert(getBits<8>(group.getBlock3(), 0));
+      eon_alt_freqs_[on_pi].insert(getBits<8>(group.get(BLOCK3), 8));
+      eon_alt_freqs_[on_pi].insert(getBits<8>(group.get(BLOCK3), 0));
 
       if (eon_alt_freqs_[on_pi].isComplete()) {
         for (const int freq : eon_alt_freqs_[on_pi].getRawList())
@@ -866,7 +850,7 @@ void Station::decodeType14(const Group& group) {
     case 7:
     case 8:
     case 9: {
-      const CarrierFrequency freq_other(getBits<8>(group.getBlock3(), 0));
+      const CarrierFrequency freq_other(getBits<8>(group.get(BLOCK3), 0));
 
       if (freq_other.isValid())
         json_["other_network"]["kilohertz"] = freq_other.kHz();
@@ -877,8 +861,8 @@ void Station::decodeType14(const Group& group) {
       // 10, 11 unallocated
 
     case 12: {
-      const bool has_linkage                = getBool(group.getBlock3(), 15);
-      const uint16_t lsn                    = getBits<12>(group.getBlock3(), 0);
+      const bool has_linkage                = getBool(group.get(BLOCK3), 15);
+      const uint16_t lsn                    = getBits<12>(group.get(BLOCK3), 0);
       json_["other_network"]["has_linkage"] = has_linkage;
       if (has_linkage && lsn != 0)
         json_["other_network"]["linkage_set"] = lsn;
@@ -886,8 +870,8 @@ void Station::decodeType14(const Group& group) {
     }
 
     case 13: {
-      const uint16_t pty = getBits<5>(group.getBlock3(), 11);
-      const bool ta      = getBool(group.getBlock3(), 0);
+      const uint16_t pty = getBits<5>(group.get(BLOCK3), 11);
+      const bool ta      = getBool(group.get(BLOCK3), 0);
       json_["other_network"]["prog_type"] =
           options_.rbds ? getPTYNameStringRBDS(pty) : getPTYNameString(pty);
       json_["other_network"]["ta"] = ta;
@@ -895,7 +879,7 @@ void Station::decodeType14(const Group& group) {
     }
 
     case 14: {
-      const uint16_t pin = group.getBlock3();
+      const uint16_t pin = group.get(BLOCK3);
 
       if (pin != 0x0000)
         decodePIN(pin, &(json_["other_network"]));
@@ -903,13 +887,13 @@ void Station::decodeType14(const Group& group) {
     }
 
     case 15: {
-      json_["other_network"]["broadcaster_data"] = getHexString(group.getBlock3(), 4);
+      json_["other_network"]["broadcaster_data"] = getHexString(group.get(BLOCK3), 4);
       break;
     }
 
     default:
       json_["debug"].append("TODO: EON variant " +
-                            std::to_string(getBits<4>(group.getBlock2(), 0)));
+                            std::to_string(getBits<4>(group.get(BLOCK2), 0)));
       break;
   }
 }
@@ -917,15 +901,15 @@ void Station::decodeType14(const Group& group) {
 /* Group 15A: Long PS or ODA */
 // @note Based on captures and https://www.rds.org.uk/2010/Glossary-Of-Terms.htm
 void Station::decodeType15A(const Group& group) {
-  const uint16_t segment_address = getBits<3>(group.getBlock2(), 0);
+  const uint16_t segment_address = getBits<3>(group.get(BLOCK2), 0);
 
   if (group.has(BLOCK3)) {
-    long_ps_.update(segment_address * 4, getBits<8>(group.getBlock3(), 8),
-                    getBits<8>(group.getBlock3(), 0));
+    long_ps_.update(segment_address * 4, getBits<8>(group.get(BLOCK3), 8),
+                    getBits<8>(group.get(BLOCK3), 0));
   }
   if (group.has(BLOCK4)) {
-    long_ps_.update(segment_address * 4 + 2, getBits<8>(group.getBlock4(), 8),
-                    getBits<8>(group.getBlock4(), 0));
+    long_ps_.update(segment_address * 4 + 2, getBits<8>(group.get(BLOCK4), 8),
+                    getBits<8>(group.get(BLOCK4), 0));
   }
 
   if ((group.has(BLOCK3) || group.has(BLOCK4)) && long_ps_.text.isComplete())
@@ -938,17 +922,17 @@ void Station::decodeType15A(const Group& group) {
 void Station::decodeType15B(const Group& group) {
   const auto block_num = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
 
-  json_["ta"]       = getBool(group.getBlock(block_num), 4);
-  json_["is_music"] = getBool(group.getBlock(block_num), 3);
+  json_["ta"]       = getBool(group.get(block_num), 4);
+  json_["is_music"] = getBool(group.get(block_num), 3);
 }
 
 /* Open Data Application */
 void Station::decodeODAGroup(const Group& group) {
   if (oda_app_for_group_.find(group.getType()) == oda_app_for_group_.end()) {
     json_["unknown_oda"]["raw_data"] =
-        getHexString(group.getBlock(BLOCK2) & 0b11111, 2) + " " +
-        (group.has(BLOCK3) ? getHexString(group.getBlock(BLOCK3), 4) : "----") + " " +
-        (group.has(BLOCK4) ? getHexString(group.getBlock(BLOCK4), 4) : "----");
+        getHexString(group.get(BLOCK2) & 0b11111, 2) + " " +
+        (group.has(BLOCK3) ? getHexString(group.get(BLOCK3), 4) : "----") + " " +
+        (group.has(BLOCK4) ? getHexString(group.get(BLOCK4), 4) : "----");
 
     return;
   }
@@ -980,23 +964,23 @@ void Station::decodeODAGroup(const Group& group) {
     case 0xCD46:
     case 0xCD47:
       if (group.has(BLOCK2) && group.has(BLOCK3) && group.has(BLOCK4))
-        tmc_.receiveUserGroup(getBits<5>(group.getBlock2(), 0), group.getBlock3(),
-                              group.getBlock4(), &json_);
+        tmc_.receiveUserGroup(getBits<5>(group.get(BLOCK2), 0), group.get(BLOCK3),
+                              group.get(BLOCK4), &json_);
       break;
 
     default:
       json_["unknown_oda"]["app_id"]   = getHexString(oda_app_id, 4);
       json_["unknown_oda"]["app_name"] = getAppNameString(oda_app_id);
       json_["unknown_oda"]["raw_data"] =
-          getHexString(group.getBlock(BLOCK2) & 0b11111, 2) + " " +
-          (group.has(BLOCK3) ? getHexString(group.getBlock(BLOCK3), 4) : "----") + " " +
-          (group.has(BLOCK4) ? getHexString(group.getBlock(BLOCK4), 4) : "----");
+          getHexString(group.get(BLOCK2) & 0b11111, 2) + " " +
+          (group.has(BLOCK3) ? getHexString(group.get(BLOCK3), 4) : "----") + " " +
+          (group.has(BLOCK4) ? getHexString(group.get(BLOCK4), 4) : "----");
   }
 }
 
 void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el) {
-  const bool item_toggle  = getBool(group.getBlock2(), 4);
-  const bool item_running = getBool(group.getBlock2(), 3);
+  const bool item_toggle  = getBool(group.get(BLOCK2), 4);
+  const bool item_running = getBool(group.get(BLOCK2), 3);
 
   if (item_toggle != rt.plus.toggle || item_running != rt.plus.item_running) {
     rt.text.clear();
@@ -1012,15 +996,15 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el)
 
   if (num_tags > 0) {
     tags[0].content_type =
-        static_cast<uint16_t>(getBits<6>(group.getBlock2(), group.getBlock3(), 13));
-    tags[0].start  = getBits<6>(group.getBlock3(), 7);
-    tags[0].length = getBits<6>(group.getBlock3(), 1) + 1;
+        static_cast<uint16_t>(getBits<6>(group.get(BLOCK2), group.get(BLOCK3), 13));
+    tags[0].start  = getBits<6>(group.get(BLOCK3), 7);
+    tags[0].length = getBits<6>(group.get(BLOCK3), 1) + 1;
 
     if (num_tags == 2) {
       tags[1].content_type =
-          static_cast<uint16_t>(getBits<6>(group.getBlock3(), group.getBlock4(), 11));
-      tags[1].start  = getBits<6>(group.getBlock4(), 5);
-      tags[1].length = getBits<5>(group.getBlock4(), 0) + 1;
+          static_cast<uint16_t>(getBits<6>(group.get(BLOCK3), group.get(BLOCK4), 11));
+      tags[1].start  = getBits<6>(group.get(BLOCK4), 5);
+      tags[1].length = getBits<5>(group.get(BLOCK4), 0) + 1;
     }
   }
 
@@ -1037,12 +1021,12 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el)
 }
 
 void Station::parseEnhancedRT(const Group& group) {
-  const size_t position = getBits<5>(group.getBlock2(), 0) * 4;
+  const size_t position = getBits<5>(group.get(BLOCK2), 0) * 4;
 
-  ert_.update(position, getBits<8>(group.getBlock3(), 8), getBits<8>(group.getBlock3(), 0));
+  ert_.update(position, getBits<8>(group.get(BLOCK3), 8), getBits<8>(group.get(BLOCK3), 0));
 
   if (group.has(BLOCK4)) {
-    ert_.update(position + 2, getBits<8>(group.getBlock4(), 8), getBits<8>(group.getBlock4(), 0));
+    ert_.update(position + 2, getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0));
   }
 
   if (ert_.text.isComplete()) {
@@ -1052,7 +1036,7 @@ void Station::parseEnhancedRT(const Group& group) {
 
 // ETSI EN 301 700 V1.1.1 (2000-03)
 void Station::parseDAB(const Group& group) {
-  const bool es_flag = getBool(group.getBlock2(), 4);
+  const bool es_flag = getBool(group.get(BLOCK2), 4);
 
   if (es_flag) {
     // Service table
@@ -1061,11 +1045,11 @@ void Station::parseDAB(const Group& group) {
   } else {
     // Ensemble table
 
-    const int mode = getBits<2>(group.getBlock2(), 2);
+    const int mode = getBits<2>(group.get(BLOCK2), 2);
     const std::array<std::string, 4> modes{"unspecified", "I", "II or III", "IV"};
     json_["dab"]["mode"] = modes[mode];
 
-    const int freq = 16 * getBits<18>(group.getBlock2(), group.getBlock3(), 0);
+    const int freq = 16 * getBits<18>(group.get(BLOCK2), group.get(BLOCK3), 0);
 
     json_["dab"]["kilohertz"] = freq;
 
@@ -1094,7 +1078,7 @@ void Station::parseDAB(const Group& group) {
       json_["dab"]["channel"] = dab_channels.at(freq);
     }
 
-    json_["dab"]["ensemble_id"] = getPrefixedHexString(group.getBlock4(), 4);
+    json_["dab"]["ensemble_id"] = getPrefixedHexString(group.get(BLOCK4), 4);
   }
 }
 

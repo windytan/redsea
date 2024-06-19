@@ -26,26 +26,28 @@ namespace redsea {
 
 Options getOptions(int argc, char** argv) {
   Options options;
+  int fec_flag{1};
 
-  constexpr struct option long_options[] = {
-      {"input-bits",   no_argument, 0, 'b'},
-      {"channels",     1,           0, 'c'},
-      {"feed-through", no_argument, 0, 'e'},
-      {"bler",         no_argument, 0, 'E'},
-      {"file",         1,           0, 'f'},
-      {"input-hex",    no_argument, 0, 'h'},
-      {"input",        1,           0, 'i'},
-      {"loctable",     1,           0, 'l'},
-      {"output",       1,           0, 'o'},
-      {"show-partial", no_argument, 0, 'p'},
-      {"samplerate",   1,           0, 'r'},
-      {"show-raw",     no_argument, 0, 'R'},
-      {"timestamp",    1,           0, 't'},
-      {"rbds",         no_argument, 0, 'u'},
-      {"version",      no_argument, 0, 'v'},
-      {"output-hex",   no_argument, 0, 'x'},
-      {"help",         no_argument, 0, '?'},
-      {0,              0,           0, 0  }
+  const struct option long_options[] = {
+      {"input-bits",   no_argument,       0,         'b'},
+      {"channels",     required_argument, 0,         'c'},
+      {"feed-through", no_argument,       0,         'e'},
+      {"bler",         no_argument,       0,         'E'},
+      {"file",         required_argument, 0,         'f'},
+      {"input-hex",    no_argument,       0,         'h'},
+      {"input",        required_argument, 0,         'i'},
+      {"loctable",     required_argument, 0,         'l'},
+      {"output",       required_argument, 0,         'o'},
+      {"show-partial", no_argument,       0,         'p'},
+      {"samplerate",   required_argument, 0,         'r'},
+      {"show-raw",     no_argument,       0,         'R'},
+      {"timestamp",    required_argument, 0,         't'},
+      {"rbds",         no_argument,       0,         'u'},
+      {"version",      no_argument,       0,         'v'},
+      {"output-hex",   no_argument,       0,         'x'},
+      {"no-fec",       no_argument,       &fec_flag, 0  },
+      {"help",         no_argument,       0,         '?'},
+      {0,              0,                 0,         0  }
   };
 
   int option_index = 0;
@@ -54,6 +56,9 @@ Options getOptions(int argc, char** argv) {
   while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rt:uvx", long_options,
                                     &option_index)) >= 0) {
     switch (option_char) {
+      case 0:
+        if (long_options[option_index].flag != 0)
+          break;
       case 'b':  // For backwards compatibility
         options.input_type = InputType::ASCIIbits;
         break;
@@ -158,6 +163,8 @@ Options getOptions(int argc, char** argv) {
     if (options.exit_success)
       break;
   }
+
+  options.use_fec = fec_flag;
 
   if (argc > optind) {
     options.print_usage  = true;
