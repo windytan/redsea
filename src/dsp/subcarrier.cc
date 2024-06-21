@@ -23,8 +23,6 @@
 #include <iostream>
 #include <tuple>
 
-#include <sndfile.h>
-
 #include "src/common.h"
 #include "src/dsp/liquid_wrappers.h"
 #include "src/input.h"

@@ -18,6 +18,7 @@
 #define INPUT_H_
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 
@@ -43,7 +44,7 @@ class MPXBuffer {
 
 class BeyondEofError : std::exception {
  public:
-  BeyondEofError() {};
+  BeyondEofError() {}
 };
 
 class MPXReader {
@@ -54,12 +55,12 @@ class MPXReader {
   bool eof() const;
   bool hasError() const;
   void fillBuffer();
-  MPXBuffer<>& readChunk(int channel);
+  MPXBuffer<>& readChunk(uint32_t channel);
   float getSamplerate() const;
-  int getNumChannels() const;
+  uint32_t getNumChannels() const;
 
  private:
-  int num_channels_{0};
+  uint32_t num_channels_{0};
   sf_count_t chunk_size_{0};
   bool is_eof_{true};
   bool is_error_{false};

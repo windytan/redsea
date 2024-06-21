@@ -21,6 +21,7 @@
 #include <iostream>
 
 #include "config.h"
+#include "src/common.h"
 
 namespace redsea {
 
@@ -29,25 +30,25 @@ Options getOptions(int argc, char** argv) {
   int fec_flag{1};
 
   const struct option long_options[] = {
-      {"input-bits",   no_argument,       0,         'b'},
-      {"channels",     required_argument, 0,         'c'},
-      {"feed-through", no_argument,       0,         'e'},
-      {"bler",         no_argument,       0,         'E'},
-      {"file",         required_argument, 0,         'f'},
-      {"input-hex",    no_argument,       0,         'h'},
-      {"input",        required_argument, 0,         'i'},
-      {"loctable",     required_argument, 0,         'l'},
-      {"output",       required_argument, 0,         'o'},
-      {"show-partial", no_argument,       0,         'p'},
-      {"samplerate",   required_argument, 0,         'r'},
-      {"show-raw",     no_argument,       0,         'R'},
-      {"timestamp",    required_argument, 0,         't'},
-      {"rbds",         no_argument,       0,         'u'},
-      {"version",      no_argument,       0,         'v'},
-      {"output-hex",   no_argument,       0,         'x'},
+      {"input-bits",   no_argument,       nullptr,   'b'},
+      {"channels",     required_argument, nullptr,   'c'},
+      {"feed-through", no_argument,       nullptr,   'e'},
+      {"bler",         no_argument,       nullptr,   'E'},
+      {"file",         required_argument, nullptr,   'f'},
+      {"input-hex",    no_argument,       nullptr,   'h'},
+      {"input",        required_argument, nullptr,   'i'},
+      {"loctable",     required_argument, nullptr,   'l'},
+      {"output",       required_argument, nullptr,   'o'},
+      {"show-partial", no_argument,       nullptr,   'p'},
+      {"samplerate",   required_argument, nullptr,   'r'},
+      {"show-raw",     no_argument,       nullptr,   'R'},
+      {"timestamp",    required_argument, nullptr,   't'},
+      {"rbds",         no_argument,       nullptr,   'u'},
+      {"version",      no_argument,       nullptr,   'v'},
+      {"output-hex",   no_argument,       nullptr,   'x'},
       {"no-fec",       no_argument,       &fec_flag, 0  },
-      {"help",         no_argument,       0,         '?'},
-      {0,              0,                 0,         0  }
+      {"help",         no_argument,       nullptr,   '?'},
+      {nullptr,        0,                 nullptr,   0  }
   };
 
   int option_index = 0;
@@ -56,25 +57,24 @@ Options getOptions(int argc, char** argv) {
   while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rt:uvx", long_options,
                                     &option_index)) >= 0) {
     switch (option_char) {
-      case 0:
-        if (long_options[option_index].flag != 0)
-          break;
+      case 0:  // Flag
+        break;
       case 'b':  // For backwards compatibility
         options.input_type = InputType::ASCIIbits;
         break;
-      case 'c':
-        options.num_channels = std::atoi(optarg);
-        if (options.num_channels < 1) {
+      case 'c': {
+        const int num_channels = std::atoi(optarg);
+        if (num_channels < 1) {
           std::cerr << "error: number of channels must be greater than 0" << '\n';
           options.exit_failure = true;
+        } else {
+          options.num_channels = static_cast<uint32_t>(num_channels);
         }
+        options.is_num_channels_defined = true;
         break;
-      case 'e':
-        options.feed_thru = true;
-        break;
-      case 'E':
-        options.bler = true;
-        break;
+      }
+      case 'e': options.feed_thru = true; break;
+      case 'E': options.bler = true; break;
       case 'f':
         options.sndfilename = std::string(optarg);
         options.input_type  = InputType::MPX_sndfile;
@@ -113,9 +113,7 @@ Options getOptions(int argc, char** argv) {
       case 'x':  // For backwards compatibility
         options.output_type = OutputType::Hex;
         break;
-      case 'p':
-        options.show_partial = true;
-        break;
+      case 'p': options.show_partial = true; break;
       case 'r': {
         const std::string optstr(optarg);
         double factor = 1.0;
@@ -127,26 +125,20 @@ Options getOptions(int argc, char** argv) {
         }
         options.samplerate = static_cast<float>(std::atof(optarg) * factor);
         if (options.samplerate < kMinimumSampleRate_Hz) {
-          std::cerr << "error: sample rate set to " << options.samplerate << ", must be "
+          std::cerr << "error: sample rate was set to " << options.samplerate << ", but it must be "
                     << kMinimumSampleRate_Hz << " Hz or higher\n";
           options.exit_failure = true;
         }
-        options.rate_defined = true;
+        options.is_rate_defined = true;
         break;
       }
-      case 'R':
-        options.show_raw = true;
-        break;
+      case 'R': options.show_raw = true; break;
       case 't':
         options.timestamp   = true;
         options.time_format = std::string(optarg);
         break;
-      case 'u':
-        options.rbds = true;
-        break;
-      case 'l':
-        options.loctable_dirs.push_back(std::string(optarg));
-        break;
+      case 'u': options.rbds = true; break;
+      case 'l': options.loctable_dirs.push_back(std::string(optarg)); break;
       case 'v':
         options.print_version = true;
         options.exit_success  = true;
@@ -185,7 +177,7 @@ Options getOptions(int argc, char** argv) {
   const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin && !options.print_usage &&
                               !options.exit_failure && !options.exit_success};
 
-  if (assuming_raw_mpx && !options.rate_defined) {
+  if (assuming_raw_mpx && !options.is_rate_defined) {
     std::cerr << "{\"warning\":\"raw MPX sample rate not defined, assuming " << kTargetSampleRate_Hz
               << " Hz\"}" << '\n';
     options.samplerate = kTargetSampleRate_Hz;

@@ -9,4 +9,8 @@ AllowShortIfStatementsOnASingleLine: false
 AlignArrayOfStructures: Left
 AlignConsecutiveAssignments: Consecutive
 AllowShortFunctionsOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
 IncludeBlocks: Preserve

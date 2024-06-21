@@ -367,8 +367,8 @@ void Station::decodeType0(const Group& group) {
 
   // Block 3: Alternative frequencies
   if (group.getType().version == GroupType::Version::A) {
-    alt_freq_list_.insert(getBits<8>(group.get(BLOCK3), 8));
-    alt_freq_list_.insert(getBits<8>(group.get(BLOCK3), 0));
+    alt_freq_list_.insert(getUint8(group.get(BLOCK3), 8));
+    alt_freq_list_.insert(getUint8(group.get(BLOCK3), 0));
 
     if (alt_freq_list_.isComplete()) {
       const auto raw_frequencies = alt_freq_list_.getRawList();
@@ -434,8 +434,7 @@ void Station::decodeType0(const Group& group) {
     return;
 
   // Block 4: Program Service Name
-  ps_.update(segment_address * 2, getBits<8>(group.get(BLOCK4), 8),
-             getBits<8>(group.get(BLOCK4), 0));
+  ps_.update(segment_address * 2, getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
 
   if (ps_.text.isComplete())
     json_["*SORT04*ps"] = ps_.text.getLastCompleteString();
@@ -473,7 +472,7 @@ void Station::decodeType1(const Group& group) {
             pager_.decode1ABlock4(group.get(BLOCK4));
         }
 
-        ecc_ = getBits<8>(group.get(BLOCK3), 0);
+        ecc_ = getUint8(group.get(BLOCK3), 0);
         cc_  = getBits<4>(pi_, 12);
 
         if (ecc_ != 0x00) {
@@ -498,13 +497,9 @@ void Station::decodeType1(const Group& group) {
         }
         break;
 
-      case 3:
-        json_["language"] = getLanguageString(getBits<8>(group.get(BLOCK3), 0));
-        break;
+      case 3: json_["language"] = getLanguageString(getUint8(group.get(BLOCK3), 0)); break;
 
-      case 7:
-        json_["ews"] = getBits<12>(group.get(BLOCK3), 0);
-        break;
+      case 7: json_["ews"] = getBits<12>(group.get(BLOCK3), 0); break;
 
       default:
         json_["debug"].append("TODO: SLC variant " + std::to_string(slow_label_variant));
@@ -555,8 +550,8 @@ void Station::decodeType2(const Group& group) {
 
   if (group.getType().version == GroupType::Version::A) {
     radiotext_.text.resize(64);
-    radiotext_.update(radiotext_position, getBits<8>(group.get(BLOCK3), 8),
-                      getBits<8>(group.get(BLOCK3), 0));
+    radiotext_.update(radiotext_position, getUint8(group.get(BLOCK3), 8),
+                      getUint8(group.get(BLOCK3), 0));
   } else {
     radiotext_.text.resize(32);
   }
@@ -564,7 +559,7 @@ void Station::decodeType2(const Group& group) {
   if (group.has(BLOCK4)) {
     radiotext_.update(
         radiotext_position + (group.getType().version == GroupType::Version::A ? 2 : 0),
-        getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0));
+        getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
   }
 
   // Transmitter used Method 1 or 2 convey the length of the string.
@@ -609,7 +604,7 @@ void Station::decodeType3A(const Group& group) {
       radiotext_.plus.exists       = true;
       radiotext_.plus.cb           = getBool(oda_message, 12);
       radiotext_.plus.scb          = getBits<4>(oda_message, 8);
-      radiotext_.plus.template_num = getBits<8>(oda_message, 0);
+      radiotext_.plus.template_num = getUint8(oda_message, 0);
       break;
 
     // RT+ for Enhanced RadioText
@@ -617,7 +612,7 @@ void Station::decodeType3A(const Group& group) {
       ert_.plus.exists       = true;
       ert_.plus.cb           = getBool(oda_message, 12);
       ert_.plus.scb          = getBits<4>(oda_message, 8);
-      ert_.plus.template_num = getBits<8>(oda_message, 0);
+      ert_.plus.template_num = getUint8(oda_message, 0);
       break;
 
     // Enhanced RadioText (eRT)
@@ -631,9 +626,7 @@ void Station::decodeType3A(const Group& group) {
 
     // RDS-TMC
     case 0xCD46:
-    case 0xCD47:
-      tmc_.receiveSystemGroup(oda_message, &json_);
-      break;
+    case 0xCD47: tmc_.receiveSystemGroup(oda_message, &json_); break;
 
     default:
       json_["debug"].append("TODO: Unimplemented ODA app " + getHexString(oda_app_id, 4));
@@ -668,8 +661,8 @@ void Station::decodeType4A(const Group& group) {
   year_utc += 1900;
   month_utc -= 1;
 
-  const int hour_utc   = getBits<5>(group.get(BLOCK3), group.get(BLOCK4), 12);
-  const int minute_utc = getBits<6>(group.get(BLOCK4), 6);
+  const auto hour_utc   = getBits<5>(group.get(BLOCK3), group.get(BLOCK4), 12);
+  const auto minute_utc = getBits<6>(group.get(BLOCK4), 6);
 
   const double local_offset =
       (getBool(group.get(BLOCK4), 5) ? -1.0 : 1.0) * getBits<5>(group.get(BLOCK4), 0) / 2.0;
@@ -679,8 +672,8 @@ void Station::decodeType4A(const Group& group) {
   utc_plus_offset_tm.tm_mon   = month_utc - 1;
   utc_plus_offset_tm.tm_mday  = day_utc;
   utc_plus_offset_tm.tm_isdst = -1;
-  utc_plus_offset_tm.tm_hour  = hour_utc;
-  utc_plus_offset_tm.tm_min   = minute_utc;
+  utc_plus_offset_tm.tm_hour  = static_cast<int>(hour_utc);
+  utc_plus_offset_tm.tm_min   = static_cast<int>(minute_utc);
   utc_plus_offset_tm.tm_sec   = static_cast<int>(local_offset * 3600.0);
 
   const time_t local_t            = mktime(&utc_plus_offset_tm);
@@ -715,9 +708,9 @@ void Station::decodeType5(const Group& group) {
   json_["transparent_data"]["address"] = address;
 
   if (group.getType().version == GroupType::Version::A) {
-    const std::array<uint16_t, 4> data{
-        getBits<8>(group.get(BLOCK3), 8), getBits<8>(group.get(BLOCK3), 0),
-        getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0)};
+    const std::array<uint8_t, 4> data{
+        getUint8(group.get(BLOCK3), 8), getUint8(group.get(BLOCK3), 0),
+        getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0)};
 
     json_["transparent_data"]["raw"] = getHexString(data[0], 2) + " " + getHexString(data[1], 2) +
                                        " " + getHexString(data[2], 2) + " " +
@@ -741,8 +734,8 @@ void Station::decodeType5(const Group& group) {
 
     json_["transparent_data"]["as_text"] = decoded_text.str();
   } else {
-    const std::array<int, 2> data{getBits<8>(group.get(BLOCK4), 8),
-                                  getBits<8>(group.get(BLOCK4), 0)};
+    const std::array<uint8_t, 2> data{getUint8(group.get(BLOCK4), 8),
+                                      getUint8(group.get(BLOCK4), 0)};
 
     json_["transparent_data"]["raw"] = getHexString(data[0], 2) + " " + getHexString(data[1], 2);
 
@@ -792,9 +785,9 @@ void Station::decodeType10A(const Group& group) {
   if (ptyname_.isABChanged(getBits<1>(group.get(BLOCK2), 4)))
     ptyname_.text.clear();
 
-  ptyname_.update(segment_address * 4, getBits<8>(group.get(BLOCK3), 8),
-                  getBits<8>(group.get(BLOCK3), 0), getBits<8>(group.get(BLOCK4), 8),
-                  getBits<8>(group.get(BLOCK4), 0));
+  ptyname_.update(segment_address * 4, getUint8(group.get(BLOCK3), 8),
+                  getUint8(group.get(BLOCK3), 0), getUint8(group.get(BLOCK4), 8),
+                  getUint8(group.get(BLOCK4), 0));
 
   if (ptyname_.text.isComplete()) {
     json_["pty_name"] = ptyname_.text.getLastCompleteString();
@@ -827,16 +820,16 @@ void Station::decodeType14(const Group& group) {
       if (eon_ps_names_.find(on_pi) == eon_ps_names_.end())
         eon_ps_names_.emplace(on_pi, RDSString(8));
 
-      eon_ps_names_[on_pi].set(2 * eon_variant, getBits<8>(group.get(BLOCK3), 8));
-      eon_ps_names_[on_pi].set(2 * eon_variant + 1, getBits<8>(group.get(BLOCK3), 0));
+      eon_ps_names_[on_pi].set(2 * eon_variant, getUint8(group.get(BLOCK3), 8));
+      eon_ps_names_[on_pi].set(2 * eon_variant + 1, getUint8(group.get(BLOCK3), 0));
 
       if (eon_ps_names_[on_pi].isComplete())
         json_["other_network"]["ps"] = eon_ps_names_[on_pi].getLastCompleteString();
       break;
 
     case 4:
-      eon_alt_freqs_[on_pi].insert(getBits<8>(group.get(BLOCK3), 8));
-      eon_alt_freqs_[on_pi].insert(getBits<8>(group.get(BLOCK3), 0));
+      eon_alt_freqs_[on_pi].insert(getUint8(group.get(BLOCK3), 8));
+      eon_alt_freqs_[on_pi].insert(getUint8(group.get(BLOCK3), 0));
 
       if (eon_alt_freqs_[on_pi].isComplete()) {
         for (const int freq : eon_alt_freqs_[on_pi].getRawList())
@@ -850,7 +843,7 @@ void Station::decodeType14(const Group& group) {
     case 7:
     case 8:
     case 9: {
-      const CarrierFrequency freq_other(getBits<8>(group.get(BLOCK3), 0));
+      const CarrierFrequency freq_other(getUint8(group.get(BLOCK3), 0));
 
       if (freq_other.isValid())
         json_["other_network"]["kilohertz"] = freq_other.kHz();
@@ -904,12 +897,12 @@ void Station::decodeType15A(const Group& group) {
   const uint16_t segment_address = getBits<3>(group.get(BLOCK2), 0);
 
   if (group.has(BLOCK3)) {
-    long_ps_.update(segment_address * 4, getBits<8>(group.get(BLOCK3), 8),
-                    getBits<8>(group.get(BLOCK3), 0));
+    long_ps_.update(segment_address * 4, getUint8(group.get(BLOCK3), 8),
+                    getUint8(group.get(BLOCK3), 0));
   }
   if (group.has(BLOCK4)) {
-    long_ps_.update(segment_address * 4 + 2, getBits<8>(group.get(BLOCK4), 8),
-                    getBits<8>(group.get(BLOCK4), 0));
+    long_ps_.update(segment_address * 4 + 2, getUint8(group.get(BLOCK4), 8),
+                    getUint8(group.get(BLOCK4), 0));
   }
 
   if ((group.has(BLOCK3) || group.has(BLOCK4)) && long_ps_.text.isComplete())
@@ -941,24 +934,16 @@ void Station::decodeODAGroup(const Group& group) {
 
   switch (oda_app_id) {
     // DAB cross-referencing
-    case 0x0093:
-      parseDAB(group);
-      break;
+    case 0x0093: parseDAB(group); break;
 
     // RT+
-    case 0x4BD7:
-      parseRadioTextPlus(group, radiotext_, json_["radiotext_plus"]);
-      break;
+    case 0x4BD7: parseRadioTextPlus(group, radiotext_, json_["radiotext_plus"]); break;
 
     // RT+ for Enhanced RadioText
-    case 0x4BD8:
-      parseRadioTextPlus(group, ert_, json_["ert_plus"]);
-      break;
+    case 0x4BD8: parseRadioTextPlus(group, ert_, json_["ert_plus"]); break;
 
     // Enhanced RadioText (eRT)
-    case 0x6552:
-      parseEnhancedRT(group);
-      break;
+    case 0x6552: parseEnhancedRT(group); break;
 
     // RDS-TMC
     case 0xCD46:
@@ -1023,10 +1008,10 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el)
 void Station::parseEnhancedRT(const Group& group) {
   const size_t position = getBits<5>(group.get(BLOCK2), 0) * 4;
 
-  ert_.update(position, getBits<8>(group.get(BLOCK3), 8), getBits<8>(group.get(BLOCK3), 0));
+  ert_.update(position, getUint8(group.get(BLOCK3), 8), getUint8(group.get(BLOCK3), 0));
 
   if (group.has(BLOCK4)) {
-    ert_.update(position + 2, getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0));
+    ert_.update(position + 2, getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
   }
 
   if (ert_.text.isComplete()) {
@@ -1045,15 +1030,15 @@ void Station::parseDAB(const Group& group) {
   } else {
     // Ensemble table
 
-    const int mode = getBits<2>(group.get(BLOCK2), 2);
+    const auto mode = getBits<2>(group.get(BLOCK2), 2);
     const std::array<std::string, 4> modes{"unspecified", "I", "II or III", "IV"};
     json_["dab"]["mode"] = modes[mode];
 
-    const int freq = 16 * getBits<18>(group.get(BLOCK2), group.get(BLOCK3), 0);
+    const uint32_t freq = 16 * getBits<18>(group.get(BLOCK2), group.get(BLOCK3), 0);
 
     json_["dab"]["kilohertz"] = freq;
 
-    const std::map<int, std::string> dab_channels({
+    const std::map<uint32_t, std::string> dab_channels({
         // clang-format off
         { 174'928,  "5A"}, { 176'640,  "5B"}, { 178'352,  "5C"}, { 180'064,  "5D"},
         { 181'936,  "6A"}, { 183'648,  "6B"}, { 185'360,  "6C"}, { 187'072,  "6D"},

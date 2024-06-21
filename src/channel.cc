@@ -112,11 +112,9 @@ void Channel::processGroup(Group group) {
         station_ = Station(options_, which_channel_, cached_pi_.get());
         break;
 
-      case CachedPI::Result::SpuriousChange:
-        break;
+      case CachedPI::Result::SpuriousChange: break;
 
-      case CachedPI::Result::NoChange:
-        break;
+      case CachedPI::Result::NoChange:       break;
     }
   }
 

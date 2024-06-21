@@ -22,7 +22,6 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <set>
 #include <string>
 
 #include <ext/json/json.h>
@@ -232,7 +231,7 @@ class Station {
   RDSString full_tdc_      { 32 * 4 };
   uint16_t pin_            { 0 };
   uint16_t ecc_            { 0 };
-  int cc_                  { 0 };
+  uint16_t cc_             { 0 };
   int tmc_id_              { 0 };
   bool linkage_la_         { 0 };
   std::string clock_time_  { "" };

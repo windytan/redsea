@@ -30,8 +30,7 @@ extern "C" {
 
 namespace liquid {
 
-AGC::AGC(float bw, float initial_gain) :
-    object_(agc_crcf_create()) {
+AGC::AGC(float bw, float initial_gain) : object_(agc_crcf_create()) {
   agc_crcf_set_bandwidth(object_, bw);
   agc_crcf_set_gain(object_, initial_gain);
 }
@@ -46,8 +45,8 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   return result;
 }
 
-FIRFilter::FIRFilter(unsigned int len, float fc, float As, float mu) :
-    object_(firfilt_crcf_create_kaiser(len, fc, As, mu)) {
+FIRFilter::FIRFilter(unsigned int len, float fc, float As, float mu)
+    : object_(firfilt_crcf_create_kaiser(len, fc, As, mu)) {
   firfilt_crcf_set_scale(object_, 2.0f * fc);
 }
 
@@ -69,8 +68,8 @@ size_t FIRFilter::length() const {
   return firfilt_crcf_get_length(object_);
 }
 
-NCO::NCO(liquid_ncotype type, float freq) :
-    object_(nco_crcf_create(type)), initial_frequency_(freq) {
+NCO::NCO(liquid_ncotype type, float freq)
+    : object_(nco_crcf_create(type)), initial_frequency_(freq) {
   nco_crcf_set_frequency(object_, freq);
 }
 
@@ -101,11 +100,9 @@ void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
-SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
-                 float beta, unsigned num_filters) :
-    object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)),
-    out_(8) {
-}
+SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m, float beta,
+                 unsigned num_filters)
+    : object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)), out_(8) {}
 
 SymSync::~SymSync() {
   symsync_crcf_destroy(object_);
@@ -126,17 +123,17 @@ void SymSync::setOutputRate(unsigned r) {
 Maybe<std::complex<float>> SymSync::execute(std::complex<float>& in) {
   unsigned n_out = 0;
   symsync_crcf_execute(object_, &in, 1, out_.data(), &n_out);
-  return Maybe<std::complex<float>> { out_[0], n_out == 1 };
+  return Maybe<std::complex<float>>{out_[0], n_out == 1};
 }
 
-Modem::Modem(modulation_scheme scheme) :
-    object_(
+Modem::Modem(modulation_scheme scheme)
+    : object_(
 #ifdef MODEM_IS_MODEMCF
-        modemcf_create(scheme)
+          modemcf_create(scheme)
 #else
-        modem_create(scheme)
+          modem_create(scheme)
 #endif
-    ) {
+      ) {
 }
 
 Modem::~Modem() {
@@ -145,7 +142,6 @@ Modem::~Modem() {
 #else
   modem_destroy(object_);
 #endif
-
 }
 
 unsigned int Modem::demodulate(std::complex<float> sample) {
@@ -168,8 +164,8 @@ float Modem::getPhaseError() {
 #endif
 }
 
-Resampler::Resampler(float ratio, unsigned int length) :
-    object_(resamp_rrrf_create(ratio, length, 0.47f, 60.0f, 32)) {
+Resampler::Resampler(float ratio, unsigned int length)
+    : object_(resamp_rrrf_create(ratio, length, 0.47f, 60.0f, 32)) {
   if (ratio > 2.f) {
     throw std::runtime_error("error: Can't support this sample rate");
   }
@@ -179,8 +175,7 @@ Resampler::~Resampler() {
   resamp_rrrf_destroy(object_);
 }
 
-unsigned int Resampler::execute(float in,
-                                float* out) {
+unsigned int Resampler::execute(float in, float* out) {
   unsigned int num_written;
   resamp_rrrf_execute(object_, in, out, &num_written);
 

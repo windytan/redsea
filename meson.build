@@ -88,7 +88,6 @@ sources_no_main = [
   'ext/json/jsoncpp.cpp',
   'src/block_sync.cc',
   'src/channel.cc',
-  'src/common.cc',
   'src/dsp/liquid_wrappers.cc',
   'src/dsp/subcarrier.cc',
   'src/groups.cc',

@@ -167,7 +167,7 @@ class Message {
   uint16_t extent_             { 0 };
   std::vector<uint16_t>        events_;
   std::vector<uint16_t>        supplementary_;
-  std::map<uint16_t, uint16_t> quantifiers_;
+  std::map<size_t, uint16_t>   quantifiers_;
   std::vector<uint16_t>        diversion_;
   uint16_t location_           { 0 };
   uint16_t encrypted_location_ { 0 };
@@ -199,7 +199,7 @@ class TMCService {
   uint16_t ltn_          { 0 };
   uint16_t sid_          { 0 };
   uint16_t encid_        { 0 };
-  int      ltcc_         { -1 };
+  uint16_t ltcc_         { 0 };
   Message message_;
   std::map<uint16_t, ServiceKey> service_key_table_;
   RDSString ps_;

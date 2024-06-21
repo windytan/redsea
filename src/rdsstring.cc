@@ -22,10 +22,9 @@
 #include <numeric>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "ext/iconvpp/iconv.hpp"
-
-#include "src/common.h"
 
 namespace redsea {
 
@@ -34,6 +33,7 @@ namespace {
 // EN 50067:1998, Annex E (pp. 73-76)
 // plus UCS-2 control codes
 std::string getRDSCharString(uint8_t code) {
+  // clang-format off
   static const std::array<std::string, 256> codetable_G0({
     " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", "\n"," ", " ", "\r"," ", " ",
     " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", "\u00AD",
@@ -51,6 +51,7 @@ std::string getRDSCharString(uint8_t code) {
     "Â", "Ä", "Ê", "Ë", "Î", "Ï", "Ô", "Ö", "Û", "Ü", "ř", "č", "š", "ž", "đ", "ŀ",
     "Ã", "Å", "Æ", "Œ", "ŷ", "Ý", "Õ", "Ø", "Þ", "Ŋ", "Ŕ", "Ć", "Ś", "Ź", "Ŧ", "ð",
     "ã", "å", "æ", "œ", "ŵ", "ý", "õ", "ø", "þ", "ŋ", "ŕ", "ć", "ś", "ź", "ŧ", " "});
+  // clang-format on
 
   return codetable_G0[code];
 }
@@ -64,10 +65,10 @@ size_t charlen(const std::string& str, size_t byte_start) {
     return 0;
 
   while ((str[nbyte] & 0b1100'0000) == 0b1000'0000) {
-      nbyte++;
+    nbyte++;
 
-      if (nbyte >= str.length())
-        return 0;
+    if (nbyte >= str.length())
+      return 0;
   }
 
   return nbyte - byte_start + 1;
@@ -81,13 +82,12 @@ std::string decodeUCS2(const std::string& src) {
   return dst;
 }
 
-constexpr uint8_t kStringTerminator { 0x0D };
-constexpr uint8_t kBlankSpace       { 0x20 };
+constexpr uint8_t kStringTerminator{0x0D};
+constexpr uint8_t kBlankSpace{0x20};
 
 }  // namespace
 
-RDSString::RDSString(size_t len) : data_(len) {
-}
+RDSString::RDSString(size_t len) : data_(len) {}
 
 void RDSString::set(size_t pos, uint8_t byte) {
   if (pos >= data_.size())
@@ -100,7 +100,7 @@ void RDSString::set(size_t pos, uint8_t byte) {
 
   if (isComplete()) {
     last_complete_string_ = str();
-    last_complete_data_ = getData();
+    last_complete_data_   = getData();
   }
 
   prev_pos_ = pos;
@@ -118,18 +118,18 @@ size_t RDSString::getReceivedLength() const {
 
 // Length, in bytes, up to the first string terminator, or the full allocated length
 size_t RDSString::getExpectedLength() const {
-  const auto terminated_length = std::distance(data_.cbegin(),
-      std::find_if(data_.cbegin(), data_.cend(), [](uint8_t b) {
-        return b == kStringTerminator;
-      })) + 1;
+  const auto terminated_length =
+      std::distance(data_.cbegin(),
+                    std::find_if(data_.cbegin(), data_.cend(),
+                                 [](uint8_t b) { return b == kStringTerminator; })) +
+      1;
 
   return std::min(static_cast<size_t>(terminated_length), data_.size());
 }
 
 bool RDSString::hasPreviouslyReceivedTerminators() const {
-  return std::find_if(data_.cbegin(), data_.cend(), [](uint8_t b) {
-        return b == kStringTerminator;
-    }) != data_.cend();
+  return std::find_if(data_.cbegin(), data_.cend(),
+                      [](uint8_t b) { return b == kStringTerminator; }) != data_.cend();
 }
 
 void RDSString::resize(size_t n) {
@@ -149,9 +149,9 @@ std::string RDSString::str() const {
 
   switch (encoding_) {
     case Encoding::Basic:
-      return std::accumulate(bytes.cbegin(), bytes.cend(), std::string(""),
-          [](const std::string& s, uint8_t b) {
-          return s + getRDSCharString(b); });
+      return std::accumulate(
+          bytes.cbegin(), bytes.cend(), std::string(""),
+          [](const std::string& s, uint8_t b) { return s + getRDSCharString(b); });
 
     case Encoding::UCS2:
       return decodeUCS2(std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size()));
@@ -167,7 +167,9 @@ std::vector<uint8_t> RDSString::getData() const {
   const size_t len{getExpectedLength()};
   std::vector<uint8_t> result(len);
   for (size_t i = 0; i < len; i++)
-    result[i] = sequential_length_ > i && data_[i] != kStringTerminator && data_[i] != 0x00 ? data_[i] : kBlankSpace;
+    result[i] = sequential_length_ > i && data_[i] != kStringTerminator && data_[i] != 0x00
+                    ? data_[i]
+                    : kBlankSpace;
 
   return result;
 }
@@ -199,8 +201,9 @@ std::string RDSString::getLastCompleteString(size_t start, size_t len) const {
     byte_end += clen;
   }
 
-  return byte_end < last_complete_string_.length() ?
-         last_complete_string_.substr(byte_start, byte_end - byte_start) : "";
+  return byte_end < last_complete_string_.length()
+             ? last_complete_string_.substr(byte_start, byte_end - byte_start)
+             : "";
 }
 
 bool RDSString::isComplete() const {

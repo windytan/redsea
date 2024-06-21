@@ -45,8 +45,13 @@ uint32_t getBits(uint16_t word1, uint16_t word2, size_t starting_at) {
 inline bool getBool(uint16_t word, size_t bit_pos) {
   return static_cast<bool>(getBits<1>(word, bit_pos));
 }
+inline uint8_t getUint8(uint16_t word, size_t bit_pos) {
+  return static_cast<uint8_t>(getBits<8>(word, bit_pos));
+}
 
 std::string getHoursMinutesString(int hour, int minute);
+std::string getTimePointString(const std::chrono::time_point<std::chrono::system_clock>& timepoint,
+                               const std::string& format);
 
 std::string join(const std::vector<std::string>& strings, const std::string& d);
 

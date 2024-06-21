@@ -17,38 +17,34 @@
 #ifndef OPTIONS_H_
 #define OPTIONS_H_
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
-#include "src/common.h"
-
 namespace redsea {
 
-enum class InputType {
-  MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686
-};
+enum class InputType { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
 
-enum class OutputType {
-  Hex, JSON
-};
+enum class OutputType { Hex, JSON };
 
 struct Options {
-  bool rbds          { false };
-  bool feed_thru     { false };
-  bool show_partial  { false };
-  bool exit_success  { false };
-  bool exit_failure  { false };
-  bool print_usage   { false };
-  bool print_version { false };
-  bool timestamp     { false };
-  bool bler          { false };
-  bool show_raw      { false };
-  bool rate_defined  { false };
-  bool use_fec       { true  };
-  float samplerate   {};
-  int num_channels   { 1 };
-  InputType input_type   { InputType::MPX_stdin };
-  OutputType output_type { OutputType::JSON };
+  bool rbds{false};
+  bool feed_thru{false};
+  bool show_partial{false};
+  bool exit_success{false};
+  bool exit_failure{false};
+  bool print_usage{false};
+  bool print_version{false};
+  bool timestamp{false};
+  bool bler{false};
+  bool show_raw{false};
+  bool is_rate_defined{false};
+  bool is_num_channels_defined{false};
+  bool use_fec{true};
+  float samplerate{};
+  uint32_t num_channels{1};
+  InputType input_type{InputType::MPX_stdin};
+  OutputType output_type{OutputType::JSON};
   std::vector<std::string> loctable_dirs;
   std::string sndfilename;
   std::string time_format;

@@ -45,7 +45,7 @@ std::map<uint16_t, Event> g_event_data;
 std::map<uint16_t, std::string> g_supplementary_data;
 std::map<uint16_t, LocationDatabase> g_location_databases;
 
-uint16_t popBits(std::deque<int>& bit_deque, size_t len) {
+uint16_t popBits(std::deque<bool>& bit_deque, size_t len) {
   uint16_t result = 0x00;
   if (bit_deque.size() >= len) {
     for (size_t i = 0; i < len; i++) {
@@ -70,7 +70,7 @@ std::vector<FreeformField> getFreeformFields(const std::array<MessagePart, 5>& p
 
   // Concatenate freeform data from used message length (derived from
   // GSI of second group)
-  std::deque<int> freeform_data_bits;
+  std::deque<bool> freeform_data_bits;
   for (size_t i = 1; i < parts.size(); i++) {
     if (!parts[i].is_received)
       break;
@@ -104,20 +104,11 @@ std::vector<FreeformField> getFreeformFields(const std::array<MessagePart, 5>& p
 
 std::string getUrgencyString(EventUrgency u) {
   switch (u) {
-    case EventUrgency::None:
-      return "none";
-      break;
-    case EventUrgency::U:
-      return "U";
-      break;
-    case EventUrgency::X:
-      return "X";
-      break;
-
-    default:
-      return "none";
-      break;
+    case EventUrgency::None: return "none";
+    case EventUrgency::U:    return "U";
+    case EventUrgency::X:    return "X";
   }
+  return "none";
 }
 
 std::string getTimeString(uint16_t field_data) {
@@ -178,9 +169,7 @@ uint16_t getQuantifierSize(QuantifierType qtype) {
     case QuantifierType::LessThanMetres:
     case QuantifierType::Percent:
     case QuantifierType::UptoKmh:
-    case QuantifierType::UptoTime:
-      return 5;
-      break;
+    case QuantifierType::UptoTime:        return 5;
 
     case QuantifierType::DegreesCelsius:
     case QuantifierType::Time:
@@ -188,11 +177,9 @@ uint16_t getQuantifierSize(QuantifierType qtype) {
     case QuantifierType::Metres:
     case QuantifierType::UptoMillimetres:
     case QuantifierType::MHz:
-    case QuantifierType::kHz:
-    default:
-      return 8;
-      break;
+    case QuantifierType::kHz:             return 8;
   }
+  return 8;
 }
 
 std::string getDescriptionWithQuantifier(const Event& event, uint16_t q_value) {
@@ -294,9 +281,6 @@ std::string getDescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       text = freq.str();
       break;
     }
-    default: {
-      text = "TODO";
-    }
   }
 
   const std::string desc = std::regex_replace(event.description_with_quantifier, q_regex, text);
@@ -305,7 +289,7 @@ std::string getDescriptionWithQuantifier(const Event& event, uint16_t q_value) {
 
 std::string ucfirst(std::string in) {
   if (in.size() > 0)
-    in[0] = std::toupper(in[0]);
+    in[0] = static_cast<char>(std::toupper(in[0]));
   return in;
 }
 
@@ -381,7 +365,7 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
       key.xorval   = static_cast<uint8_t>(std::stoi(fields.at(1)));
       key.xorstart = static_cast<uint8_t>(std::stoi(fields.at(2)));
       key.nrot     = static_cast<uint8_t>(std::stoi(fields.at(3)));
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
       continue;
     }
 
@@ -409,10 +393,12 @@ void decodeLocation(const LocationDatabase& db, uint16_t ltn, Json::Value* jsonr
       points_left--;
     }
 
-    for (int i = 0; i < static_cast<int>(points.size()); i++) {
+    for (size_t i = 0; i < points.size(); i++) {
       //        (*jsonroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
-      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lat"] = static_cast<double>(points[i].lat);
-      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lon"] = static_cast<double>(points[i].lon);
+      (*jsonroot)["tmc"]["message"]["coordinates"][static_cast<int>(i)]["lat"] =
+          static_cast<double>(points[i].lat);
+      (*jsonroot)["tmc"]["message"]["coordinates"][static_cast<int>(i)]["lon"] =
+          static_cast<double>(points[i].lon);
     }
 
     if (points.size() > 1 && points.at(0).name1.length() > 0 &&
@@ -504,7 +490,7 @@ void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
     if (ltcc_ > 0)
       (*jsonroot)["tmc"]["system_info"]["ltcc"] = ltcc_;
   } else if (variant == 2) {
-    const int ltecc = getBits<8>(message, 0);
+    const auto ltecc = getUint8(message, 0);
     if (ltecc > 0) {
       (*jsonroot)["tmc"]["system_info"]["ltecc"] = ltecc;
       if (ltcc_ > 0) {
@@ -538,12 +524,12 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
     switch (variant) {
       case 4:
       case 5: {
-        const int pos = 4 * (variant - 4);
+        const size_t pos = 4 * (variant - 4);
 
-        ps_.set(pos + 0, getBits<8>(y, 8));
-        ps_.set(pos + 1, getBits<8>(y, 0));
-        ps_.set(pos + 2, getBits<8>(z, 8));
-        ps_.set(pos + 3, getBits<8>(z, 0));
+        ps_.set(pos + 0, getUint8(y, 8));
+        ps_.set(pos + 1, getUint8(y, 0));
+        ps_.set(pos + 2, getUint8(z, 8));
+        ps_.set(pos + 3, getUint8(z, 0));
 
         if (ps_.isComplete())
           (*jsonroot)["tmc"]["service_provider"] = ps_.getLastCompleteString();
@@ -555,8 +541,8 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
         if (other_network_freqs_.find(on_pi) == other_network_freqs_.end())
           other_network_freqs_.insert({on_pi, AltFreqList()});
 
-        other_network_freqs_.at(on_pi).insert(getBits<8>(y, 8));
-        other_network_freqs_.at(on_pi).insert(getBits<8>(y, 0));
+        other_network_freqs_.at(on_pi).insert(getUint8(y, 8));
+        other_network_freqs_.at(on_pi).insert(getUint8(y, 0));
 
         /* Here, the alternative frequencies are printed out right away -
            DKULTUR, for example, does not transmit information about the total
@@ -673,20 +659,20 @@ void Message::pushMulti(uint16_t x, uint16_t y, uint16_t z) {
   }
   continuity_index_         = new_continuity_index;
   const bool is_first_group = getBool(y, 15);
-  int current_group;
-  int group_sequence_indicator = -1;
+  uint32_t current_group{};
+  bool is_last_group{};
 
   if (is_first_group) {
     current_group = 0;
   } else if (getBool(y, 14)) {  // SG
-    group_sequence_indicator = getBits<2>(y, 12);
-    current_group            = 1;
+    const auto group_sequence_indicator = getBits<2>(y, 12);
+    current_group                       = 1;
+    is_last_group                       = (group_sequence_indicator == 0);
   } else {
-    group_sequence_indicator = getBits<2>(y, 12);
-    current_group            = 4 - group_sequence_indicator;
+    const auto group_sequence_indicator = getBits<2>(y, 12);
+    current_group                       = 4U - group_sequence_indicator;
+    is_last_group                       = (group_sequence_indicator == 0);
   }
-
-  const bool is_last_group = (group_sequence_indicator == 0);
 
   parts_.at(current_group) = MessagePart(kMessagePartIsReceived, {y, z});
 
@@ -719,9 +705,7 @@ void Message::decodeMulti() {
   if (parts_[1].is_received) {
     for (FreeformField field : getFreeformFields(parts_)) {
       switch (field.label) {
-        case FieldLabel::Duration:
-          duration_ = field.data;
-          break;
+        case FieldLabel::Duration: duration_ = field.data; break;
 
         case FieldLabel::ControlCode:
           if (field.data > 7)
@@ -729,29 +713,17 @@ void Message::decodeMulti() {
           switch (static_cast<ControlCode>(field.data)) {
             case ControlCode::IncreaseUrgency:
               switch (urgency_) {
-                case EventUrgency::None:
-                  urgency_ = EventUrgency::U;
-                  break;
-                case EventUrgency::U:
-                  urgency_ = EventUrgency::X;
-                  break;
-                case EventUrgency::X:
-                  urgency_ = EventUrgency::None;
-                  break;
+                case EventUrgency::None: urgency_ = EventUrgency::U; break;
+                case EventUrgency::U:    urgency_ = EventUrgency::X; break;
+                case EventUrgency::X:    urgency_ = EventUrgency::None; break;
               }
               break;
 
             case ControlCode::ReduceUrgency:
               switch (urgency_) {
-                case EventUrgency::None:
-                  urgency_ = EventUrgency::X;
-                  break;
-                case EventUrgency::U:
-                  urgency_ = EventUrgency::None;
-                  break;
-                case EventUrgency::X:
-                  urgency_ = EventUrgency::U;
-                  break;
+                case EventUrgency::None: urgency_ = EventUrgency::X; break;
+                case EventUrgency::U:    urgency_ = EventUrgency::None; break;
+                case EventUrgency::X:    urgency_ = EventUrgency::U; break;
               }
               break;
 
@@ -767,13 +739,9 @@ void Message::decodeMulti() {
                                                            : DurationType::Dynamic);
               break;
 
-            case ControlCode::SetDiversion:
-              diversion_advised_ = true;
-              break;
+            case ControlCode::SetDiversion:      diversion_advised_ = true; break;
 
-            case ControlCode::IncreaseExtentBy8:
-              extent_ += 8;
-              break;
+            case ControlCode::IncreaseExtentBy8: extent_ += 8; break;
 
             case ControlCode::IncreaseExtentBy16:
               extent_ += 16;
@@ -796,28 +764,26 @@ void Message::decodeMulti() {
           break;
 
         case FieldLabel::Quantifier5bit:
-          if (events_.size() > 0 && quantifiers_.find(events_.size() - 1) == quantifiers_.end() &&
+          if (events_.size() > 0 && quantifiers_.find(events_.size() - 1U) == quantifiers_.end() &&
               getEvent(events_.back()).allows_quantifier &&
               getQuantifierSize(getEvent(events_.back()).quantifier_type) == 5) {
-            quantifiers_.insert({events_.size() - 1, field.data});
+            quantifiers_.insert({events_.size() - 1U, field.data});
           } else {
             // *stream_ << jsonVal("debug", "invalid quantifier");
           }
           break;
 
         case FieldLabel::Quantifier8bit:
-          if (events_.size() > 0 && quantifiers_.find(events_.size() - 1) == quantifiers_.end() &&
+          if (events_.size() > 0 && quantifiers_.find(events_.size() - 1U) == quantifiers_.end() &&
               getEvent(events_.back()).allows_quantifier &&
               getQuantifierSize(getEvent(events_.back()).quantifier_type) == 8) {
-            quantifiers_.insert({events_.size() - 1, field.data});
+            quantifiers_.insert({events_.size() - 1U, field.data});
           } else {
             // *stream_ << jsonVal("debug", "invalid quantifier");
           }
           break;
 
-        case FieldLabel::Supplementary:
-          supplementary_.push_back(field.data);
-          break;
+        case FieldLabel::Supplementary: supplementary_.push_back(field.data); break;
 
         case FieldLabel::StartTime:
           time_starts_     = field.data;
@@ -829,18 +795,13 @@ void Message::decodeMulti() {
           has_time_until_ = true;
           break;
 
-        case FieldLabel::AdditionalEvent:
-          events_.push_back(field.data);
-          break;
+        case FieldLabel::AdditionalEvent:   events_.push_back(field.data); break;
 
-        case FieldLabel::DetailedDiversion:
-          diversion_.push_back(field.data);
-          break;
+        case FieldLabel::DetailedDiversion: diversion_.push_back(field.data); break;
 
         case FieldLabel::Destination:
         case FieldLabel::CrossLinkage:
-        case FieldLabel::Separator:
-          break;
+        case FieldLabel::Separator:         break;
       }
     }
   }

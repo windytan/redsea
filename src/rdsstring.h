@@ -17,11 +17,10 @@
 #ifndef RDSSTRING_H_
 #define RDSSTRING_H_
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
-
-#include "src/common.h"
 
 namespace redsea {
 

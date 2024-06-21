@@ -20,8 +20,6 @@
 #include <cstdint>
 #include <string>
 
-#include "src/common.h"
-
 namespace redsea {
 
 std::string getPTYNameString(uint16_t pty);

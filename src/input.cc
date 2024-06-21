@@ -33,41 +33,48 @@ namespace redsea {
  */
 void MPXReader::init(const Options& options) {
   num_channels_ = options.num_channels;
-  feed_thru_ = options.feed_thru;
-  filename_ = options.sndfilename;
+  feed_thru_    = options.feed_thru;
+  filename_     = options.sndfilename;
 
-  if (options.input_type != InputType::MPX_stdin &&
-      options.input_type != InputType::MPX_sndfile)
-    return;
+  switch (options.input_type) {
+    case InputType::MPX_stdin: {
+      sfinfo_.channels   = 1;
+      sfinfo_.format     = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
+      sfinfo_.samplerate = static_cast<int>(options.samplerate + .5f);
+      sfinfo_.frames     = 0;
+      file_              = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
+      if (feed_thru_)
+        outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
 
-  if (options.input_type == InputType::MPX_stdin) {
-    sfinfo_.channels = 1;
-    sfinfo_.format = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
-    sfinfo_.samplerate = static_cast<int>(options.samplerate + .5f);
-    sfinfo_.frames = 0;
-    file_ = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
-    if (feed_thru_)
-      outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
-  } else if (options.input_type == InputType::MPX_sndfile) {
-    file_ = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
-    num_channels_ = sfinfo_.channels;
+      break;
+    }
+    case InputType::MPX_sndfile: {
+      file_         = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
+      num_channels_ = static_cast<uint32_t>(sfinfo_.channels);
+
+      if (options.is_rate_defined)
+        std::cerr << "warning: ignoring sample rate parameter" << std::endl;
+      if (options.is_num_channels_defined)
+        std::cerr << "warning: ignoring number of channels parameter" << std::endl;
+      break;
+    }
+    default: return;
   }
 
   if (!file_) {
     if (sf_error(file_) == 26 || options.input_type == InputType::MPX_stdin)
       throw BeyondEofError();
 
-    std::cerr << "error: failed to open file: " <<
-              sf_error_number(sf_error(file_)) << '\n';
+    std::cerr << "error: failed to open file: " << sf_error_number(sf_error(file_)) << '\n';
     is_error_ = true;
   } else if (sfinfo_.samplerate < kMinimumSampleRate_Hz) {
-    std::cerr << "error: sample rate is " << sfinfo_.samplerate << ", must be " << kMinimumSampleRate_Hz
-              << " Hz or higher\n";
+    std::cerr << "error: sample rate is " << sfinfo_.samplerate << ", must be "
+              << kMinimumSampleRate_Hz << " Hz or higher\n";
     is_error_ = true;
   } else {
     chunk_size_ = (kInputChunkSize / num_channels_) * num_channels_;
 
-    is_eof_ = (num_channels_ >= static_cast<int>(buffer_.data.size()));
+    is_eof_ = (num_channels_ >= buffer_.data.size());
   }
 }
 
@@ -102,8 +109,8 @@ void MPXReader::fillBuffer() {
 }
 
 // @throws logic_error if channel is out-of-bounds
-MPXBuffer<>& MPXReader::readChunk(int channel) {
-  if (channel < 0 || channel >= num_channels_) {
+MPXBuffer<>& MPXReader::readChunk(uint32_t channel) {
+  if (channel >= num_channels_) {
     throw std::logic_error("Tried to access channel " + std::to_string(channel) + " of " +
                            std::to_string(num_channels_) + "-channel signal");
   }
@@ -126,7 +133,7 @@ float MPXReader::getSamplerate() const {
   return sfinfo_.samplerate;
 }
 
-int MPXReader::getNumChannels() const {
+uint32_t MPXReader::getNumChannels() const {
   return num_channels_;
 }
 
@@ -139,9 +146,7 @@ bool MPXReader::hasError() const {
  * characters via stdin.
  *
  */
-AsciiBitReader::AsciiBitReader(const Options& options) :
-    feed_thru_(options.feed_thru) {
-}
+AsciiBitReader::AsciiBitReader(const Options& options) : feed_thru_(options.feed_thru) {}
 
 bool AsciiBitReader::readBit() {
   int chr = 0;
@@ -196,7 +201,7 @@ Group readHexGroup(const Options& options) {
         if (single != " ") {
           try {
             const int nval = std::stoi(std::string(single), nullptr, 16);
-            block.data = static_cast<uint16_t>((block.data << 4) + nval);
+            block.data     = static_cast<uint16_t>((block.data << 4) + nval);
           } catch (std::exception&) {
             block_still_valid = false;
           }
@@ -235,9 +240,9 @@ Group readTEFGroup(const Options& options) {
     if (line.substr(0, 1) == "P") {
       Block block1;
       try {
-        line = line.substr(1);
+        line               = line.substr(1);
         const int64_t data = std::stol(line, nullptr, 16);
-        block1.data = data & 0xFFFF;
+        block1.data        = data & 0xFFFF;
         block1.is_received = true;
       } catch (const std::exception&) {
       }
@@ -246,14 +251,14 @@ Group readTEFGroup(const Options& options) {
       int64_t data{0};
       uint16_t rdsErr{0xFF};
       try {
-        line = line.substr(1);
-        data = std::stol(line, nullptr, 16);
+        line   = line.substr(1);
+        data   = std::stol(line, nullptr, 16);
         rdsErr = (data & 0xFF);
       } catch (const std::exception&) {
       }
-      for (const auto blockNum : { BLOCK2, BLOCK3, BLOCK4 }) {
+      for (const auto blockNum : {BLOCK2, BLOCK3, BLOCK4}) {
         Block block;
-        block.data = (data >> 8) >> (16 * (3 - blockNum));
+        block.data        = static_cast<uint16_t>((data >> 8) >> (16 * (3 - blockNum)));
         block.is_received = (rdsErr >> (2 * (3 - blockNum))) == 0;
         group.setBlock(blockNum, block);
       }

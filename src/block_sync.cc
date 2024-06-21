@@ -34,50 +34,43 @@ constexpr int kCheckwordLength   = 10;
 
 // Each offset word is associated with one block number
 eBlockNumber getBlockNumberForOffset(Offset offset) {
-  // clang-format off
   switch (offset) {
-    case Offset::A       : return BLOCK1; break;
-    case Offset::B       : return BLOCK2; break;
-    case Offset::C       : return BLOCK3; break;
-    case Offset::Cprime  : return BLOCK3; break;
-    case Offset::D       : return BLOCK4; break;
+    case Offset::A:       return BLOCK1;
+    case Offset::B:       return BLOCK2;
+    case Offset::C:       return BLOCK3;
+    case Offset::Cprime:  return BLOCK3;
+    case Offset::D:       return BLOCK4;
 
-    case Offset::invalid : return BLOCK1; break;
-    default              : return BLOCK1; break;
+    case Offset::invalid: return BLOCK1;
   }
-  // clang-format on
   return BLOCK1;
 }
 
 // Return the next offset word in sequence
 Offset getNextOffsetFor(Offset this_offset) {
-  // clang-format off
   switch (this_offset) {
-    case Offset::A       : return Offset::B; break;
-    case Offset::B       : return Offset::C; break;
-    case Offset::C       : return Offset::D; break;
-    case Offset::Cprime  : return Offset::D; break;
-    case Offset::D       : return Offset::A; break;
+    case Offset::A:       return Offset::B;
+    case Offset::B:       return Offset::C;
+    case Offset::C:       return Offset::D;
+    case Offset::Cprime:  return Offset::D;
+    case Offset::D:       return Offset::A;
 
-    case Offset::invalid : return Offset::A; break;
-    default              : return Offset::A; break;
+    case Offset::invalid: return Offset::A;
   }
-  // clang-format on
+  return Offset::A;
 }
 
 // IEC 62106:2015 section B.3.1 Table B.1
 Offset getOffsetForSyndrome(uint32_t syndrome) {
-  // clang-format off
   switch (syndrome) {
-    case 0b1111011000 : return Offset::A;       break;
-    case 0b1111010100 : return Offset::B;       break;
-    case 0b1001011100 : return Offset::C;       break;
-    case 0b1111001100 : return Offset::Cprime;  break;
-    case 0b1001011000 : return Offset::D;       break;
+    case 0b1111011000: return Offset::A;
+    case 0b1111010100: return Offset::B;
+    case 0b1001011100: return Offset::C;
+    case 0b1111001100: return Offset::Cprime;
+    case 0b1001011000: return Offset::D;
 
-    default           : return Offset::invalid; break;
+    default:           return Offset::invalid;
   }
-  // clang-format on
 }
 
 uint32_t calculateSyndrome(uint32_t vec) {

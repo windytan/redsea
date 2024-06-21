@@ -1,6 +1,8 @@
 #ifndef TMC_CSV_H_
 #define TMC_CSV_H_
 
+#include <algorithm>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>

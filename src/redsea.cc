@@ -28,76 +28,78 @@
 namespace redsea {
 
 void printUsage() {
-  std::cout <<
-    "radio_command | redsea [OPTIONS]\n"
-    "redsea [OPTIONS] < raw_signal_file.s16\n\n"
-    "-b, --input-bits       Same as --input bits (for backwards compatibility).\n"
-    "\n"
-    "-c, --channels CHANS   Number of channels in the raw input signal. Channels are\n"
-    "                       interleaved streams of samples that are demodulated\n"
-    "                       independently.\n"
-    "\n"
-    "-e, --feed-through     Echo the input signal to stdout and print decoded groups\n"
-    "                       to stderr. This only works for raw PCM.\n"
-    "\n"
-    "-E, --bler             Display the average block error rate, or the percentage\n"
-    "                       of blocks that had errors before error correction.\n"
-    "                       Averaged over the last 12 groups. For hex input, this is\n"
-    "                       the percentage of missing blocks.\n"
-    "\n"
-    "-f, --file FILENAME    Read MPX input from a wave file with headers (.wav,\n"
-    "                       .flac, ...). If you have headered wave data via stdin,\n"
-    "                       use '-'. Or you can specify another format with --input.\n"
-    "\n"
-    "-h, --input-hex        Same as --input hex (for backwards compatibility).\n"
-    "\n"
-    "-i, --input FORMAT     Decode input as FORMAT (see the redsea wiki in github\n"
-    "                       for more info).\n"
-    "                         bits Unsynchronized ASCII bit stream (01101011...). All characters\n"
-    "                              but '0' and '1' are ignored.\n"
-    "                         hex  RDS Spy hex format. (Timestamps will be ignored)\n"
-    "                         pcm  MPX as raw mono S16LE PCM. Remember to also specify\n"
-    "                              --samplerate. If you're reading from a sound file with headers\n"
-    "                              (WAV, FLAC, ...) don't specify this.\n"
-    "                         tef  Serial data from the TEF6686 tuner.\n"
-    "\n"
-    "-l, --loctable DIR     Load TMC location table from a directory in TMC Exchange\n"
-    "                       format. This option can be specified multiple times to\n"
-    "                       load several location tables.\n"
-    "\n"
-    "--no-fec               Disable forward error correction; always reject blocks\n"
-    "                       with incorrect syndromes. In noisy conditions, fewer errors\n"
-    "                       will slip through, but also fewer blocks in total. See wiki\n"
-    "                       for discussion.\n"
-    "\n"
-    "-o, --output FORMAT    Print output as FORMAT:\n"
-    "                         hex  RDS Spy hex format.\n"
-    "                         json Newline-delimited JSON (default).\n"
-    "\n"
-    "-p, --show-partial     Under noisy conditions, redsea may not be able to fully\n"
-    "                       receive all information. Multi-group data such as PS\n"
-    "                       names, RadioText, and alternative frequencies are\n"
-    "                       especially vulnerable. This option makes it display them\n"
-    "                       even if not fully received, prefixed with partial_.\n"
-    "\n"
-    "-r, --samplerate RATE  Set sample frequency of raw PCM input in Hz. Will\n"
-    "                       resample if this differs from 171000 Hz.\n"
-    "\n"
-    "-R, --show-raw         Include raw group data as hex in the JSON stream.\n"
-    "\n"
-    "-t, --timestamp FORMAT Add time of decoding to JSON groups; see man strftime\n"
-    "                       for formatting options (or try \"%c\"). Use \"%f\" to add\n"
-    "                       hundredths of seconds.\n"
-    "\n"
-    "-u, --rbds             RBDS mode; use North American program type names and\n"
-    "                       \"back-calculate\" the station's call sign from its PI\n"
-    "                       code. Note that this calculation gives an incorrect call\n"
-    "                       sign for most stations that transmit TMC.\n"
-    "\n"
-    "-v, --version          Print version string and exit.\n"
-    "\n"
-    "-x, --output-hex       Same as --output hex (for backwards compatibility).\n"
-    "\n";
+  std::cout
+      << "radio_command | redsea [OPTIONS]\n"
+         "redsea [OPTIONS] -r <samplerate> < raw_signal_file.s16\n\n"
+         "-b, --input-bits       Same as --input bits (for backwards compatibility).\n"
+         "\n"
+         "-c, --channels CHANS   Number of channels in the raw input signal. Channels are\n"
+         "                       interleaved streams of samples that are demodulated\n"
+         "                       independently.\n"
+         "\n"
+         "-e, --feed-through     Echo the input signal to stdout and print decoded groups\n"
+         "                       to stderr. This only works for raw PCM.\n"
+         "\n"
+         "-E, --bler             Display the average block error rate, or the percentage\n"
+         "                       of blocks that had errors before error correction.\n"
+         "                       Averaged over the last 12 groups. For hex input, this is\n"
+         "                       the percentage of missing blocks.\n"
+         "\n"
+         "-f, --file FILENAME    Read MPX input from a wave file with headers (.wav,\n"
+         "                       .flac, ...). If you have headered wave data via stdin,\n"
+         "                       use '-'. Or you can specify another format with --input.\n"
+         "\n"
+         "-h, --input-hex        Same as --input hex (for backwards compatibility).\n"
+         "\n"
+         "-i, --input FORMAT     Decode input as FORMAT (see the redsea wiki in github\n"
+         "                       for more info).\n"
+         "                         bits Unsynchronized ASCII bit stream (01101011...). All "
+         "characters\n"
+         "                              but '0' and '1' are ignored.\n"
+         "                         hex  RDS Spy hex format. (Timestamps will be ignored)\n"
+         "                         pcm  MPX as raw mono S16LE PCM. Remember to also specify\n"
+         "                              --samplerate. If you're reading from a sound file with "
+         "headers\n"
+         "                              (WAV, FLAC, ...) don't specify this.\n"
+         "                         tef  Serial data from the TEF6686 tuner.\n"
+         "\n"
+         "-l, --loctable DIR     Load TMC location table from a directory in TMC Exchange\n"
+         "                       format. This option can be specified multiple times to\n"
+         "                       load several location tables.\n"
+         "\n"
+         "--no-fec               Disable forward error correction; always reject blocks\n"
+         "                       with incorrect syndromes. In noisy conditions, fewer errors\n"
+         "                       will slip through, but also fewer blocks in total. See wiki\n"
+         "                       for discussion.\n"
+         "\n"
+         "-o, --output FORMAT    Print output as FORMAT:\n"
+         "                         hex  RDS Spy hex format.\n"
+         "                         json Newline-delimited JSON (default).\n"
+         "\n"
+         "-p, --show-partial     Under noisy conditions, redsea may not be able to fully\n"
+         "                       receive all information. Multi-group data such as PS\n"
+         "                       names, RadioText, and alternative frequencies are\n"
+         "                       especially vulnerable. This option makes it display them\n"
+         "                       even if not fully received, prefixed with partial_.\n"
+         "\n"
+         "-r, --samplerate RATE  Set sample frequency of raw PCM input in Hz. Will\n"
+         "                       resample if this differs from 171000 Hz.\n"
+         "\n"
+         "-R, --show-raw         Include raw group data as hex in the JSON stream.\n"
+         "\n"
+         "-t, --timestamp FORMAT Add time of decoding to JSON groups; see man strftime\n"
+         "                       for formatting options (or try \"%c\"). Use \"%f\" to add\n"
+         "                       hundredths of seconds.\n"
+         "\n"
+         "-u, --rbds             RBDS mode; use North American program type names and\n"
+         "                       \"back-calculate\" the station's call sign from its PI\n"
+         "                       code. Note that this calculation gives an incorrect call\n"
+         "                       sign for most stations that transmit TMC.\n"
+         "\n"
+         "-v, --version          Print version string and exit.\n"
+         "\n"
+         "-x, --output-hex       Same as --output hex (for backwards compatibility).\n"
+         "\n";
 }
 
 void printVersion() {
@@ -113,11 +115,12 @@ int processMPXInput(Options options) {
 
   try {
     mpx.init(options);
-  } catch (BeyondEofError& e) {
+  } catch (BeyondEofError&) {
     printUsage();
     return EXIT_FAILURE;
   }
-  options.samplerate = mpx.getSamplerate();
+
+  options.samplerate   = mpx.getSamplerate();
   options.num_channels = mpx.getNumChannels();
 
   if (mpx.hasError())
@@ -127,17 +130,15 @@ int processMPXInput(Options options) {
 
   std::vector<Channel> channels;
   std::vector<std::unique_ptr<Subcarrier>> subcarriers;
-  for (int i = 0; i < options.num_channels; i++) {
+  for (uint32_t i = 0; i < options.num_channels; i++) {
     channels.emplace_back(options, i, output_stream);
     subcarriers.push_back(std::make_unique<Subcarrier>(options));
   }
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
-    for (int i = 0; i < options.num_channels; i++) {
-      channels[i].processBits(
-        subcarriers[i]->processChunk(mpx.readChunk(i))
-      );
+    for (uint32_t i = 0; i < options.num_channels; i++) {
+      channels[i].processBits(subcarriers[i]->processChunk(mpx.readChunk(i)));
       if (channels[i].getSecondsSinceCarrierLost() > 10.f &&
           subcarriers[i]->getSecondsSinceLastReset() > 5.f) {
         subcarriers[i]->reset();
@@ -146,8 +147,7 @@ int processMPXInput(Options options) {
     }
   }
 
-  for (int i = 0; i < options.num_channels; i++)
-    channels[i].flush();
+  for (uint32_t i = 0; i < options.num_channels; i++) channels[i].flush();
 
   return EXIT_SUCCESS;
 }
@@ -204,20 +204,9 @@ int main(int argc, char** argv) {
 
   switch (options.input_type) {
     case redsea::InputType::MPX_stdin:
-    case redsea::InputType::MPX_sndfile:
-      return processMPXInput(options);
-      break;
-
-    case redsea::InputType::ASCIIbits:
-      return processASCIIBitsInput(options);
-      break;
-
-    case redsea::InputType::Hex:
-      return processHexInput(options);
-      break;
-
-    case redsea::InputType::TEF6686:
-      return processTEFInput(options);
-      break;
+    case redsea::InputType::MPX_sndfile: return processMPXInput(options);
+    case redsea::InputType::ASCIIbits:   return processASCIIBitsInput(options);
+    case redsea::InputType::Hex:         return processHexInput(options);
+    case redsea::InputType::TEF6686:     return processTEFInput(options);
   }
 }

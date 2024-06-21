@@ -17,10 +17,9 @@
 #include "src/tables.h"
 
 #include <array>
+#include <cstdint>
 #include <map>
 #include <string>
-
-#include "src/common.h"
 
 namespace redsea {
 

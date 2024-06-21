@@ -24,13 +24,40 @@ namespace redsea {
 
 std::string getHoursMinutesString(int hour, int minute) {
   std::stringstream ss;
-  ss << std::setfill('0') <<
-        std::setw(2) << hour << ":" <<
-        std::setw(2) << minute;
+  ss << std::setfill('0') << std::setw(2) << hour << ":" << std::setw(2) << minute;
   return ss.str();
 }
 
-std::string join(const std::vector<std::string>& strings, const std::string& d) {
+std::string getTimePointString(const std::chrono::time_point<std::chrono::system_clock>& timepoint,
+                               const std::string& format) {
+  // This is done to ensure we get truncation and not rounding to integer seconds
+  const auto seconds_since_epoch(
+      std::chrono::duration_cast<std::chrono::seconds>(timepoint.time_since_epoch()));
+  const std::time_t t = std::chrono::system_clock::to_time_t(
+      std::chrono::system_clock::time_point(seconds_since_epoch));
+
+  std::string format_with_fractional(format);
+  const std::size_t found = format_with_fractional.find("%f");
+  if (found != std::string::npos) {
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        timepoint.time_since_epoch() - seconds_since_epoch)
+                        .count();
+    const auto hundredths = (ms / 10) % 10;
+    const auto tenths     = (ms / 100) % 10;
+
+    format_with_fractional.replace(found, 2, std::to_string(tenths) + std::to_string(hundredths));
+  }
+
+  char buffer[64];
+  if (std::strftime(buffer, sizeof(buffer), format_with_fractional.c_str(), std::localtime(&t)) ==
+      0) {
+    return "(format error)";
+  }
+
+  return std::string(buffer);
+}
+
+std::string join(const std::vector<std::string> &strings, const std::string &d) {
   std::string result("");
   for (size_t i = 0; i < strings.size(); i++) {
     result += strings[i];
@@ -56,24 +83,20 @@ std::string getPrefixedHexString(uint32_t value, int num_nybbles) {
 }
 
 // 3.2.1.6
-CarrierFrequency::CarrierFrequency(uint16_t code, Band band) :
-    code_(code), band_(band) {
-}
+CarrierFrequency::CarrierFrequency(uint16_t code, Band band) : code_(code), band_(band) {}
 
 bool CarrierFrequency::isValid() const {
   return (band_ == Band::LF_MF && code_ >= 1 && code_ <= 135) ||
-         (band_ == Band::FM    && code_ >= 1 && code_ <= 204);
+         (band_ == Band::FM && code_ >= 1 && code_ <= 204);
 }
 
 int CarrierFrequency::kHz() const {
   int khz = 0;
   if (isValid()) {
     switch (band_) {
-      case Band::FM :
-        khz = 87500 + 100 * code_;
-        break;
+      case Band::FM: khz = 87500 + 100 * code_; break;
 
-      case Band::LF_MF :
+      case Band::LF_MF:
         if (code_ <= 15)
           khz = 144 + 9 * code_;
         else
@@ -89,14 +112,14 @@ std::string CarrierFrequency::str() const {
   std::stringstream ss;
   if (isValid()) {
     switch (band_) {
-      case Band::FM : {
+      case Band::FM: {
         const float num = kHz() / 1000.0f;
         ss.precision(1);
         ss << std::fixed << num << " MHz";
         break;
       }
 
-      case Band::LF_MF : {
+      case Band::LF_MF: {
         const float num = kHz();
         ss.precision(0);
         ss << std::fixed << num << " kHz";
@@ -108,50 +131,44 @@ std::string CarrierFrequency::str() const {
   return ss.str();
 }
 
-bool operator== (const CarrierFrequency &f1,
-                 const CarrierFrequency &f2) {
+bool operator==(const CarrierFrequency &f1, const CarrierFrequency &f2) {
   return (f1.code_ == f2.code_);
 }
 
-bool operator< (const CarrierFrequency &f1,
-                const CarrierFrequency &f2) {
+bool operator<(const CarrierFrequency &f1, const CarrierFrequency &f2) {
   return (f1.kHz() < f2.kHz());
 }
 
 void AltFreqList::insert(uint16_t af_code) {
-  const CarrierFrequency frequency(af_code, lf_mf_follows_ ? CarrierFrequency::Band::LF_MF :
-                                                             CarrierFrequency::Band::FM);
+  const CarrierFrequency frequency(
+      af_code, lf_mf_follows_ ? CarrierFrequency::Band::LF_MF : CarrierFrequency::Band::FM);
   lf_mf_follows_ = false;
 
   // AF code encodes a frequency
   if (frequency.isValid() && num_expected_ > 0) {
     if (num_received_ < num_expected_) {
-      const int kHz = frequency.kHz();
+      const int kHz             = frequency.kHz();
       alt_freqs_[num_received_] = kHz;
       num_received_++;
 
-    // Error; no space left in the list.
     } else {
+      // Error; no space left in the list.
       clear();
     }
 
-  // Filler
   } else if (af_code == 205) {
-
-  // No AF exists
+    // Filler
   } else if (af_code == 224) {
-
-  // Number of AFs
+    // No AF exists
   } else if (af_code >= 225 && af_code <= 249) {
+    // Number of AFs
     num_expected_ = af_code - 224;
     num_received_ = 0;
-
-  // AM/LF freq follows
   } else if (af_code == 250) {
+    // AM/LF frequency follows
     lf_mf_follows_ = true;
-
-  // Error; invalid AF code.
   } else {
+    // Error; invalid AF code.
     clear();
   }
 }
@@ -174,8 +191,7 @@ bool AltFreqList::isMethodB() const {
 }
 
 bool AltFreqList::isComplete() const {
-  return num_expected_ == num_received_ &&
-         num_received_ > 0;
+  return num_expected_ == num_received_ && num_received_ > 0;
 }
 
 // Return the sequence of frequencies as they were received (excluding special AF codes)
