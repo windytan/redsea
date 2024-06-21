@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/liquid_wrappers.h"
+#include "src/dsp/liquid_wrappers.h"
 
 #include <complex>
 #include <stdexcept>
@@ -99,10 +99,6 @@ void NCO::setPLLBandwidth(float bw) {
 
 void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
-}
-
-float NCO::getFrequency() {
-  return nco_crcf_get_frequency(object_);
 }
 
 SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,

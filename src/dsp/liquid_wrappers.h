@@ -14,8 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#ifndef LIQUID_WRAPPERS_H_
-#define LIQUID_WRAPPERS_H_
+#ifndef DSP_LIQUID_WRAPPERS_H_
+#define DSP_LIQUID_WRAPPERS_H_
 
 #include <complex>
 #include <utility>
@@ -72,7 +72,6 @@ class NCO {
   void setPLLBandwidth(float);
   void stepPLL(float dphi);
   void reset();
-  float getFrequency();
 
  private:
   nco_crcf object_;
@@ -124,4 +123,4 @@ class Resampler {
 
 }  // namespace liquid
 
-#endif // LIQUID_WRAPPERS_H_
+#endif // DSP_LIQUID_WRAPPERS_H_

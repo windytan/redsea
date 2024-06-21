@@ -21,9 +21,9 @@
 #include "build/config.h"
 #include "src/channel.h"
 #include "src/common.h"
+#include "src/dsp/subcarrier.h"
 #include "src/groups.h"
 #include "src/options.h"
-#include "src/subcarrier.h"
 
 namespace redsea {
 

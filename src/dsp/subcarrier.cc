@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/subcarrier.h"
+#include "src/dsp/subcarrier.h"
 
 #include <cmath>
 #include <complex>
@@ -26,8 +26,8 @@
 #include <sndfile.h>
 
 #include "src/common.h"
+#include "src/dsp/liquid_wrappers.h"
 #include "src/input.h"
-#include "src/liquid_wrappers.h"
 
 namespace redsea {
 

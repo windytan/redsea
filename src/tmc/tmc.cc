@@ -31,9 +31,9 @@
 
 #include "src/common.h"
 #include "src/tables.h"
+#include "src/tmc/csv.h"
 #include "src/tmc/event_list.h"
 #include "src/tmc/locationdb.h"
-#include "src/util.h"
 
 namespace redsea {
 

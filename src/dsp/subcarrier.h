@@ -14,16 +14,16 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#ifndef SUBCARRIER_H_
-#define SUBCARRIER_H_
+#ifndef DSP_SUBCARRIER_H_
+#define DSP_SUBCARRIER_H_
 
 #include <array>
 #include <complex>
 #include <utility>
 
 #include "src/common.h"
+#include "src/dsp/liquid_wrappers.h"
 #include "src/input.h"
-#include "src/liquid_wrappers.h"
 #include "src/options.h"
 
 namespace redsea {
@@ -83,4 +83,4 @@ class Subcarrier {
 
 }  // namespace redsea
 
-#endif  // SUBCARRIER_H_
+#endif  // DSP_SUBCARRIER_H_
