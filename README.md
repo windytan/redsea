@@ -1,19 +1,17 @@
 # redsea RDS decoder
 
-redsea is a lightweight command-line FM-RDS decoder supporting a large [subset of RDS features][Wiki: Features].
+redsea is a lightweight command-line FM-RDS decoder that supports many [RDS features][Wiki: Features].
 
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
 ![build](https://github.com/windytan/redsea/workflows/build/badge.svg)
 
-Decoded RDS groups are printed to the terminal as [line-delimited JSON](https://jsonlines.org/) objects
-or, optionally, undecoded hex blocks (`-x`). Please refer to the wiki for
-[input data formats][Wiki: Input].
+Its terminal output is [line-delimited JSON](https://jsonlines.org/) where
+each line corresponds to one RDS group. It can also print "raw" undecoded hex blocks (`--output hex`).
+Please refer to the wiki for [input data formats][Wiki: Input].
 
 Redsea can be used with any [RTL-SDR][About RTL-SDR] USB radio stick with the
-`rtl_fm` tool, or any other SDR via `csdr`, for example. It can also
-decode raw ASCII bitstream, the hex format used by RDS Spy, and audio files
-containing multiplex signals (MPX). These use cases are documented in
-the [wiki][Wiki: Use cases].
+`rtl_fm` tool, or any other SDR via a tool like `csdr` (see [wiki][Wiki: Use cases]). It can decode MPX from
+raw PCM or audio files, ASCII bitstreams, the hex format used by RDS Spy, or the TEF6686 serial format.
 
 [About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
 [Wiki: Features]: https://github.com/windytan/redsea/wiki/Supported-RDS-features
@@ -54,8 +52,10 @@ beginning.
 
 Or on macOS using Homebrew:
 
-        $ brew install meson libsndfile liquid-dsp
+        $ brew install meson libsndfile liquid-dsp nlohmann-json
         $ xcode-select --install
+
+Meson will download nlohmann-json for you if it can't be found in the package repositories.
 
 2. Clone the repository (unless you downloaded a release zip file):
 
@@ -73,8 +73,8 @@ How to later get the latest updates and recompile:
 
 [liquid-dsp]: https://github.com/jgaeddert/liquid-dsp/releases/tag/v1.3.2
 
-Build instructions for Windows are in [the wiki][Wiki: Windows build], for both Cygwin and
-building an .exe with MSYS2/MinGW.
+It's also possible to build redsea on Windows, either in Cygwin or by building
+an .exe with MSYS2/MinGW; Instructions are in [the wiki][Wiki: Windows build].
 
 [Wiki: Windows build]: (https://github.com/windytan/redsea/wiki/Installation#windows).
 
@@ -168,11 +168,11 @@ redsea -f WAVEFILE
 
 ### Formatting and filtering the JSON output
 
-The JSON output can be tidied and/or colored using `jq`:
+You can get tidier json output using `jq`:
 
     $ rtl_fm ... | redsea | jq
 
-It can also be used to extract only certain fields, for instance the program
+It's also useful for extracting only certain fields, for instance the program
 type:
 
     $ rtl_fm ... | redsea | jq '.prog_type'
@@ -188,6 +188,7 @@ type:
 * libiconv 1.16
 * libsndfile 1.0.31
 * [liquid-dsp][liquid-dsp] release 1.3.2
+* nlohmann-json
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals
 
@@ -224,15 +225,15 @@ information.
 
 Also, if a station in your area is transmitting an interesting RDS feature
 that should be implemented in redsea, I would be happy to see a minute or
-two's worth of hex data using the `-x` switch. You could use a gist or an
-external pastebin service and post a link to it.
+two's worth of hex data using the `--output hex` switch. You could use a
+gist or an external pastebin service and post a link to it in our Github
+Discussions.
 
 ## Licensing
 
 Redsea is released under the MIT license, which means it is copyrighted to Oona
 Räisänen OH2EIQ yet you're free to use it provided that the copyright
-information is not removed. (jsoncpp and iconvpp have their own licenses.)
-See LICENSE.
+information is not removed. (iconvpp has its own license.) See LICENSE.
 
-This software should never be relied on for emergency communication, accurate
-traffic / weather information, or when your life is on the line.
+This software is not safety certified and should never be relied on for emergency
+communication, accurate traffic / weather information, or when your life is on the line.

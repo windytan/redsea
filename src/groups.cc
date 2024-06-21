@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-#include <ext/json/json.h>
+#include <nlohmann/json.hpp>
 
 #include "config.h"
 #include "src/common.h"
@@ -39,7 +39,7 @@
 namespace redsea {
 
 // Programme Item Number (IEC 62106:2015, section 6.1.5.2)
-bool decodePIN(uint16_t pin, Json::Value* json) {
+bool decodePIN(uint16_t pin, nlohmann::ordered_json* json) {
   const uint16_t day    = getBits<5>(pin, 11);
   const uint16_t hour   = getBits<5>(pin, 6);
   const uint16_t minute = getBits<6>(pin, 0);
@@ -198,12 +198,7 @@ void Group::printHex(std::ostream& stream) const {
  *
  */
 Station::Station(const Options& options, int which_channel)
-    : options_(options), which_channel_(which_channel), tmc_(options) {
-  writer_builder_["indentation"]        = "";
-  writer_builder_["precision"]          = 7;
-  writer_builder_.settings_["emitUTF8"] = true;
-  writer_ = std::unique_ptr<Json::StreamWriter>(writer_builder_.newStreamWriter());
-}
+    : options_(options), which_channel_(which_channel), tmc_(options) {}
 
 Station::Station(const Options& options, int which_channel, uint16_t _pi)
     : Station(options, which_channel) {
@@ -227,19 +222,19 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     return;
 
   json_.clear();
-  json_["*SORT00*pi"] = getPrefixedHexString(getPI(), 4);
+  json_["pi"] = getPrefixedHexString(getPI(), 4);
   if (options_.rbds) {
     const std::string callsign{getCallsignFromPI(getPI())};
     if (!callsign.empty()) {
       if ((getPI() & 0xF000) == 0x1000)
-        json_["*SORT02*callsign_uncertain"] = callsign;
+        json_["callsign_uncertain"] = callsign;
       else
-        json_["*SORT02*callsign"] = callsign;
+        json_["callsign"] = callsign;
     }
   }
 
   if (options_.timestamp)
-    json_["*SORT01*rx_time"] = getTimePointString(group.getRxTime(), options_.time_format);
+    json_["rx_time"] = getTimePointString(group.getRxTime(), options_.time_format);
 
   if (group.hasBLER())
     json_["bler"] = static_cast<int>(group.getBLER() + .5f);
@@ -317,11 +312,7 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     }
   }
 
-  std::stringstream ss;
-  writer_->write(json_, &ss);
-  ss << '\n';
-
-  stream << ss.str() << std::flush;
+  stream << json_ << std::endl << std::flush;
 }
 
 uint16_t Station::getPI() const {
@@ -333,7 +324,7 @@ void Station::decodeBasics(const Group& group) {
     const uint16_t pty = getBits<5>(group.get(BLOCK2), 5);
 
     if (group.hasType())
-      json_["*SORT03*group"] = group.getType().str();
+      json_["group"] = group.getType().str();
 
     json_["tp"] = getBool(group.get(BLOCK2), 10);
 
@@ -342,7 +333,7 @@ void Station::decodeBasics(const Group& group) {
              group.has(BLOCK4)) {
     const uint16_t pty = getBits<5>(group.get(BLOCK4), 5);
 
-    json_["*SORT03*group"] = group.getType().str();
+    json_["group"] = group.getType().str();
 
     json_["tp"]        = getBool(group.get(BLOCK4), 10);
     json_["prog_type"] = options_.rbds ? getPTYNameStringRBDS(pty) : getPTYNameString(pty);
@@ -408,17 +399,17 @@ void Station::decodeType0(const Group& group) {
         const size_t number_of_unique_afs =
             unique_alternative_frequencies.size() + unique_regional_variants.size();
         if (number_of_unique_afs == expected_number_of_afs) {
-          json_["alt_frequencies_b"]["*SORT01*tuned_frequency"] = tuned_frequency;
+          json_["alt_frequencies_b"]["tuned_frequency"] = tuned_frequency;
 
           for (const int frequency : alternative_frequencies)
-            json_["alt_frequencies_b"]["*SORT02*same_programme"].append(frequency);
+            json_["alt_frequencies_b"]["same_programme"].push_back(frequency);
 
           for (const int frequency : regional_variants)
-            json_["alt_frequencies_b"]["*SORT03*regional_variants"].append(frequency);
+            json_["alt_frequencies_b"]["regional_variants"].push_back(frequency);
         }
       } else {
         // AF Method A is a simple list
-        for (const int frequency : raw_frequencies) json_["alt_frequencies_a"].append(frequency);
+        for (const int frequency : raw_frequencies) json_["alt_frequencies_a"].push_back(frequency);
       }
 
       alt_freq_list_.clear();
@@ -426,7 +417,7 @@ void Station::decodeType0(const Group& group) {
     } else if (options_.show_partial) {
       // If partial list is requested we'll print the raw list and not attempt to
       // deduce whether it's Method A or B
-      for (const int f : alt_freq_list_.getRawList()) json_["partial_alt_frequencies"].append(f);
+      for (const int f : alt_freq_list_.getRawList()) json_["partial_alt_frequencies"].push_back(f);
     }
   }
 
@@ -437,9 +428,9 @@ void Station::decodeType0(const Group& group) {
   ps_.update(segment_address * 2, getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
 
   if (ps_.text.isComplete())
-    json_["*SORT04*ps"] = ps_.text.getLastCompleteString();
+    json_["ps"] = ps_.text.getLastCompleteString();
   else if (options_.show_partial)
-    json_["*SORT04*partial_ps"] = ps_.text.str();
+    json_["partial_ps"] = ps_.text.str();
 }
 
 // Group 1: Programme Item Number and slow labelling codes
@@ -451,7 +442,7 @@ void Station::decodeType1(const Group& group) {
 
   if (pin_ != 0x0000)
     if (!decodePIN(pin_, &json_))
-      json_["debug"].append("invalid PIN");
+      json_["debug"].push_back("invalid PIN");
 
   if (group.getType().version == GroupType::Version::A) {
     pager_.paging_code = getBits<3>(group.get(BLOCK2), 2);
@@ -502,7 +493,7 @@ void Station::decodeType1(const Group& group) {
       case 7: json_["ews"] = getBits<12>(group.get(BLOCK3), 0); break;
 
       default:
-        json_["debug"].append("TODO: SLC variant " + std::to_string(slow_label_variant));
+        json_["debug"].push_back("TODO: SLC variant " + std::to_string(slow_label_variant));
         break;
     }
   }
@@ -564,15 +555,15 @@ void Station::decodeType2(const Group& group) {
 
   // Transmitter used Method 1 or 2 convey the length of the string.
   if (radiotext_.text.isComplete()) {
-    json_["*SORT04*radiotext"] = rtrim(radiotext_.text.getLastCompleteString());
+    json_["radiotext"] = rtrim(radiotext_.text.getLastCompleteString());
 
     // Method 3 was used instead (and was confirmed by a repeat).
   } else if (has_potentially_complete_message) {
-    json_["*SORT04*radiotext"] = rtrim(std::move(potentially_complete_message));
+    json_["radiotext"] = rtrim(std::move(potentially_complete_message));
 
     // The string is not complete yet, but user wants to see it anyway.
   } else if (options_.show_partial && rtrim(radiotext_.text.str()).length() > 0) {
-    json_["*SORT04*partial_radiotext"] = radiotext_.text.str();
+    json_["partial_radiotext"] = radiotext_.text.str();
   }
 }
 
@@ -629,7 +620,7 @@ void Station::decodeType3A(const Group& group) {
     case 0xCD47: tmc_.receiveSystemGroup(oda_message, &json_); break;
 
     default:
-      json_["debug"].append("TODO: Unimplemented ODA app " + getHexString(oda_app_id, 4));
+      json_["debug"].push_back("TODO: Unimplemented ODA app " + getHexString(oda_app_id, 4));
       json_["open_data_app"]["message"] = oda_message;
       break;
   }
@@ -645,7 +636,7 @@ void Station::decodeType4A(const Group& group) {
 
   // Would result in negative years/months
   if (modified_julian_date < 15079.0) {
-    json_["debug"].append("invalid date/time");
+    json_["debug"].push_back("invalid date/time");
     return;
   }
 
@@ -698,7 +689,7 @@ void Station::decodeType4A(const Group& group) {
     clock_time_         = std::string(buffer);
     json_["clock_time"] = clock_time_;
   } else {
-    json_["debug"].append("invalid date/time");
+    json_["debug"].push_back("invalid date/time");
   }
 }
 
@@ -747,18 +738,18 @@ void Station::decodeType5(const Group& group) {
 
 // Group 6: In-house applications
 void Station::decodeType6(const Group& group) {
-  json_["in_house_data"].append(getBits<5>(group.get(BLOCK2), 0));
+  json_["in_house_data"].push_back(getBits<5>(group.get(BLOCK2), 0));
 
   if (group.getType().version == GroupType::Version::A) {
     if (group.has(BLOCK3)) {
-      json_["in_house_data"].append(getBits<16>(group.get(BLOCK3), 0));
+      json_["in_house_data"].push_back(getBits<16>(group.get(BLOCK3), 0));
       if (group.has(BLOCK4)) {
-        json_["in_house_data"].append(getBits<16>(group.get(BLOCK4), 0));
+        json_["in_house_data"].push_back(getBits<16>(group.get(BLOCK4), 0));
       }
     }
   } else {
     if (group.has(BLOCK4)) {
-      json_["in_house_data"].append(getBits<16>(group.get(BLOCK4), 0));
+      json_["in_house_data"].push_back(getBits<16>(group.get(BLOCK4), 0));
     }
   }
 }
@@ -766,13 +757,13 @@ void Station::decodeType6(const Group& group) {
 // Group 7A: Radio Paging
 void Station::decodeType7A(const Group& group) {
   static_cast<void>(group);
-  json_["debug"].append("TODO: 7A");
+  json_["debug"].push_back("TODO: 7A");
 }
 
 // Group 9A: Emergency warning systems
 void Station::decodeType9A(const Group& group) {
   static_cast<void>(group);
-  json_["debug"].append("TODO: 9A");
+  json_["debug"].push_back("TODO: 9A");
 }
 
 // Group 10A: Programme Type Name
@@ -799,9 +790,9 @@ void Station::decodeType14(const Group& group) {
   if (!(group.has(BLOCK4)))
     return;
 
-  const uint16_t on_pi                 = group.get(BLOCK4);
-  json_["other_network"]["*SORT00*pi"] = getPrefixedHexString(on_pi, 4);
-  json_["other_network"]["tp"]         = getBool(group.get(BLOCK2), 4);
+  const uint16_t on_pi         = group.get(BLOCK4);
+  json_["other_network"]["pi"] = getPrefixedHexString(on_pi, 4);
+  json_["other_network"]["tp"] = getBool(group.get(BLOCK2), 4);
 
   if (group.getType().version == GroupType::Version::B) {
     json_["other_network"]["ta"] = getBool(group.get(BLOCK2), 3);
@@ -833,7 +824,7 @@ void Station::decodeType14(const Group& group) {
 
       if (eon_alt_freqs_[on_pi].isComplete()) {
         for (const int freq : eon_alt_freqs_[on_pi].getRawList())
-          json_["other_network"]["alt_frequencies"].append(freq);
+          json_["other_network"]["alt_frequencies"].push_back(freq);
         eon_alt_freqs_[on_pi].clear();
       }
       break;
@@ -885,8 +876,8 @@ void Station::decodeType14(const Group& group) {
     }
 
     default:
-      json_["debug"].append("TODO: EON variant " +
-                            std::to_string(getBits<4>(group.get(BLOCK2), 0)));
+      json_["debug"].push_back("TODO: EON variant " +
+                               std::to_string(getBits<4>(group.get(BLOCK2), 0)));
       break;
   }
 }
@@ -963,7 +954,7 @@ void Station::decodeODAGroup(const Group& group) {
   }
 }
 
-void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el) {
+void parseRadioTextPlus(const Group& group, RadioText& rt, nlohmann::ordered_json& json_el) {
   const bool item_toggle  = getBool(group.get(BLOCK2), 4);
   const bool item_running = getBool(group.get(BLOCK2), 3);
 
@@ -997,10 +988,10 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el)
     const std::string text = rt.text.getLastCompleteString(tag.start, tag.length);
 
     if (text.length() > 0 && tag.content_type != 0) {
-      Json::Value tag_json;
+      nlohmann::ordered_json tag_json;
       tag_json["content-type"] = getRTPlusContentTypeString(tag.content_type);
       tag_json["data"]         = text;
-      json_el["tags"].append(tag_json);
+      json_el["tags"].push_back(tag_json);
     }
   }
 }
@@ -1025,7 +1016,7 @@ void Station::parseDAB(const Group& group) {
 
   if (es_flag) {
     // Service table
-    json_["debug"].append("TODO: DAB service table");
+    json_["debug"].push_back("TODO: DAB service table");
 
   } else {
     // Ensemble table

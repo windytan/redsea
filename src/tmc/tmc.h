@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#include <ext/json/json.h>
+#include <nlohmann/json.hpp>
 
 #include "src/common.h"
 #include "src/options.h"
@@ -149,7 +149,7 @@ class Message {
     is_encrypted_(is_loc_encrypted), was_encrypted_(is_loc_encrypted) {}
   void pushMulti(uint16_t x, uint16_t y, uint16_t z);
   void pushSingle(uint16_t x, uint16_t y, uint16_t z);
-  Json::Value json() const;
+  nlohmann::ordered_json json() const;
   void decrypt(const ServiceKey& key);
   bool isComplete() const;
   void clear();
@@ -189,8 +189,8 @@ class Message {
 class TMCService {
  public:
   explicit TMCService(const Options& options);
-  void receiveSystemGroup(uint16_t message, Json::Value*);
-  void receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value*);
+  void receiveSystemGroup(uint16_t message, nlohmann::ordered_json*);
+  void receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, nlohmann::ordered_json*);
 
  private:
   bool is_initialized_   { false };

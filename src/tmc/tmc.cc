@@ -27,7 +27,7 @@
 #include <string>
 #include <utility>
 
-#include <ext/json/json.h>
+#include <nlohmann/json.hpp>
 
 #include "src/common.h"
 #include "src/tables.h"
@@ -375,12 +375,13 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
   return result;
 }
 
-void decodeLocation(const LocationDatabase& db, uint16_t ltn, Json::Value* jsonroot) {
-  if (db.ltn != ltn || db.ltn == 0 || !(*jsonroot)["tmc"]["message"].isMember("location"))
+void decodeLocation(const LocationDatabase& db, uint16_t ltn, nlohmann::ordered_json* jsonroot) {
+  if (db.ltn != ltn || db.ltn == 0 || !(*jsonroot)["tmc"]["message"].contains("location"))
     return;
 
-  const uint16_t lcd = static_cast<uint16_t>((*jsonroot)["tmc"]["message"]["location"].asUInt());
-  const int extent   = std::stoi((*jsonroot)["tmc"]["message"]["extent"].asString());
+  const uint16_t lcd =
+      static_cast<uint16_t>((*jsonroot)["tmc"]["message"]["location"].get<uint16_t>());
+  const int extent       = std::stoi((*jsonroot)["tmc"]["message"]["extent"].get<std::string>());
   const bool is_positive = (extent >= 0);
 
   if (db.points.find(lcd) != db.points.end()) {
@@ -395,10 +396,8 @@ void decodeLocation(const LocationDatabase& db, uint16_t ltn, Json::Value* jsonr
 
     for (size_t i = 0; i < points.size(); i++) {
       //        (*jsonroot)["tmc"]["message"]["locations"].append(pts[i].lcd);
-      (*jsonroot)["tmc"]["message"]["coordinates"][static_cast<int>(i)]["lat"] =
-          static_cast<double>(points[i].lat);
-      (*jsonroot)["tmc"]["message"]["coordinates"][static_cast<int>(i)]["lon"] =
-          static_cast<double>(points[i].lon);
+      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lat"] = static_cast<double>(points[i].lat);
+      (*jsonroot)["tmc"]["message"]["coordinates"][i]["lon"] = static_cast<double>(points[i].lon);
     }
 
     if (points.size() > 1 && points.at(0).name1.length() > 0 &&
@@ -453,7 +452,7 @@ TMCService::TMCService(const Options& options)
   }
 }
 
-void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
+void TMCService::receiveSystemGroup(uint16_t message, nlohmann::ordered_json* jsonroot) {
   const uint16_t variant = getBits<2>(message, 14);
 
   if (variant == 0) {
@@ -477,7 +476,7 @@ void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
     (*jsonroot)["tmc"]["system_info"]["is_on_alt_freqs"] = afi;
 
     for (const std::string& s : getScopeStrings(mgs))
-      (*jsonroot)["tmc"]["system_info"]["scope"].append(s);
+      (*jsonroot)["tmc"]["system_info"]["scope"].push_back(s);
   } else if (variant == 1) {
     sid_                                            = getBits<6>(message, 6);
     (*jsonroot)["tmc"]["system_info"]["service_id"] = sid_;
@@ -500,7 +499,8 @@ void TMCService::receiveSystemGroup(uint16_t message, Json::Value* jsonroot) {
   }
 }
 
-void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Value* jsonroot) {
+void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z,
+                                  nlohmann::ordered_json* jsonroot) {
   if (!is_initialized_)
     return;
 
@@ -549,7 +549,7 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
            length of the list */
         (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString(on_pi, 4);
         for (const int frequency : other_network_freqs_.at(on_pi).getRawList())
-          (*jsonroot)["tmc"]["other_network"]["frequencies_khz"].append(frequency);
+          (*jsonroot)["tmc"]["other_network"]["frequencies_khz"].push_back(frequency);
         other_network_freqs_.clear();
         break;
       }
@@ -558,8 +558,8 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
         if (y == 0 || z == 0 || y == z) {
           (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString(y, 4);
         } else {
-          (*jsonroot)["tmc"]["other_network"]["pi_codes"].append(getPrefixedHexString(y, 4));
-          (*jsonroot)["tmc"]["other_network"]["pi_codes"].append(getPrefixedHexString(z, 4));
+          (*jsonroot)["tmc"]["other_network"]["pi_codes"].push_back(getPrefixedHexString(y, 4));
+          (*jsonroot)["tmc"]["other_network"]["pi_codes"].push_back(getPrefixedHexString(z, 4));
         }
         break;
       }
@@ -575,12 +575,12 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, Json::Valu
         (*jsonroot)["tmc"]["other_network"]["location_table"] = on_ltn;
 
         for (const std::string& s : getScopeStrings(on_mgs))
-          (*jsonroot)["tmc"]["other_network"]["scope"].append(s);
+          (*jsonroot)["tmc"]["other_network"]["scope"].push_back(s);
         break;
       }
 
       default: {
-        (*jsonroot)["debug"].append("TODO: TMC tuning info variant " + std::to_string(variant));
+        (*jsonroot)["debug"].push_back("TODO: TMC tuning info variant " + std::to_string(variant));
         break;
       }
     }
@@ -813,15 +813,15 @@ void Message::clear() {
   continuity_index_ = 0;
 }
 
-Json::Value Message::json() const {
-  Json::Value element;
+nlohmann::ordered_json Message::json() const {
+  nlohmann::ordered_json element;
 
   if (!is_complete_ || events_.empty())
     return element;
 
-  for (uint16_t code : events_) element["event_codes"].append(code);
+  for (uint16_t code : events_) element["event_codes"].push_back(code);
 
-  for (uint16_t code : supplementary_) element["supplementary_codes"].append(code);
+  for (uint16_t code : supplementary_) element["supplementary_codes"].push_back(code);
 
   std::vector<std::string> sentences;
   for (size_t i = 0; i < events_.size(); i++) {
@@ -847,7 +847,7 @@ Json::Value Message::json() const {
   if (!sentences.empty())
     element["description"] = join(sentences, ". ") + ".";
 
-  for (uint16_t code : diversion_) element["diversion_route"].append(code);
+  for (uint16_t code : diversion_) element["diversion_route"].push_back(code);
 
   if (has_speed_limit_)
     element["speed_limit"] = std::to_string(speed_limit_) + " km/h";

@@ -1,7 +1,7 @@
 #ifndef TEST_HELPERS_H_
 #define TEST_HELPERS_H_
 
-#include "../ext/json/json.h"
+#include <nlohmann/json.hpp>
 
 #include "../src/block_sync.h"
 #include "../src/channel.h"
@@ -11,7 +11,7 @@
 
 #include <vector>
 
-using HexData = std::vector<uint64_t>;
+using HexData    = std::vector<uint64_t>;
 using BinaryData = std::vector<uint32_t>;
 
 // Convert synchronized hex data into groups. Error correction is omitted and ignored.
@@ -34,8 +34,9 @@ inline std::vector<redsea::Group> makeGroupsFromHex(const HexData& hexdata) {
   return groups;
 }
 
-inline std::vector<Json::Value> decodeBinary(const BinaryData& bindata, const redsea::Options& options) {
-  std::vector<Json::Value> result;
+inline std::vector<nlohmann::ordered_json> decodeBinary(const BinaryData& bindata,
+                                                        const redsea::Options& options) {
+  std::vector<nlohmann::ordered_json> result;
 
   std::stringstream json_stream;
   redsea::Channel channel(options, 0, json_stream);
@@ -47,7 +48,7 @@ inline std::vector<Json::Value> decodeBinary(const BinaryData& bindata, const re
       int bit = (word >> (wordsize_bits - 1 - nbit)) & 0b1;
       channel.processBit(bit);
       if (!json_stream.str().empty()) {
-        Json::Value jsonroot;
+        nlohmann::ordered_json jsonroot;
         json_stream >> jsonroot;
         result.push_back(jsonroot);
 
@@ -60,10 +61,11 @@ inline std::vector<Json::Value> decodeBinary(const BinaryData& bindata, const re
   return result;
 }
 
-// Run redsea's decoder and convert the ascii json output into jsoncpp objects.
-inline std::vector<Json::Value> decodeGroups(const std::vector<redsea::Group>& data,
-                                             const redsea::Options& options, uint16_t pi) {
-  std::vector<Json::Value> result;
+// Run redsea's decoder and convert the ascii json output into json objects.
+inline std::vector<nlohmann::ordered_json> decodeGroups(const std::vector<redsea::Group>& data,
+                                                        const redsea::Options& options,
+                                                        uint16_t pi) {
+  std::vector<nlohmann::ordered_json> result;
 
   std::stringstream json_stream;
   redsea::Channel channel(options, json_stream, pi);
@@ -72,7 +74,7 @@ inline std::vector<Json::Value> decodeGroups(const std::vector<redsea::Group>& d
     json_stream.clear();
     channel.processGroup(group);
     if (!json_stream.str().empty()) {
-      Json::Value jsonroot;
+      nlohmann::ordered_json jsonroot;
       json_stream >> jsonroot;
       result.push_back(jsonroot);
     }
@@ -81,13 +83,14 @@ inline std::vector<Json::Value> decodeGroups(const std::vector<redsea::Group>& d
   return result;
 }
 
-inline std::vector<Json::Value> decodeGroups(const HexData& hexdata, const redsea::Options& options,
-                                             uint16_t pi) {
+inline std::vector<nlohmann::ordered_json> decodeGroups(const HexData& hexdata,
+                                                        const redsea::Options& options,
+                                                        uint16_t pi) {
   return decodeGroups(makeGroupsFromHex(hexdata), options, pi);
 }
 
 template <typename T>
-bool listEquals(Json::Value json, std::initializer_list<T> list) {
+bool listEquals(nlohmann::ordered_json json, std::initializer_list<T> list) {
   if (json.size() != list.size())
     return false;
 

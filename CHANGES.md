@@ -2,17 +2,18 @@
 
 ## HEAD
 
+* New features:
+  * Add support for Enhanced RadioText (eRT)
+  * Add support for Long PS in Group 15A (#104)
+  * Add runtime option to disable error correction with --no-fec
 * Maintainability:
   * Migrate build system from autotools to meson (#90)
+  * Switch from packaged-in JsonCPP to nlohmann-json (#109)
   * Add GitHub Workflows CI builds for macOS and Windows via MSYS2/MinGW + Cygwin
   * Add basic Catch2 unit tests (#84)
   * Add .clang-format (not automated)
   * Remove unmaintained build options for non-liquid, non-TMC builds
   * Fix compiler warnings, issues identified via static analysis, and other code cleanup
-* New features:
-  * Add support for Enhanced RadioText (eRT)
-  * Add support for Long PS in Group 15A (#104)
-  * Add runtime option to disable error correction with --no-fec
 * UX changes:
   * Breaking: Print a warning to stderr if the raw MPX input sample rate is
     not specified

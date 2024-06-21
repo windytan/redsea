@@ -2,8 +2,7 @@
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
-
-#include "../ext/json/json.h"
+#include <nlohmann/json.hpp>
 
 #include "../src/block_sync.h"
 #include "../src/channel.h"
@@ -26,23 +25,23 @@ TEST_CASE("Decodes basic info") {
   REQUIRE(json_lines.size() == 4);
 
   for (const auto& group : json_lines) {
-    CHECK(group["pi"].asString()                == "0x6204");
-    CHECK(group["group"].asString()             == "0A");
-    CHECK(json_lines[0]["prog_type"].asString() == "Varied");
-    CHECK(group["tp"].asBool()                  == false);
-    CHECK(group["ta"].asBool()                  == true);
-    CHECK(json_lines[0]["is_music"].asBool()    == false);
+    CHECK(group["pi"]                == "0x6204");
+    CHECK(group["group"]             == "0A");
+    CHECK(json_lines[0]["prog_type"] == "Varied");
+    CHECK(group["tp"]                == false);
+    CHECK(group["ta"]                == true);
+    CHECK(json_lines[0]["is_music"]  == false);
   }
 
   // https://github.com/windytan/redsea/issues/86
   {
-    CHECK(json_lines[0]["di"]["dynamic_pty"].asBool()     == false);
-    CHECK(json_lines[1]["di"]["compressed"].asBool()      == false);
-    CHECK(json_lines[2]["di"]["artificial_head"].asBool() == false);
-    CHECK(json_lines[3]["di"]["stereo"].asBool()          == true);
+    CHECK(json_lines[0]["di"]["dynamic_pty"]     == false);
+    CHECK(json_lines[1]["di"]["compressed"]      == false);
+    CHECK(json_lines[2]["di"]["artificial_head"] == false);
+    CHECK(json_lines[3]["di"]["stereo"]          == true);
   }
 
-  CHECK(json_lines[3]["ps"].asString() == "YLE X3M ");
+  CHECK(json_lines[3]["ps"] == "YLE X3M ");
 }
 
 // https://github.com/windytan/redsea/wiki/Some-RadioText-research
@@ -58,7 +57,7 @@ TEST_CASE("Decodes radiotext") {
     }, options, 0xC954)};
 
     REQUIRE(json_lines.size() == 3);
-    CHECK(json_lines.back()["radiotext"].asString() == "JACK 96.9");
+    CHECK(json_lines.back()["radiotext"] == "JACK 96.9");
   }
 
   SECTION("String length method B: Padded to 64 characters") {
@@ -78,7 +77,7 @@ TEST_CASE("Decodes radiotext") {
     }, options, 0xA959)};
 
     REQUIRE(json_lines.size() == 16);
-    CHECK(json_lines.back()["radiotext"].asString() == "FANCY - Bolero");
+    CHECK(json_lines.back()["radiotext"] == "FANCY - Bolero");
   }
 
   SECTION("String length method C: Random-length string with no terminator") {
@@ -100,7 +99,7 @@ TEST_CASE("Decodes radiotext") {
     }, options, 0xA540)};
 
     REQUIRE(json_lines.size() == 13);
-    CHECK(json_lines.back()["radiotext"].asString() == "Robbie Williams - Feel");
+    CHECK(json_lines.back()["radiotext"] == "Robbie Williams - Feel");
   }
 
   SECTION("Non-ascii character") {
@@ -120,7 +119,7 @@ TEST_CASE("Decodes radiotext") {
     }, options, 0x6205)};
 
     REQUIRE(json_lines.size() == 16);
-    CHECK(json_lines.back()["radiotext"].asString() == "Vega Kväll");
+    CHECK(json_lines.back()["radiotext"] == "Vega Kväll");
   }
 }
 
@@ -168,7 +167,7 @@ TEST_CASE("Decodes alternative frequencies") {
     }, options, 0x6201)};
 
     REQUIRE(json_lines.size() == 4);
-    REQUIRE(json_lines.back().isMember("alt_frequencies_a"));
+    REQUIRE(json_lines.back().contains("alt_frequencies_a"));
     CHECK(listEquals(json_lines.back()["alt_frequencies_a"],
           {87'900, 90'900, 89'800, 89'200, 93'200, 88'500, 89'500}));
   }
@@ -191,7 +190,7 @@ TEST_CASE("Decodes alternative frequencies") {
     }, options, 0x6403)};
 
     REQUIRE(json_lines.size() == 12);
-    REQUIRE(json_lines.back().isMember("alt_frequencies_b"));
+    REQUIRE(json_lines.back().contains("alt_frequencies_b"));
     CHECK(json_lines.back()["alt_frequencies_b"]["tuned_frequency"] == 94'000);
     CHECK(listEquals(json_lines.back()["alt_frequencies_b"]["same_programme"],
             {97'000, 90'300, 95'000, 96'100, 99'100}));
@@ -210,7 +209,7 @@ TEST_CASE("Decodes clock-time and date") {
     }, options, 0xD314)};
 
     REQUIRE(json_lines.size() == 1);
-    REQUIRE(json_lines.back().isMember("clock_time"));
+    REQUIRE(json_lines.back().contains("clock_time"));
     CHECK(json_lines.back()["clock_time"] == "2017-04-04T23:43:00+02:00");
   }
 
@@ -222,7 +221,7 @@ TEST_CASE("Decodes clock-time and date") {
     }, options, 0xD42A)};
 
     REQUIRE(json_lines.size() == 1);
-    REQUIRE(json_lines.back().isMember("clock_time"));
+    REQUIRE(json_lines.back().contains("clock_time"));
     CHECK(json_lines.back()["clock_time"] == "2018-11-01T14:18:00+01:00");
   }
 
@@ -234,7 +233,7 @@ TEST_CASE("Decodes clock-time and date") {
     }, options, 0x4569)};
 
     REQUIRE(json_lines.size() == 1);
-    REQUIRE(json_lines.back().isMember("clock_time"));
+    REQUIRE(json_lines.back().contains("clock_time"));
     CHECK(json_lines.back()["clock_time"] == "2020-08-19T20:46:00-07:00");
   }
 
@@ -246,8 +245,8 @@ TEST_CASE("Decodes clock-time and date") {
     }, options, 0xF201)};
 
     REQUIRE(json_lines.size() == 2);
-    REQUIRE(json_lines[0].isMember("clock_time"));
-    REQUIRE(json_lines[1].isMember("clock_time"));
+    REQUIRE(json_lines[0].contains("clock_time"));
+    REQUIRE(json_lines[1].contains("clock_time"));
     CHECK(json_lines[0]["clock_time"] == "2022-05-25T23:59:00+02:00");
     CHECK(json_lines[1]["clock_time"] == "2022-05-26T00:00:00+02:00");
   }
@@ -260,8 +259,8 @@ TEST_CASE("Decodes clock-time and date") {
     }, options, 0xF201)};
 
     REQUIRE(json_lines.size() == 2);
-    REQUIRE(json_lines[0].isMember("clock_time"));
-    REQUIRE(json_lines[1].isMember("clock_time"));
+    REQUIRE(json_lines[0].contains("clock_time"));
+    REQUIRE(json_lines[1].contains("clock_time"));
     CHECK(json_lines[0]["clock_time"] == "2022-05-26T01:59:00+02:00");
     CHECK(json_lines[1]["clock_time"] == "2022-05-26T02:00:00+02:00");
   }

@@ -13,11 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies (apt)
-      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev
+      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev
     - name: Install meson (pip3)
       run: pip3 install --user meson
     - name: meson setup
-      run: meson setup build
+      run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
 
@@ -27,9 +27,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies (brew)
-      run: brew install meson libsndfile liquid-dsp catch2
+      run: brew install meson libsndfile liquid-dsp nlohmann-json catch2
     - name: meson setup
-      run: meson setup build
+      run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
     - name: test
@@ -51,6 +51,7 @@ jobs:
           mingw-w64-x86_64-libiconv
           mingw-w64-x86_64-libsndfile
           mingw-w64-x86_64-meson
+          mingw-w64-x86_64-nlohmann-json
           mingw-w64-x86_64-python3
     # Disable glibc specific checks and headers
     - name: Patch & build liquid-dsp
@@ -64,7 +65,7 @@ jobs:
     - name: Build redsea.exe
       shell: msys2 {0}
       run: |
-        meson setup build && cd build && meson compile
+        meson setup -Dwerror=true build && cd build && meson compile
     - name: Package into distrib
       shell: msys2 {0}
       run: >-
@@ -111,9 +112,9 @@ jobs:
         make && make install
     # Cygwin does not allow underscore variables that start with an uppercase when
     # compiling with gcc
-    - name: Patch liquid-dsp
+    - name: Patch liquid.h
       shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
       run: perl -i -p -e 's/(?<=\s)(_[A-Z])(?=[,\)])/\L\1__/g' /usr/include/liquid/liquid.h
     - name: Build redsea
       shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
-      run: meson setup build && cd build && meson compile
+      run: meson setup -Dwerror=true build && cd build && meson compile

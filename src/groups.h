@@ -24,7 +24,7 @@
 #include <memory>
 #include <string>
 
-#include <ext/json/json.h>
+#include <nlohmann/json.hpp>
 
 #include "src/common.h"
 #include "src/options.h"
@@ -244,14 +244,12 @@ class Station {
   AltFreqList alt_freq_list_;
   Pager pager_;
 
-  Json::StreamWriterBuilder writer_builder_;
-  std::unique_ptr<Json::StreamWriter> writer_;
-  Json::Value json_;
+  nlohmann::ordered_json json_;
 
   tmc::TMCService tmc_;
 };
 
-void parseRadioTextPlus(const Group& group, RadioText& rt, Json::Value& json_el);
+void parseRadioTextPlus(const Group& group, RadioText& rt, nlohmann::ordered_json& json_el);
 
 }  // namespace redsea
 #endif  // GROUPS_H_

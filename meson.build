@@ -1,4 +1,4 @@
-project('redsea', 'cpp', default_options : ['warning_level=3', 'buildtype=release'],
+project('redsea', 'cpp', default_options : ['warning_level=3', 'buildtype=release', 'optimization=3'],
         version: '1.0-SNAPSHOT')
 
 # Store version number to be compiled in
@@ -16,10 +16,6 @@ configure_file(output : 'config.h',
 cc = meson.get_compiler('cpp')
 add_project_arguments(cc.get_supported_arguments([
     '-Wno-unknown-pragmas']), language: 'cpp')
-
-if get_option('buildtype') == 'release'
-  add_project_arguments('-O3', language : 'cpp')
-endif
 
 # We want to use M_PI on Windows
 if build_machine.system() == 'windows'
@@ -41,6 +37,9 @@ endif
 
 # Find libsndfile
 sndfile = dependency('sndfile')
+
+# Find nlohmann's json
+json = dependency('nlohmann_json')
 
 # Find iconv; may require -liconv
 foreach linker_args : [ ['-liconv'], [] ]
@@ -77,6 +76,11 @@ if build_machine.system() == 'darwin'
 else
   liquid = cc.find_library('liquid')
 endif
+if cc.has_function('modemcf_create',
+   prefix : '#include <liquid/liquid.h>',
+   dependencies : liquid)
+  add_project_arguments('-DMODEM_IS_MODEMCF', language : 'cpp')
+endif
 
 
 ############################
@@ -85,7 +89,6 @@ endif
 
 
 sources_no_main = [
-  'ext/json/jsoncpp.cpp',
   'src/block_sync.cc',
   'src/channel.cc',
   'src/dsp/liquid_wrappers.cc',
@@ -101,17 +104,17 @@ sources_no_main = [
   'src/util.cc'
 ]
 
-executable('redsea', [sources_no_main, 'src/redsea.cc'], dependencies: [iconv, sndfile, liquid])
+executable('redsea', [sources_no_main, 'src/redsea.cc'], dependencies: [iconv, json, liquid, sndfile])
 
 
 ##################
 ### Unit tests ###
 ##################
 
-catch2_dep = dependency('catch2-with-main', required: false)
+catch2 = dependency('catch2-with-main', required: false)
 
-if catch2_dep.found()
+if catch2.found()
   test_exec = executable('redsea-test', [sources_no_main, 'test/unit.cc'],
-                         dependencies: [ iconv, sndfile, liquid, catch2_dep ])
+                         dependencies: [iconv, json, liquid, sndfile, catch2])
   test('Smoke tests', test_exec)
 endif
