@@ -15,7 +15,7 @@ TEST_CASE("Decodes basic info") {
   redsea::Options options;
 
   // YLE X3M (fi) 2016-09-15
-  const auto json_lines{decodeGroups({
+  const auto json_lines{hex2json({
     0x6204'0130'966B'594C,
     0x6204'0131'93CD'4520,
     0x6204'0132'E472'5833,
@@ -44,13 +44,35 @@ TEST_CASE("Decodes basic info") {
   CHECK(json_lines[3]["ps"] == "YLE X3M ");
 }
 
+TEST_CASE("Decodes callsign") {
+  redsea::Options options;
+
+  SECTION("RBDS station") {
+    options.rbds = true;
+
+    const auto json_lines{hex2json({
+      0x5521'2000'0D00'0000
+    }, options, 0x5521)};
+
+    CHECK(json_lines.back()["callsign"] == "WAER");
+  }
+
+  SECTION("No callsign for non-RBDS station") {
+    const auto json_lines{hex2json({
+      0x5521'2000'0D00'0000
+    }, options, 0x5521)};
+
+    CHECK_FALSE(json_lines.back().contains("callsign"));
+  }
+}
+
 // https://github.com/windytan/redsea/wiki/Some-RadioText-research
 TEST_CASE("Decodes radiotext") {
   redsea::Options options;
 
   SECTION("String length method A: Terminated using 0x0D") {
     // JACK 96.9 (ca) 2019-05-05
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0xC954'24F0'4A41'434B,  // "JACK"
       0xC954'24F1'2039'362E,  // " 96."
       0xC954'24F2'390D'0000   // "9\r  "
@@ -62,7 +84,7 @@ TEST_CASE("Decodes radiotext") {
 
   SECTION("String length method B: Padded to 64 characters") {
     // Radio Grün-Weiß (at) 2021-07-18
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0xA959'2410'4641'4E43,  // "FANC"
       0xA959'2411'5920'2D20,  // "Y - "
       0xA959'2412'426F'6C65,  // "Bole"
@@ -82,7 +104,7 @@ TEST_CASE("Decodes radiotext") {
 
   SECTION("String length method C: Random-length string with no terminator") {
     // Antenne Kärnten (at) 2021-07-26
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0xA540'2540'526F'6262,  // "Robb"  // REPEAT 1
       0xA540'2541'6965'2057,  // "ie W"
       0xA540'2542'696C'6C69,  // "illi"
@@ -104,7 +126,7 @@ TEST_CASE("Decodes radiotext") {
 
   SECTION("Non-ascii character") {
     // YLE Vega (fi) 2016-09-15
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0x6205'2440'5665'6761,  // "Vega"
       0x6205'2441'204B'7691,  // " kvä"
       0x6205'2442'6C6C'2020,  // "ll  "
@@ -121,6 +143,57 @@ TEST_CASE("Decodes radiotext") {
     REQUIRE(json_lines.size() == 16);
     CHECK(json_lines.back()["radiotext"] == "Vega Kväll");
   }
+
+  SECTION("Partial") {
+    options.show_partial = true;
+
+    // Antenne Kärnten (at) 2021-07-26
+    const auto json_lines{hex2json({
+      0xA540'2540'526F'6262,  // "Robb"
+      0xA540'2541'6965'2057,  // "ie W"
+      0xA540'2542'696C'6C69,  // "illi"
+      0xA540'2543'616D'7320,  // "ams "
+      0xA540'2544'2D20'4665   // "- Fe"
+    }, options, 0xA540)};
+
+    REQUIRE(json_lines.size() == 5);
+    REQUIRE(json_lines.back().contains("partial_radiotext"));
+    CHECK(json_lines.back()["partial_radiotext"] == "Robbie Williams - Fe"
+                                                    "                                            ");
+  }
+}
+
+TEST_CASE("Decodes Long PS") {
+  redsea::Options options;
+
+  SECTION("Space-padded") {
+    // The Breeze Gold Coast 100.6 (au) 2024-05-17
+    const auto json_lines{hex2json({
+      0x49B1'F180'4272'6565,
+      0x49B1'F181'7A65'2031,
+      0x49B1'F182'3030'2E36,
+      0x49B1'F183'2047'6F6C,
+      0x49B1'F184'6420'436F,
+      0x49B1'F185'6173'7400,
+      0x49B1'F186'0000'0000,
+      0x49B1'F187'0000'0000
+    }, options, 0x49B1)};
+
+    REQUIRE(json_lines.back().contains("long_ps"));
+    CHECK(json_lines.back()["long_ps"] == "Breeze 100.6 Gold Coast");
+  }
+
+  SECTION("String-terminated, non-ascii character") {
+    // Järviradio (fi)
+    const auto json_lines{hex2json({
+      0x6255'F520'4AC3'A452,
+      0x6255'F521'5649'5241,
+      0x6255'F522'4449'4F0D
+    }, options, 0x6255)};
+
+    REQUIRE(json_lines.back().contains("long_ps"));
+    CHECK(json_lines.back()["long_ps"] == "JäRVIRADIO");  // sic
+  }
 }
 
 TEST_CASE("Decodes RadioText Plus") {
@@ -128,7 +201,7 @@ TEST_CASE("Decodes RadioText Plus") {
 
     SECTION("Containing non-ascii characters") {
       // Antenne 2016-09-17
-      const auto json_lines{decodeGroups({
+      const auto json_lines{hex2json({
         // RT+ ODA identifier
         0xD318'3558'0000'4BD7,
         // RT+ (we need two of these to confirm)
@@ -159,7 +232,7 @@ TEST_CASE("Decodes alternative frequencies") {
 
   SECTION("Method A") {
     // YLE Yksi (fi) 2016-09-15
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0x6201'00F7'E704'5349,
       0x6201'00F0'2217'594C,
       0x6201'00F1'1139'4520,
@@ -174,7 +247,7 @@ TEST_CASE("Decodes alternative frequencies") {
 
   SECTION("Method B") {
     // YLE Helsinki (fi) 2016-09-15
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0x6403'0447'F741'4920,
       0x6403'0440'415F'594C,
       0x6403'0441'4441'4520,
@@ -204,7 +277,7 @@ TEST_CASE("Decodes clock-time and date") {
 
   SECTION("During DST") {
     // BR-KLASS (de) 2017-04-04
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0xD314'41C1'C3EF'5AC4
     }, options, 0xD314)};
 
@@ -216,7 +289,7 @@ TEST_CASE("Decodes clock-time and date") {
   SECTION("Outside of DST") {
     // 104.6RTL (de) 2018-11-01
     // walczakp/rds-spy-logs/Germany/D42A - 2018-11-01 14-17-16 DE BER RTL104_6.rds
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0xD42A'4541'C86E'D482
     }, options, 0xD42A)};
 
@@ -228,7 +301,7 @@ TEST_CASE("Decodes clock-time and date") {
   SECTION("With a negative UTC offset") {
     // 98.5 KFOX (KUFX) (us) 2020-08-19
     // walczakp/rds-spy-logs/USA/4569 - 2020-08-19 20-45-06.spy
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0x4569'40DD'CD92'3BAE
     }, options, 0x4569)};
 
@@ -239,7 +312,7 @@ TEST_CASE("Decodes clock-time and date") {
 
   SECTION("Across local midnight") {
     // https://github.com/windytan/redsea/issues/83
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0xF201'441D'D299'5EC4,
       0xF201'441D'D299'6004
     }, options, 0xF201)};
@@ -253,7 +326,7 @@ TEST_CASE("Decodes clock-time and date") {
 
   SECTION("Across UTC midnight") {
     // https://github.com/windytan/redsea/issues/83
-    const auto json_lines{decodeGroups({
+    const auto json_lines{hex2json({
       0xF201'441D'D299'7EC4,
       0xF201'441D'D29A'0004
     }, options, 0xF201)};
@@ -270,34 +343,109 @@ TEST_CASE("PI search") {
   redsea::Options options;
 
   SECTION("Accepts new PI from three repeats") {
-    const auto json_lines{decodeBinary({
-      0b00111101101101110100111000101010, 0b01000010100001110000010001000101,
-      0b11000010111001100001001011000001, 0b11100111110001000000110010110110,
-      0b10011011010010010000001101111100, 0b01000101110000101110011000000010,
-      0b11000100100111000001010011010110, 0b01111101001010101001101001100010,
-      0b10101010010001011100001011100110, 0b00010010110000100101010100001110,
-      0b01101100001010000011001100001000, 0b01101011100011100100000000000000
+    // Vikerraadio (ee)
+    const auto json_lines{asciibin2json({
+                                                       "001"
+      "1110110110111010011100010101001000010100001110000010"
+      "0010001011100001011100110000100101100000111100111110"
+      "0010000001100101101101001101101001001000000110111110"
+      "0010001011100001011100110000000101100010010011100000"
+      "1010011010110011111010010101010011010011000101010101"
+      "0010001011100001011100110000100101100001001010101000"
+      "0111001101100001010000011001100001000011010111000111"
+      "001000"
     }, options)};
 
     REQUIRE(json_lines.size() == 1);
     CHECK(json_lines[0]["pi"] == "0x22E1");
   }
 
-  SECTION("Ignores data-mimicking PI repeat") {
-    // Noise that looks like two repeats of PI 0x40AF
-    // TODO: Shouldn't even sync (no hex groups produced)
-    const auto json_lines{decodeBinary({
-      0b11000010010000111101101100101010, 0b10011101101100110001010011111011,
-      0b11100010010000011001010000111111, 0b10101011001100100011010111001100,
-      0b01000100010011100011010010010000, 0b00011011001010100000001011110001,
-      0b11001100010100110000101110101010, 0b00101000001001000101100110000110,
-      0b00010000001010111110001000010001, 0b10111101011000010110000010011101,
-      0b00101110100011010010100110111001, 0b00000011000101010000101100101010,
-      0b01001001100001011100000101011010, 0b11011100000100100010010010110100,
-      0b00010100101000100101000000101011, 0b01100010011100001000101111110011,
-      0b00010010001001001111101000001001, 0b10110011110110000111010100000000
+  SECTION("Ignores phantom sync caused by data-mimicking") {
+    // Noise that shouldn't even sync
+    // It also happens to look like two repeats of PI 0x40AF
+    const auto groups{asciibin2groups({
+      "1100001001000011110110110010101010011101101100110001010011111011"
+      "1110001001000001100101000011111110101011001100100011010111001100"
+      "0100010001001110001101001001000000011011001010100000001011110001"
+      "1100110001010011000010111010101000101000001001000101100110000110"
+      "0001000000101011111000100001000110111101011000010110000010011101"
+      "0010111010001101001010011011100100000011000101010000101100101010"
+      "0100100110000101110000010101101011011100000100100010010010110100"
+      "0001010010100010010100000010101101100010011100001000101111110011"
+      "0001001000100100111110100000100110110011110110000111010100000000"
     }, options)};
 
-    CHECK(json_lines.empty());
+    CHECK(groups.empty());
+  }
+}
+
+TEST_CASE("Error detection and correction") {
+  redsea::Options options;
+  const std::string correct_group{
+    "00100010111000010111001100"
+    "00100101100000111100111110"
+    "00100000011001011011010011"
+    "01101001001000000110111110"};
+
+  SECTION("Detects error-free group") {
+    const std::string test_data{correct_group + correct_group};
+    const auto groups{asciibin2groups(test_data, options)};
+
+    CHECK(groups.back().getNumErrors() == 0);
+  }
+
+  SECTION("Detects long error burst") {
+    std::string broken_group{correct_group};
+    flipAsciiBit(broken_group, 1);
+    flipAsciiBit(broken_group, 2);
+    flipAsciiBit(broken_group, 9);
+    flipAsciiBit(broken_group, 10);
+
+    const std::string test_data{correct_group + correct_group + broken_group};
+    const auto groups{asciibin2groups(test_data, options)};
+
+    CHECK(groups.back().getNumErrors() == 1);
+  }
+
+  SECTION("Corrects double bit flip") {
+    std::string broken_group{correct_group};
+    flipAsciiBit(broken_group, 1);
+    flipAsciiBit(broken_group, 2);
+
+    const std::string test_data{correct_group + correct_group + broken_group};
+    const auto groups{asciibin2groups(test_data, options)};
+
+    CHECK(groups.back().getNumErrors() == 1);
+    CHECK(groups.back().has(redsea::BLOCK1));
+    CHECK(groups.back().get(redsea::BLOCK1) == 0x22E1);
+  }
+
+  SECTION("Rejects triple bit flip") {
+    std::string broken_group{correct_group};
+    flipAsciiBit(broken_group, 1);
+    flipAsciiBit(broken_group, 2);
+    flipAsciiBit(broken_group, 3);
+
+    const std::string test_data{correct_group + correct_group + broken_group};
+    const auto groups{asciibin2groups(test_data, options)};
+
+    CHECK(groups.back().getNumErrors() == 1);
+    CHECK_FALSE(groups.back().has(redsea::BLOCK1));
+    CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
+  }
+
+  SECTION("FEC can be disabled") {
+    options.use_fec = false;
+
+    std::string broken_group{correct_group};
+    flipAsciiBit(broken_group, 1);
+    flipAsciiBit(broken_group, 2);
+
+    const std::string test_data{correct_group + correct_group + broken_group};
+    const auto groups{asciibin2groups(test_data, options)};
+
+    CHECK(groups.back().getNumErrors() == 1);
+    CHECK_FALSE(groups.back().has(redsea::BLOCK1));
+    CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
   }
 }

@@ -18,7 +18,7 @@
 #include <iostream>
 #include <memory>
 
-#include "build/config.h"
+#include "config.h"
 #include "src/channel.h"
 #include "src/common.h"
 #include "src/dsp/subcarrier.h"

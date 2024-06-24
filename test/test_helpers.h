@@ -15,7 +15,7 @@ using HexData    = std::vector<uint64_t>;
 using BinaryData = std::vector<uint32_t>;
 
 // Convert synchronized hex data into groups. Error correction is omitted and ignored.
-inline std::vector<redsea::Group> makeGroupsFromHex(const HexData& hexdata) {
+inline std::vector<redsea::Group> hex2groups(const HexData& hexdata) {
   std::vector<redsea::Group> groups;
   groups.reserve(hexdata.size());
 
@@ -34,37 +34,53 @@ inline std::vector<redsea::Group> makeGroupsFromHex(const HexData& hexdata) {
   return groups;
 }
 
-inline std::vector<nlohmann::ordered_json> decodeBinary(const BinaryData& bindata,
-                                                        const redsea::Options& options) {
+// Convert string of unsynchronized ASCII bits into JSON.
+inline std::vector<nlohmann::ordered_json> asciibin2json(const std::string& bindata,
+                                                         const redsea::Options& options) {
   std::vector<nlohmann::ordered_json> result;
 
   std::stringstream json_stream;
   redsea::Channel channel(options, 0, json_stream);
 
-  for (const auto& word : bindata) {
-    constexpr auto wordsize_bits{sizeof(word) * 8};
+  for (const auto& ascii_bit : bindata) {
+    const int bit{ascii_bit == '1' ? 1 : 0};
 
-    for (size_t nbit{}; nbit < wordsize_bits; nbit++) {
-      int bit = (word >> (wordsize_bits - 1 - nbit)) & 0b1;
-      channel.processBit(bit);
-      if (!json_stream.str().empty()) {
-        nlohmann::ordered_json jsonroot;
-        json_stream >> jsonroot;
-        result.push_back(jsonroot);
+    channel.processBit(bit);
+    if (!json_stream.str().empty()) {
+      nlohmann::ordered_json jsonroot;
+      json_stream >> jsonroot;
+      result.push_back(jsonroot);
 
-        json_stream.str("");
-        json_stream.clear();
-      }
+      json_stream.str("");
+      json_stream.clear();
     }
   }
 
   return result;
 }
 
-// Run redsea's decoder and convert the ascii json output into json objects.
-inline std::vector<nlohmann::ordered_json> decodeGroups(const std::vector<redsea::Group>& data,
-                                                        const redsea::Options& options,
-                                                        uint16_t pi) {
+// Convert string of unsynchronized ASCII bits into groups.
+inline std::vector<redsea::Group> asciibin2groups(const std::string& bindata,
+                                                  const redsea::Options& options) {
+  std::vector<redsea::Group> result;
+  redsea::BlockStream block_stream(options);
+
+  for (const auto& ascii_bit : bindata) {
+    const int bit{ascii_bit == '1' ? 1 : 0};
+
+    block_stream.pushBit(bit);
+    if (block_stream.hasGroupReady()) {
+      result.push_back(block_stream.popGroup());
+    }
+  }
+
+  return result;
+}
+
+// Run redsea's full decoder and convert the ASCII JSON output back into JSON objects.
+inline std::vector<nlohmann::ordered_json> groups2json(const std::vector<redsea::Group>& data,
+                                                       const redsea::Options& options,
+                                                       uint16_t pi) {
   std::vector<nlohmann::ordered_json> result;
 
   std::stringstream json_stream;
@@ -83,10 +99,10 @@ inline std::vector<nlohmann::ordered_json> decodeGroups(const std::vector<redsea
   return result;
 }
 
-inline std::vector<nlohmann::ordered_json> decodeGroups(const HexData& hexdata,
-                                                        const redsea::Options& options,
-                                                        uint16_t pi) {
-  return decodeGroups(makeGroupsFromHex(hexdata), options, pi);
+// Convert synchronized hex data (without offset words) into JSON.
+inline std::vector<nlohmann::ordered_json> hex2json(const HexData& hexdata,
+                                                    const redsea::Options& options, uint16_t pi) {
+  return groups2json(hex2groups(hexdata), options, pi);
 }
 
 template <typename T>
@@ -103,6 +119,11 @@ bool listEquals(nlohmann::ordered_json json, std::initializer_list<T> list) {
     list_it++;
   }
   return true;
+}
+
+// Flip a bit in a string of ASCII bits.
+void flipAsciiBit(std::string& str, size_t bit_index) {
+  str[bit_index] = str[bit_index] == '0' ? '1' : '0';
 }
 
 #endif  // TEST_HELPERS_H_

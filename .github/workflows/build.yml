@@ -3,6 +3,7 @@ name: build
 on:
   push:
     branches: [ master ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ master ]
 
@@ -20,8 +21,25 @@ jobs:
       run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
+    - name: test
+      run: cd build && meson test
 
-  macos-build-and-test:
+  build-deb:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Debian packaging tools
+      run: sudo apt install build-essential devscripts debhelper equivs
+    - name: Install Build-Depends
+      run: mk-build-deps --install --tool 'apt-get --yes'
+    - name: Build .deb
+      run: debuild -us -uc
+    # TODO: need a way to find the binary
+    #- name: Install .deb
+    #  run: dpkg -i ../redsea_*.deb
+
+  macos-build:
     runs-on: macos-latest
 
     steps:
@@ -66,6 +84,9 @@ jobs:
       shell: msys2 {0}
       run: |
         meson setup -Dwerror=true build && cd build && meson compile
+    - name: test
+      shell: msys2 {0}
+      run: cd build && meson test
     - name: Package into distrib
       shell: msys2 {0}
       run: >-
@@ -118,3 +139,6 @@ jobs:
     - name: Build redsea
       shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
       run: meson setup -Dwerror=true build && cd build && meson compile
+    - name: test
+      shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
+      run: cd build && meson test

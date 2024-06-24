@@ -5,7 +5,7 @@ redsea is a lightweight command-line FM-RDS decoder that supports many [RDS feat
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
 ![build](https://github.com/windytan/redsea/workflows/build/badge.svg)
 
-Its terminal output is [line-delimited JSON](https://jsonlines.org/) where
+It prints [newline-delimited JSON](https://jsonlines.org/) where
 each line corresponds to one RDS group. It can also print "raw" undecoded hex blocks (`--output hex`).
 Please refer to the wiki for [input data formats][Wiki: Input].
 
@@ -45,28 +45,33 @@ Example output:
 These commands should be run in the terminal. Don't type the `$` in the
 beginning.
 
-1. Install the prerequisites. On Ubuntu:
+### Install dependencies
 
-        $ sudo apt install git ninja-build build-essential python3-pip libsndfile1-dev libliquid-dev
-        $ pip3 install --user meson
+On Ubuntu:
+
+        $ sudo apt install git build-essential meson libsndfile1-dev libliquid-dev
 
 Or on macOS using Homebrew:
 
         $ brew install meson libsndfile liquid-dsp nlohmann-json
         $ xcode-select --install
 
-Meson will download nlohmann-json for you if it can't be found in the package repositories.
+Meson will later download nlohmann-json for you if it can't be found in the package repositories.
 
-2. Clone the repository (unless you downloaded a release zip file):
+### Get redsea
+
+If you wish to have the latest snapshot you can clone this git repository. The
+snapshot might be more work-in-progress than the releases, but we attempt to
+keep the main branch stable.
 
         $ git clone https://github.com/windytan/redsea.git
         $ cd redsea
 
-3. Compile redsea:
+### Compile redsea
 
         $ meson setup build && cd build && meson compile
 
-How to later get the latest updates and recompile:
+To later get the latest updates and recompile:
 
         $ git pull
         $ cd build && meson compile
@@ -82,7 +87,7 @@ an .exe with MSYS2/MinGW; Instructions are in [the wiki][Wiki: Windows build].
 
 By default, an MPX signal is expected via stdin (raw 16-bit signed-integer PCM).
 
-The simplest way to view RDS groups using `rtl_fm` is:
+This command listens to 87.9 MHz using `rtl_fm` and displays the RDS groups:
 
     rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea -r 171k
 
@@ -166,17 +171,6 @@ redsea -f WAVEFILE
 -x, --output-hex       Same as --output hex (for backwards compatibility).
 ```
 
-### Formatting and filtering the JSON output
-
-You can get tidier json output using `jq`:
-
-    $ rtl_fm ... | redsea | jq
-
-It's also useful for extracting only certain fields, for instance the program
-type:
-
-    $ rtl_fm ... | redsea | jq '.prog_type'
-
 
 ## Requirements
 
@@ -184,7 +178,6 @@ type:
 
 * Linux/macOS/Windows
 * For realtime decoding, a Raspberry Pi 1 or faster
-* ~8 MB of free memory (~128 MB for RDS-TMC)
 * libiconv 1.16
 * libsndfile 1.0.31
 * [liquid-dsp][liquid-dsp] release 1.3.2
@@ -220,8 +213,8 @@ Try running this in the terminal:
 
 ## Contributing
 
-Bug reports are welcome. See [CONTRIBUTING](CONTRIBUTING.md) for more
-information.
+We welcome bug reports and documentation contributions. See
+[CONTRIBUTING](CONTRIBUTING.md) for more information.
 
 Also, if a station in your area is transmitting an interesting RDS feature
 that should be implemented in redsea, I would be happy to see a minute or
