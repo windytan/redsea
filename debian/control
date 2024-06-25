@@ -1,14 +1,14 @@
 Source: redsea
-Maintainer: Marat Fayzullin <luarvique@gmail.com>
+Maintainer: Oona Räisänen <oh2eiq@pm.me>
 Section: hamradio
 Priority: optional
 Rules-Requires-Root: no
 Standards-Version: 4.3.0
-Build-Depends: debhelper (>= 12), build-essential, autoconf, libsndfile1-dev, libliquid-dev
+Build-Depends: debhelper (>= 12), build-essential, meson, libsndfile1-dev, libliquid-dev, nlohmann-json3-dev
 
 Package: redsea
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: RDS decoder
- Lightweight command-line FM-RDS decoder for Linux/macOS. It supports a
+Description: RDS (Radio Data System) decoder
+ A lightweight command-line FM-RDS decoder that supports a
  large subset of RDS features.
