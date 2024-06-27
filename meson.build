@@ -104,7 +104,8 @@ sources_no_main = [
   'src/util.cc'
 ]
 
-executable('redsea', [sources_no_main, 'src/redsea.cc'], dependencies: [iconv, json, liquid, sndfile])
+executable('redsea', [sources_no_main, 'src/redsea.cc'], dependencies: [iconv, json, liquid, sndfile],
+           install: true)
 
 
 ##################

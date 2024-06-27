@@ -5,25 +5,29 @@
 * New features:
   * Add support for Enhanced RadioText (eRT)
   * Add support for Long PS in Group 15A (#104)
-  * Add runtime option to disable error correction with --no-fec
-* Maintainability:
-  * Migrate build system from autotools to meson (#90)
-  * Switch from packaged-in JsonCPP to nlohmann-json (#109)
-  * Add GitHub Workflows CI builds for macOS and Windows via MSYS2/MinGW + Cygwin
-  * Add basic Catch2 unit tests (#84)
-  * Add .clang-format (not automated)
-  * Remove unmaintained build options for non-liquid, non-TMC builds
-  * Fix compiler warnings, issues identified via static analysis, and other code cleanup
+  * Add runtime option `--no-fec` for disabling error correction
 * UX changes:
   * Breaking: Print a warning to stderr if the raw MPX input sample rate is
-    not specified
+    not specified (breaks the previous silent assumption of 171 kHz)
   * Improve error reporting in general
   * Add `--output hex` (same as `--output-hex`) to mirror `--input hex`
 * Fixes:
   * Fix detection of invalid date/time (timestamps >2000 years ago)
-  * Noise resistance improvements:
+  * Noise resistance improvements (#106):
     * Require three (instead of two) repeats of a new PI before accepting it
     * Require three (instead of two) synchronization pulses before locking
+* Maintainability:
+  * Migrate build system from autotools to meson (#90)
+  * Switch from patched, packaged-in JsonCPP to external nlohmann-json (#109)
+    * Breaking: The order of some JSON elements has changed (insertion order
+      instead of alphabetical)
+  * Add automated CI builds for macOS, Windows (MSYS2/MinGW + Cygwin), Ubuntu-latest,
+    Debian Buster
+  * Add Debian packaging (#101)
+  * Add basic Catch2 unit tests (#84)
+  * Add .clang-format (not automated)
+  * Remove unmaintained build options for non-liquid, non-TMC builds
+  * Fix compiler warnings, issues identified via static analysis, and other code cleanup
 
 ## 0.21 (2024-01-26)
 

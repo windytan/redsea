@@ -128,26 +128,26 @@ int processMPXInput(Options options) {
 
   auto& output_stream = options.feed_thru ? std::cerr : std::cout;
 
-  std::vector<Channel> channels;
+  std::vector<std::unique_ptr<Channel>> channels;
   std::vector<std::unique_ptr<Subcarrier>> subcarriers;
   for (uint32_t i = 0; i < options.num_channels; i++) {
-    channels.emplace_back(options, i, output_stream);
+    channels.emplace_back(std::make_unique<Channel>(options, i, output_stream));
     subcarriers.push_back(std::make_unique<Subcarrier>(options));
   }
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
     for (uint32_t i = 0; i < options.num_channels; i++) {
-      channels[i].processBits(subcarriers[i]->processChunk(mpx.readChunk(i)));
-      if (channels[i].getSecondsSinceCarrierLost() > 10.f &&
+      channels[i]->processBits(subcarriers[i]->processChunk(mpx.readChunk(i)));
+      if (channels[i]->getSecondsSinceCarrierLost() > 10.f &&
           subcarriers[i]->getSecondsSinceLastReset() > 5.f) {
         subcarriers[i]->reset();
-        channels[i].resetPI();
+        channels[i]->resetPI();
       }
     }
   }
 
-  for (uint32_t i = 0; i < options.num_channels; i++) channels[i].flush();
+  for (uint32_t i = 0; i < options.num_channels; i++) channels[i]->flush();
 
   return EXIT_SUCCESS;
 }

@@ -8,7 +8,7 @@ on:
     branches: [ master ]
 
 jobs:
-  ubuntu-build:
+  build-ubuntu:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,10 +21,8 @@ jobs:
       run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
-    - name: test
-      run: cd build && meson test
 
-  build-deb:
+  build-ubuntu-deb-package:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,11 +33,25 @@ jobs:
       run: sudo mk-build-deps --install --tool 'apt-get --yes'
     - name: Build .deb
       run: debuild -us -uc
-    # TODO: need a way to find the binary
-    #- name: Install .deb
-    #  run: dpkg -i ../redsea_*.deb
+    - name: Install .deb
+      run: sudo dpkg -i ../redsea_*.deb
 
-  macos-build:
+  build-debian-oldoldstable:
+    runs-on: ubuntu-latest
+    container: debian:buster
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies (apt-get)
+      run: apt-get update && apt-get -y install python3-pip ninja-build build-essential libsndfile1-dev libliquid-dev nlohmann-json3-dev
+    - name: Install meson (pip3)
+      run: pip3 install --user meson
+    - name: meson setup
+      run: export PATH=$PATH:$HOME/.local/bin && meson setup -Dwerror=true build
+    - name: compile
+      run: export PATH=$PATH:$HOME/.local/bin && cd build && meson compile
+
+  build-test-macos:
     runs-on: macos-latest
 
     steps:
@@ -53,7 +65,7 @@ jobs:
     - name: test
       run: cd build && meson test
 
-  windows-msys2-mingw-build:
+  build-windows-msys2-mingw:
     runs-on: windows-latest
 
     steps:
@@ -84,9 +96,6 @@ jobs:
       shell: msys2 {0}
       run: |
         meson setup -Dwerror=true build && cd build && meson compile
-    - name: test
-      shell: msys2 {0}
-      run: cd build && meson test
     - name: Package into distrib
       shell: msys2 {0}
       run: >-
@@ -100,7 +109,7 @@ jobs:
         awk '{$1=$1};1' |
         xargs -I{} cp {} distrib/
 
-  windows-cygwin-build:
+  build-windows-cygwin:
     runs-on: windows-latest
 
     steps:
@@ -139,6 +148,3 @@ jobs:
     - name: Build redsea
       shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
       run: meson setup -Dwerror=true build && cd build && meson compile
-    - name: test
-      shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
-      run: cd build && meson test

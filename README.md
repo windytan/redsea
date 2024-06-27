@@ -51,6 +51,11 @@ On Ubuntu:
 
         $ sudo apt install git build-essential meson libsndfile1-dev libliquid-dev
 
+Or on older Debians:
+
+        $ sudo apt-get install python3-pip ninja-build build-essential libsndfile1-dev libliquid-dev nlohmann-json3-dev
+        $ pip3 install --user meson
+
 Or on macOS using Homebrew:
 
         $ brew install meson libsndfile liquid-dsp nlohmann-json
