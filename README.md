@@ -65,8 +65,10 @@ Meson will later download nlohmann-json for you if it can't be found in the pack
 
 ### Get redsea
 
+Downloading a release version is recommended.
+
 If you wish to have the latest snapshot you can clone this git repository. The
-snapshot might be more work-in-progress than the releases, but we attempt to
+snapshot might be more work-in-progress than the releases, although we attempt to
 keep the main branch stable.
 
         $ git clone https://github.com/windytan/redsea.git
@@ -76,7 +78,7 @@ keep the main branch stable.
 
         $ meson setup build && cd build && meson compile
 
-To later get the latest updates and recompile:
+If you cloned the repository you can later get the latest updates and recompile:
 
         $ git pull
         $ cd build && meson compile

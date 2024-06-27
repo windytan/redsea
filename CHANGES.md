@@ -1,6 +1,6 @@
 # redsea changelog
 
-## HEAD
+## 1.0 (2024-06-27)
 
 * New features:
   * Add support for Enhanced RadioText (eRT)
