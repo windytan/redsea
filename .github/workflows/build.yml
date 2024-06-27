@@ -32,7 +32,7 @@ jobs:
     - name: Install Debian packaging tools
       run: sudo apt install build-essential devscripts debhelper equivs
     - name: Install Build-Depends
-      run: mk-build-deps --install --tool 'apt-get --yes'
+      run: sudo mk-build-deps --install --tool 'apt-get --yes'
     - name: Build .deb
       run: debuild -us -uc
     # TODO: need a way to find the binary
