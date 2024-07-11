@@ -39,7 +39,7 @@ endif
 sndfile = dependency('sndfile')
 
 # Find nlohmann's json
-json = dependency('nlohmann_json')
+json = dependency('nlohmann_json', version : '>=3.9.0')
 
 # Find iconv; may require -liconv
 foreach linker_args : [ ['-liconv'], [] ]

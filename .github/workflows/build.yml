@@ -8,8 +8,22 @@ on:
     branches: [ master ]
 
 jobs:
-  build-ubuntu:
-    runs-on: ubuntu-latest
+  build-ubuntu-22-04:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies (apt)
+      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev
+    - name: Install meson (pip3)
+      run: pip3 install --user meson
+    - name: meson setup
+      run: meson setup -Dwerror=true build
+    - name: compile
+      run: cd build && meson compile
+
+  build-ubuntu-20-04:
+    runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v4
