@@ -1,5 +1,5 @@
 project('redsea', 'cpp', default_options : ['warning_level=3', 'buildtype=release', 'optimization=3'],
-        version: '1.0')
+        version: '1.0.1')
 
 # Store version number to be compiled in
 conf = configuration_data()

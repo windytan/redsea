@@ -449,3 +449,15 @@ TEST_CASE("Error detection and correction") {
     CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
   }
 }
+
+TEST_CASE("Invalid data") {
+  redsea::Options options;
+
+  SECTION("Invalid UTF-8 is handled cleanly") {
+    REQUIRE_NOTHROW(hex2json({
+      0xE24D'4401'D02F'1942,
+      0xE24D'E400'E24D'0000,
+      0xE24D'F400'E20D'FC20
+    }, options, 0xE24D));
+  }
+}

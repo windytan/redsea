@@ -1,5 +1,12 @@
 # redsea changelog
 
+## 1.0.1
+
+* Fixes:
+  * Fix a crash (uncaught json exception) when attempting to serialize a string that's
+    invalid UTF-8, e.g. if long PS gets corrupted
+  * Fix build when the installed version of nlohmann-json is too old (#113)
+
 ## 1.0 (2024-06-27)
 
 * New features:

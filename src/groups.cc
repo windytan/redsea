@@ -312,7 +312,18 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     }
   }
 
-  stream << json_ << std::endl << std::flush;
+  try {
+    // nlohmann::operator<< throws if a string contains non-UTF8 data.
+    // It's better to throw while writing to a stringstream; otherwise
+    // incomplete JSON objects could get printed.
+    std::stringstream output_proxy_stream;
+    output_proxy_stream << json_;
+    stream << output_proxy_stream.str() << std::endl << std::flush;
+  } catch (const std::exception& e) {
+    nlohmann::ordered_json json_from_exception;
+    json_from_exception["debug"] = std::string(e.what());
+    stream << json_from_exception << std::endl << std::flush;
+  }
 }
 
 uint16_t Station::getPI() const {
