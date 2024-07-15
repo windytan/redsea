@@ -73,7 +73,7 @@ jobs:
     - name: Install dependencies (brew)
       run: brew install meson libsndfile liquid-dsp nlohmann-json catch2
     - name: meson setup
-      run: meson setup -Dwerror=true build
+      run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false build
     - name: compile
       run: cd build && meson compile
     - name: test
