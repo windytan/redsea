@@ -421,6 +421,7 @@ void decodeLocation(const LocationDatabase& db, uint16_t ltn, nlohmann::ordered_
   }
 }
 
+// Does this event code match an actual TMC event?
 bool isValidEventCode(uint16_t code) {
   return g_event_data.find(code) != g_event_data.end();
 }
@@ -431,6 +432,7 @@ bool isValidSupplementaryCode(uint16_t code) {
 
 }  // namespace
 
+// Return a predefined TMC event by its code.
 Event getEvent(uint16_t code) {
   if (g_event_data.find(code) != g_event_data.end())
     return g_event_data.find(code)->second;

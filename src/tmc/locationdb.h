@@ -66,6 +66,8 @@ struct LocationDatabase {
 std::ostream& operator<<(std::ostream& strm, const LocationDatabase& locdb);
 
 LocationDatabase loadLocationDatabase(const std::string& directory);
+
+// Read and return the location table number of a location database
 uint16_t readLTN(const std::string& directory);
 
 }  // namespace tmc

@@ -16,8 +16,11 @@ struct CSVTable {
   std::vector<CSVRow> rows;
 };
 
+// Split a string into substrings by the delimiter character.
 std::vector<std::string> splitLine(const std::string& line, char delimiter);
 
+// Read a CSV table from a container of lines (e.g. vector of strings).
+/// \param delimiter Element delimiter that splits each line into columns.
 template <typename Container>
 std::vector<std::vector<std::string>> readCSVContainer(const Container& csvdata, char delimiter) {
   std::vector<std::vector<std::string>> lines;
@@ -28,9 +31,16 @@ std::vector<std::vector<std::string>> readCSVContainer(const Container& csvdata,
   return lines;
 }
 
+// Read a CSV table from a CSV file.
+/// \param delimiter Element delimiter that splits each line into columns.
 std::vector<std::vector<std::string>> readCSV(const std::string& filename, char delimiter);
+
+// Read a CSV table from a CSV file. The first line is treated as a title row.
+/// \param delimiter Element delimiter that splits each line into columns.
 CSVTable readCSVWithTitles(const std::string& filename, char delimiter);
 
+// Read a CSV table from a container of lines (e.g. vector of strings). The first line is treated as a title row.
+/// \param delimiter Element delimiter that splits each line into columns.
 template <typename Container>
 CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {
   CSVTable table;
@@ -54,9 +64,16 @@ CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {
   return table;
 }
 
+// Find an element by its title and return it as a string.
 std::string get_string(const CSVTable& table, const CSVRow& row, const std::string& title);
+
+// Find an element by its title and return it as int.
 int get_int(const CSVTable& table, const CSVRow& row, const std::string& title);
+
+// Find an element by its title and return it as uint16_t.
 uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title);
+
+// Find an element by its title and return it as bool.
 bool row_contains(const CSVTable& table, const CSVRow& row, const std::string& title);
 
 }  // namespace redsea

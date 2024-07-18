@@ -6,6 +6,8 @@
   * Fix a crash (uncaught json exception) when attempting to serialize a string that's
     invalid UTF-8, e.g. if long PS gets corrupted
   * Fix build when the installed version of nlohmann-json is too old (#113)
+  * Fix a couple of integer overflows, one affecting the subcarrier reset functionality
+    after 3.5 hours of runtime and another one after 41 days of constant data
 
 ## 1.0 (2024-06-27)
 
