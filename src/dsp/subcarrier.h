@@ -61,7 +61,8 @@ class Subcarrier {
   float getSecondsSinceLastReset() const;
 
  private:
-  int sample_num_{0};
+  // Samples since last reset
+  std::uint32_t sample_num_{0};
   const float resample_ratio_;
 
   liquid::FIRFilter fir_lpf_;

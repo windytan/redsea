@@ -17,6 +17,7 @@
 #include "src/block_sync.h"
 
 #include <array>
+#include <cassert>
 #include <map>
 #include <utility>
 
@@ -174,7 +175,9 @@ ErrorCorrectionResult correctBurstErrors(Block block, Offset expected_offset) {
 
 // Could this pulse realistically follow other?
 bool SyncPulse::couldFollow(const SyncPulse& other) const {
-  const int sync_distance = bit_position - other.bit_position;
+  // Overflows after 41 days of continuous data. This may cause us to discard 1 valid sync pulse
+  // if at that exact moment we're out of sync.
+  const uint32_t sync_distance = bit_position - other.bit_position;
 
   return sync_distance % kBlockLength == 0 && sync_distance / kBlockLength <= 6 &&
          offset != Offset::invalid && other.offset != Offset::invalid &&
@@ -186,6 +189,7 @@ bool SyncPulse::couldFollow(const SyncPulse& other) const {
 // @param offset The calculated cyclic offset
 // @param bitcount Bit position where the detection happened
 void SyncPulseBuffer::push(Offset offset, int bitcount) {
+  assert(pulses_.size() >= 1);
   for (size_t i = 0; i < pulses_.size() - 1; i++) {
     pulses_[i] = pulses_[i + 1];
   }
@@ -201,6 +205,7 @@ void SyncPulseBuffer::push(Offset offset, int bitcount) {
 bool SyncPulseBuffer::isSequenceFound() const {
   const auto& third = pulses_.back();
 
+  assert(pulses_.size() >= 2);
   for (size_t i_first = 0; i_first < pulses_.size() - 2; i_first++) {
     for (size_t i_second = i_first + 1; i_second < pulses_.size() - 1; i_second++) {
       if (third.couldFollow(pulses_[i_second]) && pulses_[i_second].couldFollow(pulses_[i_first]))
@@ -308,7 +313,7 @@ Group BlockStream::flushCurrentGroup() const {
   return current_group_;
 }
 
-size_t BlockStream::getNumBitsSinceSyncLost() const {
+uint32_t BlockStream::getNumBitsSinceSyncLost() const {
   return num_bits_since_sync_lost_;
 }
 

@@ -166,6 +166,15 @@ BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
 
     oscillator_.step();
 
+    // Overflows every 7 hours*. Two things will happen:
+    //   1) The symbol synchronizer sees a sudden 75° phase jump**.
+    //   2) There's a 5-second interval where we'll have to wait a little longer for a reset if
+    //      one is needed at that exact time (unlikely and inconsequential)
+    // Is it worth checking 171,000 times per second? We think not.
+    //
+    //   *) (2^32) / (171000 Hz) ≈ 6 h 58 min
+    //  **) ((2^32) % decimate_ratio) / (decimate_ratio * kSamplesPerSymbol) * 360° =
+    //      ((2^32) %        24     ) / (      24       *         3        ) * 360° = 75°
     sample_num_++;
   }
 
@@ -176,6 +185,7 @@ bool Subcarrier::eof() const {
   return is_eof_;
 }
 
+// Seconds of audio processed since last reset.
 float Subcarrier::getSecondsSinceLastReset() const {
   return sample_num_ / kTargetSampleRate_Hz;
 }

@@ -17,6 +17,7 @@
 #include "src/groups.h"
 
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <ctime>
 #include <iomanip>
@@ -388,6 +389,9 @@ void Station::decodeType0(const Group& group) {
         // Frequency pairs
         for (size_t i = 1; i < raw_frequencies.size(); i += 2) {
           const int freq1 = raw_frequencies[i];
+
+          // No buffer over-read; checked by isMethodB()
+          assert(i + 1 < raw_frequencies.size());
           const int freq2 = raw_frequencies[i + 1];
 
           const int non_tuned_frequency = (freq1 == tuned_frequency ? freq2 : freq1);

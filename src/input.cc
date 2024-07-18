@@ -241,14 +241,14 @@ Group readTEFGroup(const Options& options) {
       Block block1;
       try {
         line               = line.substr(1);
-        const int64_t data = std::stol(line, nullptr, 16);
+        const auto data    = std::stol(line, nullptr, 16);
         block1.data        = data & 0xFFFF;
         block1.is_received = true;
       } catch (const std::exception&) {
       }
       group.setBlock(BLOCK1, block1);
     } else if (line.substr(0, 1) == "R") {
-      int64_t data{0};
+      long data{0};
       uint16_t rdsErr{0xFF};
       try {
         line   = line.substr(1);
