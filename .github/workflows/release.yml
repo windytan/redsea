@@ -1,0 +1,65 @@
+name: Publish binaries for release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-upload-windows-msys2-mingw:
+    runs-on: windows-latest
+    env:
+      Package_Name: redsea-${{github.event.release.tag_name}}
+
+    steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          autoconf
+          automake
+          git
+          make
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-libiconv
+          mingw-w64-x86_64-libsndfile
+          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-nlohmann-json
+          mingw-w64-x86_64-python3
+    # Disable glibc specific checks and headers
+    - name: Patch & build liquid-dsp
+      shell: msys2 {0}
+      run: |
+        git clone https://github.com/jgaeddert/liquid-dsp.git && cd liquid-dsp
+        perl -i -p -e 's/(AC_CHECK_LIB\(\[c\].+| sys\/resource.h)//g' configure.ac
+        ./bootstrap.sh && ./configure --prefix=/mingw64 && make
+        make install
+    - uses: actions/checkout@v4
+    - name: Build redsea.exe
+      shell: msys2 {0}
+      run: |
+        meson setup -Dwerror=true build && cd build && meson compile
+    - name: Package DLLs
+      shell: msys2 {0}
+      run: >-
+        mkdir -p $Package_Name && cp build/redsea.exe $Package_Name/ &&
+        ldd build/redsea.exe |
+        grep -iv windows |
+        grep -iv system32 |
+        grep -v :$ |
+        cut -f2 -d\> |
+        cut -f1 -d\( |
+        awk '{$1=$1};1' |
+        xargs -I{} cp {} $Package_Name/
+    - name: Zip
+      shell: msys2 {0}
+      run: |
+        zip -r $Package_Name-win-x64.zip $Package_Name
+    - name: Upload
+      shell: msys2 {0}
+      run: |
+        gh release upload ${{github.event.release.tag_name}} $Package_Name-win-x64.zip
+      env:
+        GH_TOKEN: ${{secrets.GITHUB_TOKEN}}

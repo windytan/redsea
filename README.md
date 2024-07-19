@@ -1,6 +1,7 @@
 # redsea RDS decoder
 
-redsea is a lightweight command-line FM-RDS decoder that supports many [RDS features][Wiki: Features].
+redsea is a lightweight command-line [FM-RDS](https://en.wikipedia.org/wiki/Radio_Data_System)
+decoder that supports many [RDS features][Wiki: Features].
 
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
 ![build](https://github.com/windytan/redsea/workflows/build/badge.svg)

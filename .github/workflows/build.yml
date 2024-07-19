@@ -110,18 +110,6 @@ jobs:
       shell: msys2 {0}
       run: |
         meson setup -Dwerror=true build && cd build && meson compile
-    - name: Package into distrib
-      shell: msys2 {0}
-      run: >-
-        mkdir -p distrib && cp build/redsea.exe distrib/ &&
-        ldd build/redsea.exe |
-        grep -iv windows |
-        grep -iv system32 |
-        grep -v :$ |
-        cut -f2 -d\> |
-        cut -f1 -d\( |
-        awk '{$1=$1};1' |
-        xargs -I{} cp {} distrib/
 
   build-windows-cygwin:
     runs-on: windows-latest
