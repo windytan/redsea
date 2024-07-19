@@ -14,3 +14,5 @@ AlignConsecutiveShortCaseStatements:
   Enabled: true
   AcrossEmptyLines: true
 IncludeBlocks: Preserve
+DerivePointerAlignment: false
+PointerAlignment: Left

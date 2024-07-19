@@ -27,12 +27,8 @@ namespace redsea {
 // An RDSString can be RadioText, Program Service name, or Enhanced RadioText.
 class RDSString {
  public:
-  enum class Encoding {
-    Basic, UCS2, UTF8
-  };
-  enum class Direction {
-    LTR, RTL
-  };
+  enum class Encoding { Basic, UCS2, UTF8 };
+  enum class Direction { LTR, RTL };
 
   explicit RDSString(size_t len = 8);
   void set(size_t pos, uint8_t byte);
@@ -57,8 +53,8 @@ class RDSString {
   std::vector<uint8_t> data_;
   // Raw bytes.
   std::vector<uint8_t> last_complete_data_;
-  size_t prev_pos_ {};
-  size_t sequential_length_ {};
+  size_t prev_pos_{};
+  size_t sequential_length_{};
   // Decoded string.
   std::string last_complete_string_{};
 };

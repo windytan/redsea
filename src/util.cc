@@ -57,7 +57,7 @@ std::string getTimePointString(const std::chrono::time_point<std::chrono::system
   return std::string(buffer);
 }
 
-std::string join(const std::vector<std::string> &strings, const std::string &d) {
+std::string join(const std::vector<std::string>& strings, const std::string& d) {
   std::string result("");
   for (size_t i = 0; i < strings.size(); i++) {
     result += strings[i];
@@ -131,11 +131,11 @@ std::string CarrierFrequency::str() const {
   return ss.str();
 }
 
-bool operator==(const CarrierFrequency &f1, const CarrierFrequency &f2) {
+bool operator==(const CarrierFrequency& f1, const CarrierFrequency& f2) {
   return (f1.code_ == f2.code_);
 }
 
-bool operator<(const CarrierFrequency &f1, const CarrierFrequency &f2) {
+bool operator<(const CarrierFrequency& f1, const CarrierFrequency& f2) {
   return (f1.kHz() < f2.kHz());
 }
 
