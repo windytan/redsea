@@ -41,6 +41,9 @@ jobs:
       shell: msys2 {0}
       run: |
         meson setup -Dwerror=true build && cd build && meson compile
+    - name: Test command-line interface
+      shell: msys2 {0}
+      run: perl test/cli.pl build/redsea.exe
     - name: Package DLLs
       shell: msys2 {0}
       run: >-
