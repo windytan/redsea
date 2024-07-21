@@ -30,54 +30,58 @@
 
 namespace redsea {
 
-constexpr int kInputChunkSize     = 8192;
-constexpr float kMaxResampleRatio = kTargetSampleRate_Hz / kMinimumSampleRate_Hz;
-constexpr int kBufferSize         = static_cast<int>(kInputChunkSize * kMaxResampleRatio) + 1;
+// Read this many samples at a time
+constexpr std::size_t kInputChunkSize = 8192;
 
-template <int N = kBufferSize>
+// MPX buffer size allows expansion due to resampling
+constexpr auto kBufferSize = static_cast<std::size_t>(kInputChunkSize * kMaxResampleRatio) + 1;
+
 class MPXBuffer {
  public:
-  std::array<float, N> data{};
+  std::array<float, kBufferSize> data{};
   size_t used_size{};
   std::chrono::time_point<std::chrono::system_clock> time_received;
 };
 
 class BeyondEofError : std::exception {
  public:
-  BeyondEofError() {}
+  BeyondEofError() = default;
 };
 
 class MPXReader {
  public:
-  MPXReader() = default;
+  MPXReader()                             = default;
+  MPXReader(const MPXReader&)             = delete;
+  MPXReader& operator=(const MPXReader&)  = delete;
+  MPXReader(MPXReader&& other)            = delete;
+  MPXReader& operator=(MPXReader&& other) = delete;
   ~MPXReader();
   void init(const Options& options);
   bool eof() const;
   bool hasError() const;
   void fillBuffer();
-  MPXBuffer<>& readChunk(uint32_t channel);
+  MPXBuffer& readChunk(uint32_t channel);
   float getSamplerate() const;
   uint32_t getNumChannels() const;
 
  private:
-  uint32_t num_channels_{0};
-  sf_count_t chunk_size_{0};
+  uint32_t num_channels_{};
+  sf_count_t chunk_size_{};
   bool is_eof_{true};
   bool is_error_{false};
   bool feed_thru_{false};
-  std::string filename_{""};
-  MPXBuffer<> buffer_{};
-  MPXBuffer<> buffer_singlechan_{};
+  std::string filename_;
+  MPXBuffer buffer_{};
+  MPXBuffer buffer_singlechan_{};
   SF_INFO sfinfo_{0, 0, 0, 0, 0, 0};
   SNDFILE* file_{nullptr};
   SNDFILE* outfile_{nullptr};
-  sf_count_t num_read_{0};
+  sf_count_t num_read_{};
 };
 
 class AsciiBitReader {
  public:
   explicit AsciiBitReader(const Options& options);
-  ~AsciiBitReader() = default;
   bool readBit();
   bool eof() const;
 

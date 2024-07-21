@@ -30,8 +30,7 @@ namespace redsea {
 
 class BiphaseDecoder {
  public:
-  BiphaseDecoder()  = default;
-  ~BiphaseDecoder() = default;
+  BiphaseDecoder() = default;
   Maybe<bool> push(std::complex<float> psk_symbol);
 
  private:
@@ -43,8 +42,7 @@ class BiphaseDecoder {
 
 class DeltaDecoder {
  public:
-  DeltaDecoder()  = default;
-  ~DeltaDecoder() = default;
+  DeltaDecoder() = default;
   unsigned decode(unsigned d);
 
  private:
@@ -54,9 +52,8 @@ class DeltaDecoder {
 class Subcarrier {
  public:
   explicit Subcarrier(const Options& options);
-  ~Subcarrier() = default;
   bool eof() const;
-  BitBuffer processChunk(MPXBuffer<>& chunk);
+  BitBuffer processChunk(MPXBuffer& input_chunk);
   void reset();
   float getSecondsSinceLastReset() const;
 
@@ -72,7 +69,7 @@ class Subcarrier {
   liquid::Modem modem_;
   liquid::Resampler resampler_;
 
-  MPXBuffer<> resampled_buffer_{};
+  MPXBuffer resampled_chunk_{};
 
   bool is_eof_{false};
 

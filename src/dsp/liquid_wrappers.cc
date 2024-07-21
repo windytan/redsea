@@ -121,7 +121,9 @@ void SymSync::setOutputRate(unsigned r) {
 }
 
 Maybe<std::complex<float>> SymSync::execute(std::complex<float>& in) {
-  unsigned n_out = 0;
+  // To be set by liquid-dsp, no need to initialize
+  // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
+  unsigned n_out;
   symsync_crcf_execute(object_, &in, 1, out_.data(), &n_out);
   return Maybe<std::complex<float>>{out_[0], n_out == 1};
 }
@@ -145,6 +147,8 @@ Modem::~Modem() {
 }
 
 unsigned int Modem::demodulate(std::complex<float> sample) {
+  // To be set by liquid-dsp, no need to initialize
+  // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
   unsigned symbol_out;
 
 #ifdef MODEM_IS_MODEMCF
@@ -176,6 +180,8 @@ Resampler::~Resampler() {
 }
 
 unsigned int Resampler::execute(float in, float* out) {
+  // To be set by liquid-dsp, no need to initialize
+  // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
   unsigned int num_written;
   resamp_rrrf_execute(object_, in, out, &num_written);
 

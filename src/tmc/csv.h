@@ -39,7 +39,8 @@ std::vector<std::vector<std::string>> readCSV(const std::string& filename, char 
 /// \param delimiter Element delimiter that splits each line into columns.
 CSVTable readCSVWithTitles(const std::string& filename, char delimiter);
 
-// Read a CSV table from a container of lines (e.g. vector of strings). The first line is treated as a title row.
+// Read a CSV table from a container of lines (e.g. vector of strings). The first line is treated as
+// a title row.
 /// \param delimiter Element delimiter that splits each line into columns.
 template <typename Container>
 CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {

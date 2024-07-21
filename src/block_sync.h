@@ -26,14 +26,14 @@ namespace redsea {
 
 struct SyncPulse {
   Offset offset{Offset::invalid};
-  uint32_t bit_position{};
+  std::uint32_t bit_position{};
 
   bool couldFollow(const SyncPulse& other) const;
 };
 
 class SyncPulseBuffer {
  public:
-  void push(Offset offset, int bitcount);
+  void push(Offset offset, std::uint32_t bitcount);
   bool isSequenceFound() const;
 
  private:

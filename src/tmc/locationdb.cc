@@ -106,7 +106,7 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
   table = readCSVWithTitles(directory + "/SEGMENTS.DAT", ';');
   for (const CSVRow& row : table.rows) {
     try {
-      Segment seg;
+      Segment seg{};
       seg.lcd                 = get_uint16(table, row, "LCD");
       seg.roa_lcd             = get_uint16(table, row, "ROA_LCD");
       locdb.segments[seg.lcd] = seg;
@@ -127,9 +127,9 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
       if (locdb.names.find(n1id) != locdb.names.end())
         point.name1 = locdb.names[n1id];
       if (row_contains(table, row, "XCOORD"))
-        point.lon = get_int(table, row, "XCOORD") * 1e-5f;
+        point.lon = static_cast<float>(get_int(table, row, "XCOORD")) * 1e-5f;
       if (row_contains(table, row, "YCOORD"))
-        point.lat = get_int(table, row, "YCOORD") * 1e-5f;
+        point.lat = static_cast<float>(get_int(table, row, "YCOORD")) * 1e-5f;
       if (row_contains(table, row, "ROA_LCD"))
         point.roa_lcd = get_uint16(table, row, "ROA_LCD");
       if (row_contains(table, row, "SEG_LCD"))

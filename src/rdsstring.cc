@@ -64,7 +64,7 @@ size_t charlen(const std::string& str, size_t byte_start) {
   if (nbyte >= str.length())
     return 0;
 
-  while ((str[nbyte] & 0b1100'0000) == 0b1000'0000) {
+  while ((static_cast<unsigned char>(str[nbyte]) & 0b1100'0000U) == 0b1000'0000U) {
     nbyte++;
 
     if (nbyte >= str.length())
@@ -156,8 +156,7 @@ std::string RDSString::str() const {
     case Encoding::UCS2:
       return decodeUCS2(std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size()));
 
-    case Encoding::UTF8:
-      return std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    case Encoding::UTF8: return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
   }
 
   return "";

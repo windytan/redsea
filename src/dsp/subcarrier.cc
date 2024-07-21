@@ -16,6 +16,7 @@
  */
 #include "src/dsp/subcarrier.h"
 
+#include <cassert>
 #include <cmath>
 #include <complex>
 #include <cstdio>
@@ -51,7 +52,7 @@ constexpr float hertz2step(float Hz) {
 // At correct clock phase, evaluate symbol in
 // constellation {-1,0} => 0, {1,0} => 1
 Maybe<bool> BiphaseDecoder::push(std::complex<float> psk_symbol) {
-  Maybe<bool> result;
+  Maybe<bool> result{};
 
   const auto biphase_symbol = (psk_symbol - prev_psk_symbol_) * 0.5f;
   result.data               = biphase_symbol.real() >= 0.0f;
@@ -112,33 +113,47 @@ void Subcarrier::reset() {
 
 /** MPX to bits
  */
-BitBuffer Subcarrier::processChunk(MPXBuffer<>& chunk) {
+BitBuffer Subcarrier::processChunk(MPXBuffer& input_chunk) {
   if (resample_ratio_ != 1.0f) {
-    unsigned int i_resampled = 0;
-    for (size_t i = 0; i < chunk.used_size; i++) {
-      static float buf[4];
-      const auto num_resampled = resampler_.execute(chunk.data[i], buf);
+    std::size_t i_resampled{};
 
-      for (unsigned int j = 0; j < num_resampled; j++) {
-        resampled_buffer_.data[i_resampled] = buf[j];
+    // ceil(resample_ratio) is enough, as per liquid-dsp's API, but std::ceil is not constexpr in
+    // C++14
+    constexpr std::size_t kMaxResamplerOutputSize = static_cast<std::size_t>(kMaxResampleRatio) + 1;
+    std::array<float, kMaxResamplerOutputSize> resamp_output{};
+
+    for (size_t i_input{}; i_input < input_chunk.used_size; i_input++) {
+      const auto num_resampled =
+          resampler_.execute(input_chunk.data[i_input], resamp_output.data());
+
+      // Always true as per liquid-dsp API
+      assert(num_resampled <= resamp_output.size());
+
+      for (unsigned int i_buf{}; i_buf < num_resampled; i_buf++) {
+        // Must always be true due to our selection of maximum resampler ratio and extra room in
+        // the chunk
+        assert(i_resampled < resampled_chunk_.data.size());
+
+        resampled_chunk_.data[i_resampled] = resamp_output[i_buf];
         i_resampled++;
       }
     }
-    resampled_buffer_.used_size = i_resampled;
+    resampled_chunk_.used_size = i_resampled;
+    assert(resampled_chunk_.used_size <= resampled_chunk_.data.size());
   }
 
-  MPXBuffer<>& buf = (resample_ratio_ == 1.0f ? chunk : resampled_buffer_);
+  MPXBuffer& chunk = (resample_ratio_ == 1.0f ? input_chunk : resampled_chunk_);
 
   constexpr int decimate_ratio =
       static_cast<int>(kTargetSampleRate_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol);
 
   BitBuffer bitbuffer;
-  bitbuffer.time_received = chunk.time_received;
+  bitbuffer.time_received = input_chunk.time_received;
 
-  for (size_t i = 0; i < buf.used_size; i++) {
+  for (size_t i = 0; i < chunk.used_size; i++) {
     // Mix RDS to baseband for filtering purposes
     const std::complex<float> sample_baseband =
-        oscillator_.mixDown(std::complex<float>(buf.data[i]));
+        oscillator_.mixDown(std::complex<float>(chunk.data[i]));
 
     fir_lpf_.push(sample_baseband);
 
@@ -186,8 +201,9 @@ bool Subcarrier::eof() const {
 }
 
 // Seconds of audio processed since last reset.
+/// \note Not to be used for measurements, since it will lose precision as the counter grows.
 float Subcarrier::getSecondsSinceLastReset() const {
-  return sample_num_ / kTargetSampleRate_Hz;
+  return static_cast<float>(sample_num_) / kTargetSampleRate_Hz;
 }
 
 }  // namespace redsea

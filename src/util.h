@@ -19,9 +19,12 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <iomanip>
 #include <numeric>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -30,23 +33,28 @@ namespace redsea {
 // extract N-bit integer from word, starting at starting_at from the right
 template <size_t N>
 uint16_t getBits(uint16_t word, size_t starting_at) {
-  static_assert(N > 0 && N <= 16, "");
-  return (word >> starting_at) & ((1 << N) - 1);
+  static_assert(N > 0U && N <= 16U, "");
+  assert(starting_at + N <= 16U);
+  return static_cast<uint16_t>(word >> starting_at) & (static_cast<uint16_t>(1U << N) - 1U);
 }
 
 // extract N-bit integer from the concatenation of word1 and word2, starting at
 // starting_at from the right
 template <size_t N>
 uint32_t getBits(uint16_t word1, uint16_t word2, size_t starting_at) {
-  static_assert(N > 0 && N <= 32, "");
-  return (((word1 << 16) + word2) >> starting_at) & ((1 << N) - 1);
+  static_assert(N > 0U && N <= 32U, "");
+  assert(starting_at + N <= 32U);
+  const auto concat = static_cast<uint32_t>(word2 + (static_cast<uint32_t>(word1) << 16U));
+  return static_cast<uint32_t>(concat >> starting_at) & (static_cast<uint32_t>(1U << N) - 1U);
 }
 
 // extract boolean flag at bit position bit_pos
 inline bool getBool(uint16_t word, size_t bit_pos) {
+  assert(bit_pos < 16);
   return static_cast<bool>(getBits<1>(word, bit_pos));
 }
 inline uint8_t getUint8(uint16_t word, size_t bit_pos) {
+  assert(bit_pos < 16);
   return static_cast<uint8_t>(getBits<8>(word, bit_pos));
 }
 
@@ -56,14 +64,28 @@ std::string getTimePointString(const std::chrono::time_point<std::chrono::system
 
 std::string join(const std::vector<std::string>& strings, const std::string& d);
 
-std::string getHexString(uint32_t value, int num_nybbles);
-std::string getPrefixedHexString(uint32_t value, int num_nybbles);
+template <int N>
+std::string getHexString(uint32_t value) {
+  static_assert(N > 0, "");
+  std::stringstream ss;
+
+  ss.fill('0');
+  ss.setf(std::ios_base::uppercase);
+
+  ss << std::hex << std::setw(N) << value;
+
+  return ss.str();
+}
+
+template <int N>
+std::string getPrefixedHexString(uint32_t value) {
+  return "0x" + getHexString<N>(value);
+}
 
 class CarrierFrequency {
  public:
   enum class Band { LF_MF, FM };
 
- public:
   explicit CarrierFrequency(uint16_t code, Band band = Band::FM);
   bool isValid() const;
   int kHz() const;
@@ -128,7 +150,7 @@ class RunningAverage {
   }
 
   float getAverage() const {
-    return static_cast<float>(sum_) / history_.size();
+    return history_.empty() ? 0.f : static_cast<float>(sum_) / history_.size();
   }
 
  private:

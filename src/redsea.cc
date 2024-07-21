@@ -15,6 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
+#include <exception>
 #include <iostream>
 #include <memory>
 
@@ -188,16 +189,20 @@ int processTEFInput(const Options& options) {
 }  // namespace redsea
 
 int main(int argc, char** argv) {
-  const redsea::Options options = redsea::getOptions(argc, argv);
+  redsea::Options options;
+
+  try {
+    options = redsea::getOptions(argc, argv);
+  } catch (const std::exception& e) {
+    std::cerr << "error: " << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
 
   if (options.print_usage)
     redsea::printUsage();
 
   if (options.print_version)
     redsea::printVersion();
-
-  if (options.exit_failure)
-    return EXIT_FAILURE;
 
   if (options.exit_success)
     return EXIT_SUCCESS;

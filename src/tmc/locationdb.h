@@ -27,36 +27,36 @@ namespace redsea {
 namespace tmc {
 
 struct Point {
-  uint16_t lcd          { 0 };
-  std::string name1     { "" };
-  std::string road_name { "" };
-  uint16_t roa_lcd      { 0 };
-  uint16_t seg_lcd      { 0 };
-  uint16_t neg_off      { 0 };
-  uint16_t pos_off      { 0 };
-  float lon             { 0.f };
-  float lat             { 0.f };
+  uint16_t lcd{};
+  std::string name1;
+  std::string road_name;
+  uint16_t roa_lcd{};
+  uint16_t seg_lcd{};
+  uint16_t neg_off{};
+  uint16_t pos_off{};
+  float lon{};
+  float lat{};
 };
 
 struct Segment {
-  uint16_t lcd;
-  uint16_t roa_lcd;
+  uint16_t lcd{};
+  uint16_t roa_lcd{};
 };
 
 struct Road {
-  uint16_t lcd            { 0 };
-  std::string road_number { "" };
-  std::string name        { "" };
-  std::string name1       { "" };
+  uint16_t lcd{};
+  std::string road_number;
+  std::string name;
+  std::string name1;
 };
 
 struct AdminArea {
-  uint16_t lcd;
+  uint16_t lcd{};
   std::string name;
 };
 
 struct LocationDatabase {
-  uint16_t ltn { 0 };
+  uint16_t ltn{};
   std::map<uint16_t, Point> points;
   std::map<uint16_t, Road> roads;
   std::map<int, std::string> names;

@@ -42,7 +42,6 @@ Channel::Channel(const Options& options, int which_channel, std::ostream& output
 // Used for testing (PI is already known)
 Channel::Channel(const Options& options, std::ostream& output_stream, uint16_t pi)
     : options_(options),
-      which_channel_(0),
       output_stream_(output_stream),
       block_stream_(options),
       station_(options, 0, pi) {
@@ -66,8 +65,8 @@ void Channel::processBits(const BitBuffer& buffer) {
 
       // Calculate this group's rx time based on the buffer timestamp and bit offset
       auto group_time = buffer.time_received -
-                        std::chrono::milliseconds(
-                            static_cast<int>((buffer.bits.size() - 1 - i_bit) / 1187.5 * 1e3));
+                        std::chrono::milliseconds(static_cast<int>(
+                            static_cast<double>(buffer.bits.size() - 1 - i_bit) / 1187.5 * 1e3));
 
       // When the source is faster than real-time, backwards timestamp calculation
       // produces meaningless results. We want to make sure that the time stays monotonic.
@@ -98,7 +97,7 @@ void Channel::processGroup(Group group) {
   }
 
   if (options_.bler) {
-    bler_average_.push(group.getNumErrors() / 4.f);
+    bler_average_.push(static_cast<float>(group.getNumErrors()) / 4.f);
     group.setAverageBLER(100.f * bler_average_.getAverage());
   }
 
@@ -112,8 +111,7 @@ void Channel::processGroup(Group group) {
         station_ = Station(options_, which_channel_, cached_pi_.get());
         break;
 
-      case CachedPI::Result::SpuriousChange: break;
-
+      case CachedPI::Result::SpuriousChange:
       case CachedPI::Result::NoChange:       break;
     }
   }
@@ -137,8 +135,9 @@ void Channel::flush() {
     processGroup(last_group);
 }
 
+/// \note Not to be used for measurements - may lose precision
 float Channel::getSecondsSinceCarrierLost() const {
-  return block_stream_.getNumBitsSinceSyncLost() / kBitsPerSecond;
+  return static_cast<float>(block_stream_.getNumBitsSinceSyncLost()) / kBitsPerSecond;
 }
 
 void Channel::resetPI() {

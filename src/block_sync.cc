@@ -29,16 +29,16 @@ constexpr int kMaxTolerableBLER = 85;
 
 constexpr int kMaxErrorsToleratedOver50Blocks{kMaxTolerableBLER / 2};
 
-constexpr int kBlockLength       = 26;
-constexpr unsigned kBlockBitmask = (1 << kBlockLength) - 1;
-constexpr int kCheckwordLength   = 10;
+constexpr std::uint32_t kBlockLength     = 26;
+constexpr std::uint32_t kBlockBitmask    = (1U << kBlockLength) - 1U;
+constexpr std::uint32_t kCheckwordLength = 10;
 
 // Each offset word is associated with one block number
 eBlockNumber getBlockNumberForOffset(Offset offset) {
   switch (offset) {
     case Offset::A:       return BLOCK1;
     case Offset::B:       return BLOCK2;
-    case Offset::C:       return BLOCK3;
+    case Offset::C:
     case Offset::Cprime:  return BLOCK3;
     case Offset::D:       return BLOCK4;
 
@@ -52,7 +52,7 @@ Offset getNextOffsetFor(Offset this_offset) {
   switch (this_offset) {
     case Offset::A:       return Offset::B;
     case Offset::B:       return Offset::C;
-    case Offset::C:       return Offset::D;
+    case Offset::C:
     case Offset::Cprime:  return Offset::D;
     case Offset::D:       return Offset::A;
 
@@ -113,7 +113,8 @@ uint32_t calculateSyndrome(uint32_t vec) {
   uint32_t result{};
 
   for (size_t k = 0; k < parity_check_matrix.size(); k++)
-    result ^= parity_check_matrix[parity_check_matrix.size() - 1 - k] * ((vec >> k) & 0b1);
+    result ^= static_cast<std::uint32_t>(parity_check_matrix[parity_check_matrix.size() - 1U - k] *
+                                         (static_cast<std::uint32_t>(vec >> k) & 1U));
 
   return result;
 }
@@ -188,7 +189,7 @@ bool SyncPulse::couldFollow(const SyncPulse& other) const {
 // Push a detected sync pulse to the buffer for determination of validity.
 // @param offset The calculated cyclic offset
 // @param bitcount Bit position where the detection happened
-void SyncPulseBuffer::push(Offset offset, int bitcount) {
+void SyncPulseBuffer::push(Offset offset, std::uint32_t bitcount) {
   assert(pulses_.size() >= 1);
   for (size_t i = 0; i < pulses_.size() - 1; i++) {
     pulses_[i] = pulses_[i + 1];
@@ -237,7 +238,7 @@ void BlockStream::acquireSync(Block block) {
 }
 
 void BlockStream::pushBit(bool bit) {
-  input_register_ = (input_register_ << 1) + bit;
+  input_register_ = (input_register_ << 1U) + bit;
   num_bits_until_next_block_--;
   bitcount_++;
 

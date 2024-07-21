@@ -41,8 +41,8 @@ enum class Offset { A, B, C, Cprime, D, invalid };
 
 class Block {
  public:
-  uint32_t raw{0};
-  uint16_t data{0};
+  uint32_t raw{};
+  uint16_t data{};
   bool is_received{false};
   bool had_errors{false};
   Offset offset{Offset::invalid};
@@ -57,7 +57,7 @@ class GroupType {
 
   std::string str() const;
 
-  uint16_t number{0x00};
+  uint16_t number{};
   Version version{Version::A};
 };
 
@@ -137,12 +137,12 @@ class PTYName {
 
 class Pager {
  public:
-  int pac{0};
-  int opc{0};
-  int paging_code{0};
-  int ecc{0};
-  int ccf{0};
-  int interval{0};
+  int pac{};
+  int opc{};
+  int paging_code{};
+  int ecc{};
+  int ccf{};
+  int interval{};
   void decode1ABlock4(uint16_t block4);
 };
 
@@ -189,7 +189,7 @@ class Group {
 class Station {
  public:
   Station() = delete;
-  Station(const Options& options, int which_channel, uint16_t _pi);
+  Station(const Options& options, int which_channel, uint16_t pi);
   Station(const Options& options, int which_channel);
   void updateAndPrint(const Group& group, std::ostream& stream);
   uint16_t getPI() const;
@@ -213,22 +213,22 @@ class Station {
   void parseEnhancedRT(const Group& group);
   void parseDAB(const Group& group);
 
-  uint16_t pi_{0x0000};
+  uint16_t pi_{};
   bool has_pi_{false};
   Options options_;
-  int which_channel_{0};
+  int which_channel_{};
   ProgramServiceName ps_;
   LongPS long_ps_;
   RadioText radiotext_;
   RadioText ert_;
   PTYName ptyname_;
-  RDSString full_tdc_{32 * 4};
-  uint16_t pin_{0};
-  uint16_t ecc_{0};
-  uint16_t cc_{0};
-  int tmc_id_{0};
-  bool linkage_la_{0};
-  std::string clock_time_{""};
+  RDSString full_tdc_{32U * 4U};
+  uint16_t pin_{};
+  uint16_t ecc_{};
+  uint16_t cc_{};
+  int tmc_id_{};
+  bool linkage_la_{};
+  std::string clock_time_;
   bool has_country_{false};
   std::map<GroupType, uint16_t> oda_app_for_group_;
   bool ert_uses_chartable_e3_{false};

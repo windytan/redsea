@@ -11,6 +11,37 @@
 #include "../src/options.h"
 #include "test_helpers.h"
 
+TEST_CASE("Bitfield extraction") {
+  const std::uint16_t block1{0x1234};
+  const std::uint16_t block2{0x5678};
+
+  SECTION("Works with single block") {
+    CHECK(redsea::getBits<4>(block1, 0) == 4);
+
+    CHECK(redsea::getBits<5>(block1, 4) == 0x3);
+    CHECK(redsea::getBits<6>(block1, 4) == 0x23);
+    CHECK(redsea::getBits<8>(block1, 4) == 0x23);
+    CHECK(redsea::getBits<9>(block1, 4) == 0x123);
+
+    CHECK(redsea::getBits<5>(block1, 5) == 0x11);
+    CHECK(redsea::getBits<8>(block1, 5) == 0x91);
+
+    CHECK(redsea::getBool(block1, 12)   == true);
+  }
+
+  SECTION("Works with concatenation of two blocks") {
+    CHECK(redsea::getBits<4>(block1, block2, 0)  == 8);
+
+    CHECK(redsea::getBits<5>(block1, block2, 4)  == 0x7);
+    CHECK(redsea::getBits<6>(block1, block2, 4)  == 0x27);
+    CHECK(redsea::getBits<8>(block1, block2, 4)  == 0x67);
+    CHECK(redsea::getBits<9>(block1, block2, 4)  == 0x167);
+
+    CHECK(redsea::getBits<12>(block1, block2, 8) == 0x456);
+    CHECK(redsea::getBits<12>(block1, block2, 9) == 0xA2B);
+  }
+}
+
 TEST_CASE("Decodes basic info") {
   redsea::Options options;
 
@@ -124,7 +155,7 @@ TEST_CASE("Decodes radiotext") {
     CHECK(json_lines.back()["radiotext"] == "Robbie Williams - Feel");
   }
 
-  SECTION("Non-ascii character") {
+  SECTION("Non-ASCII character from 'basic character set'") {
     // YLE Vega (fi) 2016-09-15
     const auto json_lines{hex2json({
       0x6205'2440'5665'6761,  // "Vega"
@@ -183,7 +214,7 @@ TEST_CASE("Decodes Long PS") {
     CHECK(json_lines.back()["long_ps"] == "Breeze 100.6 Gold Coast");
   }
 
-  SECTION("String-terminated, non-ascii character") {
+  SECTION("String-terminated, contains non-ASCII UTF-8 character") {
     // Järviradio (fi)
     const auto json_lines{hex2json({
       0x6255'F520'4AC3'A452,
@@ -434,7 +465,7 @@ TEST_CASE("Error detection and correction") {
     CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
   }
 
-  SECTION("FEC can be disabled") {
+  SECTION("Rejects double bit flip if FEC is disabled") {
     options.use_fec = false;
 
     std::string broken_group{correct_group};

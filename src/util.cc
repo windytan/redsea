@@ -17,6 +17,7 @@
 #include "src/util.h"
 
 #include <algorithm>
+#include <array>
 #include <iomanip>
 #include <sstream>
 
@@ -48,38 +49,23 @@ std::string getTimePointString(const std::chrono::time_point<std::chrono::system
     format_with_fractional.replace(found, 2, std::to_string(tenths) + std::to_string(hundredths));
   }
 
-  char buffer[64];
-  if (std::strftime(buffer, sizeof(buffer), format_with_fractional.c_str(), std::localtime(&t)) ==
-      0) {
+  std::array<char, 64> buffer{};
+  if (std::strftime(buffer.data(), buffer.size(), format_with_fractional.c_str(),
+                    std::localtime(&t)) == 0) {
     return "(format error)";
   }
 
-  return std::string(buffer);
+  return {buffer.data()};
 }
 
 std::string join(const std::vector<std::string>& strings, const std::string& d) {
-  std::string result("");
+  std::string result;
   for (size_t i = 0; i < strings.size(); i++) {
     result += strings[i];
     if (i < strings.size() - 1)
       result += d;
   }
   return result;
-}
-
-std::string getHexString(uint32_t value, int num_nybbles) {
-  std::stringstream ss;
-
-  ss.fill('0');
-  ss.setf(std::ios_base::uppercase);
-
-  ss << std::hex << std::setw(num_nybbles) << value;
-
-  return ss.str();
-}
-
-std::string getPrefixedHexString(uint32_t value, int num_nybbles) {
-  return "0x" + getHexString(value, num_nybbles);
 }
 
 // 3.2.1.6
@@ -113,16 +99,13 @@ std::string CarrierFrequency::str() const {
   if (isValid()) {
     switch (band_) {
       case Band::FM: {
-        const float num = kHz() / 1000.0f;
         ss.precision(1);
-        ss << std::fixed << num << " MHz";
+        ss << std::fixed << (static_cast<float>(kHz()) * 1e-3f) << " MHz";
         break;
       }
 
       case Band::LF_MF: {
-        const float num = kHz();
-        ss.precision(0);
-        ss << std::fixed << num << " kHz";
+        ss << kHz() << " kHz";
       }
     }
   } else {
@@ -156,10 +139,9 @@ void AltFreqList::insert(uint16_t af_code) {
       clear();
     }
 
-  } else if (af_code == 205) {
-    // Filler
-  } else if (af_code == 224) {
-    // No AF exists
+  } else if (af_code == 205 ||  // Filler
+             af_code == 224) {  // No AF exists
+
   } else if (af_code >= 225 && af_code <= 249) {
     // Number of AFs
     num_expected_ = af_code - 224;
@@ -196,7 +178,7 @@ bool AltFreqList::isComplete() const {
 
 // Return the sequence of frequencies as they were received (excluding special AF codes)
 std::vector<int> AltFreqList::getRawList() const {
-  return std::vector<int>(alt_freqs_.begin(), alt_freqs_.begin() + num_received_);
+  return {alt_freqs_.begin(), alt_freqs_.begin() + num_received_};
 }
 
 void AltFreqList::clear() {

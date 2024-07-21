@@ -55,8 +55,8 @@ bool decodePIN(uint16_t pin, nlohmann::ordered_json* json) {
 }
 
 GroupType::GroupType(uint16_t type_code)
-    : number((type_code >> 1) & 0xF),
-      version((type_code & 0x1) == 0 ? GroupType::Version::A : GroupType::Version::B) {}
+    : number(static_cast<uint16_t>(type_code >> 1U) & 0xFU),
+      version((type_code & 0x1U) == 0 ? GroupType::Version::A : GroupType::Version::B) {}
 
 std::string GroupType::str() const {
   return std::string(std::to_string(number) + (version == GroupType::Version::A ? "A" : "B"));
@@ -201,10 +201,13 @@ void Group::printHex(std::ostream& stream) const {
 Station::Station(const Options& options, int which_channel)
     : options_(options), which_channel_(which_channel), tmc_(options) {}
 
-Station::Station(const Options& options, int which_channel, uint16_t _pi)
+Station::Station(const Options& options, int which_channel, uint16_t pi)
     : Station(options, which_channel) {
-  pi_     = _pi;
+  // A delegating constructor can't have other mem-initializers
+  // NOLINTBEGIN(cppcoreguidelines-prefer-member-initializer)
+  pi_     = pi;
   has_pi_ = true;
+  // NOLINTEND(cppcoreguidelines-prefer-member-initializer)
 }
 
 void Station::updateAndPrint(const Group& group, std::ostream& stream) {
@@ -223,11 +226,11 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     return;
 
   json_.clear();
-  json_["pi"] = getPrefixedHexString(getPI(), 4);
+  json_["pi"] = getPrefixedHexString<4>(getPI());
   if (options_.rbds) {
     const std::string callsign{getCallsignFromPI(getPI())};
     if (!callsign.empty()) {
-      if ((getPI() & 0xF000) == 0x1000)
+      if ((getPI() & 0xF000U) == 0x1000U)
         json_["callsign_uncertain"] = callsign;
       else
         json_["callsign"] = callsign;
@@ -238,7 +241,7 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     json_["rx_time"] = getTimePointString(group.getRxTime(), options_.time_format);
 
   if (group.hasBLER())
-    json_["bler"] = static_cast<int>(group.getBLER() + .5f);
+    json_["bler"] = std::lround(group.getBLER());
 
   if (options_.num_channels > 1)
     json_["channel"] = which_channel_;
@@ -635,7 +638,7 @@ void Station::decodeType3A(const Group& group) {
     case 0xCD47: tmc_.receiveSystemGroup(oda_message, &json_); break;
 
     default:
-      json_["debug"].push_back("TODO: Unimplemented ODA app " + getHexString(oda_app_id, 4));
+      json_["debug"].push_back("TODO: Unimplemented ODA app " + getHexString<4>(oda_app_id));
       json_["open_data_app"]["message"] = oda_message;
       break;
   }
@@ -673,7 +676,7 @@ void Station::decodeType4A(const Group& group) {
   const double local_offset =
       (getBool(group.get(BLOCK4), 5) ? -1.0 : 1.0) * getBits<5>(group.get(BLOCK4), 0) / 2.0;
 
-  struct tm utc_plus_offset_tm;
+  struct tm utc_plus_offset_tm {};
   utc_plus_offset_tm.tm_year  = year_utc - 1900;
   utc_plus_offset_tm.tm_mon   = month_utc - 1;
   utc_plus_offset_tm.tm_mday  = day_utc;
@@ -688,20 +691,22 @@ void Station::decodeType4A(const Group& group) {
   const bool is_date_valid =
       hour_utc <= 23 && minute_utc <= 59 && fabs(std::trunc(local_offset)) <= 14.0;
   if (is_date_valid) {
-    char buffer[100];
+    std::array<char, 100> buffer{};
     const int local_offset_hour = static_cast<int>(std::fabs(std::trunc(local_offset)));
     const int local_offset_min = static_cast<int>((local_offset - std::trunc(local_offset)) * 60.0);
 
     if (local_offset_hour == 0 && local_offset_min == 0) {
-      snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00Z", local_tm->tm_year + 1900,
-               local_tm->tm_mon + 1, local_tm->tm_mday, local_tm->tm_hour, local_tm->tm_min);
+      static_cast<void>(std::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02dT%02d:%02d:00Z",
+                                      local_tm->tm_year + 1900, local_tm->tm_mon + 1,
+                                      local_tm->tm_mday, local_tm->tm_hour, local_tm->tm_min));
     } else {
-      snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
-               local_tm->tm_year + 1900, local_tm->tm_mon + 1, local_tm->tm_mday, local_tm->tm_hour,
-               local_tm->tm_min, local_offset > 0 ? "+" : "-", local_offset_hour,
-               abs(local_offset_min));
+      static_cast<void>(
+          std::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
+                        local_tm->tm_year + 1900, local_tm->tm_mon + 1, local_tm->tm_mday,
+                        local_tm->tm_hour, local_tm->tm_min, local_offset > 0 ? "+" : "-",
+                        local_offset_hour, abs(local_offset_min)));
     }
-    clock_time_         = std::string(buffer);
+    clock_time_         = std::string(buffer.data());
     json_["clock_time"] = clock_time_;
   } else {
     json_["debug"].push_back("invalid date/time");
@@ -718,22 +723,22 @@ void Station::decodeType5(const Group& group) {
         getUint8(group.get(BLOCK3), 8), getUint8(group.get(BLOCK3), 0),
         getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0)};
 
-    json_["transparent_data"]["raw"] = getHexString(data[0], 2) + " " + getHexString(data[1], 2) +
-                                       " " + getHexString(data[2], 2) + " " +
-                                       getHexString(data[3], 2);
+    json_["transparent_data"]["raw"] = getHexString<2>(data[0]) + " " + getHexString<2>(data[1]) +
+                                       " " + getHexString<2>(data[2]) + " " +
+                                       getHexString<2>(data[3]);
 
     RDSString decoded_text(4);
     decoded_text.set(0, data[0], data[1]);
     decoded_text.set(2, data[2], data[3]);
 
-    full_tdc_.set(address * 4, data[0], data[1]);
-    full_tdc_.set(address * 4 + 2, data[2], data[3]);
+    full_tdc_.set(address * 4U, data[0], data[1]);
+    full_tdc_.set(address * 4U + 2U, data[2], data[3]);
     if (full_tdc_.isComplete()) {
       json_["transparent_data"]["full_text"] = full_tdc_.str();
 
       std::string full_raw;
       for (const auto b : full_tdc_.getData()) {
-        full_raw += getHexString(b, 2) + " ";
+        full_raw += getHexString<2>(b) + " ";
       }
       json_["transparent_data"]["full_raw"] = full_raw;
     }
@@ -743,7 +748,7 @@ void Station::decodeType5(const Group& group) {
     const std::array<uint8_t, 2> data{getUint8(group.get(BLOCK4), 8),
                                       getUint8(group.get(BLOCK4), 0)};
 
-    json_["transparent_data"]["raw"] = getHexString(data[0], 2) + " " + getHexString(data[1], 2);
+    json_["transparent_data"]["raw"] = getHexString<2>(data[0]) + " " + getHexString<2>(data[1]);
 
     RDSString decoded_text(2);
     decoded_text.set(0, data[0], data[1]);
@@ -791,7 +796,7 @@ void Station::decodeType10A(const Group& group) {
   if (ptyname_.isABChanged(getBits<1>(group.get(BLOCK2), 4)))
     ptyname_.text.clear();
 
-  ptyname_.update(segment_address * 4, getUint8(group.get(BLOCK3), 8),
+  ptyname_.update(segment_address * 4U, getUint8(group.get(BLOCK3), 8),
                   getUint8(group.get(BLOCK3), 0), getUint8(group.get(BLOCK4), 8),
                   getUint8(group.get(BLOCK4), 0));
 
@@ -806,7 +811,7 @@ void Station::decodeType14(const Group& group) {
     return;
 
   const uint16_t on_pi         = group.get(BLOCK4);
-  json_["other_network"]["pi"] = getPrefixedHexString(on_pi, 4);
+  json_["other_network"]["pi"] = getPrefixedHexString<4>(on_pi);
   json_["other_network"]["tp"] = getBool(group.get(BLOCK2), 4);
 
   if (group.getType().version == GroupType::Version::B) {
@@ -826,8 +831,8 @@ void Station::decodeType14(const Group& group) {
       if (eon_ps_names_.find(on_pi) == eon_ps_names_.end())
         eon_ps_names_.emplace(on_pi, RDSString(8));
 
-      eon_ps_names_[on_pi].set(2 * eon_variant, getUint8(group.get(BLOCK3), 8));
-      eon_ps_names_[on_pi].set(2 * eon_variant + 1, getUint8(group.get(BLOCK3), 0));
+      eon_ps_names_[on_pi].set(2U * eon_variant, getUint8(group.get(BLOCK3), 8));
+      eon_ps_names_[on_pi].set(2U * eon_variant + 1, getUint8(group.get(BLOCK3), 0));
 
       if (eon_ps_names_[on_pi].isComplete())
         json_["other_network"]["ps"] = eon_ps_names_[on_pi].getLastCompleteString();
@@ -886,7 +891,7 @@ void Station::decodeType14(const Group& group) {
     }
 
     case 15: {
-      json_["other_network"]["broadcaster_data"] = getHexString(group.get(BLOCK3), 4);
+      json_["other_network"]["broadcaster_data"] = getHexString<4>(group.get(BLOCK3));
       break;
     }
 
@@ -903,11 +908,11 @@ void Station::decodeType15A(const Group& group) {
   const uint16_t segment_address = getBits<3>(group.get(BLOCK2), 0);
 
   if (group.has(BLOCK3)) {
-    long_ps_.update(segment_address * 4, getUint8(group.get(BLOCK3), 8),
+    long_ps_.update(segment_address * 4U, getUint8(group.get(BLOCK3), 8),
                     getUint8(group.get(BLOCK3), 0));
   }
   if (group.has(BLOCK4)) {
-    long_ps_.update(segment_address * 4 + 2, getUint8(group.get(BLOCK4), 8),
+    long_ps_.update(segment_address * 4U + 2U, getUint8(group.get(BLOCK4), 8),
                     getUint8(group.get(BLOCK4), 0));
   }
 
@@ -929,9 +934,9 @@ void Station::decodeType15B(const Group& group) {
 void Station::decodeODAGroup(const Group& group) {
   if (oda_app_for_group_.find(group.getType()) == oda_app_for_group_.end()) {
     json_["unknown_oda"]["raw_data"] =
-        getHexString(group.get(BLOCK2) & 0b11111, 2) + " " +
-        (group.has(BLOCK3) ? getHexString(group.get(BLOCK3), 4) : "----") + " " +
-        (group.has(BLOCK4) ? getHexString(group.get(BLOCK4), 4) : "----");
+        getHexString<2>(group.get(BLOCK2) & 0b11111U) + " " +
+        (group.has(BLOCK3) ? getHexString<4>(group.get(BLOCK3)) : "----") + " " +
+        (group.has(BLOCK4) ? getHexString<4>(group.get(BLOCK4)) : "----");
 
     return;
   }
@@ -960,12 +965,12 @@ void Station::decodeODAGroup(const Group& group) {
       break;
 
     default:
-      json_["unknown_oda"]["app_id"]   = getHexString(oda_app_id, 4);
+      json_["unknown_oda"]["app_id"]   = getHexString<4>(oda_app_id);
       json_["unknown_oda"]["app_name"] = getAppNameString(oda_app_id);
       json_["unknown_oda"]["raw_data"] =
-          getHexString(group.get(BLOCK2) & 0b11111, 2) + " " +
-          (group.has(BLOCK3) ? getHexString(group.get(BLOCK3), 4) : "----") + " " +
-          (group.has(BLOCK4) ? getHexString(group.get(BLOCK4), 4) : "----");
+          getHexString<2>(group.get(BLOCK2) & 0b11111U) + " " +
+          (group.has(BLOCK3) ? getHexString<4>(group.get(BLOCK3)) : "----") + " " +
+          (group.has(BLOCK4) ? getHexString<4>(group.get(BLOCK4)) : "----");
   }
 }
 
@@ -1012,12 +1017,12 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, nlohmann::ordered_jso
 }
 
 void Station::parseEnhancedRT(const Group& group) {
-  const size_t position = getBits<5>(group.get(BLOCK2), 0) * 4;
+  const size_t position = getBits<5>(group.get(BLOCK2), 0) * 4U;
 
   ert_.update(position, getUint8(group.get(BLOCK3), 8), getUint8(group.get(BLOCK3), 0));
 
   if (group.has(BLOCK4)) {
-    ert_.update(position + 2, getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
+    ert_.update(position + 2U, getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
   }
 
   if (ert_.text.isComplete()) {
@@ -1069,7 +1074,7 @@ void Station::parseDAB(const Group& group) {
       json_["dab"]["channel"] = dab_channels.at(freq);
     }
 
-    json_["dab"]["ensemble_id"] = getPrefixedHexString(group.get(BLOCK4), 4);
+    json_["dab"]["ensemble_id"] = getPrefixedHexString<4>(group.get(BLOCK4));
   }
 }
 

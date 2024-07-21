@@ -307,20 +307,21 @@ std::string getCallsignFromPI(uint16_t pi) {
 
   // Exceptions for zero nybbles
 
-  if ((pi & 0xFFF0) == 0xAFA0 && (pi & 0x000F) < 0x000A) {
+  if ((pi & 0xFFF0U) == 0xAFA0 && (pi & 0x000FU) < 0x000A) {
     // P1 0 0 0 --> A F A P1
-    pi <<= 12;
+    pi <<= 12U;
 
-  } else if ((pi & 0xFF00) == 0xAF00) {
+  } else if ((pi & 0xFF00U) == 0xAF00) {
     // P1 P2 0 0 --> A F P1 P2
-    pi <<= 8;
+    pi <<= 8U;
 
-  } else if ((pi & 0xF000) == 0xA000) {
+  } else if ((pi & 0xF000U) == 0xA000) {
     // P1 0 P3 P4 --> A P1 P3 P4
-    pi = static_cast<uint16_t>(((pi & 0x0F00) << 4) | (pi & 0x00FF));
+    pi = static_cast<uint16_t>(static_cast<uint16_t>(pi & 0x0F00U) << 4U) |
+         static_cast<uint16_t>(pi & 0x00FFU);
   }
 
-  std::string callsign = "";
+  std::string callsign;
 
   if (pi >= 0x9950 && pi <= 0x9EFF) {
     // Three-letter only
@@ -329,23 +330,22 @@ std::string getCallsignFromPI(uint16_t pi) {
 
   } else if (pi >= 0xB001 && pi <= 0xEFFF) {
     // Nationally-linked stations
-    pi &= 0xF0FF;
+    pi &= 0xF0FFU;
 
     if (linked_station_codes.find(pi) != linked_station_codes.end())
       callsign = linked_station_codes.at(pi);
 
   } else if (pi >= 0x1000 && pi <= 0x994F) {
     // Decode four-letter call sign
-    char four_letters[] = "____";
-    four_letters[0]     = (pi <= 0x54A7 ? 'K' : 'W');
+    callsign    = "____";
+    callsign[0] = (pi <= 0x54A7 ? 'K' : 'W');
     pi -= (pi <= 0x54A7 ? 0x1000 : 0x54A8);
 
     constexpr uint32_t kNumLetters{26};
 
-    four_letters[1] = 'A' + (pi / (kNumLetters * kNumLetters)) % kNumLetters;
-    four_letters[2] = 'A' + (pi / kNumLetters) % kNumLetters;
-    four_letters[3] = 'A' + pi % kNumLetters;
-    callsign        = std::string{four_letters};
+    callsign[1] = static_cast<char>('A' + (pi / (kNumLetters * kNumLetters)) % kNumLetters);
+    callsign[2] = static_cast<char>('A' + (pi / kNumLetters) % kNumLetters);
+    callsign[3] = static_cast<char>('A' + (pi % kNumLetters));
   }
 
   return callsign;

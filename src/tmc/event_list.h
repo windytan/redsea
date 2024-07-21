@@ -7,6 +7,7 @@
 namespace redsea {
 namespace tmc {
 
+// clang-format off
 const std::array<std::string, 1553> tmc_data_events{
   "Code;Description;Description with Q;N;Q;T;D;U;C;R",
   "1;traffic problem;;;0;D;1;U;1;A50",
@@ -1796,6 +1797,7 @@ const std::array<std::string, 233> tmc_data_suppl{
   "252;fairly frequent service",
   "253;regular service",
   "255;Traffic queue length decreasing" };
+// clang-format on
 
 }  // namespace tmc
 }  // namespace redsea

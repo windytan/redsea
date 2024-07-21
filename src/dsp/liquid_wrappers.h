@@ -30,7 +30,7 @@ extern "C" {
 }
 #pragma clang diagnostic pop
 
-template<typename T>
+template <typename T>
 struct Maybe {
   T data;
   bool valid;
@@ -41,7 +41,11 @@ namespace liquid {
 class AGC {
  public:
   AGC(float bw, float initial_gain);
-  AGC(const AGC&) = delete;
+  AGC(const AGC&)             = delete;
+  AGC& operator=(const AGC&)  = delete;
+  AGC(AGC&& other)            = delete;
+  AGC& operator=(AGC&& other) = delete;
+
   ~AGC();
   std::complex<float> execute(std::complex<float> s);
 
@@ -52,7 +56,11 @@ class AGC {
 class FIRFilter {
  public:
   FIRFilter(unsigned int len, float fc, float As = 60.0f, float mu = 0.0f);
-  FIRFilter(const FIRFilter&) = delete;
+  FIRFilter(const FIRFilter&)             = delete;
+  FIRFilter& operator=(const FIRFilter&)  = delete;
+  FIRFilter(FIRFilter&& other)            = delete;
+  FIRFilter& operator=(FIRFilter&& other) = delete;
+
   ~FIRFilter();
   void push(std::complex<float> s);
   std::complex<float> execute();
@@ -65,7 +73,10 @@ class FIRFilter {
 class NCO {
  public:
   NCO(liquid_ncotype type, float freq);
-  NCO(const NCO&) = delete;
+  NCO(const NCO&)             = delete;
+  NCO& operator=(const NCO&)  = delete;
+  NCO(NCO&& other)            = delete;
+  NCO& operator=(NCO&& other) = delete;
   ~NCO();
   std::complex<float> mixDown(std::complex<float> s);
   void step();
@@ -80,9 +91,11 @@ class NCO {
 
 class SymSync {
  public:
-  SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m,
-          float beta, unsigned num_filters);
-  SymSync(const SymSync&) = delete;
+  SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m, float beta, unsigned num_filters);
+  SymSync(const SymSync&)             = delete;
+  SymSync& operator=(const SymSync&)  = delete;
+  SymSync(SymSync&& other)            = delete;
+  SymSync& operator=(SymSync&& other) = delete;
   ~SymSync();
   void reset();
   void setBandwidth(float);
@@ -97,7 +110,10 @@ class SymSync {
 class Modem {
  public:
   explicit Modem(modulation_scheme scheme);
-  Modem(const Modem&) = delete;
+  Modem(const Modem&)             = delete;
+  Modem& operator=(const Modem&)  = delete;
+  Modem(Modem&& other)            = delete;
+  Modem& operator=(Modem&& other) = delete;
   ~Modem();
   unsigned int demodulate(std::complex<float> sample);
   float getPhaseError();
@@ -113,7 +129,10 @@ class Modem {
 class Resampler {
  public:
   explicit Resampler(float ratio, unsigned int length);
-  Resampler(const Resampler&) = delete;
+  Resampler(const Resampler&)             = delete;
+  Resampler& operator=(const Resampler&)  = delete;
+  Resampler(Resampler&& other)            = delete;
+  Resampler& operator=(Resampler&& other) = delete;
   ~Resampler();
   unsigned int execute(float in, float* out);
 
@@ -123,4 +142,4 @@ class Resampler {
 
 }  // namespace liquid
 
-#endif // DSP_LIQUID_WRAPPERS_H_
+#endif  // DSP_LIQUID_WRAPPERS_H_

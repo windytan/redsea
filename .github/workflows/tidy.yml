@@ -1,0 +1,22 @@
+name: tidy
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: install dependencies
+      run: sudo apt install libsndfile1-dev libliquid-dev nlohmann-json3-dev meson clang-tidy
+    - name: meson setup
+      run: meson setup -Dwerror=true build
+    - name: compile
+      run: cd build && meson compile
+    - name: run clang-tidy
+      run: clang-tidy -p build `find src -name '*.cc' -o -name '*.h'`

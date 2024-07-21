@@ -17,6 +17,7 @@
 #include "src/tmc/tmc.h"
 
 #include <array>
+#include <cassert>
 #include <climits>
 #include <deque>
 #include <fstream>
@@ -46,10 +47,11 @@ std::map<uint16_t, std::string> g_supplementary_data;
 std::map<uint16_t, LocationDatabase> g_location_databases;
 
 uint16_t popBits(std::deque<bool>& bit_deque, size_t len) {
+  assert(len <= 16);
   uint16_t result = 0x00;
   if (bit_deque.size() >= len) {
     for (size_t i = 0; i < len; i++) {
-      result = (result << 1) | bit_deque.at(0);
+      result = static_cast<uint16_t>(result << 1U) | bit_deque.at(0);
       bit_deque.pop_front();
     }
   }
@@ -59,7 +61,8 @@ uint16_t popBits(std::deque<bool>& bit_deque, size_t len) {
 uint16_t rotl16(uint16_t value, unsigned int count) {
   const unsigned int mask = (CHAR_BIT * sizeof(value) - 1);
   count &= mask;
-  return (value << count) | (value >> ((-count) & mask));
+  return static_cast<uint16_t>(value << count) |
+         static_cast<uint16_t>(value >> static_cast<uint16_t>(((-count) & mask)));
 }
 
 // label, field_data (ISO 14819-1: 5.5)
@@ -77,9 +80,9 @@ std::vector<FreeformField> getFreeformFields(const std::array<MessagePart, 5>& p
 
     if (i == 1 || i >= parts.size() - second_gsi) {
       for (int b = 0; b < 12; b++)
-        freeform_data_bits.push_back((parts[i].data[0] >> (11 - b)) & 0x1);
+        freeform_data_bits.push_back(static_cast<uint16_t>(parts[i].data[0] >> (11U - b)) & 1U);
       for (int b = 0; b < 16; b++)
-        freeform_data_bits.push_back((parts[i].data[1] >> (15 - b)) & 0x1);
+        freeform_data_bits.push_back(static_cast<uint16_t>(parts[i].data[1] >> (15U - b)) & 1U);
     }
   }
 
@@ -151,13 +154,13 @@ std::vector<std::string> getScopeStrings(uint16_t mgs) {
 
   std::vector<std::string> scope;
   if (mgs_i)
-    scope.push_back("inter-road");
+    scope.emplace_back("inter-road");
   if (mgs_n)
-    scope.push_back("national");
+    scope.emplace_back("national");
   if (mgs_r)
-    scope.push_back("regional");
+    scope.emplace_back("regional");
   if (mgs_u)
-    scope.push_back("urban");
+    scope.emplace_back("urban");
 
   return scope;
 }
@@ -198,7 +201,7 @@ std::string getDescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       break;
     }
     case QuantifierType::Number: {
-      int num;
+      int num{};
       if (q_value <= 4)
         num = q_value;
       else if (q_value <= 14)
@@ -234,35 +237,25 @@ std::string getDescriptionWithQuantifier(const Event& event, uint16_t q_value) {
       break;
     }
     case QuantifierType::Time: {
-      int minute = (q_value - 1) * 10;
-      int hour   = minute / 60;
-      minute     = minute % 60;
+      int minute     = (q_value - 1) * 10;
+      const int hour = minute / 60;
+      minute         = minute % 60;
 
       text = getHoursMinutesString(hour, minute);
       break;
     }
     case QuantifierType::Tonnes: {
-      int decitonnes;
-      if (q_value <= 100)
-        decitonnes = q_value;
-      else
-        decitonnes = 100 + (q_value - 100) * 5;
-
-      int whole_tonnes = decitonnes / 10;
-      decitonnes       = decitonnes % 10;
+      int decitonnes         = (q_value <= 100) ? q_value : 100 + (q_value - 100) * 5;
+      const int whole_tonnes = decitonnes / 10;
+      decitonnes             = decitonnes % 10;
 
       text = std::to_string(whole_tonnes) + "." + std::to_string(decitonnes) + " tonnes";
       break;
     }
     case QuantifierType::Metres: {
-      int decimetres;
-      if (q_value <= 100)
-        decimetres = q_value;
-      else
-        decimetres = 100 + (q_value - 100) * 5;
-
-      int whole_metres = decimetres / 10;
-      decimetres       = decimetres % 10;
+      int decimetres         = (q_value <= 100) ? q_value : 100 + (q_value - 100) * 5;
+      const int whole_metres = decimetres / 10;
+      decimetres             = decimetres % 10;
 
       text = std::to_string(whole_metres) + "." + std::to_string(decimetres) + " metres";
       break;
@@ -283,8 +276,7 @@ std::string getDescriptionWithQuantifier(const Event& event, uint16_t q_value) {
     }
   }
 
-  const std::string desc = std::regex_replace(event.description_with_quantifier, q_regex, text);
-  return desc;
+  return std::regex_replace(event.description_with_quantifier, q_regex, text);
 }
 
 std::string ucfirst(std::string in) {
@@ -308,7 +300,7 @@ void loadEventData() {
         event.nature = EventNature::Silent;
 
       if (row_contains(table, row, "Q")) {
-        int qt = get_int(table, row, "Q");
+        const int qt = get_int(table, row, "Q");
         if (qt >= 0 && qt <= 12)
           event.quantifier_type = static_cast<QuantifierType>(qt);
       }
@@ -342,7 +334,7 @@ void loadEventData() {
     if (fields.size() < 2)
       continue;
 
-    const uint16_t code     = static_cast<uint16_t>(std::stoi(fields[0]));
+    const auto code         = static_cast<uint16_t>(std::stoi(fields[0]));
     const std::string& desc = fields[1];
 
     g_supplementary_data.insert({code, desc});
@@ -356,8 +348,7 @@ std::map<uint16_t, ServiceKey> loadServiceKeyTable() {
     if (fields.size() < 4)
       continue;
 
-    uint16_t encid;
-
+    uint16_t encid{};
     ServiceKey key;
 
     try {
@@ -379,8 +370,7 @@ void decodeLocation(const LocationDatabase& db, uint16_t ltn, nlohmann::ordered_
   if (db.ltn != ltn || db.ltn == 0 || !(*jsonroot)["tmc"]["message"].contains("location"))
     return;
 
-  const uint16_t lcd =
-      static_cast<uint16_t>((*jsonroot)["tmc"]["message"]["location"].get<uint16_t>());
+  const auto lcd = static_cast<uint16_t>((*jsonroot)["tmc"]["message"]["location"].get<uint16_t>());
   const int extent       = std::stoi((*jsonroot)["tmc"]["message"]["extent"].get<std::string>());
   const bool is_positive = (extent >= 0);
 
@@ -437,7 +427,7 @@ Event getEvent(uint16_t code) {
   if (g_event_data.find(code) != g_event_data.end())
     return g_event_data.find(code)->second;
   else
-    return Event();
+    return {};
 }
 
 TMCService::TMCService(const Options& options)
@@ -484,7 +474,7 @@ void TMCService::receiveSystemGroup(uint16_t message, nlohmann::ordered_json* js
     (*jsonroot)["tmc"]["system_info"]["service_id"] = sid_;
 
     const uint16_t g                         = getBits<2>(message, 12);
-    static const int gap_values[4]           = {3, 5, 8, 11};
+    const std::array<int, 4> gap_values      = {3, 5, 8, 11};
     (*jsonroot)["tmc"]["system_info"]["gap"] = gap_values[g];
 
     ltcc_ = getBits<4>(message, 0);
@@ -526,7 +516,7 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z,
     switch (variant) {
       case 4:
       case 5: {
-        const size_t pos = 4 * (variant - 4);
+        const size_t pos = 4U * (variant - 4U);
 
         ps_.set(pos + 0, getUint8(y, 8));
         ps_.set(pos + 1, getUint8(y, 0));
@@ -549,7 +539,7 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z,
         /* Here, the alternative frequencies are printed out right away -
            DKULTUR, for example, does not transmit information about the total
            length of the list */
-        (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString(on_pi, 4);
+        (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString<4>(on_pi);
         for (const int frequency : other_network_freqs_.at(on_pi).getRawList())
           (*jsonroot)["tmc"]["other_network"]["frequencies_khz"].push_back(frequency);
         other_network_freqs_.clear();
@@ -558,10 +548,10 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z,
 
       case 8: {
         if (y == 0 || z == 0 || y == z) {
-          (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString(y, 4);
+          (*jsonroot)["tmc"]["other_network"]["pi"] = getPrefixedHexString<4>(y);
         } else {
-          (*jsonroot)["tmc"]["other_network"]["pi_codes"].push_back(getPrefixedHexString(y, 4));
-          (*jsonroot)["tmc"]["other_network"]["pi_codes"].push_back(getPrefixedHexString(z, 4));
+          (*jsonroot)["tmc"]["other_network"]["pi_codes"].push_back(getPrefixedHexString<4>(y));
+          (*jsonroot)["tmc"]["other_network"]["pi_codes"].push_back(getPrefixedHexString<4>(z));
         }
         break;
       }
@@ -572,7 +562,7 @@ void TMCService::receiveUserGroup(uint16_t x, uint16_t y, uint16_t z,
         const uint16_t on_mgs = getBits<4>(y, 6);
         const uint16_t on_ltn = getBits<6>(y, 10);
 
-        (*jsonroot)["tmc"]["other_network"]["pi"]             = getPrefixedHexString(on_pi, 4);
+        (*jsonroot)["tmc"]["other_network"]["pi"]             = getPrefixedHexString<4>(on_pi);
         (*jsonroot)["tmc"]["other_network"]["service_id"]     = on_sid;
         (*jsonroot)["tmc"]["other_network"]["location_table"] = on_ltn;
 
@@ -878,7 +868,8 @@ void Message::decrypt(const ServiceKey& key) {
   if (!is_encrypted_)
     return;
 
-  location_     = rotl16(encrypted_location_ ^ (key.xorval << key.xorstart), key.nrot);
+  location_ =
+      rotl16(encrypted_location_ ^ static_cast<uint16_t>(key.xorval << key.xorstart), key.nrot);
   is_encrypted_ = false;
 }
 

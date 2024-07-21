@@ -18,18 +18,24 @@
 #include "src/options.h"
 
 #include <getopt.h>
+#include <array>
+#include <cerrno>
 #include <iostream>
+#include <stdexcept>
 
 #include "config.h"
 #include "src/common.h"
 
 namespace redsea {
 
+/// @throws std::runtime_error for option validation errors
+/// @note May also print a warning to stderr
 Options getOptions(int argc, char** argv) {
   Options options;
   int fec_flag{1};
 
-  const struct option long_options[] = {
+  // clang-format off
+  const std::array<struct option, 19> long_options{{
       {"input-bits",   no_argument,       nullptr,   'b'},
       {"channels",     required_argument, nullptr,   'c'},
       {"feed-through", no_argument,       nullptr,   'e'},
@@ -49,12 +55,13 @@ Options getOptions(int argc, char** argv) {
       {"no-fec",       no_argument,       &fec_flag, 0  },
       {"help",         no_argument,       nullptr,   '?'},
       {nullptr,        0,                 nullptr,   0  }
-  };
+  }};
+  // clang-format on
 
-  int option_index = 0;
-  int option_char;
+  int option_index{};
+  int option_char{};
 
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rt:uvx", long_options,
+  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rt:uvx", long_options.data(),
                                     &option_index)) >= 0) {
     switch (option_char) {
       case 0:  // Flag
@@ -63,12 +70,11 @@ Options getOptions(int argc, char** argv) {
         options.input_type = InputType::ASCIIbits;
         break;
       case 'c': {
-        const int num_channels = std::atoi(optarg);
-        if (num_channels < 1) {
-          std::cerr << "error: number of channels must be greater than 0" << '\n';
-          options.exit_failure = true;
-        } else {
-          options.num_channels = static_cast<uint32_t>(num_channels);
+        options.num_channels = static_cast<std::uint32_t>(std::strtoul(optarg, nullptr, 10));
+        // Channels take up memory, and we don't want to fill it up by accident.
+        constexpr int kMaxNumChannels{32};
+        if (errno == ERANGE || options.num_channels < 1 || options.num_channels > kMaxNumChannels) {
+          throw std::runtime_error("check the number of channels");
         }
         options.is_num_channels_defined = true;
         break;
@@ -93,8 +99,7 @@ Options getOptions(int argc, char** argv) {
         } else if (input_type == "bits") {
           options.input_type = InputType::ASCIIbits;
         } else {
-          std::cerr << "error: unknown input format '" << input_type << "'" << std::endl;
-          options.exit_failure = true;
+          throw std::runtime_error("unknown input format '" + input_type + "'");
         }
         break;
       }
@@ -105,8 +110,7 @@ Options getOptions(int argc, char** argv) {
         } else if (output_type == "json") {
           options.output_type = OutputType::JSON;
         } else {
-          std::cerr << "error: unknown output format '" << output_type << "'" << std::endl;
-          options.exit_failure = true;
+          throw std::runtime_error("unknown output format '" + output_type + "'");
         }
         break;
       }
@@ -116,18 +120,23 @@ Options getOptions(int argc, char** argv) {
       case 'p': options.show_partial = true; break;
       case 'r': {
         const std::string optstr(optarg);
-        double factor = 1.0;
+        float factor = 1.f;
         if (optstr.size() > 1) {
           if (tolower(optstr.back()) == 'k')
-            factor = 1000.0;
+            factor = 1e3f;
           else if (toupper(optstr.back()) == 'M')
-            factor = 1000000.0;
+            factor = 1e6f;
         }
-        options.samplerate = static_cast<float>(std::atof(optarg) * factor);
-        if (options.samplerate < kMinimumSampleRate_Hz) {
-          std::cerr << "error: sample rate was set to " << options.samplerate << ", but it must be "
-                    << kMinimumSampleRate_Hz << " Hz or higher\n";
-          options.exit_failure = true;
+        options.samplerate = std::strtof(optarg, nullptr) * factor;
+        if (errno == ERANGE) {
+          throw std::runtime_error("check the sample rate");
+        }
+        if (options.samplerate < kMinimumSampleRate_Hz ||
+            options.samplerate > kMaximumSampleRate_Hz) {
+          throw std::runtime_error("sample rate was set to " + std::to_string(options.samplerate) +
+                                   ", but it must be between " +
+                                   std::to_string(kMinimumSampleRate_Hz) + " and " +
+                                   std::to_string(kMaximumSampleRate_Hz) + " Hz\n");
         }
         options.is_rate_defined = true;
         break;
@@ -138,7 +147,7 @@ Options getOptions(int argc, char** argv) {
         options.time_format = std::string(optarg);
         break;
       case 'u': options.rbds = true; break;
-      case 'l': options.loctable_dirs.push_back(std::string(optarg)); break;
+      case 'l': options.loctable_dirs.emplace_back(std::string(optarg)); break;
       case 'v':
         options.print_version = true;
         options.exit_success  = true;
@@ -147,10 +156,7 @@ Options getOptions(int argc, char** argv) {
         options.print_usage  = true;
         options.exit_success = true;
         break;
-      default:
-        options.print_usage  = true;
-        options.exit_failure = true;
-        break;
+      default: throw std::runtime_error("unknown options; use --help for help"); break;
     }
     if (options.exit_success)
       break;
@@ -159,27 +165,24 @@ Options getOptions(int argc, char** argv) {
   options.use_fec = fec_flag;
 
   if (argc > optind) {
-    options.print_usage  = true;
-    options.exit_failure = true;
+    throw std::runtime_error("unknown options; use --help for help");
   }
 
   if (options.feed_thru && options.input_type == InputType::MPX_sndfile) {
-    std::cerr << "error: feed-thru is not supported for audio file inputs" << '\n';
-    options.exit_failure = true;
+    throw std::runtime_error("feed-thru is not supported for audio file inputs");
   }
 
   if (options.num_channels > 1 && options.input_type != InputType::MPX_stdin &&
       options.input_type != InputType::MPX_sndfile) {
-    std::cerr << "error: multi-channel input is only supported for MPX signals" << '\n';
-    options.exit_failure = true;
+    throw std::runtime_error("multi-channel input is only supported for MPX signals");
   }
 
   const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin && !options.print_usage &&
-                              !options.exit_failure && !options.exit_success};
+                              !options.exit_success};
 
   if (assuming_raw_mpx && !options.is_rate_defined) {
-    std::cerr << "{\"warning\":\"raw MPX sample rate not defined, assuming " << kTargetSampleRate_Hz
-              << " Hz\"}" << '\n';
+    std::cerr << R"({"warning":"raw MPX sample rate not defined, assuming )" << kTargetSampleRate_Hz
+              << R"( Hz"})" << '\n';
     options.samplerate = kTargetSampleRate_Hz;
   }
 
