@@ -1,5 +1,10 @@
 # redsea changelog
 
+## HEAD
+
+* Fixes:
+  * macOS: ask Homebrew about liquid-dsp installation path instead of hardcoding it
+
 ## 1.0.1
 
 * Fixes:
