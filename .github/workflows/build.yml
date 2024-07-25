@@ -82,12 +82,12 @@ jobs:
       run: brew install meson libsndfile liquid-dsp nlohmann-json catch2 perl
     - name: meson setup
       run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false build
-    - name: compile
-      run: cd build && meson compile
+    - name: compile & install
+      run: cd build && meson install
     - name: test
       run: cd build && meson test
     - name: Test command-line interface
-      run: perl test/cli.pl build/redsea
+      run: perl test/cli.pl redsea --installed
 
   build-windows-msys2-mingw:
     runs-on: windows-latest

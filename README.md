@@ -79,12 +79,16 @@ keep the main branch stable.
 
         $ meson setup build && cd build && meson compile
 
+You can install the binary using `meson install` if you so wish. By default,
+it will be installed under `/usr/local`, but this can be changed by providing
+e.g. `meson setup build --prefix /usr/local`. See the
+[Meson guide](https://mesonbuild.com/Quick-guide.html#compiling-a-meson-project)
+for more.
+
 If you cloned the repository you can later get the latest updates and recompile:
 
         $ git pull
         $ cd build && meson compile
-
-[liquid-dsp]: https://github.com/jgaeddert/liquid-dsp/releases/tag/v1.3.2
 
 It's also possible to build redsea on Windows, either in Cygwin or by building
 an .exe with MSYS2/MinGW; Instructions are in [the wiki][Wiki: Windows build].
@@ -192,6 +196,8 @@ redsea -f WAVEFILE
 * nlohmann-json
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals
+
+[liquid-dsp]: https://github.com/jgaeddert/liquid-dsp/releases/tag/v1.3.2
 
 ### Build
 

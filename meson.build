@@ -1,7 +1,12 @@
 project(
   'redsea',
   'cpp',
-  default_options: ['warning_level=3', 'buildtype=release', 'optimization=3'],
+  default_options: [
+    'warning_level=3',
+    'buildtype=release',
+    'optimization=3',
+    'prefix=/usr/local',
+  ],
   version: '1.0.2-SNAPSHOT',
 )
 
