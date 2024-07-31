@@ -58,7 +58,6 @@ class MPXReader {
   ~MPXReader();
   void init(const Options& options);
   bool eof() const;
-  bool hasError() const;
   void fillBuffer();
   MPXBuffer& readChunk(uint32_t channel);
   float getSamplerate() const;
@@ -68,7 +67,6 @@ class MPXReader {
   uint32_t num_channels_{};
   sf_count_t chunk_size_{};
   bool is_eof_{true};
-  bool is_error_{false};
   bool feed_thru_{false};
   std::string filename_;
   MPXBuffer buffer_{};

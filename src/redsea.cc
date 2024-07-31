@@ -119,13 +119,13 @@ int processMPXInput(Options options) {
   } catch (BeyondEofError&) {
     printUsage();
     return EXIT_FAILURE;
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << "\n";
+    return EXIT_FAILURE;
   }
 
   options.samplerate   = mpx.getSamplerate();
   options.num_channels = mpx.getNumChannels();
-
-  if (mpx.hasError())
-    return EXIT_FAILURE;
 
   auto& output_stream = options.feed_thru ? std::cerr : std::cout;
 

@@ -123,11 +123,21 @@ executable(
 catch2 = dependency('catch2-with-main', required: false)
 
 if catch2.found()
-  test_exec = executable(
-    'redsea-test',
-    [sources_no_main, 'test/unit.cc'],
+  unit_test_exe = executable(
+    'redsea-test-unit',
+    [
+      sources_no_main,
+      'test/unit.cc',
+    ],
     dependencies: [iconv, json, liquid, sndfile, catch2],
     override_options: override_options,
   )
-  test('Smoke tests', test_exec)
+  mpx_test_exe = executable(
+    'redsea-test-mpx',
+    [sources_no_main, 'test/mpx.cc'],
+    dependencies: [iconv, json, liquid, sndfile, catch2],
+    override_options: override_options,
+  )
+  test('Unit tests', unit_test_exe)
+  test('MPX tests', mpx_test_exe)
 endif

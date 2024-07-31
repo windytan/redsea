@@ -84,6 +84,8 @@ jobs:
       run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false build
     - name: compile & install
       run: cd build && meson install
+    - name: download test data
+      run: git lfs pull
     - name: test
       run: cd build && meson test
     - name: Test command-line interface

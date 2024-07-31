@@ -30,7 +30,8 @@ namespace redsea {
  * An MPXReader deals with reading an FM multiplex signal from an audio file or
  * raw PCM via stdin, separating it into channels and converting to chunks of
  * floating-point samples.
- * @throws if attempting to read beyond EOF
+ * @throws BeyondEofError if there is nothing to read
+ * @throws std::runtime_error for sndfile errors
  */
 void MPXReader::init(const Options& options) {
   num_channels_ = options.num_channels;
@@ -66,12 +67,10 @@ void MPXReader::init(const Options& options) {
     if (sf_error(file_) == 26 || options.input_type == InputType::MPX_stdin)
       throw BeyondEofError();
 
-    std::cerr << "error: failed to open file: " << sf_error_number(sf_error(file_)) << '\n';
-    is_error_ = true;
+    throw std::runtime_error(sf_error_number(sf_error(file_)));
   } else if (sfinfo_.samplerate < static_cast<int>(kMinimumSampleRate_Hz)) {
-    std::cerr << "error: sample rate is " << sfinfo_.samplerate << ", must be "
-              << kMinimumSampleRate_Hz << " Hz or higher\n";
-    is_error_ = true;
+    throw std::runtime_error("sample rate is " + std::to_string(sfinfo_.samplerate) + ", must be " +
+                             std::to_string(kMinimumSampleRate_Hz) + " Hz or higher");
   } else {
     chunk_size_ = static_cast<sf_count_t>((kInputChunkSize / num_channels_) * num_channels_);
 
@@ -136,10 +135,6 @@ float MPXReader::getSamplerate() const {
 
 uint32_t MPXReader::getNumChannels() const {
   return num_channels_;
-}
-
-bool MPXReader::hasError() const {
-  return is_error_;
 }
 
 /*
