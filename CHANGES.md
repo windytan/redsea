@@ -2,8 +2,9 @@
 
 ## HEAD
 
-* Fixes:
-  * macOS: ask Homebrew about liquid-dsp installation path instead of hardcoding it
+* Build system fixes:
+  * macOS: ask Homebrew about liquid-dsp location instead of hardcoding it
+  * Set default installation prefix to /usr/local (all platforms)
 
 ## 1.0.1
 

@@ -1,6 +1,8 @@
 # Basic tests to see if the CLI works at all. Correctness is tested (mostly) elsewhere.
 # Usage: perl cli.pl path/to/redsea.exe [--installed]
 
+package cli;
+
 use warnings;
 use strict;
 use IPC::Cmd qw(can_run);
@@ -15,14 +17,14 @@ my $has_failures             = 0;
 my $test_input_file          = 'redsea-test-input';
 my $test_output_file         = 'redsea-test-output';
 
-exit main();
+main();
 
 sub main {
   testExeRunnable();
   testInputBits();
   testInputTEF();
 
-  return $has_failures;
+  exit $has_failures;
 }
 
 sub testExeRunnable {
@@ -48,9 +50,11 @@ sub testInputBits {
     unlink($test_output_file);
     RunRedseaWithArgs( $arg . q{<} . $test_input_file . q{>} . $test_output_file );
     open( my $test_output, q{<}, $test_output_file ) or croak $!;
-    my $result =
-      ( ( <$test_output> // "" ) =~
-        /\{"pi":"0x22E1","group":"2A","tp":true,"prog_type":"Easy listening"\}/ );
+    my $result = (
+      index(
+        <$test_output>, '{"pi":"0x22E1","group":"2A","tp":true,"prog_type":"Easy listening"}'
+      ) != -1
+    );
     close $test_output;
     check( $result, 'decodes ASCII binary' );
   }
@@ -63,32 +67,32 @@ sub testInputBits {
 # in the test to make it more realistic. We removed everything but RadioText.
 # Data is from https://github.com/windytan/redsea/issues/89
 sub testInputTEF {
-  createTestInputFile( "PA201\r\nR2010000000000F\r\nSs65.7,2,35\r\nPA201\r\nR2010D731000003".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR2010D731205300\r\nSs65.7,2,34\r\nPA201\r\nR2011000000000F".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR20116572000003\r\nSs65.7,2,35\r\nPA201\r\nR20116572766900".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR2012000000000F\r\nSs65.7,2,35\r\nPA201\r\nR20126365000003".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR201263653A2000\r\nSs65.7,2,35\r\nPA201\r\nR2013000000000F".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR20135465000003\r\nSs65.7,2,34\r\nPA201\r\nR201354656C2E00".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR2014000000000F\r\nSs65.7,2,35\r\nPA201\r\nR20142028000003".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR20142028303100\r\nSs65.7,2,35\r\nPA201\r\nR2015000000000F".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR20152920000003\r\nSs65.7,2,35\r\nPA201\r\nR20152920353000".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR2016000000000F\r\nSs65.7,2,35\r\nPA201\r\nR20163120000003".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR20163120373000\r\nSs65.7,2,34\r\nPA201\r\nR2017000000000F".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR20172033000003\r\nSs65.7,2,34\r\nPA201\r\nR20172033000003".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR20172033373100\r\nSs65.7,2,35\r\nPA201\r\nR2018000000000F".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR20182028000003\r\nSs65.7,2,34\r\nPA201\r\nR201820284D6F00".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR2019000000000F\r\nSs65.7,2,34\r\nPA201\r\nR20192D46000003".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR20192D46722C00\r\nSs65.7,2,34\r\nPA201\r\nR201A000000000F".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR201A2038000003\r\nSs65.7,2,34\r\nPA201\r\nR201A20382D3200".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR201B000000000F\r\nSs65.7,2,35\r\nPA201\r\nR201B3120000003".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR201B3120556800\r\nSs65.7,2,34\r\nPA201\r\nR201C000000000F".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR201C7229000003\r\nSs65.7,2,34\r\nPA201\r\nR201C7229202000".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR201D000000000F\r\nSs65.7,2,34\r\nPA201\r\nR201D2020000003".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR201D2020202000\r\nSs65.7,2,34\r\nPA201\r\nR201E000000000F".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR201E2020000003\r\nSs65.7,2,34\r\nPA201\r\nR201E2020000003".
-    "\r\nSs65.7,2,35\r\nPA201\r\nR201E2020202000\r\nSs65.7,2,35\r\nPA201\r\nR201F000000000F".
-    "\r\nSs65.7,2,34\r\nPA201\r\nR201F2020000003\r\nSs65.7,2,34\r\nPA201\r\nR201F2020202000".
-    "\r\nSs65.7,2,34\r\n" );
+  createTestInputFile( "PA201\r\nR2010000000000F\r\nSs65.7,2,35\r\nPA201\r\nR2010D731000003"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR2010D731205300\r\nSs65.7,2,34\r\nPA201\r\nR2011000000000F"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR20116572000003\r\nSs65.7,2,35\r\nPA201\r\nR20116572766900"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR2012000000000F\r\nSs65.7,2,35\r\nPA201\r\nR20126365000003"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR201263653A2000\r\nSs65.7,2,35\r\nPA201\r\nR2013000000000F"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR20135465000003\r\nSs65.7,2,34\r\nPA201\r\nR201354656C2E00"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR2014000000000F\r\nSs65.7,2,35\r\nPA201\r\nR20142028000003"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR20142028303100\r\nSs65.7,2,35\r\nPA201\r\nR2015000000000F"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR20152920000003\r\nSs65.7,2,35\r\nPA201\r\nR20152920353000"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR2016000000000F\r\nSs65.7,2,35\r\nPA201\r\nR20163120000003"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR20163120373000\r\nSs65.7,2,34\r\nPA201\r\nR2017000000000F"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR20172033000003\r\nSs65.7,2,34\r\nPA201\r\nR20172033000003"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR20172033373100\r\nSs65.7,2,35\r\nPA201\r\nR2018000000000F"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR20182028000003\r\nSs65.7,2,34\r\nPA201\r\nR201820284D6F00"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR2019000000000F\r\nSs65.7,2,34\r\nPA201\r\nR20192D46000003"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR20192D46722C00\r\nSs65.7,2,34\r\nPA201\r\nR201A000000000F"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR201A2038000003\r\nSs65.7,2,34\r\nPA201\r\nR201A20382D3200"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR201B000000000F\r\nSs65.7,2,35\r\nPA201\r\nR201B3120000003"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR201B3120556800\r\nSs65.7,2,34\r\nPA201\r\nR201C000000000F"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR201C7229000003\r\nSs65.7,2,34\r\nPA201\r\nR201C7229202000"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR201D000000000F\r\nSs65.7,2,34\r\nPA201\r\nR201D2020000003"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR201D2020202000\r\nSs65.7,2,34\r\nPA201\r\nR201E000000000F"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR201E2020000003\r\nSs65.7,2,34\r\nPA201\r\nR201E2020000003"
+      . "\r\nSs65.7,2,35\r\nPA201\r\nR201E2020202000\r\nSs65.7,2,35\r\nPA201\r\nR201F000000000F"
+      . "\r\nSs65.7,2,34\r\nPA201\r\nR201F2020000003\r\nSs65.7,2,34\r\nPA201\r\nR201F2020202000"
+      . "\r\nSs65.7,2,34\r\n" );
 
   my $arg = "--input tef";
   PrintTestName( 'Option: ' . $arg );
@@ -96,8 +100,7 @@ sub testInputTEF {
   RunRedseaWithArgs( $arg . q{<} . $test_input_file . q{| grep radiotext >} . $test_output_file );
   open( my $test_output, q{<}, $test_output_file ) or croak $!;
   my $result =
-    ( ( <$test_output> // "" ) =~
-      /Ö1 Service: Tel\. \(01\) 501 70 371 \(Mo-Fr, 8-21 Uhr\)/ );
+    ( index( <$test_output>, 'Ö1 Service: Tel. (01) 501 70 371 (Mo-Fr, 8-21 Uhr)' ) != -1 );
   close $test_output;
   check( $result, 'decodes TEF6686 serial output' );
 
@@ -155,3 +158,5 @@ sub createTestInputFile {
 
   return;
 }
+
+1;

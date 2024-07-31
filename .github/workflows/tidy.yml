@@ -20,3 +20,14 @@ jobs:
       run: cd build && meson compile
     - name: run clang-tidy
       run: clang-tidy -p build `find src -name '*.cc' -o -name '*.h'`
+
+  perl-critic:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: install perl-critic
+      run: sudo apt install libtest-perl-critic-perl
+    - name: run perl-critic
+      run: |
+        perl -e "use Test::Perl::Critic (-severity => 3);all_critic_ok('.')"
