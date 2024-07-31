@@ -6,6 +6,7 @@ project(
     'buildtype=release',
     'optimization=3',
     'prefix=/usr/local',
+    'cpp_std=c++14',
   ],
   version: '1.0.2-SNAPSHOT',
 )
@@ -29,9 +30,9 @@ endif
 
 # Explicit GNU extensions on Cygwin
 if build_machine.system() == 'cygwin'
-  add_project_arguments('-std=gnu++14', language: 'cpp')
+  override_options = ['cpp_std=gnu++14']
 else
-  add_project_arguments('-std=c++14', language: 'cpp')
+  override_options = []
 endif
 
 ####################
@@ -112,6 +113,7 @@ executable(
   [sources_no_main, 'src/redsea.cc'],
   dependencies: [iconv, json, liquid, sndfile],
   install: true,
+  override_options: override_options,
 )
 
 ##################
@@ -125,6 +127,7 @@ if catch2.found()
     'redsea-test',
     [sources_no_main, 'test/unit.cc'],
     dependencies: [iconv, json, liquid, sndfile, catch2],
+    override_options: override_options,
   )
   test('Smoke tests', test_exec)
 endif
