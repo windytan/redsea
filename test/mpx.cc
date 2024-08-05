@@ -24,7 +24,7 @@ TEST_CASE("MPX file input") {
 
   std::stringstream json_stream;
   redsea::Channel channel(options, 0, json_stream);
-  redsea::Subcarrier subcarrier(options);
+  redsea::Subcarrier subcarrier(57000.f, options.samplerate);
 
   while (!mpx.eof()) {
     mpx.fillBuffer();

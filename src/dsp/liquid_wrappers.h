@@ -30,11 +30,20 @@ extern "C" {
 }
 #pragma clang diagnostic pop
 
+namespace redsea {
+
+// Hertz to radians per sample
+inline float angularFreq(float hertz, float samplerate) {
+  return hertz * 2.f * static_cast<float>(M_PI) / samplerate;
+}
+
 template <typename T>
 struct Maybe {
   T data;
   bool valid;
 };
+
+}  // namespace redsea
 
 namespace liquid {
 
@@ -100,7 +109,7 @@ class SymSync {
   void reset();
   void setBandwidth(float);
   void setOutputRate(unsigned);
-  Maybe<std::complex<float>> execute(std::complex<float>& in);
+  redsea::Maybe<std::complex<float>> execute(std::complex<float>& in);
 
  private:
   symsync_crcf object_;

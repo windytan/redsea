@@ -120,12 +120,12 @@ void SymSync::setOutputRate(unsigned r) {
   symsync_crcf_set_output_rate(object_, r);
 }
 
-Maybe<std::complex<float>> SymSync::execute(std::complex<float>& in) {
+redsea::Maybe<std::complex<float>> SymSync::execute(std::complex<float>& in) {
   // To be set by liquid-dsp, no need to initialize
   // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
   unsigned n_out;
   symsync_crcf_execute(object_, &in, 1, out_.data(), &n_out);
-  return Maybe<std::complex<float>>{out_[0], n_out == 1};
+  return redsea::Maybe<std::complex<float>>{out_[0], n_out == 1};
 }
 
 Modem::Modem(modulation_scheme scheme)

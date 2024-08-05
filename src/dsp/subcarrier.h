@@ -51,7 +51,7 @@ class DeltaDecoder {
 
 class Subcarrier {
  public:
-  explicit Subcarrier(const Options& options);
+  explicit Subcarrier(float carrier_frequency, float samplerate);
   bool eof() const;
   BitBuffer processChunk(MPXBuffer& input_chunk);
   void reset();

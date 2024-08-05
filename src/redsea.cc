@@ -129,11 +129,12 @@ int processMPXInput(Options options) {
 
   auto& output_stream = options.feed_thru ? std::cerr : std::cout;
 
+  // Each channel is matched with 1 subcarrier (in RDS1)
   std::vector<std::unique_ptr<Channel>> channels;
   std::vector<std::unique_ptr<Subcarrier>> subcarriers;
   for (uint32_t i = 0; i < options.num_channels; i++) {
     channels.emplace_back(std::make_unique<Channel>(options, i, output_stream));
-    subcarriers.push_back(std::make_unique<Subcarrier>(options));
+    subcarriers.push_back(std::make_unique<Subcarrier>(57000.f, options.samplerate));
   }
 
   while (!mpx.eof()) {

@@ -32,7 +32,6 @@ namespace redsea {
 
 namespace {
 
-constexpr float kCarrierFrequency_Hz = 57000.0f;
 constexpr int kSamplesPerSymbol      = 3;
 constexpr float kAGCBandwidth_Hz     = 500.0f;
 constexpr float kAGCInitialGain      = 0.08f;
@@ -42,10 +41,6 @@ constexpr int kSymsyncDelay          = 3;
 constexpr float kSymsyncBeta         = 0.8f;
 constexpr float kPLLBandwidth_Hz     = 0.03f;
 constexpr float kPLLMultiplier       = 12.0f;
-
-constexpr float hertz2step(float Hz) {
-  return Hz * 2.0f * static_cast<float>(M_PI) / kTargetSampleRate_Hz;
-}
 
 }  // namespace
 
@@ -92,11 +87,11 @@ unsigned DeltaDecoder::decode(unsigned d) {
   return bit;
 }
 
-Subcarrier::Subcarrier(const Options& options)
-    : resample_ratio_(kTargetSampleRate_Hz / options.samplerate),
+Subcarrier::Subcarrier(float carrier_frequency, float samplerate)
+    : resample_ratio_(kTargetSampleRate_Hz / samplerate),
       fir_lpf_(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz),
       agc_(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain),
-      oscillator_(LIQUID_NCO, hertz2step(kCarrierFrequency_Hz)),
+      oscillator_(LIQUID_NCO, angularFreq(carrier_frequency, kTargetSampleRate_Hz)),
       symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay, kSymsyncBeta, 32),
       modem_(LIQUID_MODEM_PSK2),
       resampler_(resample_ratio_, 13) {
