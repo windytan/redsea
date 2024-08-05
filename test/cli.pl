@@ -5,7 +5,7 @@ package cli;
 
 use warnings;
 use strict;
-use IPC::Cmd qw(can_run);
+use IPC::Cmd qw/can_run/;
 use Carp;
 use utf8;
 use open qw/:std :utf8/;

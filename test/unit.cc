@@ -12,33 +12,33 @@
 #include "test_helpers.h"
 
 TEST_CASE("Bitfield extraction") {
-  const std::uint16_t block1{0x1234};
-  const std::uint16_t block2{0x5678};
+  constexpr std::uint16_t block1{0b0001'0010'0011'0100};
+  constexpr std::uint16_t block2{0b0101'0110'0111'1000};
 
   SECTION("Works with single block") {
-    CHECK(redsea::getBits<4>(block1, 0) == 4);
+    CHECK(redsea::getBits<4>(block1, 0) ==             0b0100);
 
-    CHECK(redsea::getBits<5>(block1, 4) == 0x3);
-    CHECK(redsea::getBits<6>(block1, 4) == 0x23);
-    CHECK(redsea::getBits<8>(block1, 4) == 0x23);
-    CHECK(redsea::getBits<9>(block1, 4) == 0x123);
+    CHECK(redsea::getBits<5>(block1, 4) ==      0b0'0011);
+    CHECK(redsea::getBits<6>(block1, 4) ==     0b10'0011);
+    CHECK(redsea::getBits<8>(block1, 4) ==   0b0010'0011);
+    CHECK(redsea::getBits<9>(block1, 4) == 0b1'0010'0011);
 
-    CHECK(redsea::getBits<5>(block1, 5) == 0x11);
-    CHECK(redsea::getBits<8>(block1, 5) == 0x91);
+    CHECK(redsea::getBits<5>(block1, 5) ==     0b10'001);
+    CHECK(redsea::getBits<8>(block1, 5) == 0b1'0010'001);
 
     CHECK(redsea::getBool(block1, 12)   == true);
   }
 
   SECTION("Works with concatenation of two blocks") {
-    CHECK(redsea::getBits<4>(block1, block2, 0)  == 8);
+    CHECK(redsea::getBits<4>(block1, block2, 0)                        == 0b1000);
 
-    CHECK(redsea::getBits<5>(block1, block2, 4)  == 0x7);
-    CHECK(redsea::getBits<6>(block1, block2, 4)  == 0x27);
-    CHECK(redsea::getBits<8>(block1, block2, 4)  == 0x67);
-    CHECK(redsea::getBits<9>(block1, block2, 4)  == 0x167);
+    CHECK(redsea::getBits<5>(block1, block2, 4)  ==                0b0'0111);
+    CHECK(redsea::getBits<6>(block1, block2, 4)  ==               0b10'0111);
+    CHECK(redsea::getBits<8>(block1, block2, 4)  ==             0b0110'0111);
+    CHECK(redsea::getBits<9>(block1, block2, 4)  ==           0b1'0110'0111);
 
-    CHECK(redsea::getBits<12>(block1, block2, 8) == 0x456);
-    CHECK(redsea::getBits<12>(block1, block2, 9) == 0xA2B);
+    CHECK(redsea::getBits<12>(block1, block2, 8) ==   0b0100'0101'0110);
+    CHECK(redsea::getBits<12>(block1, block2, 9) == 0b1'0100'0101'011);
   }
 }
 
