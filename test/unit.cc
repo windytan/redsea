@@ -1,3 +1,4 @@
+#include <fstream>
 #include <sstream>
 #include <vector>
 
@@ -9,6 +10,7 @@
 #include "../src/common.h"
 #include "../src/groups.h"
 #include "../src/options.h"
+#include "../src/tmc/csv.h"
 #include "test_helpers.h"
 
 TEST_CASE("Bitfield extraction") {
@@ -490,5 +492,31 @@ TEST_CASE("Invalid data") {
       0xE24D'E400'E24D'0000,
       0xE24D'F400'E20D'FC20
     }, options, 0xE24D));
+  }
+}
+
+TEST_CASE("CSV reader") {
+  const std::string testfilename{"testfile.csv"};
+
+  std::ofstream out(testfilename);
+  out << "num;a;b;c\n0;-16;+8;7\nzero;minus 16;plus 8;seitsemän";
+  out.close();
+
+  SECTION("Simple read without titles") {
+    auto csv = redsea::readCSV(testfilename, ';');
+
+    CHECK(csv.size() == 3);
+    CHECK(csv.at(1).at(3) == "7");
+  }
+
+  SECTION("Get values by column title") {
+    auto csv = redsea::readCSVWithTitles(testfilename, ';');
+
+    CHECK(csv.rows.size() == 2);
+    CHECK(redsea::get_int(csv, csv.rows.at(0), "a")    == -16);
+    CHECK(redsea::get_int(csv, csv.rows.at(0), "b")    == 8);
+    CHECK(redsea::get_uint16(csv, csv.rows.at(0), "c") == 7);
+
+    CHECK(redsea::get_string(csv, csv.rows.at(1), "c") == "seitsemän");
   }
 }

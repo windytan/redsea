@@ -26,10 +26,7 @@ std::vector<std::vector<std::string>> readCSV(const std::string& filename, char 
   if (!in.is_open())
     return lines;
 
-  for (std::string line; std::getline(in, line);) {
-    if (!in.good())
-      break;
-
+  for (std::string line; std::getline(in, line); in.good()) {
     line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
@@ -46,10 +43,7 @@ CSVTable readCSVWithTitles(const std::string& filename, char delimiter) {
 
   std::ifstream in(filename);
   if (in.is_open()) {
-    for (std::string line; std::getline(in, line);) {
-      if (!in.good())
-        break;
-
+    for (std::string line; std::getline(in, line); in.good()) {
       lines.push_back(line);
     }
 
@@ -63,12 +57,10 @@ std::string get_string(const CSVTable& table, const CSVRow& row, const std::stri
   return row.at(table.titles.at(title));
 }
 
-// @throws exceptions from std::stoi
 int get_int(const CSVTable& table, const CSVRow& row, const std::string& title) {
   return std::stoi(row.at(table.titles.at(title)));
 }
 
-// @throws exceptions from std::stoi
 uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title) {
   return static_cast<uint16_t>(get_int(table, row, title));
 }

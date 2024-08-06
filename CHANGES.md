@@ -2,6 +2,8 @@
 
 ## HEAD
 
+* Bug fixes:
+  * Fix the CSVReader (used in the TMC decoder) ignoring the last line of any file
 * Build system fixes:
   * macOS: ask Homebrew about liquid-dsp location instead of hardcoding it
   * Set default installation prefix to /usr/local (all platforms)

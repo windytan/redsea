@@ -69,9 +69,11 @@ CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {
 std::string get_string(const CSVTable& table, const CSVRow& row, const std::string& title);
 
 // Find an element by its title and return it as int.
+// @throws exceptions from std::stoi
 int get_int(const CSVTable& table, const CSVRow& row, const std::string& title);
 
 // Find an element by its title and return it as uint16_t.
+// @throws exceptions from std::stoi
 uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title);
 
 // Find an element by its title and return it as bool.
