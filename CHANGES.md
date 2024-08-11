@@ -2,8 +2,12 @@
 
 ## HEAD
 
+* New features:
+  * Decode 'broadcaster use' data in Slow labeling codes (variant 6)
+  * Decode 'decoder identification' bits in Group 15B
 * Bug fixes:
   * Fix the CSVReader (used in the TMC decoder) ignoring the last line of any file
+  * Remove extra trailing space in transparent data channels hexdump
 * Build system fixes:
   * macOS: ask Homebrew about liquid-dsp location instead of hardcoding it
   * Set default installation prefix to /usr/local (all platforms)

@@ -59,6 +59,9 @@ std::string getTimePointString(const std::chrono::time_point<std::chrono::system
 }
 
 std::string join(const std::vector<std::string>& strings, const std::string& d) {
+  if (strings.empty())
+    return "";
+
   std::string result;
   for (size_t i = 0; i < strings.size(); i++) {
     result += strings[i];

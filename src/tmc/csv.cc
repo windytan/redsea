@@ -26,7 +26,7 @@ std::vector<std::vector<std::string>> readCSV(const std::string& filename, char 
   if (!in.is_open())
     return lines;
 
-  for (std::string line; std::getline(in, line); in.good()) {
+  for (std::string line; std::getline(in, line);) {
     line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
@@ -43,7 +43,7 @@ CSVTable readCSVWithTitles(const std::string& filename, char delimiter) {
 
   std::ifstream in(filename);
   if (in.is_open()) {
-    for (std::string line; std::getline(in, line); in.good()) {
+    for (std::string line; std::getline(in, line);) {
       lines.push_back(line);
     }
 

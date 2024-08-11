@@ -506,7 +506,15 @@ void Station::decodeType1(const Group& group) {
         }
         break;
 
-      case 3: json_["language"] = getLanguageString(getUint8(group.get(BLOCK3), 0)); break;
+      case 3:
+        json_["language"] = getLanguageString(getUint8(group.get(BLOCK3), 0));
+        break;
+
+        // SLC variants 4, 5 are not assigned
+
+      case 6:
+        json_["slc_broadcaster_bits"] = "0x" + getHexString<3>(getBits<11>(group.get(BLOCK3), 0));
+        break;
 
       case 7: json_["ews"] = getBits<12>(group.get(BLOCK3), 0); break;
 
@@ -736,11 +744,12 @@ void Station::decodeType5(const Group& group) {
     if (full_tdc_.isComplete()) {
       json_["transparent_data"]["full_text"] = full_tdc_.str();
 
-      std::string full_raw;
+      std::vector<std::string> full_raw;
+      full_raw.reserve(full_tdc_.getData().size());
       for (const auto b : full_tdc_.getData()) {
-        full_raw += getHexString<2>(b) + " ";
+        full_raw.push_back(getHexString<2>(b));
       }
-      json_["transparent_data"]["full_raw"] = full_raw;
+      json_["transparent_data"]["full_raw"] = join(full_raw, " ");
     }
 
     json_["transparent_data"]["as_text"] = decoded_text.str();
@@ -924,10 +933,13 @@ void Station::decodeType15A(const Group& group) {
 
 /* Group 15B: Fast basic tuning and switching information */
 void Station::decodeType15B(const Group& group) {
-  const auto block_num = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
+  const auto block_num           = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
+  const uint16_t segment_address = getBits<2>(group.get(BLOCK2), 0);
+  const bool is_di               = getBool(group.get(BLOCK2), 2);
 
-  json_["ta"]       = getBool(group.get(block_num), 4);
-  json_["is_music"] = getBool(group.get(block_num), 3);
+  json_["di"][getDICodeString(segment_address)] = is_di;
+  json_["ta"]                                   = getBool(group.get(block_num), 4);
+  json_["is_music"]                             = getBool(group.get(block_num), 3);
 }
 
 /* Open Data Application */
