@@ -120,7 +120,7 @@ int processMPXInput(Options options) {
     printUsage();
     return EXIT_FAILURE;
   } catch (const std::exception& e) {
-    std::cerr << e.what() << "\n";
+    std::cerr << "error: Can't open audio file: " << e.what() << "\n";
     return EXIT_FAILURE;
   }
 
