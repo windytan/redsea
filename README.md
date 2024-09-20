@@ -227,7 +227,8 @@ Try running this in the terminal:
 
 ## Contributing
 
-We welcome bug reports and documentation contributions. See
+We welcome bug reports and documentation contributions. Or take a peek at our
+[open issues](https://github.com/windytan/redsea/issues) to see where we could use a hand. See
 [CONTRIBUTING](CONTRIBUTING.md) for more information.
 
 Also, if a station in your area is transmitting an interesting RDS feature

@@ -322,11 +322,11 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     // incomplete JSON objects could get printed.
     std::stringstream output_proxy_stream;
     output_proxy_stream << json_;
-    stream << output_proxy_stream.str() << std::endl << std::flush;
+    stream << output_proxy_stream.str() << std::endl;
   } catch (const std::exception& e) {
     nlohmann::ordered_json json_from_exception;
     json_from_exception["debug"] = std::string(e.what());
-    stream << json_from_exception << std::endl << std::flush;
+    stream << json_from_exception << std::endl;
   }
 }
 
@@ -1022,7 +1022,7 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, nlohmann::ordered_jso
     if (text.length() > 0 && tag.content_type != 0) {
       nlohmann::ordered_json tag_json;
       tag_json["content-type"] = getRTPlusContentTypeString(tag.content_type);
-      tag_json["data"]         = text;
+      tag_json["data"]         = rtrim(text);
       json_el["tags"].push_back(tag_json);
     }
   }

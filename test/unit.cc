@@ -327,26 +327,59 @@ TEST_CASE("Enhanced RadioText") {
 TEST_CASE("RadioText Plus") {
   redsea::Options options;
 
-  SECTION("Containing non-ascii characters") {
+  // Some encoders forget that RT+ length field means _additional_ length, so we need to rtrim
+  SECTION("Off-by-one encoder bug workaround") {
+    // clang-format off
+    const auto json_lines{hex2json({
+      // RT+ ODA identifier
+      0x53C5'3558'0000'4BD7,
+      // RT+
+      0x53C5'C548'8020'0A6A,
+      // RT message
+      0x53C5'2550'4649'4F52,
+      0x53C5'2551'454C'4C41,
+      0x53C5'2552'204D'414E,
+      0x53C5'2553'4E4F'4941,
+      0x53C5'2554'202D'2047,
+      0x53C5'2555'4C49'2041,
+      0x53C5'2556'4D41'4E54,
+      0x53C5'2557'4920'2020,
+      0x53C5'2558'2020'2020, 0x53C5'2559'2020'2020, 0x53C5'255A'2020'2020,
+      0x53C5'255B'2020'2020, 0x53C5'255C'2020'2020, 0x53C5'255D'2020'2020,
+      0x53C5'255E'2020'2020, 0x53C5'255F'2020'2020,
+      // RT+ (second one)
+      0x53C5'C548'8020'0A6A,
+    }, options, 0x53C5)};
+    // clang-format on
+
+    REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
+    CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["content-type"] == "item.artist");
+    CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["data"] == "FIORELLA MANNOIA");
+    CHECK(json_lines.back()["radiotext_plus"]["tags"][1]["content-type"] == "item.title");
+    CHECK(json_lines.back()["radiotext_plus"]["tags"][1]["data"] == "GLI AMANTI");
+  }
+
+  // Should count the number of letters and not UTF8-converted bytes
+  SECTION("Containing non-ASCII characters") {
     // Antenne 2016-09-17
     // clang-format off
-      const auto json_lines{hex2json({
-        // RT+ ODA identifier
-        0xD318'3558'0000'4BD7,
-        // RT+ (we need two of these to confirm)
-        0xD318'C558'8D20'0DCF,
-        // RT message
-        0xD318'2540'6A65'747A, 0xD318'2541'7420'6175,
-        0xD318'2542'6620'414E, 0xD318'2543'5445'4E4E,
-        0xD318'2544'4520'4241, 0xD318'2545'5945'524E,
-        0xD318'2546'3A20'4368, 0xD318'2547'7269'7374,
-        0xD318'2548'696E'6120, 0xD318'2549'5374'9972,
-        0xD318'254A'6D65'7220, 0xD318'254B'2D20'4569,
-        0xD318'254C'6E20'5465, 0xD318'254D'696C'2076,
-        0xD318'254E'6F6E'206D, 0xD318'254F'6972'2020,
-        // RT+ (second one)
-        0xD318'C558'8D20'0DCF
-      }, options, 0xD318)};
+    const auto json_lines{hex2json({
+      // RT+ ODA identifier
+      0xD318'3558'0000'4BD7,
+      // RT+ (we need two of these to confirm)
+      0xD318'C558'8D20'0DCF,
+      // RT message
+      0xD318'2540'6A65'747A, 0xD318'2541'7420'6175,
+      0xD318'2542'6620'414E, 0xD318'2543'5445'4E4E,
+      0xD318'2544'4520'4241, 0xD318'2545'5945'524E,
+      0xD318'2546'3A20'4368, 0xD318'2547'7269'7374,
+      0xD318'2548'696E'6120, 0xD318'2549'5374'9972,
+      0xD318'254A'6D65'7220, 0xD318'254B'2D20'4569,
+      0xD318'254C'6E20'5465, 0xD318'254D'696C'2076,
+      0xD318'254E'6F6E'206D, 0xD318'254F'6972'2020,
+      // RT+ (second one)
+      0xD318'C558'8D20'0DCF
+    }, options, 0xD318)};
     // clang-format on
 
     REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
@@ -418,18 +451,9 @@ TEST_CASE("Alternative frequencies") {
     // YLE Helsinki (fi) 2016-09-15
     // clang-format off
     const auto json_lines{hex2json({
-      0x6403'0447'F741'4920,
-      0x6403'0440'415F'594C,
-      0x6403'0441'4441'4520,
-      0x6403'0442'5541'484B,
-      0x6403'0447'1C41'4920,
-      0x6403'0440'6841'594C,
-      0x6403'0441'5E41'4520,
-      0x6403'0442'414B'484B,
-      0x6403'0447'4156'4920,
-      0x6403'0440'CB41'594C,
-      0x6403'0441'B741'4520,
-      0x6403'0442'4174'484B
+      0x6403'0447'F741'4920, 0x6403'0440'415F'594C, 0x6403'0441'4441'4520, 0x6403'0442'5541'484B,
+      0x6403'0447'1C41'4920, 0x6403'0440'6841'594C, 0x6403'0441'5E41'4520, 0x6403'0442'414B'484B,
+      0x6403'0447'4156'4920, 0x6403'0440'CB41'594C, 0x6403'0441'B741'4520, 0x6403'0442'4174'484B
     }, options, 0x6403)};
     // clang-format on
 
@@ -520,7 +544,7 @@ TEST_CASE("Clock-time and date") {
   }
 }
 
-// TDS is a rarely seen feature. The TRDS4001 encoder is known to fill the fields
+// TDC is a rarely seen feature. The TRDS4001 encoder is known to fill the fields
 // with its version string and some unknown binary data. We can at least test that this
 // version string is found somewhere in the data.
 TEST_CASE("Transparent data channels") {
