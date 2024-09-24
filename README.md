@@ -139,7 +139,7 @@ redsea -f WAVEFILE
                          bits Unsynchronized ASCII bit stream (011010110...).
                               All characters but '0' and '1' are ignored.
                          hex  RDS Spy hex format. (Timestamps will be ignored)
-                         pcm  MPX as raw mono S16LE PCM. Remember to also
+                         mpx  MPX as raw mono S16LE PCM. Remember to also
                               specify --samplerate. If you're reading from a
                               sound file with headers (WAV, FLAC, ...) don't
                               specify this.
