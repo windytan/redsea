@@ -58,7 +58,7 @@ void printUsage() {
          "characters\n"
          "                              but '0' and '1' are ignored.\n"
          "                         hex  RDS Spy hex format. (Timestamps will be ignored)\n"
-         "                         pcm  MPX as raw mono S16LE PCM. Remember to also specify\n"
+         "                         mpx  MPX as raw mono S16LE PCM. Remember to also specify\n"
          "                              --samplerate. If you're reading from a sound file with "
          "headers\n"
          "                              (WAV, FLAC, ...) don't specify this.\n"
