@@ -79,9 +79,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies (brew)
-      run: brew install meson libsndfile liquid-dsp nlohmann-json catch2 perl
+      run: brew install meson libsndfile liquid-dsp nlohmann-json catch2 perl gcovr
     - name: meson setup
-      run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false build
+      run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false -Db_coverage=true build
     - name: compile & install
       run: cd build && meson install
     - name: download test data
@@ -90,6 +90,13 @@ jobs:
       run: cd build && meson test
     - name: Test command-line interface
       run: perl test/cli.pl redsea --installed
+    - name: Coverage
+      run: cd build && ninja coverage-xml
+    - name: Upload to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: build/meson-logs/coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   build-windows-msys2-mingw:
     runs-on: windows-latest
