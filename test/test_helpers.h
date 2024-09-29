@@ -14,8 +14,12 @@
 using HexData    = std::vector<uint64_t>;
 using BinaryData = std::vector<uint32_t>;
 
+enum class DeleteOneBlock { Block1 = 0, Block2, Block3, Block4, None };
+
 // Convert synchronized hex data into groups. Error correction is omitted and ignored.
-inline std::vector<redsea::Group> hex2groups(const HexData& hexdata) {
+// \param block_to_delete Simulate losing some block to noise (same block in every group)
+inline std::vector<redsea::Group> hex2groups(const HexData& hexdata,
+                                             DeleteOneBlock block_to_delete) {
   std::vector<redsea::Group> groups;
   groups.reserve(hexdata.size());
 
@@ -25,7 +29,7 @@ inline std::vector<redsea::Group> hex2groups(const HexData& hexdata) {
     for (auto nblock : {redsea::BLOCK1, redsea::BLOCK2, redsea::BLOCK3, redsea::BLOCK4}) {
       redsea::Block block;
       block.data        = hexgroup >> (16 * (3 - static_cast<int>(nblock))) & 0xFFFF;
-      block.is_received = true;
+      block.is_received = static_cast<int>(nblock) != static_cast<int>(block_to_delete);
       group.setBlock(nblock, block);
     }
     groups.push_back(group);
@@ -100,9 +104,10 @@ inline std::vector<nlohmann::ordered_json> groups2json(const std::vector<redsea:
 }
 
 // Convert synchronized hex data (without offset words) into JSON.
-inline std::vector<nlohmann::ordered_json> hex2json(const HexData& hexdata,
-                                                    const redsea::Options& options, uint16_t pi) {
-  return groups2json(hex2groups(hexdata), options, pi);
+inline std::vector<nlohmann::ordered_json> hex2json(
+    const HexData& hexdata, const redsea::Options& options, uint16_t pi,
+    DeleteOneBlock block_to_delete = DeleteOneBlock::None) {
+  return groups2json(hex2groups(hexdata, block_to_delete), options, pi);
 }
 
 template <typename T>

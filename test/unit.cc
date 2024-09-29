@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -107,6 +108,19 @@ TEST_CASE("Basic info") {
     CHECK(json_lines[0]["prog_type"] == "Varied");
     CHECK(json_lines[0]["tp"] == false);
   }
+
+  SECTION("Using Group 15B (Block 2 lost)") {
+    // Дорожное 2017-07-03
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x7827'F928'7827'F928
+    }, options, 0x7827, DeleteOneBlock::Block2)};
+    // clang-format on
+
+    CHECK(json_lines[0]["group"] == "15B");
+    CHECK(json_lines[0]["prog_type"] == "Varied");
+    CHECK(json_lines[0]["tp"] == false);
+  }
 }
 
 TEST_CASE("PTY name") {
@@ -123,22 +137,34 @@ TEST_CASE("PTY name") {
   CHECK(json_lines.at(1)["pty_name"] == "CRI.CN ");
 }
 
-TEST_CASE("Programme Item Number etc.") {
+TEST_CASE("PIN & SLC (Group 1)") {
   redsea::Options options;
-  // YLE Yksi (fi) 2016-09-15
-  // clang-format off
-  const auto json_lines{hex2json({
-    0x6201'10E0'00E1'7C54,
-    0x6201'10E0'3027'7C54
-  }, options, 0x6201)};
-  // clang-format on
 
-  CHECK(json_lines.size() == 2);
-  CHECK(json_lines.at(0)["prog_item_number"] == 31828);
-  CHECK(json_lines.at(0)["prog_item_started"]["day"] == 15);
-  CHECK(json_lines.at(0)["prog_item_started"]["time"] == "17:20");
-  CHECK(json_lines.at(0)["country"] == "fi");
-  CHECK(json_lines.at(1)["language"] == "Finnish");
+  SECTION("PIN, SLC variants 0 & 3") {
+    // YLE Yksi (fi) 2016-09-15
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x6201'10E0'00E1'7C54,
+      0x6201'10E0'3027'7C54
+    }, options, 0x6201)};
+    // clang-format on
+
+    CHECK(json_lines.size() == 2);
+    CHECK(json_lines.at(0)["prog_item_number"] == 31828);
+    CHECK(json_lines.at(0)["prog_item_started"]["day"] == 15);
+    CHECK(json_lines.at(0)["prog_item_started"]["time"] == "17:20");
+    CHECK(json_lines.at(0)["country"] == "fi");
+    CHECK(json_lines.at(1)["language"] == "Finnish");
+  }
+
+  SECTION("SLC variant 6") {
+    // RTL 102.5 (it) 2019-05-04
+    // walczakp/rds-spy-logs/Italy/5218 - 2019-05-04 22-24-42.spy
+    const auto json_lines{hex2json({0x5218'1520'6DAB'0000}, options, 0X5218)};
+
+    CHECK(json_lines.size() == 1);
+    CHECK(json_lines.at(0)["slc_broadcaster_bits"] == "0x5AB");
+  }
 }
 
 TEST_CASE("Callsign") {
@@ -182,11 +208,15 @@ TEST_CASE("Callsign") {
   }
 }
 
+// The concept of string length in RadioText is only important for a logging receiver like redsea.
+// Stations have chosen various methods to communicate this length that we have outlined here:
 // https://github.com/windytan/redsea/wiki/Some-RadioText-research
 TEST_CASE("Radiotext") {
   redsea::Options options;
 
   SECTION("String length method A: Terminated using 0x0D") {
+    options.rbds = true;
+
     // JACK 96.9 (ca) 2019-05-05
     // clang-format off
     const auto json_lines{hex2json({
@@ -198,6 +228,11 @@ TEST_CASE("Radiotext") {
 
     REQUIRE(json_lines.size() == 3);
     CHECK(json_lines.back()["radiotext"] == "JACK 96.9");
+
+    // Other lines shouldn't have RadioText
+    for (auto prev_line = std::begin(json_lines); prev_line <= std::prev(json_lines.end(), 2);
+         prev_line++)
+      REQUIRE_FALSE(prev_line->contains("radiotext"));
   }
 
   SECTION("String length method B: Padded to 64 characters") {
@@ -220,7 +255,74 @@ TEST_CASE("Radiotext") {
 
     REQUIRE(json_lines.size() == 16);
     CHECK(json_lines.back()["radiotext"] == "FANCY - Bolero");
+
+    // Other lines shouldn't have RadioText
+    for (auto prev_line = std::begin(json_lines); prev_line < std::prev(json_lines.end(), 1);
+         prev_line++)
+      REQUIRE_FALSE(prev_line->contains("radiotext"));
   }
+
+  SECTION("Short string with Method B") {
+    options.rbds = true;
+
+    // AMP (ca) 2019-05-03
+    // walczakp/rds-spy-logs/Canada/CD59 - 2019-05-03 23-56-06.spy
+    const auto json_lines{hex2json(
+        {0xCD59'2120'414D'5020, 0xCD59'2121'2020'2020, 0xCD59'2122'2020'2020, 0xCD59'2123'2020'2020,
+         0xCD59'2124'2020'2020, 0xCD59'2125'2020'2020, 0xCD59'2126'2020'2020, 0xCD59'2127'2020'2020,
+         0xCD59'2128'2020'2020, 0xCD59'2129'2020'2020, 0xCD59'212A'2020'2020, 0xCD59'212B'2020'2020,
+         0xCD59'212C'2020'2020, 0xCD59'212D'2020'2020, 0xCD59'212E'2020'2020,
+         0xCD59'212F'2020'2020},
+        options, 0xCD59)};
+
+    REQUIRE(json_lines.size() == 16);
+    CHECK(json_lines.back()["radiotext"] == "AMP");
+
+    // Other lines shouldn't have RadioText
+    for (auto prev_line = std::begin(json_lines); prev_line < std::prev(json_lines.end(), 1);
+         prev_line++)
+      REQUIRE_FALSE(prev_line->contains("radiotext"));
+  }
+
+  SECTION("String length method B using Group 2B") {
+    // Radio Krka (si)
+    const auto json_lines{hex2json(
+        {0x9423'2800'0000'5052, 0x9423'2801'0000'494A, 0x9423'2802'0000'4554, 0x9423'2803'0000'4E4F,
+         0x9423'2804'0000'2050, 0x9423'2805'0000'4F53, 0x9423'2806'0000'4C55, 0x9423'2807'0000'5341,
+         0x9423'2808'0000'4E4A, 0x9423'2809'0000'4520, 0x9423'280A'0000'5241, 0x9423'280B'0000'4449,
+         0x9423'280C'0000'4120, 0x9423'280D'0000'4B52, 0x9423'280E'0000'4B41,
+         0x9423'280F'0000'2020},
+        options, 0x9423)};
+
+    REQUIRE(json_lines.size() == 16);
+    CHECK(json_lines.back()["radiotext"] == "PRIJETNO POSLUSANJE RADIA KRKA");
+
+    // Other lines shouldn't have RadioText
+    for (auto prev_line = std::begin(json_lines); prev_line < std::prev(json_lines.end(), 1);
+         prev_line++)
+      REQUIRE_FALSE(prev_line->contains("radiotext"));
+  }
+
+  // Currently fails
+  // https://github.com/windytan/redsea/issues/118
+  /*SECTION("String length hybrid method A+B: Terminated *and* padded") {
+    // ? (at) 2024
+    const auto json_lines{hex2json(
+        {0xA3E0'2550'5375'7065, 0xA3E0'2551'7273'7461, 0xA3E0'2552'7273'2026, 0xA3E0'2553'2053'7570,
+         0xA3E0'2554'6572'6869, 0xA3E0'2555'7473'0D20, 0xA3E0'2556'2020'2020, 0xA3E0'2557'2020'2020,
+         0xA3E0'2558'2020'2020, 0xA3E0'2559'2020'2020, 0xA3E0'255A'2020'2020, 0xA3E0'255B'2020'2020,
+         0xA3E0'255C'2020'2020, 0xA3E0'255D'2020'2020, 0xA3E0'255E'2020'2020,
+         0xA3E0'255F'2020'2020},
+        options, 0xA3E0)};
+
+    REQUIRE(json_lines.size() == 16);
+    CHECK(json_lines.back()["radiotext"] == "Superstars & Superhits");
+
+    // Other lines shouldn't have RadioText
+    for (auto prev_line = std::begin(json_lines); prev_line < std::prev(json_lines.end(), 1);
+         prev_line++)
+      REQUIRE_FALSE(prev_line->contains("radiotext"));
+  }*/
 
   SECTION("String length method C: Random-length string with no terminator") {
     // Antenne Kärnten (at) 2021-07-26
@@ -244,6 +346,11 @@ TEST_CASE("Radiotext") {
 
     REQUIRE(json_lines.size() == 13);
     CHECK(json_lines.back()["radiotext"] == "Robbie Williams - Feel");
+
+    // Other lines shouldn't have RadioText
+    for (auto prev_line = std::begin(json_lines); prev_line < std::prev(json_lines.end(), 1);
+         prev_line++)
+      REQUIRE_FALSE(prev_line->contains("radiotext"));
   }
 
   SECTION("Non-ASCII character from 'basic character set'") {
@@ -287,19 +394,9 @@ TEST_CASE("Radiotext") {
     CHECK(json_lines.back()["partial_radiotext"] ==
           "Robbie Williams - Fe"
           "                                            ");
-  }
 
-  SECTION("Using Group 2B") {
-    // Radio Krka (si)
-    const auto json_lines{hex2json(
-        {0x9423'2800'0000'5052, 0x9423'2801'0000'494A, 0x9423'2802'0000'4554, 0x9423'2803'0000'4E4F,
-         0x9423'2804'0000'2050, 0x9423'2805'0000'4F53, 0x9423'2806'0000'4C55, 0x9423'2807'0000'5341,
-         0x9423'2808'0000'4E4A, 0x9423'2809'0000'4520, 0x9423'280A'0000'5241, 0x9423'280B'0000'4449,
-         0x9423'280C'0000'4120, 0x9423'280D'0000'4B52, 0x9423'280E'0000'4B41,
-         0x9423'280F'0000'2020},
-        options, 0x9423)};
-
-    CHECK(json_lines.back()["radiotext"] == "PRIJETNO POSLUSANJE RADIA KRKA");
+    // All lines should have RadioText
+    for (auto line : json_lines) REQUIRE(line.contains("partial_radiotext"));
   }
 }
 
@@ -489,7 +586,9 @@ TEST_CASE("Clock-time and date") {
     CHECK(json_lines.back()["clock_time"] == "2018-11-01T14:18:00+01:00");
   }
 
-  SECTION("With a negative UTC offset") {
+  SECTION("Negative UTC offset") {
+    options.rbds = true;
+
     // 98.5 KFOX (KUFX) (us) 2020-08-19
     // walczakp/rds-spy-logs/USA/4569 - 2020-08-19 20-45-06.spy
     const auto json_lines{hex2json({0x4569'40DD'CD92'3BAE}, options, 0x4569)};
@@ -497,6 +596,15 @@ TEST_CASE("Clock-time and date") {
     REQUIRE(json_lines.size() == 1);
     REQUIRE(json_lines.back().contains("clock_time"));
     CHECK(json_lines.back()["clock_time"] == "2020-08-19T20:46:00-07:00");
+  }
+
+  SECTION("Zero UTC offset") {
+    // Vikerraadio (ee) 2016-07-18 (though ee is not actually UTC+0)
+    const auto json_lines{hex2json({0x22E1'4581'C1E7'4280}, options, 0x22E1)};
+
+    REQUIRE(json_lines.size() == 1);
+    REQUIRE(json_lines.back().contains("clock_time"));
+    CHECK(json_lines.back()["clock_time"] == "2016-07-18T20:10:00Z");
   }
 
   SECTION("Across local midnight") {
@@ -603,21 +711,31 @@ TEST_CASE("EON") {
     // YLE X (fi) 2016-09-15
     // clang-format off
     const auto json_lines{hex2json({
-      0x6202'E140'594C'6205,
-      0x6202'E141'4520'6205,
-      0x6202'E142'5645'6205,
-      0x6202'E143'4741'6205,
-      0x6202'E145'2C88'6205},
+      0x6202'E150'594C'6203,
+      0x6202'E151'4553'6203,
+      0x6202'E152'554F'6203,
+      0x6202'E153'4D49'6203,
+      0x6202'E155'2C41'6203,
+      0x6202'E15C'0000'6203,
+      0x6202'E15D'4800'6203,
+      0x6202'E15E'7C83'6203},
     options, 0x6202)};
     // clang-format on
 
-    REQUIRE(json_lines.size() == 5);
+    REQUIRE(json_lines.size() == 8);
     CHECK(json_lines.at(3)["pi"] == "0x6202");
 
-    // Refers to YLE Vega 101.1 MHz
-    CHECK(json_lines.at(3)["other_network"]["pi"] == "0x6205");
-    CHECK(json_lines.at(3)["other_network"]["ps"] == "YLE VEGA");
-    CHECK(json_lines.at(4)["other_network"]["kilohertz"] == 101100);
+    // Refers to YLE Suomi 94.0 MHz
+    CHECK(json_lines.at(3)["other_network"]["pi"] == "0x6203");
+    CHECK(json_lines.at(3)["other_network"]["ps"] == "YLESUOMI");
+    CHECK(json_lines.at(4)["other_network"]["kilohertz"] == 94000);
+    CHECK(json_lines.at(5)["other_network"]["has_linkage"] == false);
+    CHECK(json_lines.at(5)["other_network"]["tp"] == true);
+    CHECK(json_lines.at(6)["other_network"]["prog_type"] == "Varied");
+    CHECK(json_lines.at(6)["other_network"]["ta"] == false);
+    CHECK(json_lines.at(7)["other_network"]["prog_item_number"] == 31875);
+    CHECK(json_lines.at(7)["other_network"]["prog_item_started"]["day"] == 15);
+    CHECK(json_lines.at(7)["other_network"]["prog_item_started"]["time"] == "18:03");
   }
 
   SECTION("Using 14B groups") {
@@ -644,6 +762,134 @@ TEST_CASE("DAB cross-referencing") {
   // Source: https://www.bbc.co.uk/programmes/articles/98FthRzhxJ4z0fXYJnsvlM/about-radio-4
   CHECK(json_lines.back()["dab"]["channel"] == "12B");
   CHECK(json_lines.back()["dab"]["kilohertz"] == 225648);
+}
+
+TEST_CASE("TMC") {
+  redsea::Options options;
+
+  SECTION("System info") {
+    // DR P4 København (da) 2019-05-04
+    // walczakp/rds-spy-logs/Denmark/9602 - 2019-05-04 17-55-01.spy
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x9602'3410'0267'CD46,
+      0x9602'3410'5B49'CD46},
+    options, 0x9602)};
+    // clang-format on
+
+    REQUIRE(json_lines.size() == 2);
+    CHECK(json_lines.at(0)["open_data_app"]["oda_group"] == "8A");
+    CHECK(json_lines.at(0)["open_data_app"]["app_name"] == "RDS-TMC: ALERT-C");
+    CHECK(json_lines.at(0)["tmc"]["system_info"]["is_encrypted"] == false);
+    CHECK(json_lines.at(0)["tmc"]["system_info"]["location_table"] == 9);
+    CHECK(json_lines.at(1)["tmc"]["system_info"]["service_id"] == 45);
+    CHECK(json_lines.at(1)["tmc"]["system_info"]["gap"] == 5);
+    CHECK(json_lines.at(1)["tmc"]["system_info"]["ltcc"] == 9);
+  }
+
+  SECTION("Message 1") {
+    // DR P4 København (da) 2019-05-04
+    // walczakp/rds-spy-logs/Denmark/9602 - 2019-05-04 17-55-01.spy
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x9602'3410'0267'CD46,
+
+      0x9602'8405'C852'2550,
+      0x9602'8405'48F4'0000},
+    options, 0x9602)};
+    // clang-format on
+
+    REQUIRE(json_lines.size() == 3);
+    REQUIRE(json_lines.at(2)["tmc"].contains("message"));
+    CHECK(listEquals(json_lines.at(2)["tmc"]["message"]["event_codes"], {82}));
+    CHECK(json_lines.at(2)["tmc"]["message"]["update_class"] == 32);
+    CHECK(json_lines.at(2)["tmc"]["message"]["description"] ==
+          "Roadworks. Heavy traffic has to be expected.");
+    CHECK(json_lines.at(2)["tmc"]["message"]["location"] == 9552);
+    CHECK(json_lines.at(2)["tmc"]["message"]["direction"] == "single");
+    CHECK(json_lines.at(2)["tmc"]["message"]["extent"] == "-1");
+    CHECK(json_lines.at(2)["tmc"]["message"]["until"] == "mid-July");
+    CHECK(json_lines.at(2)["tmc"]["message"]["urgency"] == "none");
+  }
+
+  SECTION("Message 2: Speed limit") {
+    // DR P4 København (da) 2019-05-04
+    // walczakp/rds-spy-logs/Denmark/9602 - 2019-05-04 17-55-01.spy
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x9602'3410'0267'CD46,
+
+      0x9602'8406'D2BD'06DB,
+      0x9602'8406'4384'7E00},
+    options, 0x9602)};
+    // clang-format on
+
+    REQUIRE(json_lines.at(2)["tmc"].contains("message"));
+    CHECK(listEquals(json_lines.at(2)["tmc"]["message"]["event_codes"], {701}));
+    CHECK(json_lines.at(2)["tmc"]["message"]["update_class"] == 11);
+    CHECK(json_lines.at(2)["tmc"]["message"]["description"] == "Roadworks.");
+    CHECK(json_lines.at(2)["tmc"]["message"]["speed_limit"] == "80 km/h");
+    CHECK(json_lines.at(2)["tmc"]["message"]["location"] == 1755);
+    CHECK(json_lines.at(2)["tmc"]["message"]["direction"] == "single");
+    CHECK(json_lines.at(2)["tmc"]["message"]["extent"] == "-2");
+    CHECK(json_lines.at(2)["tmc"]["message"]["until"] == "mid-November");
+    CHECK(json_lines.at(2)["tmc"]["message"]["urgency"] == "none");
+  }
+
+  SECTION("Message 3: Multi-event") {
+    // Radio-K (at) 2021-07-26
+    // walczakp/rds-spy-logs/Austria/A502_-_2021-07-26_19-26-33.spy
+    // clang-format off
+    const auto json_lines{hex2json({
+      0xA502'3410'0064'CD46,
+
+      0xA502'8405'C201'7BEB,
+      0xA502'8405'415D'2C8C},
+    options, 0xA502)};
+    // clang-format on
+
+    REQUIRE(json_lines.size() == 3);
+    REQUIRE(json_lines.at(2)["tmc"].contains("message"));
+    CHECK(listEquals(json_lines.at(2)["tmc"]["message"]["event_codes"], {513, 803}));
+    CHECK(json_lines.at(2)["tmc"]["message"]["update_class"] == 5);
+    CHECK(json_lines.at(2)["tmc"]["message"]["description"] ==
+          "Single alternate line traffic. Construction work.");
+    CHECK(json_lines.at(2)["tmc"]["message"]["location"] == 31723);
+    CHECK(json_lines.at(2)["tmc"]["message"]["direction"] == "single");
+    CHECK(json_lines.at(2)["tmc"]["message"]["extent"] == "-0");
+    CHECK(json_lines.at(2)["tmc"]["message"]["urgency"] == "none");
+  }
+
+  SECTION("Message 4: Multi-event with quantifier") {
+    // Ö1 (at) 2017-12-27
+    // rds-spy-logs/Austria/A203 - 2017-12-27 18-22-00 AT LA OE1 92.1.rds
+    // clang-format off
+    const auto json_lines{hex2json({
+      0xA201'3010'0064'CD46,
+
+      0xA201'8003'C641'8097,
+      0xA201'8003'441F'4865},
+    options, 0xA201)};
+    // clang-format on
+
+    REQUIRE(json_lines.size() == 3);
+    REQUIRE(json_lines.at(2)["tmc"].contains("message"));
+    CHECK(json_lines.at(2)["tmc"]["message"]["description"] ==
+          "Delays of up to 15 minutes. Stationary traffic.");
+  }
+}
+
+TEST_CASE("Unspecified ODA") {
+  redsea::Options options;
+
+  // WDR 5 (de) 2019-05-05
+  // walczakp/rds-spy-logs/Germany/D395 - 2019-05-05 09-46-23.spy
+  const auto json_lines{hex2json({0xD395'B065'279A'0020}, options, 0xD395)};
+
+  REQUIRE(json_lines.size() == 1);
+  CHECK(json_lines.at(0)["group"] == "11A");
+  REQUIRE(json_lines.at(0).contains("unknown_oda"));
+  CHECK(json_lines.at(0)["unknown_oda"]["raw_data"] == "05 279A 0020");
 }
 
 TEST_CASE("PI search") {
@@ -708,11 +954,14 @@ TEST_CASE("Error detection and correction") {
   }
 
   SECTION("Detects long error burst") {
-    std::string broken_group{correct_group};
-    flipAsciiBit(broken_group, 1);
-    flipAsciiBit(broken_group, 2);
-    flipAsciiBit(broken_group, 9);
-    flipAsciiBit(broken_group, 10);
+    const std::string broken_group = [&]() {
+      std::string broken = correct_group;
+      flipAsciiBit(broken, 1);
+      flipAsciiBit(broken, 2);
+      flipAsciiBit(broken, 9);
+      flipAsciiBit(broken, 10);
+      return broken;
+    }();
 
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
@@ -721,9 +970,12 @@ TEST_CASE("Error detection and correction") {
   }
 
   SECTION("Corrects double bit flip") {
-    std::string broken_group{correct_group};
-    flipAsciiBit(broken_group, 1);
-    flipAsciiBit(broken_group, 2);
+    const std::string broken_group = [&]() {
+      std::string broken = correct_group;
+      flipAsciiBit(broken, 1);
+      flipAsciiBit(broken, 2);
+      return broken;
+    }();
 
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
@@ -734,10 +986,13 @@ TEST_CASE("Error detection and correction") {
   }
 
   SECTION("Rejects triple bit flip") {
-    std::string broken_group{correct_group};
-    flipAsciiBit(broken_group, 1);
-    flipAsciiBit(broken_group, 2);
-    flipAsciiBit(broken_group, 3);
+    const std::string broken_group = [&]() {
+      std::string broken = correct_group;
+      flipAsciiBit(broken, 1);
+      flipAsciiBit(broken, 2);
+      flipAsciiBit(broken, 3);
+      return broken;
+    }();
 
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
@@ -750,9 +1005,12 @@ TEST_CASE("Error detection and correction") {
   SECTION("Rejects double bit flip if FEC is disabled") {
     options.use_fec = false;
 
-    std::string broken_group{correct_group};
-    flipAsciiBit(broken_group, 1);
-    flipAsciiBit(broken_group, 2);
+    const std::string broken_group = [&]() {
+      std::string broken = correct_group;
+      flipAsciiBit(broken, 1);
+      flipAsciiBit(broken, 2);
+      return broken;
+    }();
 
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
@@ -800,5 +1058,29 @@ TEST_CASE("CSV reader") {
     CHECK(redsea::get_uint16(csv, csv.rows.at(0), "c") == 7);
 
     CHECK(redsea::get_string(csv, csv.rows.at(1), "c") == "seitsemän");
+  }
+}
+
+TEST_CASE("Clock-time formatting") {
+  SECTION("From data (Hours + minutes)") {
+    const auto str = redsea::getHoursMinutesString(1, 1);
+    CHECK(str == "01:01");
+  }
+
+  SECTION("From system clock (yyyy-mm-dd)") {
+    const std::chrono::time_point<std::chrono::system_clock> time_point(
+        std::chrono::milliseconds(0));
+
+    const auto time_string = redsea::getTimePointString(time_point, "%Y-%m-%d");
+    // We can't say much about the string but at least it should be 10 characters, right?
+    CHECK(time_string.length() == 10);
+  }
+
+  SECTION("From system clock (hh:mm:ss.ss)") {
+    const std::chrono::time_point<std::chrono::system_clock> time_point(
+        std::chrono::milliseconds(0));
+    const auto time_string = redsea::getTimePointString(time_point, "%H:%M:%S.%f");
+    CHECK(time_string.length() == 11);
+    CHECK(time_string.substr(7, 4) == "0.00");
   }
 }

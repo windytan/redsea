@@ -50,6 +50,7 @@ there are things we can do to make it safer and more usable for us:
   or they can be end-to-end tests against the CLI executable itself (some Perl examples
   in `test/cli.pl`). Perl is only used for testing; all code should pass Perl::Critic
   level 3.
+* Ideally, all test data comes from some actual radio station and the source is cited.
 * C++ style is described in `.clang-format`; format-on-save is recommended.
 * We aim for C++14 compatibility, so unfortunately more modern features can't be used.
 * We have some static analysis rules described in `.clang-tidy`.
