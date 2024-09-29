@@ -295,6 +295,7 @@ std::string getCallsignFromPI(uint16_t pi) {
       {0x9975, "WHA"}, {0x99A4, "WSM"}, {0x9960, "KOA"}, {0x9976, "WHB"},
       {0x9988, "WWJ"}, {0x99AB, "KOB"}, {0x9977, "WHK"}, {0x9989, "WWL"} };
 
+  // TODO These should probably not be called "callsigns"
   const std::map<uint16_t, std::string> linked_station_codes{
       {0xB001, "NPR-1"},
       {0xB002, "CBC English - Radio One"}, {0xB003, "CBC English - Radio Two"},
@@ -328,7 +329,7 @@ std::string getCallsignFromPI(uint16_t pi) {
     if (three_letter_codes.find(pi) != three_letter_codes.end())
       callsign = three_letter_codes.at(pi);
 
-  } else if (pi >= 0xB001 && pi <= 0xEFFF) {
+  } else if (pi >> 12U == 0xB || pi >> 12U == 0xD || pi >> 12U == 0xE) {
     // Nationally-linked stations
     pi &= 0xF0FFU;
 
