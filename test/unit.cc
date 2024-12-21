@@ -303,27 +303,6 @@ TEST_CASE("Radiotext") {
       REQUIRE_FALSE(prev_line->contains("radiotext"));
   }
 
-  // Currently fails
-  // https://github.com/windytan/redsea/issues/118
-  /*SECTION("String length hybrid method A+B: Terminated *and* padded") {
-    // ? (at) 2024
-    const auto json_lines{hex2json(
-        {0xA3E0'2550'5375'7065, 0xA3E0'2551'7273'7461, 0xA3E0'2552'7273'2026, 0xA3E0'2553'2053'7570,
-         0xA3E0'2554'6572'6869, 0xA3E0'2555'7473'0D20, 0xA3E0'2556'2020'2020, 0xA3E0'2557'2020'2020,
-         0xA3E0'2558'2020'2020, 0xA3E0'2559'2020'2020, 0xA3E0'255A'2020'2020, 0xA3E0'255B'2020'2020,
-         0xA3E0'255C'2020'2020, 0xA3E0'255D'2020'2020, 0xA3E0'255E'2020'2020,
-         0xA3E0'255F'2020'2020},
-        options, 0xA3E0)};
-
-    REQUIRE(json_lines.size() == 16);
-    CHECK(json_lines.back()["radiotext"] == "Superstars & Superhits");
-
-    // Other lines shouldn't have RadioText
-    for (auto prev_line = std::begin(json_lines); prev_line < std::prev(json_lines.end(), 1);
-         prev_line++)
-      REQUIRE_FALSE(prev_line->contains("radiotext"));
-  }*/
-
   SECTION("String length method C: Random-length string with no terminator") {
     // Antenne Kärnten (at) 2021-07-26
     // clang-format off
@@ -397,6 +376,54 @@ TEST_CASE("Radiotext") {
 
     // All lines should have RadioText
     for (auto line : json_lines) REQUIRE(line.contains("partial_radiotext"));
+  }
+}
+
+// TODO Below test do NOT pass
+TEST_CASE("Radiotext failing corner cases", "[!mayfail]") {
+  redsea::Options options;
+
+  SECTION("String length method A received out-of-order", "[!mayfail]") {
+    options.rbds = true;
+
+    // JACK 96.9 (ca) 2019-05-05
+    // clang-format off
+    const auto json_lines{hex2json({
+      0xC954'24F2'390D'0000,   // "9\r  "
+      0xC954'24F0'4A41'434B,  // "JACK"
+      0xC954'24F1'2039'362E  // " 96."
+    }, options, 0xC954)};
+    // clang-format on
+
+    REQUIRE(json_lines.size() == 3);
+    REQUIRE(json_lines.back().contains("radiotext"));
+    CHECK(json_lines.back()["radiotext"] == "JACK 96.9");
+
+    // Other lines shouldn't have RadioText
+    for (auto prev_line = std::begin(json_lines); prev_line != std::prev(json_lines.end(), 2);
+         prev_line++)
+      REQUIRE_FALSE(prev_line->contains("radiotext"));
+  }
+
+  // https://github.com/windytan/redsea/issues/118
+  SECTION("String length hybrid method A+B: Terminated *and* padded") {
+    // Radio Austria (at) 2024
+    const auto json_lines{hex2json(
+        {0xA3E0'2550'5375'7065, 0xA3E0'2551'7273'7461, 0xA3E0'2552'7273'2026, 0xA3E0'2553'2053'7570,
+         0xA3E0'2554'6572'6869, 0xA3E0'2555'7473'0D20, 0xA3E0'2556'2020'2020, 0xA3E0'2557'2020'2020,
+         0xA3E0'2558'2020'2020, 0xA3E0'2559'2020'2020, 0xA3E0'255A'2020'2020, 0xA3E0'255B'2020'2020,
+         0xA3E0'255C'2020'2020, 0xA3E0'255D'2020'2020, 0xA3E0'255E'2020'2020,
+         0xA3E0'255F'2020'2020},
+        options, 0xA3E0)};
+
+    REQUIRE(json_lines.size() == 16);
+    REQUIRE(json_lines.back().contains("radiotext"));
+    CHECK(json_lines.back()["radiotext"] == "Superstars & Superhits");
+
+    // Other lines shouldn't have RadioText
+    for (auto prev_line = std::begin(json_lines); prev_line < std::prev(json_lines.end(), 1);
+         prev_line++)
+      REQUIRE_FALSE(prev_line->contains("radiotext"));
   }
 }
 
