@@ -11,8 +11,8 @@ It prints [newline-delimited JSON](https://jsonlines.org/) where
 each line corresponds to one RDS group. It can also print "raw" undecoded hex blocks (`--output hex`).
 Please refer to the wiki for [input data formats][Wiki: Input].
 
-Redsea can be used with any [RTL-SDR][About RTL-SDR] USB radio stick with the
-`rtl_fm` tool, or any other SDR via a tool like `csdr` (see [wiki][Wiki: Use cases]). It can decode MPX from
+Redsea is compatible with the [RTL-SDR][About RTL-SDR] USB radio stick via the
+`rtl_fm` tool, and any other SDR via a tool like `csdr` (see [wiki][Wiki: Use cases]). It can decode MPX from
 raw PCM or audio files, ASCII bitstreams, the hex format used by RDS Spy, or the TEF6686 serial format.
 
 [About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
@@ -31,7 +31,7 @@ Example output:
 
 ## Contents
 
-  * [Installation](#installation)
+  * [How to install](#how-to-install)
   * [Usage](#usage)
     * [Full usage](#full-usage)
     * [Formatting and filtering the JSON output](#formatting-and-filtering-the-json-output)
@@ -42,12 +42,12 @@ Example output:
   * [Contributing](#contributing)
   * [Licensing](#licensing)
 
-## Installation
+## How to install
 
-These commands should be run in the terminal. Don't type the `$` in the
-beginning.
+Redsea needs to be built from source, but this is not very complicated. Commands are provided
+below (you can skip the `$` at the start of each command).
 
-### Install dependencies
+### 1. Install dependencies
 
 On Ubuntu:
 
@@ -65,20 +65,28 @@ Or on macOS using Homebrew:
 
 Meson will later download nlohmann-json for you if it can't be found in the package repositories.
 
-### Get redsea
+It's also possible to build redsea on Windows, either in Cygwin or by building
+an .exe with MSYS2/MinGW. This is a bit more involved - instructions are in [the wiki][Wiki: Windows build].
 
-Downloading a release version is recommended.
+[Wiki: Windows build]: (https://github.com/windytan/redsea/wiki/Installation#windows).
 
-If you wish to have the latest snapshot you can clone this git repository. The
-snapshot might be more work-in-progress than the releases, although we attempt to
+### 2. Get redsea
+
+Downloading a [release version](https://github.com/windytan/redsea/releases) is recommended.
+
+Alternatively, if you wish to have the latest snapshot, you can also clone this git repository.
+The snapshot might be more work-in-progress than the releases, although we attempt to
 keep the main branch stable.
 
         $ git clone https://github.com/windytan/redsea.git
         $ cd redsea
 
-### Compile redsea
+### 3. Compile redsea
 
-        $ meson setup build && cd build && meson compile
+        $ meson setup build && cd build
+        $ meson compile
+
+Now the binary executable is compiled and you can run it!
 
 You can install the binary using `meson install` if you so wish. By default,
 it will be installed under `/usr/local`, but this can be changed by providing
@@ -91,18 +99,22 @@ If you cloned the repository you can later get the latest updates and recompile:
         $ git pull
         $ cd build && meson compile
 
-It's also possible to build redsea on Windows, either in Cygwin or by building
-an .exe with MSYS2/MinGW; Instructions are in [the wiki][Wiki: Windows build].
+If your Linux system has very little RAM (e.g. Raspberry Pi), please use the below
+line instead of `meson compile` to limit the number of build processes:
 
-[Wiki: Windows build]: (https://github.com/windytan/redsea/wiki/Installation#windows).
+        $ taskset -c 0 meson compile
 
 ## Usage
 
-By default, an MPX signal is expected via stdin (raw 16-bit signed-integer PCM).
+Redsea reads an MPX signal from stdin by default. It expects the input
+to be raw 16-bit signed-integer PCM.
 
-This command listens to 87.9 MHz using `rtl_fm` and displays the RDS groups:
+Here's an example command that listens to 87.9 MHz using `rtl_fm` and displays
+the RDS groups:
 
-    rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea -r 171k
+```bash
+rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea -r 171k
+```
 
 Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
 
@@ -244,5 +256,5 @@ Redsea is released under the MIT license, which means it is copyrighted to Oona
 Räisänen OH2EIQ yet you're free to use it provided that the copyright
 information is not removed. (iconvpp has its own license.) See LICENSE.
 
-This software is not safety certified and should never be relied on for emergency
-communication, accurate traffic / weather information, or when your life is on the line.
+**Note**: This software is not safety certified. Do not rely on it for emergency
+communication, accurate traffic / weather information, or life-critical situations.
