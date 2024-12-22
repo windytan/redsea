@@ -94,10 +94,11 @@ Subcarrier::Subcarrier(float carrier_frequency, float samplerate)
       oscillator_(LIQUID_NCO, angularFreq(carrier_frequency, kTargetSampleRate_Hz)),
       symsync_(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay, kSymsyncBeta, 32),
       modem_(LIQUID_MODEM_PSK2),
-      resampler_(resample_ratio_, 13) {
+      resampler_(13) {
   symsync_.setBandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
   symsync_.setOutputRate(1);
   oscillator_.setPLLBandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
+  resampler_.setRatio(resample_ratio_);
 }
 
 void Subcarrier::reset() {
@@ -118,8 +119,7 @@ BitBuffer Subcarrier::processChunk(MPXBuffer& input_chunk) {
     std::array<float, kMaxResamplerOutputSize> resamp_output{};
 
     for (size_t i_input{}; i_input < input_chunk.used_size; i_input++) {
-      const auto num_resampled =
-          resampler_.execute(input_chunk.data[i_input], resamp_output.data());
+      const auto num_resampled = resampler_.execute(input_chunk.data[i_input], resamp_output);
 
       // Always true as per liquid-dsp API
       assert(num_resampled <= resamp_output.size());

@@ -17,6 +17,7 @@
 #ifndef DSP_LIQUID_WRAPPERS_H_
 #define DSP_LIQUID_WRAPPERS_H_
 
+#include <array>
 #include <complex>
 #include <utility>
 #include <vector>
@@ -137,13 +138,17 @@ class Modem {
 
 class Resampler {
  public:
-  explicit Resampler(float ratio, unsigned int length);
+  static constexpr std::size_t kOutputArraySize{2ULL};
+
+  explicit Resampler(unsigned int length);
   Resampler(const Resampler&)             = delete;
   Resampler& operator=(const Resampler&)  = delete;
   Resampler(Resampler&& other)            = delete;
   Resampler& operator=(Resampler&& other) = delete;
   ~Resampler();
-  unsigned int execute(float in, float* out);
+  void setRatio(float ratio);
+
+  unsigned int execute(float in, std::array<float, kOutputArraySize>& out);
 
  private:
   resamp_rrrf object_;

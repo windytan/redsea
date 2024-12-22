@@ -69,8 +69,13 @@ void MPXReader::init(const Options& options) {
 
     throw std::runtime_error(sf_error_number(sf_error(file_)));
   } else if (sfinfo_.samplerate < static_cast<int>(kMinimumSampleRate_Hz)) {
-    throw std::runtime_error("sample rate is " + std::to_string(sfinfo_.samplerate) + ", must be " +
-                             std::to_string(kMinimumSampleRate_Hz) + " Hz or higher");
+    throw std::runtime_error(
+        "sample rate is " + std::to_string(sfinfo_.samplerate) + " Hz, must be " +
+        std::to_string(static_cast<int>(kMinimumSampleRate_Hz)) + " Hz or higher");
+  } else if (sfinfo_.samplerate > static_cast<int>(kMaximumSampleRate_Hz)) {
+    throw std::runtime_error("sample rate is " + std::to_string(sfinfo_.samplerate) +
+                             " Hz, must be " + "no higher than " +
+                             std::to_string(static_cast<int>(kMaximumSampleRate_Hz)) + " Hz");
   } else {
     chunk_size_ = static_cast<sf_count_t>((kInputChunkSize / num_channels_) * num_channels_);
 

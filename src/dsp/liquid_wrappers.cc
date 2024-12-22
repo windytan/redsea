@@ -16,6 +16,8 @@
  */
 #include "src/dsp/liquid_wrappers.h"
 
+#include <array>
+#include <cassert>
 #include <complex>
 #include <stdexcept>
 
@@ -168,22 +170,31 @@ float Modem::getPhaseError() {
 #endif
 }
 
-Resampler::Resampler(float ratio, unsigned int length)
-    : object_(resamp_rrrf_create(ratio, length, 0.47f, 60.0f, 32)) {
-  if (ratio > 2.f) {
+Resampler::Resampler(unsigned int length)
+    : object_(resamp_rrrf_create(1.f, length, 0.47f, 60.0f, 32)) {
+  if (object_ == nullptr) {
+    throw std::runtime_error("error: Can't initialize resampler");
+  }
+}
+
+void Resampler::setRatio(float ratio) {
+  // Liquid can't take < 0.004, and we only reserved kOutputArraySize in the output buffer.
+  if (ratio < 0.005f || ratio > static_cast<float>(kOutputArraySize)) {
     throw std::runtime_error("error: Can't support this sample rate");
   }
+  resamp_rrrf_set_rate(object_, ratio);
 }
 
 Resampler::~Resampler() {
   resamp_rrrf_destroy(object_);
 }
 
-unsigned int Resampler::execute(float in, float* out) {
+unsigned int Resampler::execute(float in, std::array<float, kOutputArraySize>& out) {
   // To be set by liquid-dsp, no need to initialize
   // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
   unsigned int num_written;
-  resamp_rrrf_execute(object_, in, out, &num_written);
+  resamp_rrrf_execute(object_, in, out.data(), &num_written);
+  assert(num_written <= kOutputArraySize);
 
   return num_written;
 }

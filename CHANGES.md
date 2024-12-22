@@ -7,6 +7,7 @@
   * Decode 'decoder identification' bits in Group 15B
   * Workaround buggy encoders that show 1 extra character in RT+ fields
 * Bug fixes:
+  * Fix a crash when the input file has a very high sample rate (fuzz)
   * Fix the CSVReader (used in the TMC decoder) ignoring the last line of any file
   * Remove extra trailing space in transparent data channels hexdump
   * Make raw libsndfile errors user-friendlier (instead of saying 'System error')

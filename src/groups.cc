@@ -684,7 +684,7 @@ void Station::decodeType4A(const Group& group) {
   const double local_offset =
       (getBool(group.get(BLOCK4), 5) ? -1.0 : 1.0) * getBits<5>(group.get(BLOCK4), 0) / 2.0;
 
-  tm utc_plus_offset_tm {};
+  tm utc_plus_offset_tm{};
   utc_plus_offset_tm.tm_year  = year_utc - 1900;
   utc_plus_offset_tm.tm_mon   = month_utc - 1;
   utc_plus_offset_tm.tm_mday  = day_utc;
