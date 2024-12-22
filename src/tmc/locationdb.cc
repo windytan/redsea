@@ -33,6 +33,7 @@ namespace tmc {
 
 namespace {
 
+// \throws Conversion errors from iconv
 std::string to_utf8(const std::string& input, const iconvpp::converter& converter) {
   std::string converted;
   converter.convert(input, converted);

@@ -448,6 +448,25 @@ TEST_CASE("Enhanced RadioText") {
   CHECK(json_lines.back()["enhanced_radiotext"] == "Järviradio RDS2 ERT");
 }
 
+TEST_CASE("Enhanced RadioText: invalid multibyte chars") {
+  redsea::Options options;
+
+  // Järviradio (fi)
+  // clang-format off
+  CHECK_NOTHROW(hex2json({
+    // eRT ODA identifier (with mistake)
+    0x6255'3538'000A'6552,
+    // Text data
+    0x6255'C520'4AC3'A472,
+    0x6255'C521'7669'7261,
+    0x6255'C522'6469'6F20,
+    0x6255'C523'5244'5332,
+    0x6255'C524'2045'5254,
+    0x6255'C525'0D0D'0D0D,
+  }, options, 0x6255));
+  // clang-format on
+}
+
 TEST_CASE("RadioText Plus") {
   redsea::Options options;
 

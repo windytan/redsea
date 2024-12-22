@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <exception>
 #include <numeric>
 #include <string>
 #include <utility>
@@ -74,6 +75,7 @@ size_t charlen(const std::string& str, size_t byte_start) {
   return nbyte - byte_start + 1;
 }
 
+// \throws Conversion errors from iconvpp
 std::string decodeUCS2(const std::string& src) {
   static iconvpp::converter converter("UTF-8", "UCS-2");
 
@@ -99,8 +101,14 @@ void RDSString::set(size_t pos, uint8_t byte) {
     sequential_length_ = pos + 1;
 
   if (isComplete()) {
-    last_complete_string_ = str();
-    last_complete_data_   = getData();
+    try {
+      last_complete_string_ = str();
+    } catch (std::exception&) {
+      clear();
+      return;
+    }
+
+    last_complete_data_ = getData();
   }
 
   prev_pos_ = pos;
@@ -144,6 +152,7 @@ void RDSString::setDirection(Direction direction) {
   direction_ = direction;
 }
 
+// \throws Conversion errors from iconvpp when text is UCS2
 std::string RDSString::str() const {
   const auto bytes = getData();
 

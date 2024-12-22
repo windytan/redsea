@@ -445,10 +445,16 @@ void Station::decodeType0(const Group& group) {
   // Block 4: Program Service Name
   ps_.update(segment_address * 2, getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
 
-  if (ps_.text.isComplete())
+  if (ps_.text.isComplete()) {
     json_["ps"] = ps_.text.getLastCompleteString();
-  else if (options_.show_partial)
-    json_["partial_ps"] = ps_.text.str();
+  } else if (options_.show_partial) {
+    try {
+      json_["partial_ps"] = ps_.text.str();
+    } catch (const std::exception& e) {
+      json_["debug"].push_back(e.what());
+      return;
+    }
+  }
 }
 
 // Group 1: Programme Item Number and slow labelling codes
@@ -550,7 +556,12 @@ void Station::decodeType2(const Group& group) {
       not radiotext_.text.isComplete() && not radiotext_.text.hasPreviouslyReceivedTerminators();
 
   if (has_potentially_complete_message) {
-    potentially_complete_message = rtrim(radiotext_.text.str());
+    try {
+      potentially_complete_message = rtrim(radiotext_.text.str());
+    } catch (const std::exception& e) {
+      json_["debug"].push_back(e.what());
+      return;
+    }
 
     // No, perhaps we just lost the terminator in noise [could we use the actual BLER figure?],
     // or maybe the message got interrupted by an A/B change. Let's wait for a repeat.
@@ -588,8 +599,15 @@ void Station::decodeType2(const Group& group) {
     json_["radiotext"] = rtrim(std::move(potentially_complete_message));
 
     // The string is not complete yet, but user wants to see it anyway.
-  } else if (options_.show_partial && rtrim(radiotext_.text.str()).length() > 0) {
-    json_["partial_radiotext"] = radiotext_.text.str();
+  } else if (options_.show_partial) {
+    try {
+      if (rtrim(radiotext_.text.str()).length() > 0) {
+        json_["partial_radiotext"] = radiotext_.text.str();
+      }
+    } catch (const std::exception& e) {
+      json_["debug"].push_back(e.what());
+      return;
+    }
   }
 }
 
@@ -925,10 +943,16 @@ void Station::decodeType15A(const Group& group) {
                     getUint8(group.get(BLOCK4), 0));
   }
 
-  if ((group.has(BLOCK3) || group.has(BLOCK4)) && long_ps_.text.isComplete())
+  if ((group.has(BLOCK3) || group.has(BLOCK4)) && long_ps_.text.isComplete()) {
     json_["long_ps"] = rtrim(long_ps_.text.getLastCompleteString());
-  else if (options_.show_partial)
-    json_["partial_long_ps"] = long_ps_.text.str();
+  } else if (options_.show_partial) {
+    try {
+      json_["partial_long_ps"] = long_ps_.text.str();
+    } catch (const std::exception& e) {
+      json_["debug"].push_back(e.what());
+      return;
+    }
+  }
 }
 
 /* Group 15B: Fast basic tuning and switching information */
@@ -1078,8 +1102,7 @@ void Station::parseDAB(const Group& group) {
         {1470'080,  "LK"}, {1471'792,  "LL"}, {1473'504,  "LM"}, {1475'216,  "LN"},
         {1476'928,  "LO"}, {1478'640,  "LP"}, {1480'352,  "LQ"}, {1482'064,  "LR"},
         {1483'776,  "LS"}, {1485'488,  "LT"}, {1487'200,  "LU"}, {1488'912,  "LV"},
-        {1490'624,  "LW"}
-        // clang-format on
+        {1490'624,  "LW"}  // clang-format on
     });
 
     if (dab_channels.find(freq) != dab_channels.end()) {
