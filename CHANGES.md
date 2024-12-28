@@ -1,6 +1,8 @@
 # redsea changelog
 
-## HEAD
+We use [semantic versioning](https://semver.org/).
+
+## 1.1 (2024-12-28)
 
 * New features:
   * Decode 'broadcaster use' data in Slow labeling codes (variant 6)
