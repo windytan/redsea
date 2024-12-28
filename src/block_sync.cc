@@ -18,8 +18,11 @@
 
 #include <array>
 #include <cassert>
+#include <cstdint>
 #include <map>
 #include <utility>
+
+#include "src/groups.h"
 
 namespace redsea {
 

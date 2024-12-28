@@ -22,7 +22,6 @@
 #include <exception>
 #include <numeric>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "ext/iconvpp/iconv.hpp"

@@ -19,12 +19,10 @@
 
 #include <array>
 #include <complex>
-#include <utility>
 
 #include "src/common.h"
 #include "src/dsp/liquid_wrappers.h"
 #include "src/input.h"
-#include "src/options.h"
 
 namespace redsea {
 

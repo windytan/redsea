@@ -20,9 +20,6 @@
 #include <cmath>
 #include <complex>
 #include <cstdio>
-#include <deque>
-#include <iostream>
-#include <tuple>
 
 #include "src/common.h"
 #include "src/dsp/liquid_wrappers.h"

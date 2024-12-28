@@ -18,7 +18,6 @@
 #define COMMON_H_
 
 #include <chrono>
-#include <string>
 #include <vector>
 
 namespace redsea {

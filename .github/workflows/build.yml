@@ -56,7 +56,7 @@ jobs:
     - name: Test command-line interface
       run: perl test/cli.pl redsea --installed
 
-  build-debian-oldoldstable:
+  build-debian-buster:
     runs-on: ubuntu-latest
     container: debian:buster
 

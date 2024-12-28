@@ -1,5 +1,4 @@
-#ifndef TMC_EVENT_LIST_H_
-#define TMC_EVENT_LIST_H_
+#include "events.h"
 
 #include <array>
 #include <string>
@@ -1801,4 +1800,3 @@ const std::array<std::string, 233> tmc_data_suppl{
 
 }  // namespace tmc
 }  // namespace redsea
-#endif  // TMC_EVENT_LIST_H_

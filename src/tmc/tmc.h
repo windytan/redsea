@@ -19,14 +19,12 @@
 
 #include <array>
 #include <cstdint>
-#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include "src/common.h"
 #include "src/options.h"
 #include "src/rdsstring.h"
 #include "src/util.h"

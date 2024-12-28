@@ -19,10 +19,11 @@
 #include <array>
 #include <cassert>
 #include <climits>
+#include <cstdint>
 #include <deque>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -30,10 +31,9 @@
 
 #include <nlohmann/json.hpp>
 
-#include "src/common.h"
 #include "src/tables.h"
 #include "src/tmc/csv.h"
-#include "src/tmc/event_list.h"
+#include "src/tmc/events.h"
 #include "src/tmc/locationdb.h"
 
 namespace redsea {

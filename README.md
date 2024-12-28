@@ -104,6 +104,8 @@ line instead of `meson compile` to limit the number of build processes:
 
         $ taskset -c 0 meson compile
 
+The compilation will still require at least 500 MB of free RAM.
+
 ## Usage
 
 Redsea reads an MPX signal from stdin by default. It expects the input
@@ -217,6 +219,7 @@ redsea -f WAVEFILE
 * Linux/macOS/Cygwin/MSYS2+MinGW
 * C++14 compiler
 * meson + ninja
+* 500 MB of free memory for non-parallel build ([breakdown](https://github.com/windytan/redsea/issues/120#issuecomment-2559254338))
 
 ### Testing
 

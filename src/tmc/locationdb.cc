@@ -17,11 +17,8 @@
 #include "src/tmc/locationdb.h"
 
 #include <climits>
-#include <fstream>
 #include <regex>
-#include <sstream>
 #include <string>
-#include <utility>
 
 #include "ext/iconvpp/iconv.hpp"
 

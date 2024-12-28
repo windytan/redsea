@@ -19,6 +19,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
@@ -31,8 +32,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include "config.h"
-#include "src/common.h"
 #include "src/rdsstring.h"
 #include "src/tables.h"
 #include "src/util.h"
@@ -322,11 +321,11 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     // incomplete JSON objects could get printed.
     std::stringstream output_proxy_stream;
     output_proxy_stream << json_;
-    stream << output_proxy_stream.str() << std::endl;
+    stream << output_proxy_stream.str() << '\n';
   } catch (const std::exception& e) {
     nlohmann::ordered_json json_from_exception;
     json_from_exception["debug"] = std::string(e.what());
-    stream << json_from_exception << std::endl;
+    stream << json_from_exception << '\n';
   }
 }
 

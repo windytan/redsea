@@ -15,6 +15,7 @@
 * Build system fixes:
   * macOS: ask Homebrew about liquid-dsp location instead of hardcoding it
   * Set default installation prefix to /usr/local (all platforms)
+  * Reduce compiler workload somewhat with forward declarations
 
 ## 1.0.1 (2024-07-19)
 

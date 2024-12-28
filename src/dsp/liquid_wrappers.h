@@ -19,7 +19,6 @@
 
 #include <array>
 #include <complex>
-#include <utility>
 #include <vector>
 
 #pragma clang diagnostic push

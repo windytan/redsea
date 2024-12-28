@@ -17,11 +17,10 @@
 #ifndef TMC_LOCATIONDB_H_
 #define TMC_LOCATIONDB_H_
 
+#include <cstdint>
 #include <iostream>
 #include <map>
 #include <string>
-
-#include "src/rdsstring.h"
 
 namespace redsea {
 namespace tmc {

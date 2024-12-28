@@ -103,6 +103,7 @@ sources_no_main = [
   'src/rdsstring.cc',
   'src/tables.cc',
   'src/tmc/csv.cc',
+  'src/tmc/events_data.cc',
   'src/tmc/tmc.cc',
   'src/tmc/locationdb.cc',
   'src/util.cc',
