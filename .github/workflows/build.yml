@@ -81,7 +81,7 @@ jobs:
     - name: Install dependencies (brew)
       run: brew install meson libsndfile liquid-dsp nlohmann-json catch2 perl gcovr
     - name: meson setup
-      run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false -Db_coverage=true build
+      run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false -Db_coverage=true build -Dbuild_tests=true
     - name: compile & install
       run: cd build && meson install
     - name: download test data
