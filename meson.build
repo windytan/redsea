@@ -8,7 +8,7 @@ project(
     'prefix=/usr/local',
     'cpp_std=c++14',
   ],
-  version: '1.1.0',
+  version: '1.1.1-SNAPSHOT',
 )
 
 # Store version number to be compiled in
@@ -121,9 +121,11 @@ executable(
 ### Unit tests ###
 ##################
 
-catch2 = dependency('catch2-with-main', required: false)
+build_tests = get_option('build_tests')
 
-if catch2.found()
+if build_tests
+  catch2 = dependency('catch2-with-main', required: true)
+
   unit_test_exe = executable(
     'redsea-test-unit',
     [
