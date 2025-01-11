@@ -65,11 +65,11 @@ class BlockStream {
   uint32_t input_register_{0};
   Offset expected_offset_{Offset::A};
   bool is_in_sync_{false};
-  RunningSum<int, 50> block_error_sum50_{};
+  RunningSum<int, 50> block_error_sum50_;
   const Options options_{};
-  RunningAverage<float, kNumBlerAverageGroups> bler_average_{};
-  Group current_group_{};
-  Group ready_group_{};
+  RunningAverage<float, kNumBlerAverageGroups> bler_average_;
+  Group current_group_;
+  Group ready_group_;
   bool has_group_ready_{false};
   uint32_t num_bits_since_sync_lost_{0};
   SyncPulseBuffer sync_buffer_{};

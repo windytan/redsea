@@ -85,11 +85,11 @@ class Channel {
   Options options_{};
   int which_channel_{};
   std::ostream& output_stream_;
-  CachedPI cached_pi_{};
+  CachedPI cached_pi_;
   BlockStream block_stream_;
   Station station_;
-  RunningAverage<float, kNumBlerAverageGroups> bler_average_{};
-  std::chrono::time_point<std::chrono::system_clock> last_group_rx_time_{};
+  RunningAverage<float, kNumBlerAverageGroups> bler_average_;
+  std::chrono::time_point<std::chrono::system_clock> last_group_rx_time_;
 };
 
 }  // namespace redsea
