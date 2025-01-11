@@ -247,6 +247,7 @@ Group readTEFGroup(const Options& options) {
         block1.data        = static_cast<uint16_t>(std::stol(line, nullptr, 16));
         block1.is_received = true;
       } catch (const std::exception&) {
+        continue;
       }
       group.setBlock(BLOCK1, block1);
     } else if (line.substr(0, 1) == "R" && line.length() >= 15) {
@@ -270,6 +271,7 @@ Group readTEFGroup(const Options& options) {
         group.setBlock(BLOCK3, blocks[1]);
         group.setBlock(BLOCK4, blocks[2]);
       } catch (const std::exception&) {
+        break;
       }
       break;
     }

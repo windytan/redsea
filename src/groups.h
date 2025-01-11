@@ -173,7 +173,7 @@ class Group {
   void setAverageBLER(float bler);
 
  private:
-  GroupType type_{};
+  GroupType type_;
   std::array<Block, 4> blocks_;
   std::chrono::time_point<std::chrono::system_clock> time_received_;
   float bler_{0.f};

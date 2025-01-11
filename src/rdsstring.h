@@ -55,7 +55,7 @@ class RDSString {
   size_t prev_pos_{};
   size_t sequential_length_{};
   // Decoded string.
-  std::string last_complete_string_{};
+  std::string last_complete_string_;
 };
 
 }  // namespace redsea
