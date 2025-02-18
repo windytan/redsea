@@ -321,11 +321,11 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     // incomplete JSON objects could get printed.
     std::stringstream output_proxy_stream;
     output_proxy_stream << json_;
-    stream << output_proxy_stream.str() << '\n';
+    stream << output_proxy_stream.str() << std::endl;
   } catch (const std::exception& e) {
     nlohmann::ordered_json json_from_exception;
     json_from_exception["debug"] = std::string(e.what());
-    stream << json_from_exception << '\n';
+    stream << json_from_exception << std::endl;
   }
 }
 
