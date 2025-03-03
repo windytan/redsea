@@ -49,7 +49,7 @@ inline std::vector<nlohmann::ordered_json> asciibin2json(const std::string& bind
   for (const auto& ascii_bit : bindata) {
     const int bit{ascii_bit == '1' ? 1 : 0};
 
-    channel.processBit(bit);
+    channel.processBit(bit, 0);
     if (!json_stream.str().empty()) {
       nlohmann::ordered_json jsonroot;
       json_stream >> jsonroot;
@@ -67,7 +67,8 @@ inline std::vector<nlohmann::ordered_json> asciibin2json(const std::string& bind
 inline std::vector<redsea::Group> asciibin2groups(const std::string& bindata,
                                                   const redsea::Options& options) {
   std::vector<redsea::Group> result;
-  redsea::BlockStream block_stream(options);
+  redsea::BlockStream block_stream;
+  block_stream.init(options);
 
   for (const auto& ascii_bit : bindata) {
     const int bit{ascii_bit == '1' ? 1 : 0};
@@ -92,7 +93,7 @@ inline std::vector<nlohmann::ordered_json> groups2json(const std::vector<redsea:
   for (const auto& group : data) {
     json_stream.str("");
     json_stream.clear();
-    channel.processGroup(group);
+    channel.processGroup(group, 0);
     if (!json_stream.str().empty()) {
       nlohmann::ordered_json jsonroot;
       json_stream >> jsonroot;

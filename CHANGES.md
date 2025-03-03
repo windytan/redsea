@@ -2,6 +2,11 @@
 
 We use [semantic versioning](https://semver.org/).
 
+## 1.2-WIP
+
+* Major new features:
+  * Add RDS2 streams / RFT support (#32)
+
 ## 1.1.1 (2025-03-03)
 
 * Bug fixes:

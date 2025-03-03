@@ -28,6 +28,20 @@ std::string getHoursMinutesString(int hour, int minute) {
   return ss.str();
 }
 
+// Used in RDS2 RFT
+uint32_t crc16_ccitt(const uint8_t* data, size_t length) {
+  uint32_t crc = 0xFFFF;
+
+  for (size_t i = 0; i < length; ++i) {
+    crc = static_cast<uint8_t>(crc >> 8) | (crc << 8);
+    crc ^= data[i];
+    crc ^= static_cast<uint8_t>(crc & 0xFF) >> 4;
+    crc ^= (crc << 8) << 4;
+    crc ^= ((crc & 0xFF) << 4) << 1;
+  }
+  return (crc ^ 0xFFFF) & 0xFFFF;
+}
+
 std::string getTimePointString(const std::chrono::time_point<std::chrono::system_clock>& timepoint,
                                const std::string& format) {
   // This is done to ensure we get truncation and not rounding to integer seconds

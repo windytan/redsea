@@ -17,6 +17,7 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <array>
 #include <chrono>
 #include <vector>
 
@@ -37,7 +38,8 @@ constexpr float kMaxResampleRatio = kTargetSampleRate_Hz / kMinimumSampleRate_Hz
 
 struct BitBuffer {
   std::chrono::time_point<std::chrono::system_clock> time_received;
-  std::vector<bool> bits;
+  // One vector for each data-stream
+  std::array<std::vector<int>, 4> bits;
 };
 
 }  // namespace redsea
