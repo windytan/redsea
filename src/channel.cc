@@ -17,6 +17,7 @@
 #include "src/channel.h"
 
 #include <chrono>
+#include <cstdint>
 #include <iostream>
 
 #include "src/common.h"
@@ -36,37 +37,42 @@ Channel::Channel(const Options& options, int which_channel, std::ostream& output
     : options_(options),
       which_channel_(which_channel),
       output_stream_(output_stream),
-      block_stream_(options),
-      station_(options, which_channel) {}
+      station_(options, which_channel) {
+  for (auto& strm : block_stream_) {
+    strm.init(options);
+  }
+}
 
 // Used for testing (PI is already known)
 Channel::Channel(const Options& options, std::ostream& output_stream, uint16_t pi)
-    : options_(options),
-      output_stream_(output_stream),
-      block_stream_(options),
-      station_(options, 0, pi) {
+    : options_(options), output_stream_(output_stream), station_(options, 0, pi) {
+  for (auto& strm : block_stream_) {
+    strm.init(options);
+  }
+
   cached_pi_.update(pi);
   cached_pi_.update(pi);
 }
 
-void Channel::processBit(bool bit) {
-  block_stream_.pushBit(bit);
+void Channel::processBit(bool bit, std::size_t which_stream) {
+  block_stream_[which_stream].pushBit(bit);
 
-  if (block_stream_.hasGroupReady())
-    processGroup(block_stream_.popGroup());
+  if (block_stream_[which_stream].hasGroupReady())
+    processGroup(block_stream_[which_stream].popGroup(), which_stream);
 }
 
-void Channel::processBits(const BitBuffer& buffer) {
-  for (size_t i_bit = 0; i_bit < buffer.bits.size(); i_bit++) {
-    block_stream_.pushBit(buffer.bits[i_bit]);
+void Channel::processBits(const BitBuffer& buffer, std::size_t which_stream) {
+  for (size_t i_bit = 0; i_bit < buffer.bits[which_stream].size(); i_bit++) {
+    block_stream_[which_stream].pushBit(buffer.bits[which_stream].at(i_bit));
 
-    if (block_stream_.hasGroupReady()) {
-      Group group = block_stream_.popGroup();
+    if (block_stream_[which_stream].hasGroupReady()) {
+      Group group = block_stream_[which_stream].popGroup();
 
       // Calculate this group's rx time based on the buffer timestamp and bit offset
-      auto group_time = buffer.time_received -
-                        std::chrono::milliseconds(static_cast<int>(
-                            static_cast<double>(buffer.bits.size() - 1 - i_bit) / 1187.5 * 1e3));
+      auto group_time =
+          buffer.time_received -
+          std::chrono::milliseconds(static_cast<int>(
+              static_cast<double>(buffer.bits[which_stream].size() - 1 - i_bit) / 1187.5 * 1e3));
 
       // When the source is faster than real-time, backwards timestamp calculation
       // produces meaningless results. We want to make sure that the time stays monotonic.
@@ -75,7 +81,7 @@ void Channel::processBits(const BitBuffer& buffer) {
       }
 
       group.setTime(group_time);
-      processGroup(group);
+      processGroup(group, which_stream);
 
       last_group_rx_time_ = group_time;
     }
@@ -83,7 +89,7 @@ void Channel::processBits(const BitBuffer& buffer) {
 }
 
 // Handle this group as if it was just received.
-void Channel::processGroup(Group group) {
+void Channel::processGroup(Group group, std::size_t which_stream) {
   if (options_.timestamp && !group.hasTime()) {
     auto now = std::chrono::system_clock::now();
     group.setTime(now);
@@ -100,6 +106,11 @@ void Channel::processGroup(Group group) {
     bler_average_.push(static_cast<float>(group.getNumErrors()) / 4.f);
     group.setAverageBLER(100.f * bler_average_.getAverage());
   }
+
+  if (which_stream != 0) {
+    group.setVersionC();
+  }
+  group.setDataStream(which_stream);
 
   // If the PI code changes, all previously received data for the station
   // is cleared. We don't want this to happen on spurious bit errors, so
@@ -118,6 +129,8 @@ void Channel::processGroup(Group group) {
 
   if (options_.output_type == redsea::OutputType::Hex) {
     if (!group.isEmpty()) {
+      if (group.getDataStream() > 0)
+        output_stream_ << "#S" << group.getDataStream() << " ";
       group.printHex(output_stream_);
       if (options_.timestamp)
         output_stream_ << ' ' << getTimePointString(group.getRxTime(), options_.time_format);
@@ -130,14 +143,16 @@ void Channel::processGroup(Group group) {
 
 // Process any remaining data
 void Channel::flush() {
-  const Group last_group = block_stream_.flushCurrentGroup();
-  if (!last_group.isEmpty())
-    processGroup(last_group);
+  for (std::size_t i = 1; i < block_stream_.size(); ++i) {
+    const Group remaining_group = block_stream_[i].flushCurrentGroup();
+    if (!remaining_group.isEmpty())
+      processGroup(remaining_group, i);
+  }
 }
 
 /// \note Not to be used for measurements - may lose precision
 float Channel::getSecondsSinceCarrierLost() const {
-  return static_cast<float>(block_stream_.getNumBitsSinceSyncLost()) / kBitsPerSecond;
+  return static_cast<float>(block_stream_[0].getNumBitsSinceSyncLost()) / kBitsPerSecond;
 }
 
 void Channel::resetPI() {

@@ -58,6 +58,12 @@ inline uint8_t getUint8(uint16_t word, size_t bit_pos) {
   return static_cast<uint8_t>(getBits<8>(word, bit_pos));
 }
 
+template <typename T>
+constexpr T divideRoundingUp(T dividend, T divisor) {
+  static_assert(std::is_integral<T>::value, "");
+  return (dividend + divisor - 1) / divisor;
+}
+
 std::string getHoursMinutesString(int hour, int minute);
 std::string getTimePointString(const std::chrono::time_point<std::chrono::system_clock>& timepoint,
                                const std::string& format);
@@ -81,6 +87,8 @@ template <int N>
 std::string getPrefixedHexString(uint32_t value) {
   return "0x" + getHexString<N>(value);
 }
+
+unsigned int crc16_ccitt(const uint8_t* data, size_t length);
 
 class CarrierFrequency {
  public:

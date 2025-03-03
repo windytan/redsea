@@ -34,6 +34,16 @@ Some guidelines for making good bug reports:
   solution! It's possible that others will also run into similar problems.
 * Please be patient with it; Redsea is a single-maintainer hobby project.
 
+## How to build and run the tests
+
+Install Catch2, then in the redsea root run:
+
+    git lfs pull
+    meson setup build -Dbuild_tests=true
+    cd build
+    meson compile
+    meson test
+
 ## General PR guidelines
 
 You can directly contribute to the source code via pull requests. We have a

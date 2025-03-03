@@ -24,14 +24,14 @@ TEST_CASE("MPX file input") {
 
   std::stringstream json_stream;
   redsea::Channel channel(options, 0, json_stream);
-  redsea::Subcarrier subcarrier(57000.f, options.samplerate);
+  redsea::Subcarriers subcarriers(options.samplerate);
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
-    const auto bits = subcarrier.processChunk(mpx.readChunk(0));
+    const auto bits = subcarriers.processChunk(mpx.readChunk(0), 1);
 
-    for (const auto& bit : bits.bits) {
-      channel.processBit(bit);
+    for (const auto& bit : bits.bits[0]) {
+      channel.processBit(bit, 0);
       if (!json_stream.str().empty()) {
         nlohmann::ordered_json jsonroot;
         json_stream >> jsonroot;
@@ -43,7 +43,54 @@ TEST_CASE("MPX file input") {
     }
   }
 
-  CHECK(json.size() == 1);
+  CHECK(json.size() == 2);
   CHECK(json.at(0)["pi"] == "0x6201");
   CHECK(json.at(0)["prog_type"] == "Serious classical");
+}
+
+TEST_CASE("RDS2/RFT station logo from MPX") {
+  redsea::Options options;
+
+  options.sndfilename = "../test/resources/rds2-minirds-192k.flac";
+  options.input_type  = redsea::InputType::MPX_sndfile;
+  options.streams     = true;
+
+  redsea::MPXReader mpx;
+  mpx.init(options);
+  options.samplerate   = mpx.getSamplerate();
+  options.num_channels = mpx.getNumChannels();
+
+  std::stringstream json_stream;
+  redsea::Channel channel(options, 0, json_stream);
+  redsea::Subcarriers subcarriers(options.samplerate);
+
+  const int num_streams = 4;
+
+  while (!mpx.eof()) {
+    mpx.fillBuffer();
+    const auto bits = subcarriers.processChunk(mpx.readChunk(0), num_streams);
+
+    for (int n_stream = 0; n_stream < num_streams; n_stream++) {
+      channel.processBits(bits, n_stream);
+      if (!json_stream.str().empty()) {
+        nlohmann::ordered_json jsonroot;
+        json_stream >> jsonroot;
+
+        if (jsonroot.contains("rft") && jsonroot["rft"].contains("file_contents")) {
+          CHECK(jsonroot["rft"]["file_contents"] ==
+                "iVBORw0KGgoAAAANSUhEUgAAAGgAAABoAgMAAABgcl0yAAAADFBMVEUAAADtHCT/"
+                "rsn////OXmVkAAAAXElEQVRIx+3WOQ7AMAhE0X/JuSSXJIWlODZxn0GZCunRspDH"
+                "0ICAWtkTSBI8K38CKSJCGnC3taGZLrTnp+9SxTKVprRi2aLGNBHK1bOmgfB6za0p"
+                "E45fijU1+g8vzrC0S1+S2vwAAAAASUVORK5CYII=");
+          SUCCEED();
+          return;
+        }
+
+        json_stream.str("");
+        json_stream.clear();
+      }
+    }
+  }
+
+  FAIL();
 }
