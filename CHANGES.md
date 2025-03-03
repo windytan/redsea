@@ -2,6 +2,14 @@
 
 We use [semantic versioning](https://semver.org/).
 
+## 1.1.1 (2025-03-03)
+
+* Bug fixes:
+  * Fix a regression in 1.1 that caused the groups to sometimes not appear
+    immediately after reception (#126)
+* Build system changes:
+  * Catch2 is an optional build dependency (building tests is optional)
+
 ## 1.1 (2024-12-28)
 
 * New features:
