@@ -17,6 +17,7 @@
 #ifndef CHANNEL_H_
 #define CHANNEL_H_
 
+#include <array>
 #include <iostream>
 
 #include "src/block_sync.h"
@@ -74,9 +75,9 @@ class Channel {
  public:
   Channel(const Options& options, int which_channel, std::ostream& output_stream);
   Channel(const Options& options, std::ostream& output_stream, uint16_t pi);
-  void processBit(bool bit);
-  void processBits(const BitBuffer& buffer);
-  void processGroup(Group group);
+  void processBit(bool bit, std::size_t which_stream);
+  void processBits(const BitBuffer& buffer, std::size_t which_stream);
+  void processGroup(Group group, std::size_t which_stream);
   void flush();
   float getSecondsSinceCarrierLost() const;
   void resetPI();
@@ -86,7 +87,7 @@ class Channel {
   int which_channel_{};
   std::ostream& output_stream_;
   CachedPI cached_pi_;
-  BlockStream block_stream_;
+  std::array<BlockStream, 4> block_stream_;
   Station station_;
   RunningAverage<float, kNumBlerAverageGroups> bler_average_;
   std::chrono::time_point<std::chrono::system_clock> last_group_rx_time_;

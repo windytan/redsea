@@ -219,7 +219,9 @@ bool SyncPulseBuffer::isSequenceFound() const {
   return false;
 }
 
-BlockStream::BlockStream(const Options& options) : options_(options) {}
+void BlockStream::init(const Options& options) {
+  options_ = options;
+}
 
 // Try to find a cyclic pattern in the offset words.
 void BlockStream::acquireSync(Block block) {

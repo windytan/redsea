@@ -48,7 +48,8 @@ struct ErrorCorrectionResult {
 
 class BlockStream {
  public:
-  explicit BlockStream(const Options& options);
+  BlockStream() = default;
+  void init(const Options& options);
   void pushBit(bool bit);
   Group popGroup();
   bool hasGroupReady() const;
@@ -66,7 +67,7 @@ class BlockStream {
   Offset expected_offset_{Offset::A};
   bool is_in_sync_{false};
   RunningSum<int, 50> block_error_sum50_;
-  const Options options_{};
+  Options options_{};
   RunningAverage<float, kNumBlerAverageGroups> bler_average_;
   Group current_group_;
   Group ready_group_;

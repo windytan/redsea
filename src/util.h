@@ -82,6 +82,8 @@ std::string getPrefixedHexString(uint32_t value) {
   return "0x" + getHexString<N>(value);
 }
 
+unsigned int crc16_ccitt(const uint8_t* data, size_t length);
+
 class CarrierFrequency {
  public:
   enum class Band { LF_MF, FM };
