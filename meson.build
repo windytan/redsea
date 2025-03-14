@@ -8,7 +8,7 @@ project(
     'prefix=/usr/local',
     'cpp_std=c++14',
   ],
-  version: '1.1.1',
+  version: '1.2.0-SNAPSHOT',
 )
 
 # Store version number to be compiled in
@@ -22,11 +22,6 @@ configure_file(output: 'config.h', configuration: conf)
 
 cc = meson.get_compiler('cpp')
 add_project_arguments(cc.get_supported_arguments(['-Wno-unknown-pragmas']), language: 'cpp')
-
-# We want to use M_PI on Windows
-if build_machine.system() == 'windows'
-  add_project_arguments('-D_USE_MATH_DEFINES=1', language: 'cpp')
-endif
 
 # Explicit GNU extensions on Cygwin
 if build_machine.system() == 'cygwin'

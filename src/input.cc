@@ -72,6 +72,8 @@ void MPXReader::init(const Options& options) {
     throw std::runtime_error(
         "sample rate is " + std::to_string(sfinfo_.samplerate) + " Hz, must be " +
         std::to_string(static_cast<int>(kMinimumSampleRate_Hz)) + " Hz or higher");
+  } else if (options.streams && sfinfo_.samplerate < 171000) {
+    throw std::runtime_error("RDS2 data streams require a sample rate of 171 kHz or higher");
   } else if (sfinfo_.samplerate > static_cast<int>(kMaximumSampleRate_Hz)) {
     throw std::runtime_error("sample rate is " + std::to_string(sfinfo_.samplerate) +
                              " Hz, must be " + "no higher than " +
@@ -185,6 +187,15 @@ Group readHexGroup(const Options& options) {
 
     if (line.length() < 16)
       continue;
+
+    // RDS Spy format marks the RDS2 data stream number like this
+    int n_stream = 0;
+    if (line.length() >= 20 && (line.substr(0, 4) == "#S1 " || line.substr(0, 4) == "#S2 " ||
+                                line.substr(0, 4) == "#S3 ")) {
+      n_stream = std::stoi(line.substr(2, 1));
+      line     = line.substr(4);
+    }
+    group.setDataStream(n_stream);
 
     for (eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
       Block block;

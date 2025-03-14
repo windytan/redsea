@@ -21,6 +21,9 @@
 #include <complex>
 #include <vector>
 
+constexpr float kPi{3.14159265358979323846f};
+constexpr float k2Pi{2.f * kPi};
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 // https://github.com/jgaeddert/liquid-dsp/issues/229
@@ -34,7 +37,7 @@ namespace redsea {
 
 // Hertz to radians per sample
 inline float angularFreq(float hertz, float samplerate) {
-  return hertz * 2.f * static_cast<float>(M_PI) / samplerate;
+  return hertz * k2Pi / samplerate;
 }
 
 template <typename T>
@@ -49,7 +52,8 @@ namespace liquid {
 
 class AGC {
  public:
-  AGC(float bw, float initial_gain);
+  AGC() = default;
+  void init(float bw, float initial_gain);
   AGC(const AGC&)             = delete;
   AGC& operator=(const AGC&)  = delete;
   AGC(AGC&& other)            = delete;
@@ -59,48 +63,58 @@ class AGC {
   std::complex<float> execute(std::complex<float> s);
 
  private:
-  agc_crcf object_;
+  agc_crcf object_{nullptr};
 };
 
 class FIRFilter {
  public:
-  FIRFilter(unsigned int len, float fc, float As = 60.0f, float mu = 0.0f);
+  FIRFilter()                             = default;
   FIRFilter(const FIRFilter&)             = delete;
   FIRFilter& operator=(const FIRFilter&)  = delete;
   FIRFilter(FIRFilter&& other)            = delete;
   FIRFilter& operator=(FIRFilter&& other) = delete;
 
   ~FIRFilter();
+  void init(unsigned int len, float fc, float As = 60.0f, float mu = 0.0f);
+
   void push(std::complex<float> s);
   std::complex<float> execute();
   size_t length() const;
 
  private:
-  firfilt_crcf object_;
+  firfilt_crcf object_{nullptr};
 };
 
 class NCO {
  public:
+  NCO() = default;
   NCO(liquid_ncotype type, float freq);
   NCO(const NCO&)             = delete;
   NCO& operator=(const NCO&)  = delete;
   NCO(NCO&& other)            = delete;
   NCO& operator=(NCO&& other) = delete;
   ~NCO();
-  std::complex<float> mixDown(std::complex<float> s);
+  void init(liquid_ncotype type, float freq);
+  std::complex<float> mixDown(std::complex<float> s, int n_stream = 0);
   void step();
   void setPLLBandwidth(float);
   void stepPLL(float dphi);
   void reset();
+  std::complex<float> get(int n_stream) const {
+    return std::polar(1.f, -phases_[n_stream]);
+  }
 
  private:
-  nco_crcf object_;
-  float initial_frequency_;
+  nco_crcf object_{nullptr};
+  float initial_frequency_{};
+  float prev_f0_phase_{};
+  std::array<float, 4> phases_{};
 };
 
 class SymSync {
  public:
-  SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m, float beta, unsigned num_filters);
+  SymSync() = default;
+  void init(liquid_firfilt_type ftype, unsigned k, unsigned m, float beta, unsigned num_filters);
   SymSync(const SymSync&)             = delete;
   SymSync& operator=(const SymSync&)  = delete;
   SymSync(SymSync&& other)            = delete;
@@ -112,7 +126,7 @@ class SymSync {
   redsea::Maybe<std::complex<float>> execute(std::complex<float>& in);
 
  private:
-  symsync_crcf object_;
+  symsync_crcf object_{nullptr};
   std::vector<std::complex<float>> out_;
 };
 

@@ -58,7 +58,9 @@ GroupType::GroupType(uint16_t type_code)
       version((type_code & 0x1U) == 0 ? GroupType::Version::A : GroupType::Version::B) {}
 
 std::string GroupType::str() const {
-  return std::string(std::to_string(number) + (version == GroupType::Version::A ? "A" : "B"));
+  if (version == Version::C)
+    return "C";
+  return std::string(std::to_string(number) + (version == Version::A ? "A" : "B"));
 }
 
 bool operator==(const GroupType& type1, const GroupType& type2) {
@@ -103,8 +105,9 @@ int Group::getNumErrors() const {
 }
 
 bool Group::hasPI() const {
-  return blocks_[BLOCK1].is_received ||
-         (blocks_[BLOCK3].is_received && blocks_[BLOCK3].offset == Offset::Cprime);
+  return type_.version != GroupType::Version::C &&
+         (blocks_[BLOCK1].is_received ||
+          (blocks_[BLOCK3].is_received && blocks_[BLOCK3].offset == Offset::Cprime));
 }
 
 GroupType Group::getType() const {
@@ -131,8 +134,24 @@ void Group::disableOffsets() {
   no_offsets_ = true;
 }
 
+void Group::setVersionC() {
+  type_.version = GroupType::Version::C;
+  has_type_     = true;
+}
+
+void Group::setDataStream(std::uint32_t stream) {
+  data_stream_ = stream;
+}
+
+std::uint32_t Group::getDataStream() const {
+  return data_stream_;
+}
+
 void Group::setBlock(eBlockNumber block_num, Block block) {
   blocks_[block_num] = block;
+
+  if (has_type_)
+    return;
 
   if (block_num == BLOCK2) {
     type_ = GroupType(getBits<5>(block.data, 11));
@@ -213,28 +232,34 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
   if (!has_pi_)
     return;
 
-  // Allow 1 group with missed PI. For subsequent misses, don't process at all.
-  if (group.hasPI())
-    last_group_had_pi_ = true;
-  else if (last_group_had_pi_)
-    last_group_had_pi_ = false;
-  else
-    return;
-
-  if (group.isEmpty())
-    return;
-
   json_.clear();
-  json_["pi"] = getPrefixedHexString<4>(getPI());
-  if (options_.rbds) {
-    const std::string callsign{getCallsignFromPI(getPI())};
-    if (!callsign.empty()) {
-      if ((getPI() & 0xF000U) == 0x1000U)
-        json_["callsign_uncertain"] = callsign;
-      else
-        json_["callsign"] = callsign;
+
+  if (options_.streams)
+    json_["stream"] = group.getDataStream();
+
+  if (group.getType().version != GroupType::Version::C) {
+    // Allow 1 group with missed PI. For subsequent misses, don't process at all.
+    if (group.hasPI())
+      last_group_had_pi_ = true;
+    else if (last_group_had_pi_)
+      last_group_had_pi_ = false;
+    else
+      return;
+
+    if (group.isEmpty())
+      return;
+
+    json_["pi"] = getPrefixedHexString<4>(getPI());
+    if (options_.rbds) {
+      const std::string callsign{getCallsignFromPI(getPI())};
+      if (!callsign.empty()) {
+        if ((getPI() & 0xF000U) == 0x1000U)
+          json_["callsign_uncertain"] = callsign;
+        else
+          json_["callsign"] = callsign;
+      }
     }
-  }
+  }  // if not C
 
   if (options_.timestamp)
     json_["rx_time"] = getTimePointString(group.getRxTime(), options_.time_format);
@@ -268,8 +293,10 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
   if (group.hasType()) {
     const GroupType& type = group.getType();
 
-    // These groups can't be used for ODA
-    if (type.number == 0) {
+    if (type.version == GroupType::Version::C) {
+      decodeC(group);
+      // These groups can't be used for ODA
+    } else if (type.number == 0) {
       decodeType0(group);
     } else if (type.number == 1) {
       decodeType1(group);
@@ -334,7 +361,9 @@ uint16_t Station::getPI() const {
 }
 
 void Station::decodeBasics(const Group& group) {
-  if (group.has(BLOCK2)) {
+  if (group.getType().version == GroupType::Version::C) {
+    json_["group"] = "C";
+  } else if (group.has(BLOCK2)) {
     const uint16_t pty = getBits<5>(group.get(BLOCK2), 5);
 
     if (group.hasType())
@@ -1006,6 +1035,133 @@ void Station::decodeODAGroup(const Group& group) {
           getHexString<2>(group.get(BLOCK2) & 0b11111U) + " " +
           (group.has(BLOCK3) ? getHexString<4>(group.get(BLOCK3)) : "----") + " " +
           (group.has(BLOCK4) ? getHexString<4>(group.get(BLOCK4)) : "----");
+  }
+}
+
+void Station::decodeC(const Group& group) {
+  if (!group.has(BLOCK1) || !group.has(BLOCK2) || !group.has(BLOCK3) || !group.has(BLOCK4))
+    return;
+
+  const int fid = getBits<2>(group.get(BLOCK1), 14);
+  const int fn  = getBits<6>(group.get(BLOCK1), 8);
+
+  if (fid == 0 && fn == 0) {
+    // Page 47: Legacy type A & B transmission
+    json_["debug"].push_back("TODO: Tunnelling A & B over type C");
+  } else if (fid == 0 && (fn & 0b11'0000) == 0b10'0000) {
+    // Page 82: RFT data group for ODA pipe (fn & 0b1111)
+    const auto pipe            = fn & 0b1111;
+    json_["rft"]["pipe"]       = pipe;
+    const auto toggle_bit      = getBits<1>(group.get(BLOCK1), 7);
+    const auto segment_address = getBits<15>(group.get(BLOCK1), group.get(BLOCK2), 8);
+    if (oda_app_for_pipe_.find(pipe) != oda_app_for_pipe_.end()) {
+      json_["rft"]["app_name"] = getAppNameString(oda_app_for_pipe_[pipe]);
+    }
+    json_["rft"]["toggle"]       = toggle_bit;
+    json_["rft"]["byte_address"] = segment_address * 5;
+
+    rft_file_[pipe].receive(toggle_bit, segment_address, group.get(BLOCK2), group.get(BLOCK3),
+                            group.get(BLOCK4));
+
+    json_["rft"]["segment_data"] =
+        std::vector<int>({getBits<8>(group.get(BLOCK2), 0), getBits<8>(group.get(BLOCK3), 8),
+                          getBits<8>(group.get(BLOCK3), 0), getBits<8>(group.get(BLOCK4), 8),
+                          getBits<8>(group.get(BLOCK4), 0)});
+
+    if (rft_file_[pipe].hasNewCompleteFile()) {
+      json_["rft"]["file_contents"] = rft_file_[pipe].getBase64Data();
+      rft_file_[pipe].clear();
+    }
+
+  } else if (fid == 1) {
+    // Page 47
+    // Group type C ODA channel fn
+    // Channels 0-15 are reserved for providing additional data
+    json_["channel"] = fn;
+    json_["app_data"] =
+        std::vector<int>({getBits<8>(group.get(BLOCK1), 0), getBits<8>(group.get(BLOCK2), 8),
+                          getBits<8>(group.get(BLOCK2), 0), getBits<8>(group.get(BLOCK3), 8),
+                          getBits<8>(group.get(BLOCK3), 0), getBits<8>(group.get(BLOCK4), 8),
+                          getBits<8>(group.get(BLOCK4), 0)});
+  } else if (fid == 0b10 && fn == 0b000000) {
+    // Page 48
+    // AID and channel number assignment for group type C ODAs
+
+    const int ass_method = getBits<2>(group.get(BLOCK1), 6) + 1;
+    const int channel_id = getBits<6>(group.get(BLOCK1), 0);
+    switch (ass_method) {
+      case 1: {
+        json_["open_data_app"]["channel"]  = channel_id;
+        json_["open_data_app"]["oda_aid"]  = group.get(BLOCK2);
+        oda_app_for_pipe_[channel_id]      = group.get(BLOCK2);
+        json_["open_data_app"]["app_name"] = getAppNameString(group.get(BLOCK2));
+
+        const bool is_rft = channel_id < 16;
+
+        if (is_rft) {
+          // RFT: Page 79
+          const int variant = getBits<4>(group.get(BLOCK3), 12);
+          json_["variant"]  = variant;
+          if (variant == 0) {
+            const bool crc_flag            = getBool(group.get(BLOCK3), 11);
+            const auto file_version        = getBits<3>(group.get(BLOCK3), 8);
+            const auto file_identification = getBits<6>(group.get(BLOCK3), 2);
+            const auto file_size_bytes     = getBits<18>(group.get(BLOCK3), group.get(BLOCK4), 0);
+
+            rft_file_[channel_id].setSize(file_size_bytes);
+
+            json_["file_info"]["version"] = file_version;
+            json_["file_info"]["id"]      = file_identification;
+            json_["file_info"]["size"]    = file_size_bytes;
+            json_["file_info"]["has_crc"] = crc_flag;
+          } else if (variant == 1) {
+            // CRC (Page 80)
+            const auto crc_mode      = getBits<3>(group.get(BLOCK3), 9);
+            const auto chunk_address = getBits<9>(group.get(BLOCK3), 0);
+            const auto crc           = group.get(BLOCK4);
+
+            // json_el["crc_mode"] = crc_mode;
+            switch (crc_mode) {
+              case 0: json_["crc_info"]["file_crc16"] = crc; break;
+              case 1:
+              case 2:
+              case 3:
+              case 4:
+              case 5:
+                json_["crc_info"]["chunk_crc16"]   = crc;
+                json_["crc_info"]["chunk_address"] = 5 * chunk_address * (8 << crc_mode);
+                json_["crc_info"]["chunk_length"]  = 5 * (8 << crc_mode);
+                break;
+              default:
+                json_["debug"].push_back("TODO: CRC mode " + std::to_string(crc_mode));
+                break;
+            }
+
+          } else if (variant >= 8) {
+            // 8..15: Non-file-related ODA data
+            json_["non_file_oda_data"] =
+                getHexString<7>(getBits<28>(group.get(BLOCK3), group.get(BLOCK4), 0));
+          } else if (variant >= 2) {
+            // File-related ODA data
+            json_["file_oda_data"] =
+                getHexString<7>(getBits<28>(group.get(BLOCK3), group.get(BLOCK4), 0));
+          }
+        } else {
+          json_["app_data"] = std::vector<int>(
+              {getBits<8>(group.get(BLOCK3), 8), getBits<8>(group.get(BLOCK3), 0),
+               getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0)});
+        }
+
+        break;
+      }
+      default: json_["debug"].push_back("TODO: assignment method " + std::to_string(ass_method));
+    }
+  } else {
+    json_["debug"].push_back("TODO: FID " + std::to_string(fid) + " FN " + std::to_string(fn));
+    json_["data"] =
+        std::vector<int>({getBits<8>(group.get(BLOCK2), 8), getBits<8>(group.get(BLOCK2), 0),
+                          getBits<8>(group.get(BLOCK3), 8), getBits<8>(group.get(BLOCK3), 0),
+                          getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0)});
   }
 }
 

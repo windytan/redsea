@@ -47,34 +47,38 @@ class DeltaDecoder {
   unsigned prev_{0};
 };
 
-class Subcarrier {
+struct Demod {
+  liquid::AGC agc;
+  liquid::FIRFilter fir_lpf;
+  liquid::SymSync symsync;
+  DeltaDecoder delta_decoder;
+  BiphaseDecoder biphase_decoder;
+};
+
+class Subcarriers {
  public:
-  explicit Subcarrier(float carrier_frequency, float samplerate);
+  explicit Subcarriers(float samplerate);
   bool eof() const;
-  BitBuffer processChunk(MPXBuffer& input_chunk);
+  BitBuffer processChunk(MPXBuffer& input_chunk, int num_streams);
   void reset();
   float getSecondsSinceLastReset() const;
 
  private:
+  MPXBuffer& resampleChunk(MPXBuffer& input_chunk);
+
   // Samples since last reset
   std::uint32_t sample_num_{0};
   const float resample_ratio_;
 
-  liquid::FIRFilter fir_lpf_;
-  liquid::AGC agc_;
   liquid::NCO oscillator_;
-  liquid::SymSync symsync_;
   liquid::Modem modem_;
   liquid::Resampler resampler_;
+
+  std::array<Demod, 4> demods_;
 
   MPXBuffer resampled_chunk_{};
 
   bool is_eof_{false};
-
-  DeltaDecoder delta_decoder_;
-  BiphaseDecoder biphase_decoder_;
-
-  std::complex<float> prev_sym_;
 };
 
 }  // namespace redsea

@@ -35,7 +35,7 @@ Options getOptions(int argc, char** argv) {
   int fec_flag{1};
 
   // clang-format off
-  const std::array<struct option, 19> long_options{{
+  const std::array<option, 20> long_options{{
       {"input-bits",   no_argument,       nullptr,   'b'},
       {"channels",     required_argument, nullptr,   'c'},
       {"feed-through", no_argument,       nullptr,   'e'},
@@ -50,6 +50,7 @@ Options getOptions(int argc, char** argv) {
       {"show-raw",     no_argument,       nullptr,   'R'},
       {"timestamp",    required_argument, nullptr,   't'},
       {"rbds",         no_argument,       nullptr,   'u'},
+      {"streams",      no_argument,       nullptr,   's'},
       {"version",      no_argument,       nullptr,   'v'},
       {"output-hex",   no_argument,       nullptr,   'x'},
       {"no-fec",       no_argument,       &fec_flag, 0  },
@@ -61,7 +62,7 @@ Options getOptions(int argc, char** argv) {
   int option_index{};
   int option_char{};
 
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rt:uvx", long_options.data(),
+  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rst:uvx", long_options.data(),
                                     &option_index)) >= 0) {
     switch (option_char) {
       case 0:  // Flag
@@ -142,6 +143,7 @@ Options getOptions(int argc, char** argv) {
         break;
       }
       case 'R': options.show_raw = true; break;
+      case 's': options.streams = true; break;
       case 't':
         options.timestamp   = true;
         options.time_format = std::string(optarg);
@@ -177,12 +179,17 @@ Options getOptions(int argc, char** argv) {
     throw std::runtime_error("multi-channel input is only supported for MPX signals");
   }
 
+  if (options.streams && options.input_type != InputType::MPX_sndfile &&
+      options.input_type != InputType::MPX_stdin && options.input_type != InputType::Hex) {
+    throw std::runtime_error("RDS2 data streams are only supported for MPX and hex input");
+  }
+
   const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin && !options.print_usage &&
                               !options.exit_success};
 
   if (assuming_raw_mpx && !options.is_rate_defined) {
-    std::cerr << R"({"warning":"raw MPX sample rate not defined, assuming )" << kTargetSampleRate_Hz
-              << R"( Hz"})" << '\n';
+    std::cerr << R"(warning: raw MPX sample rate not defined, assuming )" << kTargetSampleRate_Hz
+              << R"( Hz)" << std::endl;
     options.samplerate = kTargetSampleRate_Hz;
   }
 

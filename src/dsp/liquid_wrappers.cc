@@ -32,13 +32,17 @@ extern "C" {
 
 namespace liquid {
 
-AGC::AGC(float bw, float initial_gain) : object_(agc_crcf_create()) {
+void AGC::init(float bw, float initial_gain) {
+  if (object_ != nullptr)
+    agc_crcf_destroy(object_);
+  object_ = agc_crcf_create();
   agc_crcf_set_bandwidth(object_, bw);
   agc_crcf_set_gain(object_, initial_gain);
 }
 
 AGC::~AGC() {
-  agc_crcf_destroy(object_);
+  if (object_ != nullptr)
+    agc_crcf_destroy(object_);
 }
 
 std::complex<float> AGC::execute(std::complex<float> s) {
@@ -47,13 +51,16 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   return result;
 }
 
-FIRFilter::FIRFilter(unsigned int len, float fc, float As, float mu)
-    : object_(firfilt_crcf_create_kaiser(len, fc, As, mu)) {
+void FIRFilter::init(unsigned int len, float fc, float As, float mu) {
+  if (object_ != nullptr)
+    firfilt_crcf_destroy(object_);
+  object_ = firfilt_crcf_create_kaiser(len, fc, As, mu);
   firfilt_crcf_set_scale(object_, 2.0f * fc);
 }
 
 FIRFilter::~FIRFilter() {
-  firfilt_crcf_destroy(object_);
+  if (object_ != nullptr)
+    firfilt_crcf_destroy(object_);
 }
 
 void FIRFilter::push(std::complex<float> s) {
@@ -76,7 +83,16 @@ NCO::NCO(liquid_ncotype type, float freq)
 }
 
 NCO::~NCO() {
-  nco_crcf_destroy(object_);
+  if (object_ != nullptr)
+    nco_crcf_destroy(object_);
+}
+
+void NCO::init(liquid_ncotype type, float freq) {
+  if (object_ != nullptr)
+    nco_crcf_destroy(object_);
+  object_            = nco_crcf_create(type);
+  initial_frequency_ = freq;
+  nco_crcf_set_frequency(object_, freq);
 }
 
 void NCO::reset() {
@@ -84,14 +100,32 @@ void NCO::reset() {
   nco_crcf_set_frequency(object_, initial_frequency_);
 }
 
-std::complex<float> NCO::mixDown(std::complex<float> s) {
-  std::complex<float> result;
-  nco_crcf_mix_down(object_, s, &result);
-  return result;
+std::complex<float> NCO::mixDown(std::complex<float> s, int n_stream) {
+  return s * std::polar(1.f, -phases_[n_stream]);
+}
+
+float unwrap(float phase) {
+  if (phase > kPi)
+    return phase - k2Pi;
+  if (phase < -kPi)
+    return phase + k2Pi;
+  return phase;
 }
 
 void NCO::step() {
   nco_crcf_step(object_);
+
+  // Calculate (unwrapped) phase difference
+  const float phase_now = nco_crcf_get_phase(object_);
+  const float delta     = unwrap(phase_now - prev_f0_phase_);
+
+  prev_f0_phase_ = phase_now;
+
+  constexpr std::array<float, 4> subcarrier_frequencies{57000.f, 66500.f, 71250.f, 76000.f};
+
+  for (size_t i = 0; i < 4; i++) {
+    phases_[i] = unwrap(phases_[i] + delta * subcarrier_frequencies[i] / 57000.f);
+  }
 }
 
 void NCO::setPLLBandwidth(float bw) {
@@ -102,12 +136,17 @@ void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
-SymSync::SymSync(liquid_firfilt_type ftype, unsigned k, unsigned m, float beta,
-                 unsigned num_filters)
-    : object_(symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters)), out_(8) {}
+void SymSync::init(liquid_firfilt_type ftype, unsigned k, unsigned m, float beta,
+                   unsigned num_filters) {
+  if (object_ != nullptr)
+    symsync_crcf_destroy(object_);
+  object_ = symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters);
+  out_.resize(8);
+}
 
 SymSync::~SymSync() {
-  symsync_crcf_destroy(object_);
+  if (object_ != nullptr)
+    symsync_crcf_destroy(object_);
 }
 
 void SymSync::reset() {
@@ -186,7 +225,9 @@ void Resampler::setRatio(float ratio) {
 }
 
 Resampler::~Resampler() {
-  resamp_rrrf_destroy(object_);
+  if (object_ != nullptr)
+
+    resamp_rrrf_destroy(object_);
 }
 
 unsigned int Resampler::execute(float in, std::array<float, kOutputArraySize>& out) {

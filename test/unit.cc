@@ -1130,3 +1130,42 @@ TEST_CASE("Clock-time formatting") {
     CHECK(time_string.substr(7, 4) == "0.00");
   }
 }
+
+TEST_CASE("CRC16") {
+  // Pg. 84
+  const std::vector<uint8_t> test_bytes{0x32, 0x44, 0x31, 0x31, 0x31, 0x32, 0x33, 0x34, 0x30, 0x31,
+                                        0x30, 0x31, 0x30, 0x35, 0x41, 0x42, 0x43, 0x44, 0x31, 0x32,
+                                        0x33, 0x46, 0x30, 0x58, 0x58, 0x58, 0x58, 0x31, 0x31, 0x30,
+                                        0x36, 0x39, 0x32, 0x31, 0x32, 0x34, 0x39, 0x31, 0x30, 0x30,
+                                        0x30, 0x33, 0x32, 0x30, 0x30, 0x36, 0x36};
+  const uint16_t expected_crc = 0x9723;
+  const uint16_t crc          = redsea::crc16_ccitt(test_bytes.data(), test_bytes.size());
+  CHECK(crc == expected_crc);
+}
+
+TEST_CASE("Base64 encoding") {
+  const std::string test_string1{"light wor"};
+  const std::string encoded1 = redsea::asBase64(test_string1.c_str(), test_string1.size());
+  CHECK(encoded1 == "bGlnaHQgd29y");
+
+  const std::string test_string2{"light wo"};
+  const std::string encoded2 = redsea::asBase64(test_string2.c_str(), test_string2.size());
+  CHECK(encoded2 == "bGlnaHQgd28=");
+
+  const std::string test_string3{"light w"};
+  const std::string encoded3 = redsea::asBase64(test_string3.c_str(), test_string3.size());
+  CHECK(encoded3 == "bGlnaHQgdw==");
+
+  const std::string test_string4{""};
+  const std::string encoded4 = redsea::asBase64(test_string4.c_str(), test_string4.size());
+  CHECK(encoded4 == "");
+}
+
+TEST_CASE("Round-up division") {
+  CHECK(redsea::divideRoundingUp(5, 2) == 3);
+  CHECK(redsea::divideRoundingUp(4, 2) == 2);
+  CHECK(redsea::divideRoundingUp(3, 2) == 2);
+  CHECK(redsea::divideRoundingUp(2, 2) == 1);
+  CHECK(redsea::divideRoundingUp(1, 2) == 1);
+  CHECK(redsea::divideRoundingUp(0, 2) == 0);
+}

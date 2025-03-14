@@ -27,6 +27,7 @@
 
 #include "src/options.h"
 #include "src/rdsstring.h"
+#include "src/rft.hh"
 #include "src/tmc/tmc.h"
 #include "src/util.h"
 
@@ -48,7 +49,7 @@ class Block {
 
 class GroupType {
  public:
-  enum class Version { A, B };
+  enum class Version { A, B, C };
 
   GroupType() = default;
   explicit GroupType(uint16_t type_code);
@@ -166,6 +167,9 @@ class Group {
   bool hasTime() const;
   std::chrono::time_point<std::chrono::system_clock> getRxTime() const;
   void printHex(std::ostream& stream) const;
+  void setVersionC();
+  void setDataStream(std::uint32_t stream);
+  std::uint32_t getDataStream() const;
 
   void disableOffsets();
   void setBlock(eBlockNumber block_num, Block block);
@@ -177,6 +181,7 @@ class Group {
   std::array<Block, 4> blocks_;
   std::chrono::time_point<std::chrono::system_clock> time_received_;
   float bler_{0.f};
+  std::uint32_t data_stream_{0};
   bool has_type_{false};
   bool has_c_prime_{false};
   bool has_bler_{false};
@@ -208,6 +213,7 @@ class Station {
   void decodeType15A(const Group& group);
   void decodeType15B(const Group& group);
   void decodeODAGroup(const Group& group);
+  void decodeC(const Group& group);
   void parseEnhancedRT(const Group& group);
   void parseDAB(const Group& group);
 
@@ -229,6 +235,7 @@ class Station {
   std::string clock_time_;
   bool has_country_{false};
   std::map<GroupType, uint16_t> oda_app_for_group_;
+  std::map<uint16_t, uint16_t> oda_app_for_pipe_;
   bool ert_uses_chartable_e3_{false};
   std::map<uint16_t, RDSString> eon_ps_names_;
   std::map<uint16_t, AltFreqList> eon_alt_freqs_;
@@ -239,6 +246,9 @@ class Station {
   nlohmann::ordered_json json_;
 
   tmc::TMCService tmc_;
+
+  // One RFT file per pipe
+  std::array<RFTFile, 16> rft_file_;
 };
 
 void parseRadioTextPlus(const Group& group, RadioText& rt, nlohmann::ordered_json& json_el);

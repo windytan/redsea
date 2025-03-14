@@ -87,6 +87,8 @@ void printUsage() {
          "\n"
          "-R, --show-raw         Include raw group data as hex in the JSON stream.\n"
          "\n"
+         "-s, --streams          Decode RDS2 data streams 1, 2, and 3, if they exist.\n"
+         "\n"
          "-t, --timestamp FORMAT Add time of decoding to JSON groups; see man strftime\n"
          "                       for formatting options (or try \"%c\"). Use \"%f\" to add\n"
          "                       hundredths of seconds.\n"
@@ -128,22 +130,27 @@ int processMPXInput(Options options) {
 
   auto& output_stream = options.feed_thru ? std::cerr : std::cout;
 
+  const int num_streams = options.streams ? 4 : 1;
+
   // Each channel is matched with 1 subcarrier (in RDS1)
   std::vector<std::unique_ptr<Channel>> channels;
-  std::vector<std::unique_ptr<Subcarrier>> subcarriers;
+  std::vector<std::unique_ptr<Subcarriers>> subcarriers;
   for (uint32_t i = 0; i < options.num_channels; i++) {
     channels.emplace_back(std::make_unique<Channel>(options, i, output_stream));
-    subcarriers.push_back(std::make_unique<Subcarrier>(57000.f, options.samplerate));
+    subcarriers.push_back(std::make_unique<Subcarriers>(options.samplerate));
   }
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
     for (uint32_t i = 0; i < options.num_channels; i++) {
-      channels[i]->processBits(subcarriers[i]->processChunk(mpx.readChunk(i)));
-      if (channels[i]->getSecondsSinceCarrierLost() > 10.f &&
-          subcarriers[i]->getSecondsSinceLastReset() > 5.f) {
-        subcarriers[i]->reset();
-        channels[i]->resetPI();
+      const auto bits = subcarriers[i]->processChunk(mpx.readChunk(i), num_streams);
+      for (int n_stream = 0; n_stream < num_streams; n_stream++) {
+        channels[i]->processBits(bits, n_stream);
+        if (channels[i]->getSecondsSinceCarrierLost() > 10.f &&
+            subcarriers[i]->getSecondsSinceLastReset() > 5.f) {
+          subcarriers[i]->reset();
+          channels[i]->resetPI();
+        }
       }
     }
   }
@@ -158,7 +165,7 @@ int processASCIIBitsInput(const Options& options) {
   AsciiBitReader ascii_reader(options);
 
   while (!ascii_reader.eof()) {
-    channel.processBit(ascii_reader.readBit());
+    channel.processBit(ascii_reader.readBit(), 0);
   }
 
   channel.flush();
@@ -170,7 +177,8 @@ int processHexInput(const Options& options) {
   Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
 
   while (!std::cin.eof()) {
-    channel.processGroup(readHexGroup(options));
+    const auto group = readHexGroup(options);
+    channel.processGroup(group, group.getDataStream());
   }
 
   return EXIT_SUCCESS;
@@ -180,7 +188,7 @@ int processTEFInput(const Options& options) {
   Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
 
   while (!std::cin.eof()) {
-    channel.processGroup(readTEFGroup(options));
+    channel.processGroup(readTEFGroup(options), 0);
   }
 
   return EXIT_SUCCESS;
