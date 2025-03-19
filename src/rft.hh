@@ -2,11 +2,12 @@
 #define RFT_HH_
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
-#include "base64.hh"
-#include "util.h"
+#include "src/base64.hh"
+#include "src/util.hh"
 
 namespace redsea {
 
@@ -36,6 +37,7 @@ class RFTFile {
   void setCRCFlag(int flag) {
     expect_crc_ = flag;
   }
+
   // \param crc Expected crc16_ccitt
   // \note TODO CRC mode
   void setExpectedCRC(std::uint16_t expected_crc) {
@@ -61,21 +63,18 @@ class RFTFile {
 
     if (segment_address < kMaxNumSegments) {
       RFTSegment segment;
-      segment.bytes = {
-          static_cast<uint8_t>(getBits<8>(block2, 0)), static_cast<uint8_t>(getBits<8>(block3, 8)),
-          static_cast<uint8_t>(getBits<8>(block3, 0)), static_cast<uint8_t>(getBits<8>(block4, 8)),
-          static_cast<uint8_t>(getBits<8>(block4, 0))};
+      segment.bytes              = {static_cast<std::uint8_t>(getBits<8>(block2, 0)),
+                                    static_cast<std::uint8_t>(getBits<8>(block3, 8)),
+                                    static_cast<std::uint8_t>(getBits<8>(block3, 0)),
+                                    static_cast<std::uint8_t>(getBits<8>(block4, 8)),
+                                    static_cast<std::uint8_t>(getBits<8>(block4, 0))};
       data_[segment_address]     = segment;
       received_[segment_address] = true;
     }
   }
 
   bool hasNewCompleteFile() const {
-    if (is_printed_)
-      return false;
-    if (expected_size_bytes_ == 0)
-      return false;
-    if (received_.empty())
+    if (is_printed_ || expected_size_bytes_ == 0 || received_.empty())
       return false;
 
     const std::size_t expected_num_segments = divideRoundingUp(expected_size_bytes_, 5U);
@@ -95,7 +94,7 @@ class RFTFile {
   }
 
  private:
-  static constexpr size_t kMaxNumSegments = 1 << 15;
+  static constexpr std::size_t kMaxNumSegments = 1 << 15;
 
   // 163.8 kB buffer in heap
   std::vector<RFTSegment> data_;

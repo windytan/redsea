@@ -14,13 +14,18 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/channel.h"
+#include "src/channel.hh"
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 
-#include "src/common.h"
+#include "src/constants.hh"
+#include "src/io/bitbuffer.hh"
+#include "src/io/output.hh"
+#include "src/options.hh"
+#include "src/util.hh"
 
 namespace redsea {
 
@@ -44,7 +49,7 @@ Channel::Channel(const Options& options, int which_channel, std::ostream& output
 }
 
 // Used for testing (PI is already known)
-Channel::Channel(const Options& options, std::ostream& output_stream, uint16_t pi)
+Channel::Channel(const Options& options, std::ostream& output_stream, std::uint16_t pi)
     : options_(options), output_stream_(output_stream), station_(options, 0, pi) {
   for (auto& strm : block_stream_) {
     strm.init(options);
@@ -54,6 +59,8 @@ Channel::Channel(const Options& options, std::ostream& output_stream, uint16_t p
   cached_pi_.update(pi);
 }
 
+// \param bit 0 or 1
+// \param which_stream Which data stream was it received on, 0..3
 void Channel::processBit(bool bit, std::size_t which_stream) {
   block_stream_[which_stream].pushBit(bit);
 
@@ -61,18 +68,19 @@ void Channel::processBit(bool bit, std::size_t which_stream) {
     processGroup(block_stream_[which_stream].popGroup(), which_stream);
 }
 
+// \param which_stream Which data stream was it received on, 0..3
 void Channel::processBits(const BitBuffer& buffer, std::size_t which_stream) {
-  for (size_t i_bit = 0; i_bit < buffer.bits[which_stream].size(); i_bit++) {
+  for (std::size_t i_bit = 0; i_bit < buffer.bits[which_stream].size(); i_bit++) {
     block_stream_[which_stream].pushBit(buffer.bits[which_stream].at(i_bit));
 
     if (block_stream_[which_stream].hasGroupReady()) {
       Group group = block_stream_[which_stream].popGroup();
 
       // Calculate this group's rx time based on the buffer timestamp and bit offset
-      auto group_time =
-          buffer.time_received -
-          std::chrono::milliseconds(static_cast<int>(
-              static_cast<double>(buffer.bits[which_stream].size() - 1 - i_bit) / 1187.5 * 1e3));
+      auto group_time = buffer.time_received -
+                        std::chrono::milliseconds(static_cast<int>(
+                            static_cast<double>(buffer.bits[which_stream].size() - 1 - i_bit) /
+                            kBitsPerSecond * 1e3));
 
       // When the source is faster than real-time, backwards timestamp calculation
       // produces meaningless results. We want to make sure that the time stays monotonic.
@@ -89,6 +97,7 @@ void Channel::processBits(const BitBuffer& buffer, std::size_t which_stream) {
 }
 
 // Handle this group as if it was just received.
+// \param which_stream Which data stream was it received on, 0..3
 void Channel::processGroup(Group group, std::size_t which_stream) {
   if (options_.timestamp && !group.hasTime()) {
     auto now = std::chrono::system_clock::now();
@@ -128,14 +137,7 @@ void Channel::processGroup(Group group, std::size_t which_stream) {
   }
 
   if (options_.output_type == redsea::OutputType::Hex) {
-    if (!group.isEmpty()) {
-      if (group.getDataStream() > 0)
-        output_stream_ << "#S" << group.getDataStream() << " ";
-      group.printHex(output_stream_);
-      if (options_.timestamp)
-        output_stream_ << ' ' << getTimePointString(group.getRxTime(), options_.time_format);
-      output_stream_ << '\n' << std::flush;
-    }
+    printAsHex(group, options_, output_stream_);
   } else {
     station_.updateAndPrint(group, output_stream_);
   }

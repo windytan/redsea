@@ -14,15 +14,18 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/tmc/locationdb.h"
+#include "src/tmc/locationdb.hh"
 
 #include <climits>
+#include <cstdint>
+#include <exception>
+#include <ostream>
 #include <regex>
 #include <string>
 
 #include "ext/iconvpp/iconv.hpp"
 
-#include "src/tmc/csv.h"
+#include "src/tmc/csv.hh"
 
 namespace redsea {
 
@@ -39,8 +42,8 @@ std::string to_utf8(const std::string& input, const iconvpp::converter& converte
 
 }  // namespace
 
-uint16_t readLTN(const std::string& directory) {
-  uint16_t ltn = 0;
+std::uint16_t readLTN(const std::string& directory) {
+  std::uint16_t ltn = 0;
 
   const CSVTable table = readCSVWithTitles(directory + "/LOCATIONDATASETS.DAT", ';');
   for (const CSVRow& row : table.rows) {
@@ -154,9 +157,9 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
   table = readCSVWithTitles(directory + "/POFFSETS.DAT", ';');
   for (const CSVRow& row : table.rows) {
     try {
-      const uint16_t lcd = get_uint16(table, row, "LCD");
-      const uint16_t neg = get_uint16(table, row, "NEG_OFF_LCD");
-      const uint16_t pos = get_uint16(table, row, "POS_OFF_LCD");
+      const auto lcd = get_uint16(table, row, "LCD");
+      const auto neg = get_uint16(table, row, "NEG_OFF_LCD");
+      const auto pos = get_uint16(table, row, "POS_OFF_LCD");
       if (locdb.points.find(lcd) != locdb.points.end()) {
         locdb.points[lcd].neg_off = neg;
         locdb.points[lcd].pos_off = pos;

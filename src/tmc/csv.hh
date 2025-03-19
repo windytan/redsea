@@ -2,7 +2,9 @@
 #define TMC_CSV_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <map>
 #include <string>
 #include <vector>
@@ -12,7 +14,7 @@ namespace redsea {
 using CSVRow = std::vector<std::string>;
 
 struct CSVTable {
-  std::map<std::string, size_t> titles;
+  std::map<std::string, std::size_t> titles;
   std::vector<CSVRow> rows;
 };
 
@@ -54,7 +56,7 @@ CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {
 
     const std::vector<std::string> fields = splitLine(line, delimiter);
     if (is_title_row) {
-      for (size_t i = 0; i < fields.size(); i++) table.titles[fields[i]] = i;
+      for (std::size_t i = 0; i < fields.size(); i++) table.titles[fields[i]] = i;
       is_title_row = false;
     } else {
       if (fields.size() <= table.titles.size())
@@ -74,7 +76,7 @@ int get_int(const CSVTable& table, const CSVRow& row, const std::string& title);
 
 // Find an element by its title and return it as uint16_t.
 // @throws exceptions from std::stoi
-uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title);
+std::uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title);
 
 // Find an element by its title and return it as bool.
 bool row_contains(const CSVTable& table, const CSVRow& row, const std::string& title);

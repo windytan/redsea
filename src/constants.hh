@@ -14,43 +14,26 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#ifndef OPTIONS_H_
-#define OPTIONS_H_
-
-#include <cstdint>
-#include <string>
-#include <vector>
+#ifndef CONSTANTS_H_
+#define CONSTANTS_H_
 
 namespace redsea {
 
-enum class InputType { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
+// RDS bitrate
+constexpr float kBitsPerSecond        = 1187.5f;
+// Minimum sensible rate to still have RDS below Nyquist
+constexpr float kMinimumSampleRate_Hz = 128'000.f;
+// BLER is averaged over this many groups
+constexpr int kNumBlerAverageGroups   = 12;
+// Internally resample to this rate
+constexpr float kTargetSampleRate_Hz  = 171'000.f;
 
-enum class OutputType { Hex, JSON };
+// Limits of the resamp_rrrf object
+constexpr float kLiquidMinimumResamplerRatio = 0.004f;
+constexpr float kMaximumSampleRate_Hz        = 40'000'000.f;
+static_assert(kMaximumSampleRate_Hz < kTargetSampleRate_Hz / kLiquidMinimumResamplerRatio, "");
 
-struct Options {
-  bool rbds{};
-  bool feed_thru{};
-  bool show_partial{};
-  bool exit_success{};
-  bool print_usage{};
-  bool print_version{};
-  bool timestamp{};
-  bool bler{};
-  bool show_raw{};
-  bool is_rate_defined{};
-  bool is_num_channels_defined{};
-  bool use_fec{true};
-  bool streams{};
-  float samplerate{};
-  uint32_t num_channels{1};
-  InputType input_type{InputType::MPX_stdin};
-  OutputType output_type{OutputType::JSON};
-  std::vector<std::string> loctable_dirs;
-  std::string sndfilename;
-  std::string time_format;
-};
-
-Options getOptions(int argc, char** argv);
+constexpr float kMaxResampleRatio = kTargetSampleRate_Hz / kMinimumSampleRate_Hz;
 
 }  // namespace redsea
-#endif  // OPTIONS_H_
+#endif  // CONSTANTS_H_

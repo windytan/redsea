@@ -44,6 +44,14 @@ Install Catch2, then in the redsea root run:
     meson compile
     meson test
 
+### Generate coverage report
+
+    meson setup -Db_coverage=true build -Dbuild_tests=true
+    cd build
+    meson compile
+    meson test
+    ninja coverage-html
+
 ## General PR guidelines
 
 You can directly contribute to the source code via pull requests. We have a

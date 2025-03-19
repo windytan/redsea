@@ -19,10 +19,12 @@
 
 #include <array>
 #include <complex>
+#include <cstdint>
 
-#include "src/common.h"
-#include "src/dsp/liquid_wrappers.h"
-#include "src/input.h"
+#include "src/constants.hh"
+#include "src/dsp/liquid_wrappers.hh"
+#include "src/io/bitbuffer.hh"
+#include "src/io/input.hh"
 
 namespace redsea {
 
@@ -34,17 +36,17 @@ class BiphaseDecoder {
  private:
   std::complex<float> prev_psk_symbol_{0.0f, 0.0f};
   std::array<float, 128> clock_history_{};
-  uint32_t clock_{};
-  uint32_t clock_polarity_{};
+  std::uint32_t clock_{};
+  std::uint32_t clock_polarity_{};
 };
 
 class DeltaDecoder {
  public:
   DeltaDecoder() = default;
-  unsigned decode(unsigned d);
+  std::uint32_t decode(std::uint32_t d);
 
  private:
-  unsigned prev_{0};
+  std::uint32_t prev_{0};
 };
 
 struct Demod {
@@ -59,12 +61,12 @@ class Subcarriers {
  public:
   explicit Subcarriers(float samplerate);
   bool eof() const;
-  BitBuffer processChunk(MPXBuffer& input_chunk, int num_streams);
+  BitBuffer processChunk(const MPXBuffer& input_chunk, int num_data_streams);
   void reset();
   float getSecondsSinceLastReset() const;
 
  private:
-  MPXBuffer& resampleChunk(MPXBuffer& input_chunk);
+  const MPXBuffer& resampleChunk(const MPXBuffer& input_chunk);
 
   // Samples since last reset
   std::uint32_t sample_num_{0};

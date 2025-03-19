@@ -19,6 +19,8 @@
 
 #include <array>
 #include <complex>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
 constexpr float kPi{3.14159265358979323846f};
@@ -75,11 +77,11 @@ class FIRFilter {
   FIRFilter& operator=(FIRFilter&& other) = delete;
 
   ~FIRFilter();
-  void init(unsigned int len, float fc, float As = 60.0f, float mu = 0.0f);
+  void init(std::uint32_t len, float fc, float As = 60.0f, float mu = 0.0f);
 
   void push(std::complex<float> s);
   std::complex<float> execute();
-  size_t length() const;
+  std::size_t length() const;
 
  private:
   firfilt_crcf object_{nullptr};
@@ -114,7 +116,8 @@ class NCO {
 class SymSync {
  public:
   SymSync() = default;
-  void init(liquid_firfilt_type ftype, unsigned k, unsigned m, float beta, unsigned num_filters);
+  void init(liquid_firfilt_type ftype, std::uint32_t k, std::uint32_t m, float beta,
+            std::uint32_t num_filters);
   SymSync(const SymSync&)             = delete;
   SymSync& operator=(const SymSync&)  = delete;
   SymSync(SymSync&& other)            = delete;
@@ -122,7 +125,7 @@ class SymSync {
   ~SymSync();
   void reset();
   void setBandwidth(float);
-  void setOutputRate(unsigned);
+  void setOutputRate(std::uint32_t);
   redsea::Maybe<std::complex<float>> execute(std::complex<float>& in);
 
  private:
@@ -138,7 +141,7 @@ class Modem {
   Modem(Modem&& other)            = delete;
   Modem& operator=(Modem&& other) = delete;
   ~Modem();
-  unsigned int demodulate(std::complex<float> sample);
+  std::uint32_t demodulate(std::complex<float> sample);
   float getPhaseError();
 
  private:
@@ -153,7 +156,7 @@ class Resampler {
  public:
   static constexpr std::size_t kOutputArraySize{2ULL};
 
-  explicit Resampler(unsigned int length);
+  explicit Resampler(std::uint32_t length);
   Resampler(const Resampler&)             = delete;
   Resampler& operator=(const Resampler&)  = delete;
   Resampler(Resampler&& other)            = delete;
@@ -161,7 +164,7 @@ class Resampler {
   ~Resampler();
   void setRatio(float ratio);
 
-  unsigned int execute(float in, std::array<float, kOutputArraySize>& out);
+  std::uint32_t execute(float in, std::array<float, kOutputArraySize>& out);
 
  private:
   resamp_rrrf object_;

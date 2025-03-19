@@ -14,12 +14,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/rdsstring.h"
+#include "src/text/rdsstring.hh"
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <iterator>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -32,7 +34,7 @@ namespace {
 
 // EN 50067:1998, Annex E (pp. 73-76)
 // plus UCS-2 control codes
-std::string getRDSCharString(uint8_t code) {
+std::string getRDSCharString(std::uint8_t code) {
   // clang-format off
   static const std::array<std::string, 256> codetable_G0({
     " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", "\n"," ", " ", "\r"," ", " ",
@@ -58,13 +60,13 @@ std::string getRDSCharString(uint8_t code) {
 
 // Length of a UTF-8 character starting at byte_start.
 // 0 on error.
-size_t charlen(const std::string& str, size_t byte_start) {
-  size_t nbyte{byte_start};
+std::size_t charlen(const std::string& str, std::size_t byte_start) {
+  std::size_t nbyte{byte_start};
 
   if (nbyte >= str.length())
     return 0;
 
-  while ((static_cast<unsigned char>(str[nbyte]) & 0b1100'0000U) == 0b1000'0000U) {
+  while ((static_cast<std::uint8_t>(str[nbyte]) & 0b1100'0000U) == 0b1000'0000U) {
     nbyte++;
 
     if (nbyte >= str.length())
@@ -83,14 +85,14 @@ std::string decodeUCS2(const std::string& src) {
   return dst;
 }
 
-constexpr uint8_t kStringTerminator{0x0D};
-constexpr uint8_t kBlankSpace{0x20};
+constexpr std::uint8_t kStringTerminator{0x0D};
+constexpr std::uint8_t kBlankSpace{0x20};
 
 }  // namespace
 
-RDSString::RDSString(size_t len) : data_(len) {}
+RDSString::RDSString(std::size_t len) : data_(len) {}
 
-void RDSString::set(size_t pos, uint8_t byte) {
+void RDSString::set(std::size_t pos, std::uint8_t byte) {
   if (pos >= data_.size())
     return;
 
@@ -113,33 +115,33 @@ void RDSString::set(size_t pos, uint8_t byte) {
   prev_pos_ = pos;
 }
 
-void RDSString::set(size_t pos, uint8_t byte1, uint8_t byte2) {
+void RDSString::set(std::size_t pos, std::uint8_t byte1, std::uint8_t byte2) {
   set(pos, byte1);
   set(pos + 1, byte2);
 }
 
 // Length, in bytes, is exactly the position of the first non-received character
-size_t RDSString::getReceivedLength() const {
+std::size_t RDSString::getReceivedLength() const {
   return sequential_length_;
 }
 
 // Length, in bytes, up to the first string terminator, or the full allocated length
-size_t RDSString::getExpectedLength() const {
+std::size_t RDSString::getExpectedLength() const {
   const auto terminated_length =
       std::distance(data_.cbegin(),
                     std::find_if(data_.cbegin(), data_.cend(),
-                                 [](uint8_t b) { return b == kStringTerminator; })) +
+                                 [](std::uint8_t b) { return b == kStringTerminator; })) +
       1;
 
-  return std::min(static_cast<size_t>(terminated_length), data_.size());
+  return std::min(static_cast<std::size_t>(terminated_length), data_.size());
 }
 
 bool RDSString::hasPreviouslyReceivedTerminators() const {
   return std::find_if(data_.cbegin(), data_.cend(),
-                      [](uint8_t b) { return b == kStringTerminator; }) != data_.cend();
+                      [](std::uint8_t b) { return b == kStringTerminator; }) != data_.cend();
 }
 
-void RDSString::resize(size_t n) {
+void RDSString::resize(std::size_t n) {
   data_.resize(n, kBlankSpace);
 }
 
@@ -159,24 +161,26 @@ std::string RDSString::str() const {
     case Encoding::Basic:
       return std::accumulate(
           bytes.cbegin(), bytes.cend(), std::string(""),
-          [](const std::string& s, uint8_t b) { return s + getRDSCharString(b); });
+          [](const std::string& s, std::uint8_t b) { return s + getRDSCharString(b); });
 
     case Encoding::UCS2:
       return decodeUCS2(std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size()));
 
-    case Encoding::UTF8: return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
+    case Encoding::UTF8:
+      return std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
   }
 
   return "";
 }
 
-std::vector<uint8_t> RDSString::getData() const {
-  const size_t len{getExpectedLength()};
-  std::vector<uint8_t> result(len);
-  for (size_t i = 0; i < len; i++)
+std::vector<std::uint8_t> RDSString::getData() const {
+  const std::size_t len{getExpectedLength()};
+  std::vector<std::uint8_t> result(len);
+  for (std::size_t i = 0; i < len; i++) {
     result[i] = sequential_length_ > i && data_[i] != kStringTerminator && data_[i] != 0x00
                     ? data_[i]
                     : kBlankSpace;
+  }
 
   return result;
 }
@@ -187,11 +191,11 @@ const std::string& RDSString::getLastCompleteString() const {
 
 // Overload used in RT+ / eRT+
 // Find substring in UTF-8
-std::string RDSString::getLastCompleteString(size_t start, size_t len) const {
+std::string RDSString::getLastCompleteString(std::size_t start, std::size_t len) const {
   // Find byte offset of start position
-  size_t byte_start{};
-  for (size_t i_char{}; i_char < start; i_char++) {
-    const size_t clen{charlen(last_complete_string_, byte_start)};
+  std::size_t byte_start{};
+  for (std::size_t i_char{}; i_char < start; i_char++) {
+    const std::size_t clen{charlen(last_complete_string_, byte_start)};
     if (clen == 0)
       return "";
 
@@ -199,9 +203,9 @@ std::string RDSString::getLastCompleteString(size_t start, size_t len) const {
   }
 
   // Find byte offset of end position
-  size_t byte_end{byte_start};
-  for (size_t i_char = 0; i_char < len; i_char++) {
-    const size_t clen{charlen(last_complete_string_, byte_end)};
+  std::size_t byte_end{byte_start};
+  for (std::size_t i_char = 0; i_char < len; i_char++) {
+    const std::size_t clen{charlen(last_complete_string_, byte_end)};
     if (clen == 0)
       return "";
 

@@ -74,8 +74,7 @@ an .exe with MSYS2/MinGW. This is a bit more involved - instructions are in [the
 Downloading a [release version](https://github.com/windytan/redsea/releases) is recommended.
 
 Alternatively, if you wish to have the latest snapshot, you can also clone this git repository.
-The snapshot might be more work-in-progress than the releases, although we attempt to
-keep the main branch stable.
+The snapshots are work-in-progress, but we attempt to always keep the main branch in a working condition.
 
         $ git clone https://github.com/windytan/redsea.git
         $ cd redsea
@@ -182,6 +181,8 @@ redsea -f WAVEFILE
                        resample if this differs from 171000 Hz.
 
 -R, --show-raw         Include raw group data as hex in the JSON stream.
+
+-s, --streams          Decode RDS2 data streams 1, 2, and 3, if they exist.
 
 -t, --timestamp FORMAT Add time of decoding to JSON groups; see man strftime
                        for formatting options (or try "%c"). Use "%f" to add

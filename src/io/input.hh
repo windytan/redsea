@@ -19,14 +19,15 @@
 
 #include <array>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 
 #include <sndfile.h>
 
-#include "src/common.h"
-#include "src/groups.h"
-#include "src/options.h"
+#include "src/constants.hh"
+#include "src/groups.hh"
+#include "src/options.hh"
 
 namespace redsea {
 
@@ -39,7 +40,7 @@ constexpr auto kBufferSize = static_cast<std::size_t>(kInputChunkSize * kMaxResa
 class MPXBuffer {
  public:
   std::array<float, kBufferSize> data{};
-  size_t used_size{};
+  std::size_t used_size{};
   std::chrono::time_point<std::chrono::system_clock> time_received;
 };
 
@@ -59,12 +60,12 @@ class MPXReader {
   void init(const Options& options);
   bool eof() const;
   void fillBuffer();
-  MPXBuffer& readChunk(uint32_t channel);
+  MPXBuffer& readChunk(std::uint32_t channel);
   float getSamplerate() const;
-  uint32_t getNumChannels() const;
+  std::uint32_t getNumChannels() const;
 
  private:
-  uint32_t num_channels_{};
+  std::uint32_t num_channels_{};
   sf_count_t chunk_size_{};
   bool is_eof_{true};
   bool feed_thru_{false};

@@ -7,13 +7,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
-#include "../src/block_sync.h"
-#include "../src/channel.h"
-#include "../src/common.h"
-#include "../src/groups.h"
-#include "../src/options.h"
-#include "../src/tmc/csv.h"
-#include "test_helpers.h"
+#include "../src/block_sync.hh"
+#include "../src/channel.hh"
+#include "../src/constants.hh"
+#include "../src/groups.hh"
+#include "../src/options.hh"
+#include "../src/tmc/csv.hh"
+#include "test_helpers.hh"
 
 TEST_CASE("Bitfield extraction") {
   constexpr std::uint16_t block1{0b0001'0010'0011'0100};
@@ -383,7 +383,7 @@ TEST_CASE("Radiotext") {
 TEST_CASE("Radiotext failing corner cases", "[!mayfail]") {
   redsea::Options options;
 
-  SECTION("String length method A received out-of-order", "[!mayfail]") {
+  SECTION("TODO: String length method A received out-of-order") {
     options.rbds = true;
 
     // JACK 96.9 (ca) 2019-05-05
@@ -406,7 +406,7 @@ TEST_CASE("Radiotext failing corner cases", "[!mayfail]") {
   }
 
   // https://github.com/windytan/redsea/issues/118
-  SECTION("String length hybrid method A+B: Terminated *and* padded") {
+  SECTION("TODO: String length hybrid method A+B: Terminated *and* padded") {
     // Radio Austria (at) 2024
     const auto json_lines{hex2json(
         {0xA3E0'2550'5375'7065, 0xA3E0'2551'7273'7461, 0xA3E0'2552'7273'2026, 0xA3E0'2553'2053'7570,
@@ -1133,13 +1133,13 @@ TEST_CASE("Clock-time formatting") {
 
 TEST_CASE("CRC16") {
   // Pg. 84
-  const std::vector<uint8_t> test_bytes{0x32, 0x44, 0x31, 0x31, 0x31, 0x32, 0x33, 0x34, 0x30, 0x31,
-                                        0x30, 0x31, 0x30, 0x35, 0x41, 0x42, 0x43, 0x44, 0x31, 0x32,
-                                        0x33, 0x46, 0x30, 0x58, 0x58, 0x58, 0x58, 0x31, 0x31, 0x30,
-                                        0x36, 0x39, 0x32, 0x31, 0x32, 0x34, 0x39, 0x31, 0x30, 0x30,
-                                        0x30, 0x33, 0x32, 0x30, 0x30, 0x36, 0x36};
-  const uint16_t expected_crc = 0x9723;
-  const uint16_t crc          = redsea::crc16_ccitt(test_bytes.data(), test_bytes.size());
+  const std::vector<std::uint8_t> test_bytes{
+      0x32, 0x44, 0x31, 0x31, 0x31, 0x32, 0x33, 0x34, 0x30, 0x31, 0x30, 0x31,
+      0x30, 0x35, 0x41, 0x42, 0x43, 0x44, 0x31, 0x32, 0x33, 0x46, 0x30, 0x58,
+      0x58, 0x58, 0x58, 0x31, 0x31, 0x30, 0x36, 0x39, 0x32, 0x31, 0x32, 0x34,
+      0x39, 0x31, 0x30, 0x30, 0x30, 0x33, 0x32, 0x30, 0x30, 0x36, 0x36};
+  const std::uint16_t expected_crc = 0x9723;
+  const std::uint16_t crc          = redsea::crc16_ccitt(test_bytes.data(), test_bytes.size());
   CHECK(crc == expected_crc);
 }
 

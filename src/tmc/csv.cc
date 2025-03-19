@@ -1,8 +1,10 @@
-#include "src/tmc/csv.h"
+#include "src/tmc/csv.hh"
 
 #include <cstdint>
 #include <fstream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 namespace redsea {
 
@@ -30,7 +32,7 @@ std::vector<std::vector<std::string>> readCSV(const std::string& filename, char 
     line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
     line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
-    lines.push_back(splitLine(line, delimiter));
+    lines.emplace_back(splitLine(line, delimiter));
   }
 
   in.close();
@@ -61,8 +63,8 @@ int get_int(const CSVTable& table, const CSVRow& row, const std::string& title) 
   return std::stoi(row.at(table.titles.at(title)));
 }
 
-uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title) {
-  return static_cast<uint16_t>(get_int(table, row, title));
+std::uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title) {
+  return static_cast<std::uint16_t>(get_int(table, row, title));
 }
 
 bool row_contains(const CSVTable& table, const CSVRow& row, const std::string& title) {

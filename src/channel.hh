@@ -18,11 +18,16 @@
 #define CHANNEL_H_
 
 #include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 
-#include "src/block_sync.h"
-#include "src/common.h"
-#include "src/options.h"
+#include "src/block_sync.hh"
+#include "src/constants.hh"
+#include "src/io/bitbuffer.hh"
+#include "src/options.hh"
+#include "src/util.hh"
 
 namespace redsea {
 
@@ -30,12 +35,12 @@ namespace redsea {
 // code and ignores spurious bit errors.
 class CachedPI {
  public:
-  enum class Result { ChangeConfirmed, NoChange, SpuriousChange };
+  enum class Result : std::uint8_t { ChangeConfirmed, NoChange, SpuriousChange };
 
   CachedPI() = default;
 
   // Input the most recently received PI code.
-  Result update(const uint16_t pi) {
+  Result update(const std::uint16_t pi) {
     Result status(Result::SpuriousChange);
 
     // Three repeats of the same PI --> confirmed change
@@ -56,7 +61,7 @@ class CachedPI {
 
     return status;
   }
-  uint16_t get() const {
+  std::uint16_t get() const {
     return pi_confirmed_;
   }
   void reset() {
@@ -65,16 +70,16 @@ class CachedPI {
   }
 
  private:
-  uint16_t pi_confirmed_{0};
-  uint16_t pi_prev1_{0};
-  uint16_t pi_prev2_{0};
+  std::uint16_t pi_confirmed_{0};
+  std::uint16_t pi_prev1_{0};
+  std::uint16_t pi_prev2_{0};
   bool has_previous_{false};
 };
 
 class Channel {
  public:
   Channel(const Options& options, int which_channel, std::ostream& output_stream);
-  Channel(const Options& options, std::ostream& output_stream, uint16_t pi);
+  Channel(const Options& options, std::ostream& output_stream, std::uint16_t pi);
   void processBit(bool bit, std::size_t which_stream);
   void processBits(const BitBuffer& buffer, std::size_t which_stream);
   void processGroup(Group group, std::size_t which_stream);

@@ -14,22 +14,43 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#ifndef TABLES_H_
-#define TABLES_H_
+#ifndef OPTIONS_H_
+#define OPTIONS_H_
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace redsea {
 
-std::string getPTYNameString(uint16_t pty);
-std::string getPTYNameStringRBDS(uint16_t pty);
-std::string getCountryString(uint16_t cc, uint16_t ecc);
-std::string getLanguageString(uint16_t code);
-std::string getAppNameString(uint16_t aid);
-std::string getRTPlusContentTypeString(uint16_t content_type);
-std::string getDICodeString(uint16_t di);
-std::string getCallsignFromPI(uint16_t pi);
+enum class InputType { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
+
+enum class OutputType { Hex, JSON };
+
+struct Options {
+  bool rbds{};
+  bool feed_thru{};
+  bool show_partial{};
+  bool exit_success{};
+  bool print_usage{};
+  bool print_version{};
+  bool timestamp{};
+  bool bler{};
+  bool show_raw{};
+  bool is_rate_defined{};
+  bool is_num_channels_defined{};
+  bool use_fec{true};
+  bool streams{};
+  float samplerate{};
+  std::uint32_t num_channels{1};
+  InputType input_type{InputType::MPX_stdin};
+  OutputType output_type{OutputType::JSON};
+  std::vector<std::string> loctable_dirs;
+  std::string sndfilename;
+  std::string time_format;
+};
+
+Options getOptions(int argc, char** argv);
 
 }  // namespace redsea
-#endif  // TABLES_H_
+#endif  // OPTIONS_H_

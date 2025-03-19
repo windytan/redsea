@@ -14,34 +14,43 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/util.h"
+#include "src/util.hh"
 
 #include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <ctime>
 #include <iomanip>
+#include <ios>
 #include <sstream>
+#include <string>
+#include <vector>
 
 namespace redsea {
 
+// \brief Format hours, minutes as HH:MM
 std::string getHoursMinutesString(int hour, int minute) {
   std::stringstream ss;
   ss << std::setfill('0') << std::setw(2) << hour << ":" << std::setw(2) << minute;
   return ss.str();
 }
 
-// Used in RDS2 RFT
-uint32_t crc16_ccitt(const uint8_t* data, size_t length) {
-  uint32_t crc = 0xFFFF;
+// \brief Calculate CRC16 for an RFT file
+std::uint32_t crc16_ccitt(const std::uint8_t* data, std::size_t length) {
+  std::uint32_t crc = 0xFFFF;
 
-  for (size_t i = 0; i < length; ++i) {
-    crc = static_cast<uint8_t>(crc >> 8) | (crc << 8);
+  for (std::size_t i = 0; i < length; ++i) {
+    crc = static_cast<std::uint8_t>(crc >> 8U) | (crc << 8U);
     crc ^= data[i];
-    crc ^= static_cast<uint8_t>(crc & 0xFF) >> 4;
-    crc ^= (crc << 8) << 4;
-    crc ^= ((crc & 0xFF) << 4) << 1;
+    crc ^= static_cast<std::uint8_t>(crc & 0xFFU) >> 4U;
+    crc ^= (crc << 8U) << 4U;
+    crc ^= ((crc & 0xFFU) << 4U) << 1U;
   }
-  return (crc ^ 0xFFFF) & 0xFFFF;
+  return (crc ^ 0xFFFFU) & 0xFFFFU;
 }
 
+// \brief Format a system clock timestamp
 std::string getTimePointString(const std::chrono::time_point<std::chrono::system_clock>& timepoint,
                                const std::string& format) {
   // This is done to ensure we get truncation and not rounding to integer seconds
@@ -71,6 +80,7 @@ std::string getTimePointString(const std::chrono::time_point<std::chrono::system
   return {buffer.data()};
 }
 
+// \brief Join strings with a delimiter
 std::string join(const std::vector<std::string>& strings, const std::string& d) {
   if (strings.empty())
     return "";
@@ -85,13 +95,14 @@ std::string join(const std::vector<std::string>& strings, const std::string& d) 
 }
 
 // 3.2.1.6
-CarrierFrequency::CarrierFrequency(uint16_t code, Band band) : code_(code), band_(band) {}
+CarrierFrequency::CarrierFrequency(std::uint16_t code, Band band) : code_(code), band_(band) {}
 
 bool CarrierFrequency::isValid() const {
   return (band_ == Band::LF_MF && code_ >= 1 && code_ <= 135) ||
          (band_ == Band::FM && code_ >= 1 && code_ <= 204);
 }
 
+// \brief Frequency as integer kilohertz
 int CarrierFrequency::kHz() const {
   int khz = 0;
   if (isValid()) {
@@ -110,6 +121,7 @@ int CarrierFrequency::kHz() const {
   return khz;
 }
 
+// \brief Frequency as a human-readable string, rounded
 std::string CarrierFrequency::str() const {
   std::stringstream ss;
   if (isValid()) {
@@ -138,7 +150,7 @@ bool operator<(const CarrierFrequency& f1, const CarrierFrequency& f2) {
   return (f1.kHz() < f2.kHz());
 }
 
-void AltFreqList::insert(uint16_t af_code) {
+void AltFreqList::insert(std::uint16_t af_code) {
   const CarrierFrequency frequency(
       af_code, lf_mf_follows_ ? CarrierFrequency::Band::LF_MF : CarrierFrequency::Band::FM);
   lf_mf_follows_ = false;
@@ -171,6 +183,7 @@ void AltFreqList::insert(uint16_t af_code) {
   }
 }
 
+// \return True if the transmitter is probably using alt. frequency method B
 bool AltFreqList::isMethodB() const {
   // Method B has an odd number of elements, at least 3
   if (num_expected_ % 2 != 1 || num_received_ < 3)
@@ -192,7 +205,7 @@ bool AltFreqList::isComplete() const {
   return num_expected_ == num_received_ && num_received_ > 0;
 }
 
-// Return the sequence of frequencies as they were received (excluding special AF codes)
+// \return The sequence of frequencies as they were received (excluding special AF codes)
 std::vector<int> AltFreqList::getRawList() const {
   return {alt_freqs_.begin(), alt_freqs_.begin() + num_received_};
 }

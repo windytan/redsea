@@ -14,15 +14,26 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/input.h"
+#include "src/io/input.hh"
 
+// For fileno
+#include <stdio.h>
+
+#include <array>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <exception>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 
-#include "src/groups.h"
-#include "src/options.h"
+#include <sndfile.h>
+
+#include "src/constants.hh"
+#include "src/groups.hh"
+#include "src/options.hh"
 
 namespace redsea {
 
@@ -44,15 +55,15 @@ void MPXReader::init(const Options& options) {
       sfinfo_.format     = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
       sfinfo_.samplerate = static_cast<int>(std::lround(options.samplerate));
       sfinfo_.frames     = 0;
-      file_              = sf_open_fd(fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
+      file_              = sf_open_fd(::fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
       if (feed_thru_)
-        outfile_ = sf_open_fd(fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
+        outfile_ = sf_open_fd(::fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
 
       break;
     }
     case InputType::MPX_sndfile: {
       file_         = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
-      num_channels_ = static_cast<uint32_t>(sfinfo_.channels);
+      num_channels_ = static_cast<std::uint32_t>(sfinfo_.channels);
 
       if (options.is_rate_defined)
         std::cerr << "warning: ignoring sample rate parameter" << std::endl;
@@ -116,7 +127,7 @@ void MPXReader::fillBuffer() {
 }
 
 // @throws logic_error if channel is out-of-bounds
-MPXBuffer& MPXReader::readChunk(uint32_t channel) {
+MPXBuffer& MPXReader::readChunk(std::uint32_t channel) {
   if (channel >= num_channels_) {
     throw std::logic_error("Tried to access channel " + std::to_string(channel) + " of " +
                            std::to_string(num_channels_) + "-channel signal");
@@ -140,7 +151,7 @@ float MPXReader::getSamplerate() const {
   return static_cast<float>(sfinfo_.samplerate);
 }
 
-uint32_t MPXReader::getNumChannels() const {
+std::uint32_t MPXReader::getNumChannels() const {
   return num_channels_;
 }
 
@@ -154,9 +165,9 @@ AsciiBitReader::AsciiBitReader(const Options& options) : feed_thru_(options.feed
 bool AsciiBitReader::readBit() {
   int chr = 0;
   while (chr != '0' && chr != '1' && chr != EOF) {
-    chr = getchar();
+    chr = std::getchar();
     if (feed_thru_)
-      putchar(chr);
+      std::putchar(chr);
   }
 
   if (chr == EOF)
@@ -197,7 +208,7 @@ Group readHexGroup(const Options& options) {
     }
     group.setDataStream(n_stream);
 
-    for (eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
+    for (const eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
       Block block;
       bool block_still_valid = true;
 
@@ -213,7 +224,7 @@ Group readHexGroup(const Options& options) {
         if (single != " ") {
           try {
             const int nval = std::stoi(std::string(single), nullptr, 16);
-            block.data     = static_cast<uint16_t>((block.data << 4U) + nval);
+            block.data     = static_cast<std::uint16_t>((block.data << 4U) + nval);
           } catch (std::exception&) {
             block_still_valid = false;
           }
@@ -255,7 +266,7 @@ Group readTEFGroup(const Options& options) {
       Block block1;
       try {
         line               = line.substr(1);
-        block1.data        = static_cast<uint16_t>(std::stol(line, nullptr, 16));
+        block1.data        = static_cast<std::uint16_t>(std::stol(line, nullptr, 16));
         block1.is_received = true;
       } catch (const std::exception&) {
         continue;
@@ -273,10 +284,10 @@ Group readTEFGroup(const Options& options) {
         blocks[1].data = std::stol(line.substr(5, 4), nullptr, 16);
         blocks[2].data = std::stol(line.substr(9, 4), nullptr, 16);
 
-        const auto rds_err    = static_cast<uint32_t>(std::stol(line.substr(13, 2), nullptr, 16));
-        blocks[0].is_received = (static_cast<uint32_t>(rds_err >> 4U) & 0xFFU) == 0;
-        blocks[1].is_received = (static_cast<uint32_t>(rds_err >> 2U) & 0xFFU) == 0;
-        blocks[2].is_received = (static_cast<uint32_t>(rds_err >> 0U) & 0xFFU) == 0;
+        const auto rds_err = static_cast<std::uint32_t>(std::stol(line.substr(13, 2), nullptr, 16));
+        blocks[0].is_received = (static_cast<std::uint32_t>(rds_err >> 4U) & 0xFFU) == 0;
+        blocks[1].is_received = (static_cast<std::uint32_t>(rds_err >> 2U) & 0xFFU) == 0;
+        blocks[2].is_received = (static_cast<std::uint32_t>(rds_err >> 0U) & 0xFFU) == 0;
 
         group.setBlock(BLOCK2, blocks[0]);
         group.setBlock(BLOCK3, blocks[1]);

@@ -17,6 +17,7 @@
 #ifndef RDSSTRING_H_
 #define RDSSTRING_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -29,19 +30,19 @@ class RDSString {
   enum class Encoding { Basic, UCS2, UTF8 };
   enum class Direction { LTR, RTL };
 
-  explicit RDSString(size_t len = 8);
-  void set(size_t pos, uint8_t byte);
-  void set(size_t pos, uint8_t byte1, uint8_t byte2);
-  size_t getReceivedLength() const;
-  size_t getExpectedLength() const;
-  std::vector<uint8_t> getData() const;
+  explicit RDSString(std::size_t len = 8);
+  void set(std::size_t pos, std::uint8_t byte);
+  void set(std::size_t pos, std::uint8_t byte1, std::uint8_t byte2);
+  std::size_t getReceivedLength() const;
+  std::size_t getExpectedLength() const;
+  std::vector<std::uint8_t> getData() const;
   std::string str() const;
   const std::string& getLastCompleteString() const;
-  std::string getLastCompleteString(size_t start, size_t len) const;
+  std::string getLastCompleteString(std::size_t start, std::size_t len) const;
   bool isComplete() const;
   bool hasPreviouslyReceivedTerminators() const;
   void clear();
-  void resize(size_t n);
+  void resize(std::size_t n);
   void setEncoding(Encoding encoding);
   void setDirection(Direction direction);
 
@@ -49,11 +50,11 @@ class RDSString {
   Encoding encoding_{Encoding::Basic};
   Direction direction_{Direction::LTR};
   // Raw bytes.
-  std::vector<uint8_t> data_;
+  std::vector<std::uint8_t> data_;
   // Raw bytes.
-  std::vector<uint8_t> last_complete_data_;
-  size_t prev_pos_{};
-  size_t sequential_length_{};
+  std::vector<std::uint8_t> last_complete_data_;
+  std::size_t prev_pos_{};
+  std::size_t sequential_length_{};
   // Decoded string.
   std::string last_complete_string_;
 };

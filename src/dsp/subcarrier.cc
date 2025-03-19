@@ -14,18 +14,20 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/dsp/subcarrier.h"
+#include "src/dsp/subcarrier.hh"
 
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <complex>
+#include <cstdint>
 #include <cstdio>
 
-#include "src/common.h"
-#include "src/dsp/liquid_wrappers.h"
-#include "src/input.h"
+#include "src/constants.hh"
+#include "src/dsp/liquid_wrappers.hh"
+#include "src/io/bitbuffer.hh"
+#include "src/io/input.hh"
 
 namespace redsea {
 
@@ -80,9 +82,9 @@ Maybe<bool> BiphaseDecoder::push(std::complex<float> psk_symbol) {
   return result;
 }
 
-unsigned DeltaDecoder::decode(unsigned d) {
-  const unsigned bit = (d != prev_);
-  prev_              = d;
+std::uint32_t DeltaDecoder::decode(std::uint32_t d) {
+  const std::uint32_t bit = (d != prev_);
+  prev_                   = d;
   return bit;
 }
 
@@ -110,40 +112,45 @@ void Subcarriers::reset() {
   sample_num_ = 0;
 }
 
-MPXBuffer& Subcarriers::resampleChunk(MPXBuffer& input_chunk) {
-  if (resample_ratio_ != 1.0f) {
-    std::size_t i_resampled{};
-
-    // ceil(resample_ratio) is enough, as per liquid-dsp's API, but std::ceil is not constexpr in
-    // C++14
-    constexpr std::size_t kMaxResamplerOutputSize = static_cast<std::size_t>(kMaxResampleRatio) + 1;
-    std::array<float, kMaxResamplerOutputSize> resamp_output{};
-
-    for (size_t i_input{}; i_input < input_chunk.used_size; i_input++) {
-      const auto num_resampled = resampler_.execute(input_chunk.data[i_input], resamp_output);
-
-      // Always true as per liquid-dsp API
-      assert(num_resampled <= resamp_output.size());
-
-      for (unsigned int i_buf{}; i_buf < num_resampled; i_buf++) {
-        // Must always be true due to our selection of maximum resampler ratio and extra room in
-        // the chunk
-        assert(i_resampled < resampled_chunk_.data.size());
-
-        resampled_chunk_.data[i_resampled] = resamp_output[i_buf];
-        i_resampled++;
-      }
-    }
-    resampled_chunk_.used_size = i_resampled;
-    assert(resampled_chunk_.used_size <= resampled_chunk_.data.size());
+// \return Reference to possibly resampled data; no resampling happens if resampling ratio is 1
+const MPXBuffer& Subcarriers::resampleChunk(const MPXBuffer& input_chunk) {
+  if (resample_ratio_ == 1.0f) {
+    return input_chunk;
   }
 
-  return (resample_ratio_ == 1.0f ? input_chunk : resampled_chunk_);
+  // ceil(resample_ratio) is enough, as per liquid-dsp's API, but std::ceil is not constexpr in
+  // C++14
+  constexpr std::size_t kMaxResamplerOutputSize = static_cast<std::size_t>(kMaxResampleRatio) + 1;
+  std::array<float, kMaxResamplerOutputSize> resamp_output{};
+
+  std::size_t i_resampled{};
+  for (size_t i_input{}; i_input < input_chunk.used_size; i_input++) {
+    const auto num_resampled = resampler_.execute(input_chunk.data[i_input], resamp_output);
+
+    // Always true as per liquid-dsp API
+    assert(num_resampled <= resamp_output.size());
+
+    for (std::uint32_t i_buf{}; i_buf < num_resampled; i_buf++) {
+      // Must always be true due to our selection of maximum resampler ratio and extra room in
+      // the chunk
+      assert(i_resampled < resampled_chunk_.data.size());
+
+      resampled_chunk_.data[i_resampled] = resamp_output[i_buf];
+      i_resampled++;
+    }
+  }
+  resampled_chunk_.used_size = i_resampled;
+  assert(resampled_chunk_.used_size <= resampled_chunk_.data.size());
+
+  return resampled_chunk_;
 }
 
-// Process a chunk of MPX
-BitBuffer Subcarriers::processChunk(MPXBuffer& input_chunk, int num_streams) {
-  MPXBuffer& chunk = resampleChunk(input_chunk);
+// \brief Process a chunk of MPX
+// \param input_chunk MPX data
+// \param num_data_streams Number of RDS data streams to process (1 to 4)
+// \return Unsynchronized bits
+BitBuffer Subcarriers::processChunk(const MPXBuffer& input_chunk, int num_data_streams) {
+  const MPXBuffer& chunk = resampleChunk(input_chunk);
 
   constexpr int decimate_ratio =
       static_cast<int>(kTargetSampleRate_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol);
@@ -151,8 +158,15 @@ BitBuffer Subcarriers::processChunk(MPXBuffer& input_chunk, int num_streams) {
   BitBuffer bitbuffer;
   bitbuffer.time_received = input_chunk.time_received;
 
+  // Pre-allocate the bit buffers
+  const auto expected_num_bits = static_cast<std::size_t>(
+      static_cast<float>(chunk.used_size) * kBitsPerSecond / kTargetSampleRate_Hz * 1.1f);
+  for (int n_stream{0}; n_stream < num_data_streams; n_stream++) {
+    bitbuffer.bits[n_stream].reserve(expected_num_bits);
+  }
+
   for (size_t i = 0; i < chunk.used_size; i++) {
-    for (int n_stream{0}; n_stream < num_streams; n_stream++) {
+    for (int n_stream{0}; n_stream < num_data_streams; n_stream++) {
       // Mix RDS to baseband for filtering purposes
 
       const std::complex<float> sample_baseband =

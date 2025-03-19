@@ -15,16 +15,19 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/options.h"
+#include "src/options.hh"
 
 #include <getopt.h>
+
 #include <array>
 #include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
-#include "config.h"
-#include "src/common.h"
+#include "src/constants.hh"
 
 namespace redsea {
 
@@ -149,7 +152,7 @@ Options getOptions(int argc, char** argv) {
         options.time_format = std::string(optarg);
         break;
       case 'u': options.rbds = true; break;
-      case 'l': options.loctable_dirs.emplace_back(std::string(optarg)); break;
+      case 'l': options.loctable_dirs.emplace_back(optarg); break;
       case 'v':
         options.print_version = true;
         options.exit_success  = true;

@@ -25,24 +25,24 @@
 
 #include <nlohmann/json.hpp>
 
-#include "src/options.h"
-#include "src/rdsstring.h"
-#include "src/util.h"
+#include "src/options.hh"
+#include "src/text/rdsstring.hh"
+#include "src/util.hh"
 
 namespace redsea {
 namespace tmc {
 
-enum class Direction { Positive = 0, Negative = 1 };
+enum class Direction : std::uint8_t { Positive = 0, Negative = 1 };
 
-enum class EventNature { Event = 0, Forecast = 1, Silent = 2 };
+enum class EventNature : std::uint8_t { Event = 0, Forecast = 1, Silent = 2 };
 
-enum class EventDirectionality { Single = 0, Both = 1 };
+enum class EventDirectionality : std::uint8_t { Single = 0, Both = 1 };
 
-enum class EventUrgency { None = 0, U = 1, X = 2 };
+enum class EventUrgency : std::uint8_t { None = 0, U = 1, X = 2 };
 
-enum class DurationType { Dynamic = 0, LongerLasting = 1 };
+enum class DurationType : std::uint8_t { Dynamic = 0, LongerLasting = 1 };
 
-enum class QuantifierType {
+enum class QuantifierType : std::uint8_t {
   SmallNumber     = 0,
   Number          = 1,
   LessThanMetres  = 2,
@@ -58,7 +58,7 @@ enum class QuantifierType {
   kHz             = 12
 };
 
-enum class FieldLabel {
+enum class FieldLabel : std::uint8_t {
   Duration          = 0,
   ControlCode       = 1,
   AffectedLength    = 2,
@@ -76,7 +76,7 @@ enum class FieldLabel {
   Separator         = 14
 };
 
-enum class ControlCode {
+enum class ControlCode : std::uint8_t {
   IncreaseUrgency      = 0,
   ReduceUrgency        = 1,
   ChangeDirectionality = 2,
@@ -89,13 +89,13 @@ enum class ControlCode {
 
 struct FreeformField {
   FieldLabel label;
-  uint16_t data;
+  std::uint16_t data;
 };
 
 struct ServiceKey {
-  uint8_t xorval{0};
-  uint8_t xorstart{0};
-  uint8_t nrot{0};
+  std::uint8_t xorval{0};
+  std::uint8_t xorstart{0};
+  std::uint8_t nrot{0};
 };
 
 struct Event {
@@ -106,85 +106,85 @@ struct Event {
   DurationType duration_type{DurationType::Dynamic};
   EventDirectionality directionality{EventDirectionality::Single};
   EventUrgency urgency{EventUrgency::None};
-  uint16_t update_class{0};
+  std::uint16_t update_class{0};
   bool allows_quantifier{false};
   bool show_duration{true};
 };
 
-Event getEvent(uint16_t code);
+Event getEvent(std::uint16_t code);
 
 const bool kMessagePartIsReceived = true;
 
 struct MessagePart {
   MessagePart() = default;
-  MessagePart(bool _is_received, const std::array<uint16_t, 2>& data_in)
+  MessagePart(bool _is_received, const std::array<std::uint16_t, 2>& data_in)
       : is_received(_is_received), data(data_in) {}
 
   bool is_received{false};
-  std::array<uint16_t, 2> data{};
+  std::array<std::uint16_t, 2> data{};
 };
 
 class Message {
  public:
   explicit Message(bool is_loc_encrypted)
       : is_encrypted_(is_loc_encrypted), was_encrypted_(is_loc_encrypted) {}
-  void pushMulti(uint16_t x, uint16_t y, uint16_t z);
-  void pushSingle(uint16_t x, uint16_t y, uint16_t z);
+  void pushMulti(std::uint16_t x, std::uint16_t y, std::uint16_t z);
+  void pushSingle(std::uint16_t x, std::uint16_t y, std::uint16_t z);
   nlohmann::ordered_json json() const;
   void decrypt(const ServiceKey& key);
   bool isComplete() const;
   void clear();
-  uint16_t getContinuityIndex() const;
+  std::uint16_t getContinuityIndex() const;
 
  private:
   void decodeMulti();
 
   bool is_encrypted_;
   bool was_encrypted_;
-  uint16_t duration_{0};
+  std::uint16_t duration_{0};
   DurationType duration_type_{DurationType::Dynamic};
   bool diversion_advised_{false};
   Direction direction_{Direction::Positive};
-  uint16_t extent_{0};
-  std::vector<uint16_t> events_;
-  std::vector<uint16_t> supplementary_;
-  std::map<size_t, uint16_t> quantifiers_;
-  std::vector<uint16_t> diversion_;
-  uint16_t location_{0};
-  uint16_t encrypted_location_{0};
+  std::uint16_t extent_{0};
+  std::vector<std::uint16_t> events_;
+  std::vector<std::uint16_t> supplementary_;
+  std::map<size_t, std::uint16_t> quantifiers_;
+  std::vector<std::uint16_t> diversion_;
+  std::uint16_t location_{0};
+  std::uint16_t encrypted_location_{0};
   bool is_complete_{false};
   bool has_length_affected_{false};
-  uint16_t length_affected_{0};
+  std::uint16_t length_affected_{0};
   bool has_time_until_{false};
-  uint16_t time_until_{0};
+  std::uint16_t time_until_{0};
   bool has_time_starts_{false};
-  uint16_t time_starts_{0};
+  std::uint16_t time_starts_{0};
   bool has_speed_limit_{false};
-  uint16_t speed_limit_{0};
+  std::uint16_t speed_limit_{0};
   EventDirectionality directionality_{EventDirectionality::Single};
   EventUrgency urgency_{EventUrgency::None};
-  uint16_t continuity_index_{0};
+  std::uint16_t continuity_index_{0};
   std::array<MessagePart, 5> parts_{};
 };
 
 class TMCService {
  public:
   explicit TMCService(const Options& options);
-  void receiveSystemGroup(uint16_t message, nlohmann::ordered_json*);
-  void receiveUserGroup(uint16_t x, uint16_t y, uint16_t z, nlohmann::ordered_json*);
+  void receiveSystemGroup(std::uint16_t message, nlohmann::ordered_json*);
+  void receiveUserGroup(std::uint16_t x, std::uint16_t y, std::uint16_t z, nlohmann::ordered_json*);
 
  private:
   bool is_initialized_{false};
   bool is_encrypted_{false};
   bool has_encid_{false};
-  uint16_t ltn_{0};
-  uint16_t sid_{0};
-  uint16_t encid_{0};
-  uint16_t ltcc_{0};
+  std::uint16_t ltn_{0};
+  std::uint16_t sid_{0};
+  std::uint16_t encid_{0};
+  std::uint16_t ltcc_{0};
   Message message_;
-  std::map<uint16_t, ServiceKey> service_key_table_;
+  std::map<std::uint16_t, ServiceKey> service_key_table_;
   RDSString ps_;
-  std::map<uint16_t, AltFreqList> other_network_freqs_;
+  std::map<std::uint16_t, AltFreqList> other_network_freqs_;
 };
 
 }  // namespace tmc

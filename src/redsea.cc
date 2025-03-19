@@ -15,15 +15,18 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
+#include <cstdint>
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #include "config.h"
-#include "src/channel.h"
-#include "src/dsp/subcarrier.h"
-#include "src/groups.h"
-#include "src/options.h"
+#include "src/channel.hh"
+#include "src/dsp/subcarrier.hh"
+#include "src/groups.hh"
+#include "src/io/input.hh"
+#include "src/options.hh"
 
 namespace redsea {
 
@@ -130,32 +133,32 @@ int processMPXInput(Options options) {
 
   auto& output_stream = options.feed_thru ? std::cerr : std::cout;
 
-  const int num_streams = options.streams ? 4 : 1;
+  const int num_data_streams = options.streams ? 4 : 1;
 
-  // Each channel is matched with 1 subcarrier (in RDS1)
+  // Each PCM channel is matched with 1 subcarrier set
   std::vector<std::unique_ptr<Channel>> channels;
   std::vector<std::unique_ptr<Subcarriers>> subcarriers;
-  for (uint32_t i = 0; i < options.num_channels; i++) {
-    channels.emplace_back(std::make_unique<Channel>(options, i, output_stream));
+  for (std::uint32_t ch = 0; ch < options.num_channels; ch++) {
+    channels.emplace_back(std::make_unique<Channel>(options, ch, output_stream));
     subcarriers.push_back(std::make_unique<Subcarriers>(options.samplerate));
   }
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
-    for (uint32_t i = 0; i < options.num_channels; i++) {
-      const auto bits = subcarriers[i]->processChunk(mpx.readChunk(i), num_streams);
-      for (int n_stream = 0; n_stream < num_streams; n_stream++) {
-        channels[i]->processBits(bits, n_stream);
-        if (channels[i]->getSecondsSinceCarrierLost() > 10.f &&
-            subcarriers[i]->getSecondsSinceLastReset() > 5.f) {
-          subcarriers[i]->reset();
-          channels[i]->resetPI();
+    for (std::uint32_t ch = 0; ch < options.num_channels; ch++) {
+      const auto bits = subcarriers[ch]->processChunk(mpx.readChunk(ch), num_data_streams);
+      for (int n_stream = 0; n_stream < num_data_streams; n_stream++) {
+        channels[ch]->processBits(bits, n_stream);
+        if (channels[ch]->getSecondsSinceCarrierLost() > 10.f &&
+            subcarriers[ch]->getSecondsSinceLastReset() > 5.f) {
+          subcarriers[ch]->reset();
+          channels[ch]->resetPI();
         }
       }
     }
   }
 
-  for (uint32_t i = 0; i < options.num_channels; i++) channels[i]->flush();
+  for (std::uint32_t ch = 0; ch < options.num_channels; ch++) channels[ch]->flush();
 
   return EXIT_SUCCESS;
 }

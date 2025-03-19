@@ -14,11 +14,13 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/dsp/liquid_wrappers.h"
+#include "src/dsp/liquid_wrappers.hh"
 
 #include <array>
 #include <cassert>
 #include <complex>
+#include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 
 #pragma clang diagnostic push
@@ -51,7 +53,7 @@ std::complex<float> AGC::execute(std::complex<float> s) {
   return result;
 }
 
-void FIRFilter::init(unsigned int len, float fc, float As, float mu) {
+void FIRFilter::init(std::uint32_t len, float fc, float As, float mu) {
   if (object_ != nullptr)
     firfilt_crcf_destroy(object_);
   object_ = firfilt_crcf_create_kaiser(len, fc, As, mu);
@@ -73,7 +75,7 @@ std::complex<float> FIRFilter::execute() {
   return result;
 }
 
-size_t FIRFilter::length() const {
+std::size_t FIRFilter::length() const {
   return firfilt_crcf_get_length(object_);
 }
 
@@ -136,8 +138,8 @@ void NCO::stepPLL(float dphi) {
   nco_crcf_pll_step(object_, dphi);
 }
 
-void SymSync::init(liquid_firfilt_type ftype, unsigned k, unsigned m, float beta,
-                   unsigned num_filters) {
+void SymSync::init(liquid_firfilt_type ftype, std::uint32_t k, std::uint32_t m, float beta,
+                   std::uint32_t num_filters) {
   if (object_ != nullptr)
     symsync_crcf_destroy(object_);
   object_ = symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters);
@@ -157,7 +159,7 @@ void SymSync::setBandwidth(float bw) {
   symsync_crcf_set_lf_bw(object_, bw);
 }
 
-void SymSync::setOutputRate(unsigned r) {
+void SymSync::setOutputRate(std::uint32_t r) {
   symsync_crcf_set_output_rate(object_, r);
 }
 
@@ -187,7 +189,7 @@ Modem::~Modem() {
 #endif
 }
 
-unsigned int Modem::demodulate(std::complex<float> sample) {
+std::uint32_t Modem::demodulate(std::complex<float> sample) {
   // To be set by liquid-dsp, no need to initialize
   // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
   unsigned symbol_out;
@@ -198,7 +200,7 @@ unsigned int Modem::demodulate(std::complex<float> sample) {
   modem_demodulate(object_, sample, &symbol_out);
 #endif
 
-  return symbol_out;
+  return static_cast<std::uint32_t>(symbol_out);
 }
 
 float Modem::getPhaseError() {
@@ -209,7 +211,7 @@ float Modem::getPhaseError() {
 #endif
 }
 
-Resampler::Resampler(unsigned int length)
+Resampler::Resampler(std::uint32_t length)
     : object_(resamp_rrrf_create(1.f, length, 0.47f, 60.0f, 32)) {
   if (object_ == nullptr) {
     throw std::runtime_error("error: Can't initialize resampler");
@@ -230,14 +232,14 @@ Resampler::~Resampler() {
     resamp_rrrf_destroy(object_);
 }
 
-unsigned int Resampler::execute(float in, std::array<float, kOutputArraySize>& out) {
+std::uint32_t Resampler::execute(float in, std::array<float, kOutputArraySize>& out) {
   // To be set by liquid-dsp, no need to initialize
   // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
-  unsigned int num_written;
+  unsigned num_written;
   resamp_rrrf_execute(object_, in, out.data(), &num_written);
   assert(num_written <= kOutputArraySize);
 
-  return num_written;
+  return static_cast<std::uint32_t>(num_written);
 }
 
 }  // namespace liquid

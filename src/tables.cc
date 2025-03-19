@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/tables.h"
+#include "src/tables.hh"
 
 #include <array>
 #include <cstdint>
@@ -25,7 +25,7 @@ namespace redsea {
 
 // Program Type names (RDS)
 // EN 50067:1998, Annex F (pp. 77-78)
-std::string getPTYNameString(uint16_t pty) {
+std::string getPTYNameString(std::uint16_t pty) {
   // clang-format off
   const std::array<std::string, 64> pty_names{
     "No PTY",         "News",            "Current affairs",       "Information",
@@ -43,7 +43,7 @@ std::string getPTYNameString(uint16_t pty) {
 
 // Program Type names (U.S. / RBDS)
 // U.S. RBDS Standard 1998, Annex F (pp. 95-96)
-std::string getPTYNameStringRBDS(uint16_t pty) {
+std::string getPTYNameStringRBDS(std::uint16_t pty) {
   // clang-format off
   const std::array<std::string, 64> pty_names_rbds{
     "No PTY",           "News",                  "Information",    "Sports",
@@ -62,8 +62,8 @@ std::string getPTYNameStringRBDS(uint16_t pty) {
 // 2-letter country codes
 // EN 50067:1998, Annex D, Table D.1 (p. 71)
 // RDS Forum R08/008_7, Table D.2 (p. 75)
-std::string getCountryString(uint16_t cc, uint16_t ecc) {
-  const std::map<uint16_t, std::array<std::string, 15>> country_codes{
+std::string getCountryString(std::uint16_t cc, std::uint16_t ecc) {
+  const std::map<std::uint16_t, std::array<std::string, 15>> country_codes{
       {0xA0,
        {"us", "us", "us", "us", "us", "us", "us", "us", "us", "us", "us", "--", "us", "us", "--"}},
       {0xA1,
@@ -113,7 +113,7 @@ std::string getCountryString(uint16_t cc, uint16_t ecc) {
 
 // Program languages
 // EN 50067:1998, Annex J (p. 84)
-std::string getLanguageString(uint16_t code) {
+std::string getLanguageString(std::uint16_t code) {
   // clang-format off
   const std::array<std::string, 128> languages{
     "Unknown",     "Albanian",      "Breton",     "Catalan",
@@ -157,9 +157,9 @@ std::string getLanguageString(uint16_t code) {
 // RDS Forum R13/041_2 (2013-09-05) and later
 // RDS Forum R17/032_1 (2017-07-20)
 // DHL 7/14/2020
-std::string getAppNameString(uint16_t aid) {
+std::string getAppNameString(std::uint16_t aid) {
   // clang-format off
-  const std::map<uint16_t, std::string> oda_apps{
+  const std::map<std::uint16_t, std::string> oda_apps{
     {0x0000, "None"},
     {0x0093, "Cross referencing DAB within RDS"},
     {0x0BCB, "Leisure & Practical Info for Drivers"},
@@ -232,7 +232,7 @@ std::string getAppNameString(uint16_t aid) {
 
 // RadioText+ content types
 // RDS Forum R06/040_1 (2006-07-21)
-std::string getRTPlusContentTypeString(uint16_t content_type) {
+std::string getRTPlusContentTypeString(std::uint32_t content_type) {
   // clang-format off
   const std::array<std::string, 66> content_type_names{
       "dummy_class",          "item.title",         "item.album",
@@ -264,7 +264,7 @@ std::string getRTPlusContentTypeString(uint16_t content_type) {
 
 // Decoder Identification (DI) and Dynamic PTY Indicator (PTYI) codes
 // EN 50067:1998, 3.2.1.5 (p. 41)
-std::string getDICodeString(uint16_t di) {
+std::string getDICodeString(std::uint16_t di) {
   const std::array<std::string, 4> di_codes{"dynamic_pty", "compressed", "artificial_head",
                                             "stereo"};
 
@@ -273,9 +273,9 @@ std::string getDICodeString(uint16_t di) {
 
 // Back-calculate callsign for a North American (RBDS) station
 // NRSC-4-B (2011), page 18, D.7
-std::string getCallsignFromPI(uint16_t pi) {
+std::string getCallsignFromPI(std::uint16_t pi) {
   // clang-format off
-  const std::map<uint16_t, std::string> three_letter_codes{
+  const std::map<std::uint16_t, std::string> three_letter_codes{
       {0x99A5, "KBW"}, {0x9992, "KOY"}, {0x9978, "WHO"}, {0x99A6, "KCY"},
       {0x9993, "KPQ"}, {0x999C, "WHP"}, {0x9990, "KDB"}, {0x9964, "KQV"},
       {0x999D, "WIL"}, {0x99A7, "KDF"}, {0x9994, "KSD"}, {0x997A, "WIP"},
@@ -296,7 +296,7 @@ std::string getCallsignFromPI(uint16_t pi) {
       {0x9988, "WWJ"}, {0x99AB, "KOB"}, {0x9977, "WHK"}, {0x9989, "WWL"} };
 
   // TODO These should probably not be called "callsigns"
-  const std::map<uint16_t, std::string> linked_station_codes{
+  const std::map<std::uint16_t, std::string> linked_station_codes{
       {0xB001, "NPR-1"},
       {0xB002, "CBC English - Radio One"}, {0xB003, "CBC English - Radio Two"},
       {0xB004, "CBC French => Radio-Canada - Première Chaîne"},
@@ -318,8 +318,8 @@ std::string getCallsignFromPI(uint16_t pi) {
 
   } else if ((pi & 0xF000U) == 0xA000) {
     // P1 0 P3 P4 --> A P1 P3 P4
-    pi = static_cast<uint16_t>(static_cast<uint16_t>(pi & 0x0F00U) << 4U) |
-         static_cast<uint16_t>(pi & 0x00FFU);
+    pi = static_cast<std::uint16_t>(static_cast<std::uint16_t>(pi & 0x0F00U) << 4U) |
+         static_cast<std::uint16_t>(pi & 0x00FFU);
   }
 
   std::string callsign;
@@ -342,7 +342,7 @@ std::string getCallsignFromPI(uint16_t pi) {
     callsign[0] = (pi <= 0x54A7 ? 'K' : 'W');
     pi -= (pi <= 0x54A7 ? 0x1000 : 0x54A8);
 
-    constexpr uint32_t kNumLetters{26};
+    constexpr std::uint32_t kNumLetters{26};
 
     callsign[1] = static_cast<char>('A' + (pi / (kNumLetters * kNumLetters)) % kNumLetters);
     callsign[2] = static_cast<char>('A' + (pi / kNumLetters) % kNumLetters);

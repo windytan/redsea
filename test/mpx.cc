@@ -4,10 +4,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
-#include "../src/dsp/subcarrier.h"
-#include "../src/input.h"
-#include "../src/options.h"
-#include "test_helpers.h"
+#include "../src/dsp/subcarrier.hh"
+#include "../src/io/input.hh"
+#include "../src/options.hh"
+#include "test_helpers.hh"
 
 TEST_CASE("MPX file input") {
   redsea::Options options;

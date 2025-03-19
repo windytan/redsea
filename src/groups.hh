@@ -19,29 +19,32 @@
 
 #include <array>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <map>
 #include <string>
 
 #include <nlohmann/json.hpp>
 
-#include "src/options.h"
-#include "src/rdsstring.h"
+#include "src/options.hh"
 #include "src/rft.hh"
-#include "src/tmc/tmc.h"
-#include "src/util.h"
+#include "src/text/radiotext.hh"
+#include "src/text/rdsstring.hh"
+#include "src/tmc/tmc.hh"
+#include "src/util.hh"
 
 namespace redsea {
 
 // A scoped enum couldn't readily be used for indexing
 enum eBlockNumber { BLOCK1, BLOCK2, BLOCK3, BLOCK4 };
 
-enum class Offset { A, B, C, Cprime, D, invalid };
+enum class Offset : std::uint8_t { A, B, C, Cprime, D, invalid };
 
 class Block {
  public:
-  uint32_t raw{};
-  uint16_t data{};
+  std::uint32_t raw{};
+  std::uint16_t data{};
   bool is_received{false};
   bool had_errors{false};
   Offset offset{Offset::invalid};
@@ -49,90 +52,18 @@ class Block {
 
 class GroupType {
  public:
-  enum class Version { A, B, C };
+  enum class Version : std::uint8_t { A, B, C };
 
   GroupType() = default;
-  explicit GroupType(uint16_t type_code);
+  explicit GroupType(std::uint16_t type_code);
 
   std::string str() const;
 
-  uint16_t number{};
+  std::uint16_t number{};
   Version version{Version::A};
 };
 
 bool operator<(const GroupType& type1, const GroupType& type2);
-
-class ProgramServiceName {
- public:
-  ProgramServiceName() = default;
-  void update(size_t pos, uint8_t byte1, uint8_t byte2) {
-    text.set(pos, byte1, byte2);
-  }
-
-  RDSString text{8};
-};
-
-class LongPS {
- public:
-  LongPS() {
-    text.setEncoding(RDSString::Encoding::UTF8);
-  }
-  void update(size_t pos, uint8_t byte1, uint8_t byte2) {
-    text.set(pos, byte1, byte2);
-  }
-
-  RDSString text{32};
-};
-
-class RadioText {
- public:
-  RadioText() = default;
-  bool isABChanged(int new_ab) {
-    const bool is = (ab != new_ab);
-    ab            = new_ab;
-    return is;
-  }
-  void update(size_t pos, uint8_t byte1, uint8_t byte2) {
-    text.set(pos, byte1, byte2);
-  }
-
-  struct Plus {
-    bool exists{};
-    bool cb{};
-    uint16_t scb{};
-    uint16_t template_num{};
-    bool toggle{};
-    bool item_running{};
-
-    struct Tag {
-      uint16_t content_type{};
-      uint16_t start{};
-      uint16_t length{};
-    };
-  };
-
-  RDSString text{64};
-  Plus plus;
-  std::string previous_potentially_complete_message;
-  int ab{};
-};
-
-class PTYName {
- public:
-  PTYName() : text(8) {}
-  bool isABChanged(int new_ab) {
-    bool is = (ab != new_ab);
-    ab      = new_ab;
-    return is;
-  }
-  void update(size_t pos, uint8_t char1, uint8_t char2, uint8_t char3, uint8_t char4) {
-    text.set(pos, char1, char2);
-    text.set(pos + 2, char3, char4);
-  }
-
-  RDSString text;
-  int ab{0};
-};
 
 class Pager {
  public:
@@ -142,7 +73,7 @@ class Pager {
   int ecc{};
   int ccf{};
   int interval{};
-  void decode1ABlock4(uint16_t block4);
+  void decode1ABlock4(std::uint16_t block4);
 };
 
 /*
@@ -153,13 +84,13 @@ class Group {
  public:
   Group() = default;
 
-  uint16_t get(eBlockNumber block_num) const;
+  std::uint16_t get(eBlockNumber block_num) const;
   bool has(eBlockNumber block_num) const;
 
   bool isEmpty() const;
   GroupType getType() const;
   bool hasType() const;
-  uint16_t getPI() const;
+  std::uint16_t getPI() const;
   float getBLER() const;
   int getNumErrors() const;
   bool hasPI() const;
@@ -192,10 +123,10 @@ class Group {
 class Station {
  public:
   Station() = delete;
-  Station(const Options& options, int which_channel, uint16_t pi);
+  Station(const Options& options, int which_channel, std::uint16_t pi);
   Station(const Options& options, int which_channel);
   void updateAndPrint(const Group& group, std::ostream& stream);
-  uint16_t getPI() const;
+  std::uint16_t getPI() const;
 
  private:
   void decodeBasics(const Group& group);
@@ -217,7 +148,7 @@ class Station {
   void parseEnhancedRT(const Group& group);
   void parseDAB(const Group& group);
 
-  uint16_t pi_{};
+  std::uint16_t pi_{};
   bool has_pi_{false};
   Options options_;
   int which_channel_{};
@@ -227,18 +158,18 @@ class Station {
   RadioText ert_;
   PTYName ptyname_;
   RDSString full_tdc_{32U * 4U};
-  uint16_t pin_{};
-  uint16_t ecc_{};
-  uint16_t cc_{};
+  std::uint16_t pin_{};
+  std::uint16_t ecc_{};
+  std::uint16_t cc_{};
   int tmc_id_{};
   bool linkage_la_{};
   std::string clock_time_;
   bool has_country_{false};
-  std::map<GroupType, uint16_t> oda_app_for_group_;
-  std::map<uint16_t, uint16_t> oda_app_for_pipe_;
+  std::map<GroupType, std::uint16_t> oda_app_for_group_;
+  std::map<std::uint16_t, std::uint16_t> oda_app_for_pipe_;
   bool ert_uses_chartable_e3_{false};
-  std::map<uint16_t, RDSString> eon_ps_names_;
-  std::map<uint16_t, AltFreqList> eon_alt_freqs_;
+  std::map<std::uint16_t, RDSString> eon_ps_names_;
+  std::map<std::uint16_t, AltFreqList> eon_alt_freqs_;
   bool last_group_had_pi_{false};
   AltFreqList alt_freq_list_;
   Pager pager_;

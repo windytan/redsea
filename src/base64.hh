@@ -25,7 +25,7 @@ inline std::string asBase64(const void* data, std::size_t input_length) {
     std::uint32_t chunk = 0;
     int nbytes_in_chunk = 0;
 
-    for (int j = 0; j < 3; ++j) {
+    for (const int j : {0, 1, 2}) {
       if (i + j < input_length) {
         chunk |= static_cast<std::uint32_t>(bytes[i + j]) << (16 - j * 8);
         ++nbytes_in_chunk;

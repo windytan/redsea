@@ -14,15 +14,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/block_sync.h"
+#include "src/block_sync.hh"
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <utility>
 
-#include "src/groups.h"
+#include "src/groups.hh"
+#include "src/options.hh"
 
 namespace redsea {
 
@@ -50,12 +52,12 @@ eBlockNumber getBlockNumberForOffset(Offset offset) {
   return BLOCK1;
 }
 
-// Return the next offset word in sequence
+// Which offset is expected to follow this_offset?
 Offset getNextOffsetFor(Offset this_offset) {
   switch (this_offset) {
     case Offset::A:       return Offset::B;
     case Offset::B:       return Offset::C;
-    case Offset::C:
+    case Offset::C:       return Offset::D;
     case Offset::Cprime:  return Offset::D;
     case Offset::D:       return Offset::A;
 
@@ -65,7 +67,7 @@ Offset getNextOffsetFor(Offset this_offset) {
 }
 
 // IEC 62106:2015 section B.3.1 Table B.1
-Offset getOffsetForSyndrome(uint32_t syndrome) {
+Offset getOffsetForSyndrome(std::uint32_t syndrome) {
   switch (syndrome) {
     case 0b1111011000: return Offset::A;
     case 0b1111010100: return Offset::B;
@@ -77,9 +79,11 @@ Offset getOffsetForSyndrome(uint32_t syndrome) {
   }
 }
 
-uint32_t calculateSyndrome(uint32_t vec) {
+// \param vec 26-bit word
+// \return 10-bit syndrome
+std::uint32_t calculateSyndrome(std::uint32_t vec) {
   // clang-format off
-  constexpr std::array<uint32_t, 26> parity_check_matrix{
+  constexpr std::array<std::uint32_t, 26> parity_check_matrix{
     0b1000000000,
     0b0100000000,
     0b0010000000,
@@ -113,9 +117,9 @@ uint32_t calculateSyndrome(uint32_t vec) {
   // the modulo-two addition of all the rows of the -- matrix for which the
   // corresponding coefficient in the -- vector is 1.'
 
-  uint32_t result{};
+  std::uint32_t result{};
 
-  for (size_t k = 0; k < parity_check_matrix.size(); k++)
+  for (std::size_t k = 0; k < parity_check_matrix.size(); k++)
     result ^= static_cast<std::uint32_t>(parity_check_matrix[parity_check_matrix.size() - 1U - k] *
                                          (static_cast<std::uint32_t>(vec >> k) & 1U));
 
@@ -124,12 +128,12 @@ uint32_t calculateSyndrome(uint32_t vec) {
 
 // Precompute mapping of syndromes to error vectors
 // IEC 62106:2015 section B.3.1
-std::map<std::pair<uint32_t, Offset>, uint32_t> makeErrorLookupTable() {
-  std::map<std::pair<uint32_t, Offset>, uint32_t> lookup_table;
+std::map<std::pair<std::uint32_t, Offset>, std::uint32_t> makeErrorLookupTable() {
+  std::map<std::pair<std::uint32_t, Offset>, std::uint32_t> lookup_table;
 
   // Table B.1
   // clang-format off
-  constexpr std::array<std::pair<Offset, uint32_t>, 5> offset_words{{
+  constexpr std::array<std::pair<Offset, std::uint32_t>, 5> offset_words{{
       { Offset::A,      0b0011111100 },
       { Offset::B,      0b0110011000 },
       { Offset::C,      0b0101101000 },
@@ -143,11 +147,11 @@ std::map<std::pair<uint32_t, Offset>, uint32_t> makeErrorLookupTable() {
     // "...the error-correction system should be enabled, but should be
     // restricted by attempting to correct bursts of errors spanning one or two
     // bits."
-    for (const uint32_t error_bits : {0b1u, 0b11u}) {
-      for (uint32_t shift = 0; shift < kBlockLength; shift++) {
-        const uint32_t error_vector = ((error_bits << shift) & kBlockBitmask);
+    for (const std::uint32_t error_bits : {0b1u, 0b11u}) {
+      for (std::uint32_t shift = 0; shift < kBlockLength; shift++) {
+        const std::uint32_t error_vector = ((error_bits << shift) & kBlockBitmask);
 
-        const uint32_t syndrome = calculateSyndrome(error_vector ^ offset.second);
+        const std::uint32_t syndrome = calculateSyndrome(error_vector ^ offset.second);
         lookup_table.insert({
             {syndrome, offset.first},
             error_vector
@@ -164,12 +168,12 @@ ErrorCorrectionResult correctBurstErrors(Block block, Offset expected_offset) {
 
   ErrorCorrectionResult result;
 
-  const uint32_t syndrome = calculateSyndrome(block.raw);
-  result.corrected_bits   = block.raw;
+  const std::uint32_t syndrome = calculateSyndrome(block.raw);
+  result.corrected_bits        = block.raw;
 
   const auto search = error_lookup_table.find({syndrome, expected_offset});
   if (search != error_lookup_table.end()) {
-    const uint32_t err = search->second;
+    const std::uint32_t err = search->second;
     result.corrected_bits ^= err;
     result.succeeded = true;
   }
@@ -181,7 +185,7 @@ ErrorCorrectionResult correctBurstErrors(Block block, Offset expected_offset) {
 bool SyncPulse::couldFollow(const SyncPulse& other) const {
   // Overflows after 41 days of continuous data. This may cause us to discard 1 valid sync pulse
   // if at that exact moment we're out of sync.
-  const uint32_t sync_distance = bit_position - other.bit_position;
+  const std::uint32_t sync_distance = bit_position - other.bit_position;
 
   return sync_distance % kBlockLength == 0 && sync_distance / kBlockLength <= 6 &&
          offset != Offset::invalid && other.offset != Offset::invalid &&
@@ -194,7 +198,7 @@ bool SyncPulse::couldFollow(const SyncPulse& other) const {
 // @param bitcount Bit position where the detection happened
 void SyncPulseBuffer::push(Offset offset, std::uint32_t bitcount) {
   assert(pulses_.size() >= 1);
-  for (size_t i = 0; i < pulses_.size() - 1; i++) {
+  for (std::size_t i = 0; i < pulses_.size() - 1; i++) {
     pulses_[i] = pulses_[i + 1];
   }
 
@@ -210,8 +214,8 @@ bool SyncPulseBuffer::isSequenceFound() const {
   const auto& third = pulses_.back();
 
   assert(pulses_.size() >= 2);
-  for (size_t i_first = 0; i_first < pulses_.size() - 2; i_first++) {
-    for (size_t i_second = i_first + 1; i_second < pulses_.size() - 1; i_second++) {
+  for (std::size_t i_first = 0; i_first < pulses_.size() - 2; i_first++) {
+    for (std::size_t i_second = i_first + 1; i_second < pulses_.size() - 1; i_second++) {
       if (third.couldFollow(pulses_[i_second]) && pulses_[i_second].couldFollow(pulses_[i_first]))
         return true;
     }
@@ -242,6 +246,7 @@ void BlockStream::acquireSync(Block block) {
   }
 }
 
+// Receive a new bit
 void BlockStream::pushBit(bool bit) {
   input_register_ = (input_register_ << 1U) + bit;
   num_bits_until_next_block_--;
@@ -276,12 +281,12 @@ void BlockStream::findBlockInInputRegister() {
       return;
     }
 
-    block.data = static_cast<uint16_t>(block.raw >> kCheckwordLength);
+    block.data = static_cast<std::uint16_t>(block.raw >> kCheckwordLength);
 
     if (block.had_errors && options_.use_fec) {
       const auto correction = correctBurstErrors(block, expected_offset_);
       if (correction.succeeded) {
-        block.data   = static_cast<uint16_t>(correction.corrected_bits >> kCheckwordLength);
+        block.data   = static_cast<std::uint16_t>(correction.corrected_bits >> kCheckwordLength);
         block.offset = expected_offset_;
       }
     }
@@ -299,7 +304,7 @@ void BlockStream::findBlockInInputRegister() {
   }
 }
 
-// A whole group of four blocks was received.
+// Called after a whole group of four blocks was received.
 void BlockStream::handleNewlyReceivedGroup() {
   ready_group_     = current_group_;
   has_group_ready_ = true;
@@ -319,7 +324,7 @@ Group BlockStream::flushCurrentGroup() const {
   return current_group_;
 }
 
-uint32_t BlockStream::getNumBitsSinceSyncLost() const {
+std::uint32_t BlockStream::getNumBitsSinceSyncLost() const {
   return num_bits_since_sync_lost_;
 }
 

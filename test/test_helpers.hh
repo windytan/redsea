@@ -3,27 +3,28 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../src/block_sync.h"
-#include "../src/channel.h"
-#include "../src/common.h"
-#include "../src/groups.h"
-#include "../src/options.h"
+#include "../src/block_sync.hh"
+#include "../src/channel.hh"
+#include "../src/constants.hh"
+#include "../src/groups.hh"
+#include "../src/options.hh"
 
+#include <cstdint>
+#include <initializer_list>
 #include <vector>
 
-using HexData    = std::vector<uint64_t>;
-using BinaryData = std::vector<uint32_t>;
+using HexInputData = std::initializer_list<std::uint64_t>;
 
 enum class DeleteOneBlock { Block1 = 0, Block2, Block3, Block4, None };
 
 // Convert synchronized hex data into groups. Error correction is omitted and ignored.
 // \param block_to_delete Simulate losing some block to noise (same block in every group)
-inline std::vector<redsea::Group> hex2groups(const HexData& hexdata,
+inline std::vector<redsea::Group> hex2groups(const HexInputData& input_data,
                                              DeleteOneBlock block_to_delete) {
   std::vector<redsea::Group> groups;
-  groups.reserve(hexdata.size());
+  groups.reserve(input_data.size());
 
-  for (const auto& hexgroup : hexdata) {
+  for (const auto& hexgroup : input_data) {
     redsea::Group group;
     group.disableOffsets();
     for (auto nblock : {redsea::BLOCK1, redsea::BLOCK2, redsea::BLOCK3, redsea::BLOCK4}) {
@@ -85,7 +86,7 @@ inline std::vector<redsea::Group> asciibin2groups(const std::string& bindata,
 // Run redsea's full decoder and convert the ASCII JSON output back into JSON objects.
 inline std::vector<nlohmann::ordered_json> groups2json(const std::vector<redsea::Group>& data,
                                                        const redsea::Options& options,
-                                                       uint16_t pi) {
+                                                       std::uint16_t pi) {
   std::vector<nlohmann::ordered_json> result;
 
   std::stringstream json_stream;
@@ -106,9 +107,9 @@ inline std::vector<nlohmann::ordered_json> groups2json(const std::vector<redsea:
 
 // Convert synchronized hex data (without offset words) into JSON.
 inline std::vector<nlohmann::ordered_json> hex2json(
-    const HexData& hexdata, const redsea::Options& options, uint16_t pi,
+    const HexInputData& input_data, const redsea::Options& options, std::uint16_t pi,
     DeleteOneBlock block_to_delete = DeleteOneBlock::None) {
-  return groups2json(hex2groups(hexdata, block_to_delete), options, pi);
+  return groups2json(hex2groups(input_data, block_to_delete), options, pi);
 }
 
 template <typename T>
