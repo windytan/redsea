@@ -340,12 +340,12 @@ void loadEventData() {
     }
   }
 
-  for (const std::vector<std::string>& fields : readCSVContainer(tmc_data_suppl, ';')) {
-    if (fields.size() < 2)
+  for (const CSVRow& row : readCSVContainer(tmc_data_suppl, ';')) {
+    if (row.lengths.size() < 2)
       continue;
 
-    const auto code         = static_cast<std::uint16_t>(std::stoi(fields[0]));
-    const std::string& desc = fields[1];
+    const auto code         = static_cast<std::uint16_t>(std::stoi(row.at(0)));
+    const std::string& desc = row.at(1);
 
     g_supplementary_data.insert({code, desc});
   }
@@ -354,18 +354,18 @@ void loadEventData() {
 std::map<std::uint16_t, ServiceKey> loadServiceKeyTable() {
   std::map<std::uint16_t, ServiceKey> result;
 
-  for (const std::vector<std::string>& fields : readCSV("service_key_table.csv", ',')) {
-    if (fields.size() < 4)
+  for (const CSVRow& row : readCSV("service_key_table.csv", ',')) {
+    if (row.lengths.size() < 4)
       continue;
 
     std::uint16_t encid{};
     ServiceKey key;
 
     try {
-      encid        = static_cast<std::uint16_t>(std::stoi(fields.at(0)));
-      key.xorval   = static_cast<std::uint8_t>(std::stoi(fields.at(1)));
-      key.xorstart = static_cast<std::uint8_t>(std::stoi(fields.at(2)));
-      key.nrot     = static_cast<std::uint8_t>(std::stoi(fields.at(3)));
+      encid        = static_cast<std::uint16_t>(std::stoi(row.at(0)));
+      key.xorval   = static_cast<std::uint8_t>(std::stoi(row.at(1)));
+      key.xorstart = static_cast<std::uint8_t>(std::stoi(row.at(2)));
+      key.nrot     = static_cast<std::uint8_t>(std::stoi(row.at(3)));
     } catch (const std::exception&) {
       continue;
     }

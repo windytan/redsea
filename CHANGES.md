@@ -6,6 +6,8 @@ We use [semantic versioning](https://semver.org/).
 
 * Major new features:
   * Add RDS2 streams / RFT support (#32): --streams
+* Other fixes:
+  * Improve CSV loading speed
 
 ## 1.1.1 (2025-03-03)
 

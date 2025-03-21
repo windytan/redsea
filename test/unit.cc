@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h>
+
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
@@ -1082,28 +1084,43 @@ TEST_CASE("Invalid data") {
 }
 
 TEST_CASE("CSV reader") {
-  const std::string testfilename{"testfile.csv"};
+  char testfilename[]  = "/tmp/redsea-test-XXXXXX";
+  const int testfilefd = ::mkstemp(testfilename);
+  REQUIRE(testfilefd != -1);
 
   std::ofstream out(testfilename);
-  out << "num;a;b;c\n0;-16;+8;7\nzero;minus 16;plus 8;seitsemän";
+  // Test string has:
+  // - title line
+  // - empty column
+  // - empty line
+  // - signed, non-signed integers
+  // - string with UTF-8 characters
+  // - both CRLF and LF line feeds
+  // - last line does not have a line feed
+  out << "num;a;empty;b;c\r\n0;-16;;+8;7\n\nzero;minus 16;;plus 8;seitsemän";
   out.close();
 
   SECTION("Simple read without titles") {
-    auto csv = redsea::readCSV(testfilename, ';');
+    const auto csv = redsea::readCSV(testfilename, ';');
 
-    CHECK(csv.size() == 3);
-    CHECK(csv.at(1).at(3) == "7");
+    CHECK(csv.size() == 4);
+    CHECK(csv.at(1).lengths.size() == 5);
+    CHECK(csv.at(1).at(2) == "");
+    CHECK(csv.at(1).at(4) == "7");
   }
 
   SECTION("Get values by column title") {
-    auto csv = redsea::readCSVWithTitles(testfilename, ';');
+    const auto csv = redsea::readCSVWithTitles(testfilename, ';');
 
-    CHECK(csv.rows.size() == 2);
+    CHECK(csv.rows.size() == 3);
     CHECK(redsea::get_int(csv, csv.rows.at(0), "a") == -16);
     CHECK(redsea::get_int(csv, csv.rows.at(0), "b") == 8);
     CHECK(redsea::get_uint16(csv, csv.rows.at(0), "c") == 7);
 
-    CHECK(redsea::get_string(csv, csv.rows.at(1), "c") == "seitsemän");
+    REQUIRE_THROWS_AS(redsea::get_string(csv, csv.rows.at(1), "a"), std::out_of_range);
+
+    CHECK(redsea::get_string(csv, csv.rows.at(2), "empty") == "");
+    CHECK(redsea::get_string(csv, csv.rows.at(2), "c") == "seitsemän");
   }
 }
 

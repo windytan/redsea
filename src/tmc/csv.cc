@@ -2,37 +2,20 @@
 
 #include <cstdint>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 
 namespace redsea {
 
-std::vector<std::string> splitLine(const std::string& line, char delimiter) {
-  std::stringstream ss(line);
-  std::vector<std::string> result;
-
-  while (ss.good()) {
-    std::string val;
-    std::getline(ss, val, delimiter);
-    result.push_back(val);
-  }
-
-  return result;
-}
-
-std::vector<std::vector<std::string>> readCSV(const std::string& filename, char delimiter) {
-  std::vector<std::vector<std::string>> lines;
+std::vector<CSVRow> readCSV(const std::string& filename, char delimiter) {
+  std::vector<CSVRow> lines;
 
   std::ifstream in(filename);
   if (!in.is_open())
     return lines;
 
   for (std::string line; std::getline(in, line);) {
-    line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
-    line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-
-    lines.emplace_back(splitLine(line, delimiter));
+    lines.emplace_back(line, delimiter);
   }
 
   in.close();
