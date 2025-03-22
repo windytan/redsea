@@ -101,6 +101,8 @@ std::uint16_t Group::getPI() const {
     return 0x0000;
 }
 
+// \return Block error rate, percent
+// \note Remember to check if hasBLER()
 float Group::getBLER() const {
   return bler_;
 }
@@ -188,6 +190,7 @@ void Group::setTime(std::chrono::time_point<std::chrono::system_clock> t) {
   has_time_      = true;
 }
 
+// \param bler Block error rate, percent
 void Group::setAverageBLER(float bler) {
   bler_     = bler;
   has_bler_ = true;

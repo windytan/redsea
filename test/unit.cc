@@ -429,7 +429,7 @@ TEST_CASE("Radiotext failing corner cases", "[!mayfail]") {
   }
 }
 
-TEST_CASE("Enhanced RadioText") {
+TEST_CASE("RDS2 Enhanced RadioText") {
   redsea::Options options;
 
   // Järviradio (fi)
@@ -535,7 +535,7 @@ TEST_CASE("RadioText Plus") {
   }
 }
 
-TEST_CASE("Long PS") {
+TEST_CASE("RDS2 Long PS") {
   redsea::Options options;
 
   SECTION("Space-padded") {
@@ -776,7 +776,7 @@ TEST_CASE("EON") {
     // Refers to YLE Suomi 94.0 MHz
     CHECK(json_lines.at(3)["other_network"]["pi"] == "0x6203");
     CHECK(json_lines.at(3)["other_network"]["ps"] == "YLESUOMI");
-    CHECK(json_lines.at(4)["other_network"]["kilohertz"] == 94000);
+    CHECK(json_lines.at(4)["other_network"]["kilohertz"] == 94'000);
     CHECK(json_lines.at(5)["other_network"]["has_linkage"] == false);
     CHECK(json_lines.at(5)["other_network"]["tp"] == true);
     CHECK(json_lines.at(6)["other_network"]["prog_type"] == "Varied");
@@ -797,6 +797,15 @@ TEST_CASE("EON") {
     CHECK(json_lines.back()["other_network"]["tp"] == true);
     CHECK(json_lines.back()["other_network"]["ta"] == false);
   }
+
+  SECTION("Alt frequencies") {
+    // Radio Gioconda (it)
+    const auto json_lines{
+        hex2json({0x53C5'E554'E2AD'53C6, 0x53C5'E554'C2CD'53C6}, options, 0x53C5)};
+
+    REQUIRE(json_lines.size() == 2);
+    CHECK(listEquals(json_lines.back()["other_network"]["alt_frequencies"], {104'800, 106'900}));
+  }
 }
 
 TEST_CASE("DAB cross-referencing") {
@@ -809,7 +818,7 @@ TEST_CASE("DAB cross-referencing") {
 
   // Source: https://www.bbc.co.uk/programmes/articles/98FthRzhxJ4z0fXYJnsvlM/about-radio-4
   CHECK(json_lines.back()["dab"]["channel"] == "12B");
-  CHECK(json_lines.back()["dab"]["kilohertz"] == 225648);
+  CHECK(json_lines.back()["dab"]["kilohertz"] == 225'648);
 }
 
 TEST_CASE("TMC") {
@@ -988,10 +997,10 @@ TEST_CASE("Error detection and correction") {
   redsea::Options options;
   // clang-format off
   const std::string correct_group{
-    "00100010111000010111001100"
-    "00100101100000111100111110"
-    "00100000011001011011010011"
-    "01101001001000000110111110"};
+    "0010001011100001" "0111001100"
+    "0010010110000011" "1100111110"
+    "0010000001100101" "1011010011"
+    "0110100100100000" "0110111110"};
   // clang-format on
 
   SECTION("Detects error-free group") {
@@ -1067,6 +1076,25 @@ TEST_CASE("Error detection and correction") {
     CHECK_FALSE(groups.back().has(redsea::BLOCK1));
     CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
   }
+}
+
+TEST_CASE("Block error rate (BLER) reporting") {
+  redsea::Options options;
+  options.bler = true;
+
+  constexpr int num_erroneous_blocks = 1;
+
+  // clang-format off
+  const auto json_lines{hex2json({
+    0x7827'F928'7827'F928
+  }, options, 0x7827, DeleteOneBlock::Block2)};
+  // clang-format on
+
+  REQUIRE(!json_lines.empty());
+  REQUIRE(json_lines.back().contains("bler"));
+  // 1 block out of kNumBlerAverageGroups was missing
+  CHECK(json_lines.back()["bler"] ==
+        num_erroneous_blocks * 100 / (4 * redsea::kNumBlerAverageGroups));
 }
 
 TEST_CASE("Invalid data") {
@@ -1147,6 +1175,19 @@ TEST_CASE("Clock-time formatting") {
     CHECK(time_string.substr(7, 4) == "0.00");
   }
 }
+
+TEST_CASE("Hex output format") {
+  redsea::Options options;
+  options.show_raw = true;
+
+  // clang-format off
+  const auto json_lines{hex2json({
+    0x7827'F928'7827'F928
+  }, options, 0x7827, DeleteOneBlock::Block2)};
+  // clang-format on
+
+  CHECK(json_lines.back()["raw_data"] == "7827 ---- 7827 F928");
+};
 
 TEST_CASE("CRC16") {
   // Pg. 84
