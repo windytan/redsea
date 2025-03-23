@@ -1,0 +1,89 @@
+name: windows
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-windows-msys2-mingw:
+    name: "🪟 Build on Windows with MSYS2 and MinGW"
+    runs-on: windows-latest
+
+    steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          autoconf
+          automake
+          git
+          make
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-libiconv
+          mingw-w64-x86_64-libsndfile
+          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-nlohmann-json
+          mingw-w64-x86_64-python3
+    # Disable glibc specific checks and headers
+    - name: Patch & build liquid-dsp
+      shell: msys2 {0}
+      run: |
+        git clone https://github.com/jgaeddert/liquid-dsp.git && cd liquid-dsp
+        perl -i -p -e 's/(AC_CHECK_LIB\(\[c\].+| sys\/resource.h)//g' configure.ac
+        ./bootstrap.sh && ./configure --prefix=/mingw64 && make
+        make install
+    - uses: actions/checkout@v4
+    - name: Build redsea.exe
+      shell: msys2 {0}
+      run: |
+        meson setup -Dwerror=true build && cd build && meson compile
+    - name: Test command-line interface
+      shell: msys2 {0}
+      run: perl test/cli.pl build/redsea.exe
+
+  build-windows-cygwin:
+    name: "🪟 Build on Windows with Cygwin"
+    runs-on: windows-latest
+
+    steps:
+    - run: git config --global core.autocrlf input
+    - uses: actions/checkout@v4
+    - uses: cygwin/cygwin-install-action@v4
+      with:
+        packages: >-
+          autoconf
+          automake
+          bzip2
+          gcc-core
+          gcc-g++
+          git
+          libiconv-devel
+          libsndfile-devel
+          make
+          meson
+          patch
+          perl
+          tar
+          xz
+    - name: Build liquid-dsp
+      shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
+      run: >-
+        git clone https://github.com/jgaeddert/liquid-dsp.git &&
+        cd liquid-dsp &&
+        ./bootstrap.sh &&
+        ./configure --prefix=/usr &&
+        make && make install
+    # Cygwin does not allow underscore variables that start with an uppercase when
+    # compiling with gcc
+    - name: Patch liquid.h
+      shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
+      run: perl -i -p -e 's/(?<=\s)(_[A-Z])(?=[,\)])/\L\1__/g' /usr/include/liquid/liquid.h
+    - name: Build redsea
+      shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
+      run: meson setup -Dwerror=true build && cd build && meson compile
+    - name: Test command-line interface
+      shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
+      run: perl test/cli.pl build/redsea

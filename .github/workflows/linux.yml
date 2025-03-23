@@ -1,0 +1,93 @@
+name: linux
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-ubuntu-24-04:
+    name: "🐧 Build on Ubuntu 24.04"
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies (apt)
+      run: sudo apt install meson ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
+    - name: meson setup
+      run: meson setup -Dwerror=true build
+    - name: compile
+      run: cd build && meson compile
+    - name: Test command-line interface
+      run: perl test/cli.pl build/redsea
+
+  build-ubuntu-22-04:
+    name: "🐧 Build on Ubuntu 22.04"
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies (apt)
+      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
+    - name: Install meson (pip3)
+      run: pip3 install --user meson
+    - name: meson setup
+      run: meson setup -Dwerror=true build
+    - name: compile
+      run: cd build && meson compile
+    - name: Test command-line interface
+      run: perl test/cli.pl build/redsea
+
+  build-ubuntu-20-04:
+    name: "🐧 Build on Ubuntu 20.04"
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies (apt)
+      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
+    - name: Install meson (pip3)
+      run: pip3 install --user meson
+    - name: meson setup
+      run: meson setup -Dwerror=true build
+    - name: compile
+      run: cd build && meson compile
+    - name: Test command-line interface
+      run: perl test/cli.pl build/redsea
+
+  build-ubuntu-deb-package:
+    name: "🐧 Build Debian package"
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Debian packaging tools
+      run: sudo apt install build-essential devscripts debhelper equivs perl
+    - name: Install Build-Depends
+      run: sudo mk-build-deps --install --tool 'apt-get --yes'
+    - name: Build .deb
+      run: debuild -us -uc
+    - name: Install .deb
+      run: sudo dpkg -i ../redsea_*.deb
+    - name: Test command-line interface
+      run: perl test/cli.pl redsea --installed
+
+  build-debian-buster:
+    name: "🐧 Build on Debian 10 (Buster)"
+    runs-on: ubuntu-latest
+    container: debian:buster
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies (apt-get)
+      run: apt-get update && apt-get -y install python3-pip ninja-build build-essential libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
+    - name: Install meson (pip3)
+      run: pip3 install --user meson
+    - name: meson setup
+      run: export PATH=$PATH:$HOME/.local/bin && meson setup -Dwerror=true build
+    - name: compile
+      run: export PATH=$PATH:$HOME/.local/bin && cd build && meson compile
+    - name: Test command-line interface
+      run: perl test/cli.pl build/redsea
