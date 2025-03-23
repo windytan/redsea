@@ -602,7 +602,12 @@ void Station::decodeType2(const Group& group) {
   const size_t radiotext_position = getBits<4>(group.get(BLOCK2), 0) *
                                     (group.getType().version == GroupType::Version::A ? 4UL : 2UL);
 
-  const bool is_ab_changed = radiotext_.isABChanged(getBits<1>(group.get(BLOCK2), 4));
+  const bool ab            = getBool(group.get(BLOCK2), 4);
+  const bool is_ab_changed = radiotext_.isABChanged(ab);
+
+  if (options_.show_partial) {
+    json_["rt_ab"] = ab ? "B" : "A";
+  }
 
   // If these heuristics match it's possible that we just received a full random-length message
   // with no string terminator (method 3 above).
@@ -629,8 +634,9 @@ void Station::decodeType2(const Group& group) {
 
   // The transmitter requests us to clear the buffer (message contents will change).
   // Note: This is sometimes overused in the wild.
-  if (is_ab_changed)
+  if (is_ab_changed) {
     radiotext_.text.clear();
+  }
 
   if (group.getType().version == GroupType::Version::A) {
     radiotext_.text.resize(64);

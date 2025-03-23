@@ -375,6 +375,7 @@ TEST_CASE("Radiotext") {
     CHECK(json_lines.back()["partial_radiotext"] ==
           "Robbie Williams - Fe"
           "                                            ");
+    CHECK(json_lines.back()["rt_ab"] == "A");
 
     // All lines should have RadioText
     for (auto line : json_lines) REQUIRE(line.contains("partial_radiotext"));

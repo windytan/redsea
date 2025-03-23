@@ -6,6 +6,8 @@ We use [semantic versioning](https://semver.org/).
 
 * Major new features:
   * Add RDS2 streams / RFT support (#32): --streams
+* Small new features:
+  * Show RadioText A/B flag with --show-partial
 * Other fixes:
   * Improve CSV loading speed
 
