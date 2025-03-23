@@ -4,7 +4,9 @@ redsea is a lightweight command-line [FM-RDS](https://en.wikipedia.org/wiki/Radi
 decoder that supports many [RDS features][Wiki: Features].
 
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
-[![build](https://github.com/windytan/redsea/workflows/build/badge.svg)](https://github.com/windytan/redsea/actions/workflows/build.yml?query=branch%3Amaster)
+[![linux](https://github.com/windytan/redsea/workflows/linux/badge.svg?logo=linux)](https://github.com/windytan/redsea/actions/workflows/linux.yml?query=branch%3Amaster)
+[![macos](https://github.com/windytan/redsea/workflows/macos/badge.svg?logo=macos)](https://github.com/windytan/redsea/actions/workflows/macos.yml?query=branch%3Amaster)
+[![windows](https://github.com/windytan/redsea/workflows/windows/badge.svg)](https://github.com/windytan/redsea/actions/workflows/windows.yml?query=branch%3Amaster)
 
 It prints [newline-delimited JSON](https://jsonlines.org/) where
 each line corresponds to one RDS group. It can also print "raw" undecoded hex blocks (`--output hex`).
