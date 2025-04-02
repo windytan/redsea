@@ -58,24 +58,6 @@ std::string getRDSCharString(std::uint8_t code) {
   return codetable_G0[code];
 }
 
-// Length of a UTF-8 character starting at byte_start.
-// 0 on error.
-std::size_t charlen(const std::string& str, std::size_t byte_start) {
-  std::size_t nbyte{byte_start};
-
-  if (nbyte >= str.length())
-    return 0;
-
-  while ((static_cast<std::uint8_t>(str[nbyte]) & 0b1100'0000U) == 0b1000'0000U) {
-    nbyte++;
-
-    if (nbyte >= str.length())
-      return 0;
-  }
-
-  return nbyte - byte_start + 1;
-}
-
 // \throws Conversion errors from iconvpp
 std::string decodeUCS2(const std::string& src) {
   static iconvpp::converter converter("UTF-8", "UCS-2");

@@ -43,6 +43,7 @@ class SyncPulseBuffer {
   std::array<SyncPulse, 4> pulses_;
 };
 
+// Result of an attempted burst error correction.
 struct ErrorCorrectionResult {
   bool succeeded{false};
   std::uint32_t corrected_bits{0};

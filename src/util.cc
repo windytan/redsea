@@ -36,20 +36,6 @@ std::string getHoursMinutesString(int hour, int minute) {
   return ss.str();
 }
 
-// \brief Calculate CRC16 for an RFT file
-std::uint32_t crc16_ccitt(const std::uint8_t* data, std::size_t length) {
-  std::uint32_t crc = 0xFFFF;
-
-  for (std::size_t i = 0; i < length; ++i) {
-    crc = static_cast<std::uint8_t>(crc >> 8U) | (crc << 8U);
-    crc ^= data[i];
-    crc ^= static_cast<std::uint8_t>(crc & 0xFFU) >> 4U;
-    crc ^= (crc << 8U) << 4U;
-    crc ^= ((crc & 0xFFU) << 4U) << 1U;
-  }
-  return (crc ^ 0xFFFFU) & 0xFFFFU;
-}
-
 // \brief Format a system clock timestamp
 std::string getTimePointString(const std::chrono::time_point<std::chrono::system_clock>& timepoint,
                                const std::string& format) {

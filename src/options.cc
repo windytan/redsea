@@ -126,9 +126,9 @@ Options getOptions(int argc, char** argv) {
         const std::string optstr(optarg);
         float factor = 1.f;
         if (optstr.size() > 1) {
-          if (tolower(optstr.back()) == 'k')
+          if (std::tolower(optstr.back()) == 'k')
             factor = 1e3f;
-          else if (toupper(optstr.back()) == 'M')
+          else if (std::toupper(optstr.back()) == 'M')
             factor = 1e6f;
         }
         options.samplerate = std::strtof(optarg, nullptr) * factor;
@@ -153,24 +153,24 @@ Options getOptions(int argc, char** argv) {
         break;
       case 'u': options.rbds = true; break;
       case 'l': options.loctable_dirs.emplace_back(optarg); break;
-      case 'v':
-        options.print_version = true;
-        options.exit_success  = true;
+      case 'v': options.print_version = true; break;
+      case '?': options.print_usage = true; break;
+      default:
+        options.print_usage = true;
+        options.init_error  = true;
         break;
-      case '?':
-        options.print_usage  = true;
-        options.exit_success = true;
-        break;
-      default: throw std::runtime_error("unknown options; use --help for help"); break;
     }
-    if (options.exit_success)
+    if (options.init_error)
       break;
   }
 
-  options.use_fec = fec_flag;
+  options.early_exit = options.print_usage || options.print_version;
+  options.use_fec    = fec_flag;
 
   if (argc > optind) {
-    throw std::runtime_error("unknown options; use --help for help");
+    options.print_usage = true;
+    options.init_error  = true;
+    options.early_exit  = true;
   }
 
   if (options.feed_thru && options.input_type == InputType::MPX_sndfile) {
@@ -188,7 +188,7 @@ Options getOptions(int argc, char** argv) {
   }
 
   const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin && !options.print_usage &&
-                              !options.exit_success};
+                              !options.init_error};
 
   if (assuming_raw_mpx && !options.is_rate_defined) {
     std::cerr << R"(warning: raw MPX sample rate not defined, assuming )" << kTargetSampleRate_Hz

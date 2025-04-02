@@ -49,17 +49,21 @@ class DeltaDecoder {
   std::uint32_t prev_{0};
 };
 
+// \brief Demodulation context for one subcarrier
 struct Demod {
   liquid::AGC agc;
   liquid::FIRFilter fir_lpf;
   liquid::SymSync symsync;
   DeltaDecoder delta_decoder;
   BiphaseDecoder biphase_decoder;
+  liquid::NCO oscillator;
+  liquid::Modem modem{LIQUID_MODEM_PSK2};
 };
 
-class Subcarriers {
+// A set of 1 (RDS1) to 4 (RDS2) subcarriers
+class SubcarrierSet {
  public:
-  explicit Subcarriers(float samplerate);
+  explicit SubcarrierSet(float samplerate);
   bool eof() const;
   BitBuffer processChunk(const MPXBuffer& input_chunk, int num_data_streams);
   void reset();
@@ -68,12 +72,14 @@ class Subcarriers {
  private:
   const MPXBuffer& resampleChunk(const MPXBuffer& input_chunk);
 
+  static constexpr int kSamplesPerSymbol = 3;
+  static constexpr int kDecimateRatio =
+      static_cast<int>(kTargetSampleRate_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol);
+
   // Samples since last reset
   std::uint32_t sample_num_{0};
   const float resample_ratio_;
 
-  liquid::NCO oscillator_;
-  liquid::Modem modem_;
   liquid::Resampler resampler_;
 
   std::array<Demod, 4> demods_;

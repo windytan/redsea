@@ -2,6 +2,7 @@
 #define RFT_HH_
 
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -14,6 +15,67 @@ namespace redsea {
 struct RFTSegment {
   std::array<std::uint8_t, 5> bytes;
 };
+
+constexpr std::uint8_t kCRCModeEntireFile = 0;
+constexpr std::uint8_t kCRCModeAuto       = 7;
+
+struct ChunkCRC {
+  std::uint16_t mode;
+  std::uint16_t address_raw;
+  std::uint16_t crc;
+  bool received{};
+
+  // In case of auto mode selection
+  std::uint16_t getActualMode(std::uint32_t file_size_bytes) const {
+    if (mode == kCRCModeAuto) {
+      if (file_size_bytes <= 40'960) {
+        return 1;
+      } else if (file_size_bytes <= 81'920) {
+        return 2;
+      } else {
+        return 3;
+      }
+    }
+    return mode;
+  }
+
+  // Calculate the chunk length, in bytes, based on the mode and file size
+  std::uint32_t getChunkLength(std::uint32_t file_size_bytes) const {
+    if (mode == kCRCModeEntireFile) {
+      return file_size_bytes;
+    }
+
+    return sizeof(RFTSegment) * (8U << getActualMode(file_size_bytes));
+  }
+
+  // Calculate the byte address based on the mode and file size
+  std::uint32_t getByteAddress(std::uint32_t file_size_bytes) const {
+    if (mode == kCRCModeEntireFile) {
+      return 0;
+    }
+
+    return address_raw * getChunkLength(file_size_bytes);
+  }
+};
+
+// IEC 62106-2 ED2:2021 Annex D
+inline std::uint32_t crc16_ccitt(const void* data, std::size_t address, std::size_t length) {
+  if (data == nullptr || length == 0) {
+    return 0;
+  }
+
+  std::uint32_t crc             = 0xFFFF;
+  const std::uint8_t* byte_data = static_cast<const std::uint8_t*>(data);
+
+  for (std::size_t i = 0; i < length; ++i) {
+    crc = static_cast<std::uint8_t>(crc >> 8U) | (crc << 8U);
+    crc ^= byte_data[address + i];
+    crc ^= static_cast<std::uint8_t>(crc & 0xFFU) >> 4U;
+    crc ^= (crc << 8U) << 4U;
+    crc ^= ((crc & 0xFFU) << 4U) << 1U;
+  }
+  return (crc ^ 0xFFFFU) & 0xFFFFU;
+}
 
 class RFTFile {
  public:
@@ -31,6 +93,7 @@ class RFTFile {
       received_[i] = false;
     }
     is_printed_ = false;
+    crc_chunks_.clear();
   }
 
   // \param flag 0: no CRC, 1: CRC
@@ -38,10 +101,15 @@ class RFTFile {
     expect_crc_ = flag;
   }
 
-  // \param crc Expected crc16_ccitt
-  // \note TODO CRC mode
-  void setExpectedCRC(std::uint16_t expected_crc) {
-    expected_crc_ = expected_crc;
+  bool isCRCExpected() const {
+    return expect_crc_;
+  }
+
+  void receiveCRC(const ChunkCRC& chunk_crc) {
+    assert(chunk_crc.address_raw < kMaxNumCRCs);
+    crc_chunks_.resize(kMaxNumCRCs);
+    crc_chunks_[chunk_crc.address_raw]          = chunk_crc;
+    crc_chunks_[chunk_crc.address_raw].received = true;
   }
 
   // Receive segment data for this file
@@ -95,15 +163,16 @@ class RFTFile {
 
  private:
   static constexpr std::size_t kMaxNumSegments = 1 << 15;
+  static constexpr std::size_t kMaxNumCRCs     = 1 << 9;
 
   // 163.8 kB buffer in heap
   std::vector<RFTSegment> data_;
   // ~4 kB buffer in heap
   std::vector<bool> received_;
+  std::vector<ChunkCRC> crc_chunks_;
   std::uint32_t expected_size_bytes_{};
   bool is_printed_{};
   bool expect_crc_{};
-  std::uint16_t expected_crc_{};
   int prev_toggle_{};
 };
 

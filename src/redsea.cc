@@ -115,6 +115,7 @@ void printVersion() {
 #endif
 }
 
+// \return Process exit code
 int processMPXInput(Options options) {
   MPXReader mpx;
 
@@ -137,10 +138,10 @@ int processMPXInput(Options options) {
 
   // Each PCM channel is matched with 1 subcarrier set
   std::vector<std::unique_ptr<Channel>> channels;
-  std::vector<std::unique_ptr<Subcarriers>> subcarriers;
+  std::vector<std::unique_ptr<SubcarrierSet>> subcarriers;
   for (std::uint32_t ch = 0; ch < options.num_channels; ch++) {
     channels.emplace_back(std::make_unique<Channel>(options, ch, output_stream));
-    subcarriers.push_back(std::make_unique<Subcarriers>(options.samplerate));
+    subcarriers.push_back(std::make_unique<SubcarrierSet>(options.samplerate));
   }
 
   while (!mpx.eof()) {
@@ -163,6 +164,7 @@ int processMPXInput(Options options) {
   return EXIT_SUCCESS;
 }
 
+// \return Process exit code
 int processASCIIBitsInput(const Options& options) {
   Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
   AsciiBitReader ascii_reader(options);
@@ -187,6 +189,7 @@ int processHexInput(const Options& options) {
   return EXIT_SUCCESS;
 }
 
+// \return Process exit code
 int processTEFInput(const Options& options) {
   Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
 
@@ -209,14 +212,17 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  if (options.print_usage)
+  if (options.print_usage) {
     redsea::printUsage();
+  }
 
-  if (options.print_version)
+  if (options.print_version) {
     redsea::printVersion();
+  }
 
-  if (options.exit_success)
-    return EXIT_SUCCESS;
+  if (options.early_exit) {
+    return options.init_error ? EXIT_FAILURE : EXIT_SUCCESS;
+  }
 
   switch (options.input_type) {
     case redsea::InputType::MPX_stdin:

@@ -23,6 +23,7 @@
 #include <complex>
 #include <cstdint>
 #include <cstdio>
+#include <utility>
 
 #include "src/constants.hh"
 #include "src/dsp/liquid_wrappers.hh"
@@ -33,7 +34,6 @@ namespace redsea {
 
 namespace {
 
-constexpr int kSamplesPerSymbol      = 3;
 constexpr float kAGCBandwidth_Hz     = 500.0f;
 constexpr float kAGCInitialGain      = 0.08f;
 constexpr float kLowpassCutoff_Hz    = 2400.0f;
@@ -88,32 +88,30 @@ std::uint32_t DeltaDecoder::decode(std::uint32_t d) {
   return bit;
 }
 
-Subcarriers::Subcarriers(float samplerate)
-    : resample_ratio_(kTargetSampleRate_Hz / samplerate),
-      oscillator_(LIQUID_NCO, angularFreq(57000.f, kTargetSampleRate_Hz)),
-      modem_(LIQUID_MODEM_PSK2),
-      resampler_(13) {
+SubcarrierSet::SubcarrierSet(float samplerate)
+    : resample_ratio_(kTargetSampleRate_Hz / samplerate), resampler_(13) {
   for (auto& demod : demods_) {
     demod.agc.init(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain);
     demod.fir_lpf.init(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz);
     demod.symsync.init(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay, kSymsyncBeta, 32);
     demod.symsync.setBandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
     demod.symsync.setOutputRate(1);
+    demod.oscillator.init(LIQUID_NCO, angularFreq(57000.f, kTargetSampleRate_Hz));
+    demod.oscillator.setPLLBandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
   }
-  oscillator_.setPLLBandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
   resampler_.setRatio(resample_ratio_);
 }
 
-void Subcarriers::reset() {
+void SubcarrierSet::reset() {
   for (auto& demod : demods_) {
     demod.symsync.reset();
+    demod.oscillator.reset();
   }
-  oscillator_.reset();
   sample_num_ = 0;
 }
 
 // \return Reference to possibly resampled data; no resampling happens if resampling ratio is 1
-const MPXBuffer& Subcarriers::resampleChunk(const MPXBuffer& input_chunk) {
+const MPXBuffer& SubcarrierSet::resampleChunk(const MPXBuffer& input_chunk) {
   if (resample_ratio_ == 1.0f) {
     return input_chunk;
   }
@@ -146,61 +144,66 @@ const MPXBuffer& Subcarriers::resampleChunk(const MPXBuffer& input_chunk) {
 }
 
 // \brief Process a chunk of MPX
-// \param input_chunk MPX data
+// \param input_chunk MPX data (any sample rate)
 // \param num_data_streams Number of RDS data streams to process (1 to 4)
-// \return Unsynchronized bits
-BitBuffer Subcarriers::processChunk(const MPXBuffer& input_chunk, int num_data_streams) {
+// \return Raw bits without any block synchronization
+BitBuffer SubcarrierSet::processChunk(const MPXBuffer& input_chunk, int num_data_streams) {
   const MPXBuffer& chunk = resampleChunk(input_chunk);
-
-  constexpr int decimate_ratio =
-      static_cast<int>(kTargetSampleRate_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol);
 
   BitBuffer bitbuffer;
   bitbuffer.time_received = input_chunk.time_received;
 
   // Pre-allocate the bit buffers
+  constexpr float over_reserve = 1.1f;
   const auto expected_num_bits = static_cast<std::size_t>(
-      static_cast<float>(chunk.used_size) * kBitsPerSecond / kTargetSampleRate_Hz * 1.1f);
+      static_cast<float>(chunk.used_size) * kBitsPerSecond / kTargetSampleRate_Hz * over_reserve);
   for (int n_stream{0}; n_stream < num_data_streams; n_stream++) {
     bitbuffer.bits[n_stream].reserve(expected_num_bits);
   }
 
   for (size_t i = 0; i < chunk.used_size; i++) {
     for (int n_stream{0}; n_stream < num_data_streams; n_stream++) {
-      // Mix RDS to baseband for filtering purposes
+      // Running at 171 kHz (receiver's clock)
 
+      auto& subcarrier_context = demods_[n_stream];
+
+      // Mix down to baseband
       const std::complex<float> sample_baseband =
-          oscillator_.mixDown(std::complex<float>(chunk.data[i]), n_stream);
+          subcarrier_context.oscillator.mixDown(std::complex<float>(chunk.data[i]), n_stream);
 
       demods_[n_stream].fir_lpf.push(sample_baseband);
 
-      if (sample_num_ % decimate_ratio == 0) {
+      if (sample_num_ % kDecimateRatio == 0) {
+        // Running at 7.125 kHz (receiver's clock)
+
         std::complex<float> sample_lopass =
             demods_[n_stream].agc.execute(demods_[n_stream].fir_lpf.execute());
 
-        const auto symbol = demods_[n_stream].symsync.execute(sample_lopass);
+        // Synchronize to transmitter's biphase data clock
+        const auto symbol = subcarrier_context.symsync.execute(sample_lopass);
 
         if (symbol.valid) {
-          // Since all streams are phase-locked we'll only track stream 0 with the PLL
-          if (n_stream == 0) {
-            modem_.demodulate(symbol.data);
+          // Running at 2.375 kHz (transmitter's clock)
 
-            const float phase_error = std::min(std::max(modem_.getPhaseError(), -kPi), kPi);
-            oscillator_.stepPLL(phase_error * kPLLMultiplier);
-          }
+          // The symbol from liquid's modem is ignored; we only need the phase error.
+          std::ignore = subcarrier_context.modem.demodulate(symbol.data);
 
-          const auto biphase = demods_[n_stream].biphase_decoder.push(symbol.data);
+          const float phase_error =
+              std::min(std::max(subcarrier_context.modem.getPhaseError(), -kPi), kPi);
+          subcarrier_context.oscillator.stepPLL(phase_error * kPLLMultiplier);
+
+          const auto biphase = subcarrier_context.biphase_decoder.push(symbol.data);
 
           // One biphase symbol received for every 2 PSK symbols
           if (biphase.valid) {
+            // Running at 1.1875 kHz (transmitter's clock)
             bitbuffer.bits[n_stream].push_back(
-                static_cast<int>(demods_[n_stream].delta_decoder.decode(biphase.data)));
+                static_cast<int>(subcarrier_context.delta_decoder.decode(biphase.data)));
           }
         }
-      }
+      }  // decimate
+      subcarrier_context.oscillator.step();
     }  // for n_stream
-
-    oscillator_.step();
 
     // Overflows every 7 hours*. Two things will happen:
     //   1) The symbol synchronizer sees a sudden 75° phase jump**.
@@ -217,13 +220,13 @@ BitBuffer Subcarriers::processChunk(const MPXBuffer& input_chunk, int num_data_s
   return bitbuffer;
 }
 
-bool Subcarriers::eof() const {
+bool SubcarrierSet::eof() const {
   return is_eof_;
 }
 
 // Seconds of audio processed since last reset.
 /// \note Not to be used for measurements, since it will lose precision as the counter grows.
-float Subcarriers::getSecondsSinceLastReset() const {
+float SubcarrierSet::getSecondsSinceLastReset() const {
   return static_cast<float>(sample_num_) / kTargetSampleRate_Hz;
 }
 

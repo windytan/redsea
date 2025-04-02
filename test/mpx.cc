@@ -24,7 +24,7 @@ TEST_CASE("MPX file input") {
 
   std::stringstream json_stream;
   redsea::Channel channel(options, 0, json_stream);
-  redsea::Subcarriers subcarriers(options.samplerate);
+  redsea::SubcarrierSet subcarriers(options.samplerate);
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
@@ -62,7 +62,7 @@ TEST_CASE("RDS2/RFT station logo from MPX") {
 
   std::stringstream json_stream;
   redsea::Channel channel(options, 0, json_stream);
-  redsea::Subcarriers subcarriers(options.samplerate);
+  redsea::SubcarrierSet subcarriers(options.samplerate);
 
   const int num_streams = 4;
 
@@ -76,8 +76,9 @@ TEST_CASE("RDS2/RFT station logo from MPX") {
         nlohmann::ordered_json jsonroot;
         json_stream >> jsonroot;
 
-        if (jsonroot.contains("rft") && jsonroot["rft"].contains("file_contents")) {
-          CHECK(jsonroot["rft"]["file_contents"] ==
+        if (jsonroot.contains("rft") && jsonroot["rft"].contains("data") &&
+            jsonroot["rft"]["data"].contains("file_contents")) {
+          CHECK(jsonroot["rft"]["data"]["file_contents"] ==
                 "iVBORw0KGgoAAAANSUhEUgAAAGgAAABoAgMAAABgcl0yAAAADFBMVEUAAADtHCT/"
                 "rsn////OXmVkAAAAXElEQVRIx+3WOQ7AMAhE0X/JuSSXJIWlODZxn0GZCunRspDH"
                 "0ICAWtkTSBI8K38CKSJCGnC3taGZLrTnp+9SxTKVprRi2aLGNBHK1bOmgfB6za0p"

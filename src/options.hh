@@ -31,8 +31,13 @@ struct Options {
   bool rbds{};
   bool feed_thru{};
   bool show_partial{};
-  bool exit_success{};
+  // Normal operations won't start (user requested help, version, etc.)
+  bool early_exit{};
+  // Early exit from the program has a failure exit code (it's not a failure to use --help)
+  bool init_error{};
+  // Just print usage help
   bool print_usage{};
+  // Just print the version
   bool print_version{};
   bool timestamp{};
   bool bler{};

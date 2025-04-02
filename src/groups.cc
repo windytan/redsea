@@ -1010,6 +1010,7 @@ void Station::decodeType15A(const Group& group) {
     json_["long_ps"] = rtrim(long_ps_.text.getLastCompleteString());
   } else if (options_.show_partial) {
     try {
+      // May throw if UCS-2
       json_["partial_long_ps"] = long_ps_.text.str();
     } catch (const std::exception& e) {
       json_["debug"].push_back(e.what());
@@ -1087,25 +1088,29 @@ void Station::decodeC(const Group& group) {
   } else if (fid == 0 && (fn & 0b11'0000U) == 0b10'0000U) {
     // Page 82: RFT data group for ODA pipe (fn & 0b1111)
     const auto pipe            = fn & 0b1111U;
-    json_["rft"]["pipe"]       = pipe;
     const auto toggle_bit      = getBits<1>(group.get(BLOCK1), 7);
     const auto segment_address = getBits<15>(group.get(BLOCK1), group.get(BLOCK2), 8);
     if (oda_app_for_pipe_.find(pipe) != oda_app_for_pipe_.end()) {
-      json_["rft"]["app_name"] = getAppNameString(oda_app_for_pipe_[pipe]);
+      json_["open_data_app"]["app_name"] = getAppNameString(oda_app_for_pipe_[pipe]);
     }
-    json_["rft"]["toggle"]       = toggle_bit;
-    json_["rft"]["byte_address"] = segment_address * 5;
+    json_["rft"]["data"]["pipe"]         = pipe;
+    json_["rft"]["data"]["toggle"]       = toggle_bit;
+    json_["rft"]["data"]["byte_address"] = segment_address * 5;
 
     rft_file_[pipe].receive(toggle_bit, segment_address, group.get(BLOCK2), group.get(BLOCK3),
                             group.get(BLOCK4));
 
-    json_["rft"]["segment_data"] =
-        std::vector<int>({getBits<8>(group.get(BLOCK2), 0), getBits<8>(group.get(BLOCK3), 8),
-                          getBits<8>(group.get(BLOCK3), 0), getBits<8>(group.get(BLOCK4), 8),
-                          getBits<8>(group.get(BLOCK4), 0)});
+    json_["rft"]["data"]["segment_data"] = std::initializer_list<int>(
+        {getBits<8>(group.get(BLOCK2), 0), getBits<8>(group.get(BLOCK3), 8),
+         getBits<8>(group.get(BLOCK3), 0), getBits<8>(group.get(BLOCK4), 8),
+         getBits<8>(group.get(BLOCK4), 0)});
 
     if (rft_file_[pipe].hasNewCompleteFile()) {
-      json_["rft"]["file_contents"] = rft_file_[pipe].getBase64Data();
+      json_["rft"]["data"]["file_contents"] = rft_file_[pipe].getBase64Data();
+      if (rft_file_[pipe].isCRCExpected()) {
+        // TODO Let's test and enable this when we have real-world data
+        // json_["rft"]["data"]["crc_ok"] = rft_file_[pipe].checkCRC();
+      }
       rft_file_[pipe].clear();
     }
 
@@ -1113,12 +1118,12 @@ void Station::decodeC(const Group& group) {
     // Page 47
     // Group type C ODA channel fn
     // Channels 0-15 are reserved for providing additional data
-    json_["channel"] = fn;
-    json_["app_data"] =
-        std::vector<int>({getBits<8>(group.get(BLOCK1), 0), getBits<8>(group.get(BLOCK2), 8),
-                          getBits<8>(group.get(BLOCK2), 0), getBits<8>(group.get(BLOCK3), 8),
-                          getBits<8>(group.get(BLOCK3), 0), getBits<8>(group.get(BLOCK4), 8),
-                          getBits<8>(group.get(BLOCK4), 0)});
+    json_["open_data_app"]["channel"]  = fn;
+    json_["open_data_app"]["app_data"] = std::initializer_list<int>(
+        {getBits<8>(group.get(BLOCK1), 0), getBits<8>(group.get(BLOCK2), 8),
+         getBits<8>(group.get(BLOCK2), 0), getBits<8>(group.get(BLOCK3), 8),
+         getBits<8>(group.get(BLOCK3), 0), getBits<8>(group.get(BLOCK4), 8),
+         getBits<8>(group.get(BLOCK4), 0)});
   } else if (fid == 0b10 && fn == 0b000000) {
     // Page 48
     // AID and channel number assignment for group type C ODAs
@@ -1136,7 +1141,6 @@ void Station::decodeC(const Group& group) {
       if (is_rft) {
         // RFT: Page 79
         const int variant = getBits<4>(group.get(BLOCK3), 12);
-        json_["variant"]  = variant;
         if (variant == 0) {
           const bool crc_flag            = getBool(group.get(BLOCK3), 11);
           const auto file_version        = getBits<3>(group.get(BLOCK3), 8);
@@ -1144,43 +1148,47 @@ void Station::decodeC(const Group& group) {
           const auto file_size_bytes     = getBits<18>(group.get(BLOCK3), group.get(BLOCK4), 0);
 
           rft_file_[channel_id].setSize(file_size_bytes);
+          rft_file_[channel_id].setCRCFlag(crc_flag);
 
-          json_["file_info"]["version"] = file_version;
-          json_["file_info"]["id"]      = file_identification;
-          json_["file_info"]["size"]    = file_size_bytes;
-          json_["file_info"]["has_crc"] = crc_flag;
+          json_["rft"]["file_info"]["version"] = file_version;
+          json_["rft"]["file_info"]["id"]      = file_identification;
+          json_["rft"]["file_info"]["size"]    = file_size_bytes;
+          json_["rft"]["file_info"]["has_crc"] = crc_flag;
         } else if (variant == 1) {
           // CRC (Page 80)
           const auto crc_mode      = getBits<3>(group.get(BLOCK3), 9);
           const auto chunk_address = getBits<9>(group.get(BLOCK3), 0);
           const auto crc           = group.get(BLOCK4);
 
-          // json_el["crc_mode"] = crc_mode;
+          const ChunkCRC chunk_crc{crc_mode, chunk_address, crc};
+          rft_file_[channel_id].receiveCRC(chunk_crc);
+
           switch (crc_mode) {
-            case 0: json_["crc_info"]["file_crc16"] = crc; break;
+            case 0: json_["rft"]["crc_info"]["file_crc16"] = crc; break;
             case 1:
             case 2:
             case 3:
             case 4:
             case 5:
-              json_["crc_info"]["chunk_crc16"]   = crc;
-              json_["crc_info"]["chunk_address"] = 5 * chunk_address * (8U << crc_mode);
-              json_["crc_info"]["chunk_length"]  = 5 * (8U << crc_mode);
+            case 7:
+              json_["rft"]["crc_info"]["chunk_crc16"]   = chunk_crc.crc;
+              json_["rft"]["crc_info"]["chunk_address"] = chunk_crc.address_raw;
+              json_["rft"]["crc_info"]["crc_mode"]      = chunk_crc.mode;
               break;
             default: json_["debug"].push_back("TODO: CRC mode " + std::to_string(crc_mode)); break;
           }
 
         } else if (variant >= 8) {
           // 8..15: Non-file-related ODA data
-          json_["non_file_oda_data"] =
+          json_["open_data_app"]["non_file_oda_data"] =
               getHexString<7>(getBits<28>(group.get(BLOCK3), group.get(BLOCK4), 0));
         } else if (variant >= 2) {
           // File-related ODA data
-          json_["file_oda_data"] =
+          json_["open_data_app"]["file_oda_data"] =
               getHexString<7>(getBits<28>(group.get(BLOCK3), group.get(BLOCK4), 0));
         }
       } else {
-        json_["app_data"] =
+        json_["open_data_app"]["app_data"] =
             std::vector<int>({getBits<8>(group.get(BLOCK3), 8), getBits<8>(group.get(BLOCK3), 0),
                               getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0)});
       }
@@ -1190,7 +1198,7 @@ void Station::decodeC(const Group& group) {
     }
   } else {
     json_["debug"].push_back("TODO: FID " + std::to_string(fid) + " FN " + std::to_string(fn));
-    json_["data"] = std::initializer_list<int>(
+    json_["open_data_app"]["data"] = std::initializer_list<int>(
         {getBits<8>(group.get(BLOCK2), 8), getBits<8>(group.get(BLOCK2), 0),
          getBits<8>(group.get(BLOCK3), 8), getBits<8>(group.get(BLOCK3), 0),
          getBits<8>(group.get(BLOCK4), 8), getBits<8>(group.get(BLOCK4), 0)});
