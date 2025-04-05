@@ -6,6 +6,7 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build-ubuntu-24-04:
@@ -20,8 +21,8 @@ jobs:
       run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
-    - name: Test command-line interface
-      run: perl test/cli.pl build/redsea
+    - name: Run basic end-to-end tests
+      run: perl test/end-to-end.pl build/redsea
 
   build-ubuntu-22-04:
     name: "🐧 Build on Ubuntu 22.04"
@@ -37,8 +38,8 @@ jobs:
       run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
-    - name: Test command-line interface
-      run: perl test/cli.pl build/redsea
+    - name: Run basic end-to-end tests
+      run: perl test/end-to-end.pl build/redsea
 
   build-ubuntu-20-04:
     name: "🐧 Build on Ubuntu 20.04"
@@ -54,8 +55,8 @@ jobs:
       run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
-    - name: Test command-line interface
-      run: perl test/cli.pl build/redsea
+    - name: Run basic end-to-end tests
+      run: perl test/end-to-end.pl build/redsea
 
   build-ubuntu-deb-package:
     name: "🐧 Build Debian package"
@@ -71,8 +72,8 @@ jobs:
       run: debuild -us -uc
     - name: Install .deb
       run: sudo dpkg -i ../redsea_*.deb
-    - name: Test command-line interface
-      run: perl test/cli.pl redsea --installed
+    - name: Run basic end-to-end tests
+      run: perl test/end-to-end.pl redsea --installed
 
   build-debian-buster:
     name: "🐧 Build on Debian 10 (Buster)"
@@ -89,5 +90,5 @@ jobs:
       run: export PATH=$PATH:$HOME/.local/bin && meson setup -Dwerror=true build
     - name: compile
       run: export PATH=$PATH:$HOME/.local/bin && cd build && meson compile
-    - name: Test command-line interface
-      run: perl test/cli.pl build/redsea
+    - name: Run basic end-to-end tests
+      run: perl test/end-to-end.pl build/redsea

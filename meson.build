@@ -112,30 +112,26 @@ executable(
   override_options: override_options,
 )
 
-##################
-### Unit tests ###
-##################
+##############################
+### Unit & component tests ###
+##############################
 
 build_tests = get_option('build_tests')
 
 if build_tests
   catch2 = dependency('catch2-with-main', required: true)
 
-  unit_test_exe = executable(
-    'redsea-test-unit',
+  test_exe = executable(
+    'redsea-test',
     [
       sources_no_main,
-      'test/unit.cc',
+      'test/components-bits.cc',
+      'test/components-hex.cc',
+      'test/components-mpx.cc',
+      'test/units.cc',
     ],
     dependencies: [iconv, json, liquid, sndfile, catch2],
     override_options: override_options,
   )
-  mpx_test_exe = executable(
-    'redsea-test-mpx',
-    [sources_no_main, 'test/mpx.cc'],
-    dependencies: [iconv, json, liquid, sndfile, catch2],
-    override_options: override_options,
-  )
-  test('Unit tests', unit_test_exe)
-  test('MPX tests', mpx_test_exe)
+  test('Tests', test_exe)
 endif

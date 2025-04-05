@@ -1,1 +1,1 @@
-option('build_tests', type: 'boolean', value: false, description: 'Build unit tests (requires Catch2)')
+option('build_tests', type: 'boolean', value: false, description: 'Build unit & component tests (requires Catch2)')

@@ -5,9 +5,11 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   clang-tidy:
+    name: "🧹 Run clang-tidy static analysis"
     runs-on: ubuntu-latest
 
     steps:
@@ -22,6 +24,7 @@ jobs:
       run: clang-tidy -p build `find src -name '*.cc' -o -name '*.h'`
 
   perl-critic:
+    name: "🧹 Run perl-critic static analysis"
     runs-on: ubuntu-latest
 
     steps:

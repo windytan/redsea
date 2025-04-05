@@ -6,10 +6,11 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build-test-macos:
-    name: "🍎 Build and unit test on macOS"
+    name: "🍎 Build and test on macOS"
     runs-on: macos-latest
 
     steps:
@@ -18,11 +19,11 @@ jobs:
       run: brew install meson libsndfile liquid-dsp nlohmann-json catch2 perl
     - name: meson setup
       run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false build -Dbuild_tests=true
-    - name: compile & install
+    - name: Compile & install
       run: cd build && meson install
-    - name: download test data
+    - name: Download test data
       run: git lfs pull
-    - name: test
+    - name: Run unit & component tests
       run: cd build && meson test
-    - name: Test command-line interface
-      run: perl test/cli.pl redsea --installed
+    - name: Run basic end-to-end tests
+      run: perl test/end-to-end.pl redsea --installed

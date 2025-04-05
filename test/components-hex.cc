@@ -1,3 +1,6 @@
+// Redsea tests: Component tests for hex input
+// All different kinds of messages we can receive should go here
+
 #include <cstdint>
 #include <fstream>
 #include <sstream>
@@ -16,41 +19,6 @@
 #include "../src/options.hh"
 #include "../src/tmc/csv.hh"
 #include "test_helpers.hh"
-
-TEST_CASE("Bitfield extraction") {
-  constexpr std::uint16_t block1{0b0001'0010'0011'0100};
-  constexpr std::uint16_t block2{0b0101'0110'0111'1000};
-
-  SECTION("Single block") {
-    // clang-format off
-    CHECK(redsea::getBits<4>(block1, 0) ==             0b0100);
-
-    CHECK(redsea::getBits<5>(block1, 4) ==      0b0'0011);
-    CHECK(redsea::getBits<6>(block1, 4) ==     0b10'0011);
-    CHECK(redsea::getBits<8>(block1, 4) ==   0b0010'0011);
-    CHECK(redsea::getBits<9>(block1, 4) == 0b1'0010'0011);
-
-    CHECK(redsea::getBits<5>(block1, 5) ==     0b10'001);
-    CHECK(redsea::getBits<8>(block1, 5) == 0b1'0010'001);
-
-    CHECK(redsea::getBool(block1, 12)   == true);
-    // clang-format on
-  }
-
-  SECTION("Concatenation of two blocks") {
-    // clang-format off
-    CHECK(redsea::getBits<4>(block1, block2, 0)                        == 0b1000);
-
-    CHECK(redsea::getBits<5>(block1, block2, 4)  ==                0b0'0111);
-    CHECK(redsea::getBits<6>(block1, block2, 4)  ==               0b10'0111);
-    CHECK(redsea::getBits<8>(block1, block2, 4)  ==             0b0110'0111);
-    CHECK(redsea::getBits<9>(block1, block2, 4)  ==           0b1'0110'0111);
-
-    CHECK(redsea::getBits<12>(block1, block2, 8) ==   0b0100'0101'0110);
-    CHECK(redsea::getBits<12>(block1, block2, 9) == 0b1'0100'0101'011);
-    // clang-format on
-  }
-}
 
 TEST_CASE("Basic info") {
   redsea::Options options;
@@ -822,6 +790,8 @@ TEST_CASE("DAB cross-referencing") {
   CHECK(json_lines.back()["dab"]["kilohertz"] == 225'648);
 }
 
+// Note: We don't actually know if any of these TMC are correctly decoded, but they do look kind of
+// sensible, which is better than nothing?
 TEST_CASE("TMC") {
   redsea::Options options;
 
@@ -950,135 +920,6 @@ TEST_CASE("Unspecified ODA") {
   CHECK(json_lines.at(0)["unknown_oda"]["raw_data"] == "05 279A 0020");
 }
 
-TEST_CASE("PI search") {
-  redsea::Options options;
-
-  SECTION("Accepts new PI from three repeats") {
-    // Vikerraadio (ee)
-    // clang-format off
-    const auto json_lines{asciibin2json({
-                                                       "001"
-      "1110110110111010011100010101001000010100001110000010"
-      "0010001011100001011100110000100101100000111100111110"
-      "0010000001100101101101001101101001001000000110111110"
-      "0010001011100001011100110000000101100010010011100000"
-      "1010011010110011111010010101010011010011000101010101"
-      "0010001011100001011100110000100101100001001010101000"
-      "0111001101100001010000011001100001000011010111000111"
-      "001000"
-    }, options)};
-    // clang-format on
-
-    REQUIRE(json_lines.size() == 1);
-    CHECK(json_lines[0]["pi"] == "0x22E1");
-  }
-
-  SECTION("Ignores phantom sync caused by data-mimicking") {
-    // Noise that shouldn't even sync
-    // It also happens to look like two repeats of PI 0x40AF
-    // clang-format off
-    const auto groups{asciibin2groups({
-      "1100001001000011110110110010101010011101101100110001010011111011"
-      "1110001001000001100101000011111110101011001100100011010111001100"
-      "0100010001001110001101001001000000011011001010100000001011110001"
-      "1100110001010011000010111010101000101000001001000101100110000110"
-      "0001000000101011111000100001000110111101011000010110000010011101"
-      "0010111010001101001010011011100100000011000101010000101100101010"
-      "0100100110000101110000010101101011011100000100100010010010110100"
-      "0001010010100010010100000010101101100010011100001000101111110011"
-      "0001001000100100111110100000100110110011110110000111010100000000"
-    }, options)};
-    // clang-format on
-
-    CHECK(groups.empty());
-  }
-}
-
-TEST_CASE("Error detection and correction") {
-  redsea::Options options;
-  // clang-format off
-  const std::string correct_group{
-    "0010001011100001" "0111001100"
-    "0010010110000011" "1100111110"
-    "0010000001100101" "1011010011"
-    "0110100100100000" "0110111110"};
-  // clang-format on
-
-  SECTION("Detects error-free group") {
-    const std::string test_data{correct_group + correct_group};
-    const auto groups{asciibin2groups(test_data, options)};
-
-    CHECK(groups.back().getNumErrors() == 0);
-  }
-
-  SECTION("Detects long error burst") {
-    const std::string broken_group = [&]() {
-      std::string broken = correct_group;
-      flipAsciiBit(broken, 1);
-      flipAsciiBit(broken, 2);
-      flipAsciiBit(broken, 9);
-      flipAsciiBit(broken, 10);
-      return broken;
-    }();
-
-    const std::string test_data{correct_group + correct_group + broken_group};
-    const auto groups{asciibin2groups(test_data, options)};
-
-    CHECK(groups.back().getNumErrors() == 1);
-  }
-
-  SECTION("Corrects double bit flip") {
-    const std::string broken_group = [&]() {
-      std::string broken = correct_group;
-      flipAsciiBit(broken, 1);
-      flipAsciiBit(broken, 2);
-      return broken;
-    }();
-
-    const std::string test_data{correct_group + correct_group + broken_group};
-    const auto groups{asciibin2groups(test_data, options)};
-
-    CHECK(groups.back().getNumErrors() == 1);
-    CHECK(groups.back().has(redsea::BLOCK1));
-    CHECK(groups.back().get(redsea::BLOCK1) == 0x22E1);
-  }
-
-  SECTION("Rejects triple bit flip") {
-    const std::string broken_group = [&]() {
-      std::string broken = correct_group;
-      flipAsciiBit(broken, 1);
-      flipAsciiBit(broken, 2);
-      flipAsciiBit(broken, 3);
-      return broken;
-    }();
-
-    const std::string test_data{correct_group + correct_group + broken_group};
-    const auto groups{asciibin2groups(test_data, options)};
-
-    CHECK(groups.back().getNumErrors() == 1);
-    CHECK_FALSE(groups.back().has(redsea::BLOCK1));
-    CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
-  }
-
-  SECTION("Rejects double bit flip if FEC is disabled") {
-    options.use_fec = false;
-
-    const std::string broken_group = [&]() {
-      std::string broken = correct_group;
-      flipAsciiBit(broken, 1);
-      flipAsciiBit(broken, 2);
-      return broken;
-    }();
-
-    const std::string test_data{correct_group + correct_group + broken_group};
-    const auto groups{asciibin2groups(test_data, options)};
-
-    CHECK(groups.back().getNumErrors() == 1);
-    CHECK_FALSE(groups.back().has(redsea::BLOCK1));
-    CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
-  }
-}
-
 TEST_CASE("Block error rate (BLER) reporting") {
   redsea::Options options;
   options.bler = true;
@@ -1112,71 +953,6 @@ TEST_CASE("Invalid data") {
   }
 }
 
-TEST_CASE("CSV reader") {
-  char testfilename[]  = "/tmp/redsea-test-XXXXXX";
-  const int testfilefd = ::mkstemp(testfilename);
-  REQUIRE(testfilefd != -1);
-
-  std::ofstream out(testfilename);
-  // Test string has:
-  // - title line
-  // - empty column
-  // - empty line
-  // - signed, non-signed integers
-  // - string with UTF-8 characters
-  // - both CRLF and LF line feeds
-  // - last line does not have a line feed
-  out << "num;a;empty;b;c\r\n0;-16;;+8;7\n\nzero;minus 16;;plus 8;seitsemän";
-  out.close();
-
-  SECTION("Simple read without titles") {
-    const auto csv = redsea::readCSV(testfilename, ';');
-
-    CHECK(csv.size() == 4);
-    CHECK(csv.at(1).lengths.size() == 5);
-    CHECK(csv.at(1).at(2) == "");
-    CHECK(csv.at(1).at(4) == "7");
-  }
-
-  SECTION("Get values by column title") {
-    const auto csv = redsea::readCSVWithTitles(testfilename, ';');
-
-    CHECK(csv.rows.size() == 3);
-    CHECK(redsea::get_int(csv, csv.rows.at(0), "a") == -16);
-    CHECK(redsea::get_int(csv, csv.rows.at(0), "b") == 8);
-    CHECK(redsea::get_uint16(csv, csv.rows.at(0), "c") == 7);
-
-    REQUIRE_THROWS_AS(redsea::get_string(csv, csv.rows.at(1), "a"), std::out_of_range);
-
-    CHECK(redsea::get_string(csv, csv.rows.at(2), "empty") == "");
-    CHECK(redsea::get_string(csv, csv.rows.at(2), "c") == "seitsemän");
-  }
-}
-
-TEST_CASE("Clock-time formatting") {
-  SECTION("From data (Hours + minutes)") {
-    const auto str = redsea::getHoursMinutesString(1, 1);
-    CHECK(str == "01:01");
-  }
-
-  SECTION("From system clock (yyyy-mm-dd)") {
-    const std::chrono::time_point<std::chrono::system_clock> time_point(
-        std::chrono::milliseconds(0));
-
-    const auto time_string = redsea::getTimePointString(time_point, "%Y-%m-%d");
-    // We can't say much about the string but at least it should be 10 characters, right?
-    CHECK(time_string.length() == 10);
-  }
-
-  SECTION("From system clock (hh:mm:ss.ss)") {
-    const std::chrono::time_point<std::chrono::system_clock> time_point(
-        std::chrono::milliseconds(0));
-    const auto time_string = redsea::getTimePointString(time_point, "%H:%M:%S.%f");
-    CHECK(time_string.length() == 11);
-    CHECK(time_string.substr(7, 4) == "0.00");
-  }
-}
-
 TEST_CASE("Hex output format") {
   redsea::Options options;
   options.show_raw = true;
@@ -1189,45 +965,3 @@ TEST_CASE("Hex output format") {
 
   CHECK(json_lines.back()["raw_data"] == "7827 ---- 7827 F928");
 };
-
-TEST_CASE("CRC16") {
-  // Pg. 84 + padding to test the address offset
-  const std::vector<std::uint8_t> test_bytes{
-      0x00, 0x32, 0x44, 0x31, 0x31, 0x31, 0x32, 0x33, 0x34, 0x30, 0x31, 0x30,
-      0x31, 0x30, 0x35, 0x41, 0x42, 0x43, 0x44, 0x31, 0x32, 0x33, 0x46, 0x30,
-      0x58, 0x58, 0x58, 0x58, 0x31, 0x31, 0x30, 0x36, 0x39, 0x32, 0x31, 0x32,
-      0x34, 0x39, 0x31, 0x30, 0x30, 0x30, 0x33, 0x32, 0x30, 0x30, 0x36, 0x36};
-  const std::uint16_t expected_crc = 0x9723;
-  const std::uint16_t crc = redsea::crc16_ccitt(test_bytes.data(), 1, test_bytes.size() - 1);
-  CHECK(crc == expected_crc);
-
-  const std::uint16_t wrong_crc = redsea::crc16_ccitt(test_bytes.data(), 0, test_bytes.size() - 1);
-  CHECK(wrong_crc != expected_crc);
-}
-
-TEST_CASE("Base64 encoding") {
-  const std::string test_string1{"light wor"};
-  const std::string encoded1 = redsea::asBase64(test_string1.c_str(), test_string1.size());
-  CHECK(encoded1 == "bGlnaHQgd29y");
-
-  const std::string test_string2{"light wo"};
-  const std::string encoded2 = redsea::asBase64(test_string2.c_str(), test_string2.size());
-  CHECK(encoded2 == "bGlnaHQgd28=");
-
-  const std::string test_string3{"light w"};
-  const std::string encoded3 = redsea::asBase64(test_string3.c_str(), test_string3.size());
-  CHECK(encoded3 == "bGlnaHQgdw==");
-
-  const std::string test_string4{""};
-  const std::string encoded4 = redsea::asBase64(test_string4.c_str(), test_string4.size());
-  CHECK(encoded4 == "");
-}
-
-TEST_CASE("Round-up division") {
-  CHECK(redsea::divideRoundingUp(5, 2) == 3);
-  CHECK(redsea::divideRoundingUp(4, 2) == 2);
-  CHECK(redsea::divideRoundingUp(3, 2) == 2);
-  CHECK(redsea::divideRoundingUp(2, 2) == 1);
-  CHECK(redsea::divideRoundingUp(1, 2) == 1);
-  CHECK(redsea::divideRoundingUp(0, 2) == 0);
-}

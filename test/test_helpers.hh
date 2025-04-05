@@ -129,7 +129,7 @@ bool listEquals(nlohmann::ordered_json json, std::initializer_list<T> list) {
 }
 
 // Flip a bit in a string of ASCII bits.
-void flipAsciiBit(std::string& str, size_t bit_index) {
+inline void flipAsciiBit(std::string& str, size_t bit_index) {
   str[bit_index] = str[bit_index] == '0' ? '1' : '0';
 }
 

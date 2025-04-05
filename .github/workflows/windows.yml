@@ -6,6 +6,7 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build-windows-msys2-mingw:
@@ -40,9 +41,9 @@ jobs:
       shell: msys2 {0}
       run: |
         meson setup -Dwerror=true build && cd build && meson compile
-    - name: Test command-line interface
+    - name: Run basic end-to-end tests
       shell: msys2 {0}
-      run: perl test/cli.pl build/redsea.exe
+      run: perl test/end-to-end.pl build/redsea.exe
 
   build-windows-cygwin:
     name: "🪟 Build on Windows with Cygwin"
@@ -84,6 +85,6 @@ jobs:
     - name: Build redsea
       shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
       run: meson setup -Dwerror=true build && cd build && meson compile
-    - name: Test command-line interface
+    - name: Run basic end-to-end tests
       shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
-      run: perl test/cli.pl build/redsea
+      run: perl test/end-to-end.pl build/redsea

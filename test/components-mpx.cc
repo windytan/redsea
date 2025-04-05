@@ -1,3 +1,5 @@
+// Redsea tests: Component tests that read MPX files
+
 #include <sstream>
 #include <vector>
 
