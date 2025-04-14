@@ -81,7 +81,6 @@ there are things we can do to make it safer and more usable for us:
 Some design philosophy:
 * Each JSON line should somehow correspond to a single RDS group. But this may
   well change in the future, for any good reason.
-* All JSON output should validate successfully against `schema.json`.
 * Data spread over multiple groups should be withdrawn until fully received, unless
   the user specifies the `--show-partial` option.
 * The hex output should be compatible with RDS Spy, the (unaffiliated) Windows GUI software. (Yes,
