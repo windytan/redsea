@@ -26,4 +26,4 @@ jobs:
     - name: Run unit & component tests
       run: cd build && meson test
     - name: Run basic end-to-end tests
-      run: perl test/end-to-end.pl redsea --installed
+      run: perl test/end_to_end.pl redsea --installed

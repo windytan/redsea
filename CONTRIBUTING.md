@@ -64,9 +64,9 @@ there are things we can do to make it safer and more usable for us:
 
 * Squashed commits with clear and concise [commit messages](https://www.gitkraken.com/learn/git/best-practices/git-commit-message) are preferred. Use force-push to update the PR branch if necessary.
 * Since 1.0, we wish to have tests in repo for all new features or bugfixes. The tests
-  can be unit tests written in [Catch2](https://github.com/catchorg/Catch2/) (see `test/unit.cc`),
+  can be unit tests written in [Catch2](https://github.com/catchorg/Catch2/) (see `test/*.cc`),
   or they can be end-to-end tests against the CLI executable itself (some Perl examples
-  in `test/cli.pl`). Perl is only used for testing; all code should pass Perl::Critic
+  in `test/end_to_end.pl`). Perl is only used for testing; all code should pass Perl::Critic
   level 3.
 * Ideally, all test data comes from some actual radio station and the source is cited.
 * C++ style is described in `.clang-format`; format-on-save is recommended.

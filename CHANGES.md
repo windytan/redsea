@@ -2,10 +2,7 @@
 
 We use [semantic versioning](https://semver.org/).
 
-## 1.2.0-SNAPSHOT (unreleased)
-
-The snapshot is the current head of the main branch - we may still introduce breaking changes until
-a release is made.
+## 1.2.0 (2025-04-15)
 
 * Major new features:
   * Add RDS2 streams / RFT support (#32): --streams

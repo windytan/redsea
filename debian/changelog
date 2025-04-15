@@ -1,3 +1,9 @@
+redsea (1.2.0) stable; urgency=medium
+
+  * New upstream release.
+
+ -- Oona Räisänen <oh2eiq@pm.me>  Tue, 15 Apr 2025 06:35:54 +0300
+
 redsea (1.0) stable; urgency=low
 
   * First packaged release.

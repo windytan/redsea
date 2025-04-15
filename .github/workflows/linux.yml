@@ -22,7 +22,7 @@ jobs:
     - name: compile
       run: cd build && meson compile
     - name: Run basic end-to-end tests
-      run: perl test/end-to-end.pl build/redsea
+      run: perl test/end_to_end.pl build/redsea
 
   build-ubuntu-22-04:
     name: "🐧 Build on Ubuntu 22.04"
@@ -39,7 +39,7 @@ jobs:
     - name: compile
       run: cd build && meson compile
     - name: Run basic end-to-end tests
-      run: perl test/end-to-end.pl build/redsea
+      run: perl test/end_to_end.pl build/redsea
 
   build-ubuntu-20-04:
     name: "🐧 Build on Ubuntu 20.04"
@@ -56,7 +56,7 @@ jobs:
     - name: compile
       run: cd build && meson compile
     - name: Run basic end-to-end tests
-      run: perl test/end-to-end.pl build/redsea
+      run: perl test/end_to_end.pl build/redsea
 
   build-ubuntu-deb-package:
     name: "🐧 Build Debian package"
@@ -73,7 +73,7 @@ jobs:
     - name: Install .deb
       run: sudo dpkg -i ../redsea_*.deb
     - name: Run basic end-to-end tests
-      run: perl test/end-to-end.pl redsea --installed
+      run: perl test/end_to_end.pl redsea --installed
 
   build-debian-buster:
     name: "🐧 Build on Debian 10 (Buster)"
@@ -91,4 +91,4 @@ jobs:
     - name: compile
       run: export PATH=$PATH:$HOME/.local/bin && cd build && meson compile
     - name: Run basic end-to-end tests
-      run: perl test/end-to-end.pl build/redsea
+      run: perl test/end_to_end.pl build/redsea

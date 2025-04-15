@@ -6,6 +6,7 @@ package redsea::test::end_to_end;
 
 use warnings;
 use strict;
+use 5.017;
 use IPC::Cmd qw/can_run/;
 use Carp;
 use utf8;
@@ -125,7 +126,7 @@ sub testInputTEF {
 # Redsea should fail on incompatible options
 sub testIncompatibleOptions {
     PrintTestName("Incompatible options");
-    startupShouldFail("--feed-through -f resoures/some_file.wav");
+    startupShouldFail("--streams --input bits");
 
     return;
 }
@@ -161,8 +162,12 @@ sub RunRedseaWithArgs {
     my $timed_out       = $false;
     my $timeout_seconds = 5;
 
-    eval {
-        local $SIG{ALRM} = sub { die "timeout" };
+    my $e = eval {
+
+        # Callback on ALRM
+        local $SIG{ALRM} = sub { die "timeout\n" };
+
+        # Call it after 5 seconds if we're still here
         alarm $timeout_seconds;
         $wait_returned = system( 'sh', '-c', $command );
         alarm 0;
@@ -176,6 +181,10 @@ sub RunRedseaWithArgs {
         print "Failed to run $command: $!\n";
         exit(1);
     }
+    elsif ( not defined $e ) {
+        print "Failed to run eval\n";
+        exit(1);
+    }
 
     # https://perldoc.perl.org/functions/system#system-PROGRAM-LIST
     return $wait_returned >> 8;
@@ -185,7 +194,9 @@ sub RunRedseaWithArgs {
 sub check {
     my ( $bool, $message ) = @_;
     if ( !$bool || $print_even_if_successful ) {
-        print( ( $bool ? '[ OK ] ' : '[FAIL] ' ) . ( $message // "" ) . "\n" );
+        print(  ( $message // "" ) . "\n  "
+              . ( $bool ? '[ OK ] ' : '[FAIL] ' )
+              . "\n" );
 
         $has_failures = $true if ( !$bool );
     }
@@ -197,8 +208,9 @@ sub check {
 sub prerequisite {
     my ( $bool, $message ) = @_;
     if ( !$bool || $print_even_if_successful ) {
-        print( ( $bool ? '[ OK ] ' : '[FAIL] ' ) . $message . "\n" );
-
+        print(  ( $message // "" ) . "\n  "
+              . ( $bool ? '[ OK ] ' : '[FAIL] ' )
+              . "\n" );
         exit(1) if ( !$bool );
     }
 
