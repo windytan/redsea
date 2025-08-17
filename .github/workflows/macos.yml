@@ -18,7 +18,8 @@ jobs:
     - name: Install dependencies (brew)
       run: brew install meson libsndfile liquid-dsp nlohmann-json catch2 perl
     - name: meson setup
-      run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false build -Dbuild_tests=true
+      # FIXME: add -Dwerror=true when meson >= 1.8.4 is available via brew
+      run: meson setup -Db_sanitize=address,undefined -Db_lundef=false build -Dbuild_tests=true
     - name: Compile & install
       run: cd build && meson install
     - name: Download test data

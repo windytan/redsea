@@ -41,23 +41,6 @@ jobs:
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl build/redsea
 
-  build-ubuntu-20-04:
-    name: "🐧 Build on Ubuntu 20.04"
-    runs-on: ubuntu-20.04
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies (apt)
-      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
-    - name: Install meson (pip3)
-      run: pip3 install --user meson
-    - name: meson setup
-      run: meson setup -Dwerror=true build
-    - name: compile
-      run: cd build && meson compile
-    - name: Run basic end-to-end tests
-      run: perl test/end_to_end.pl build/redsea
-
   build-ubuntu-deb-package:
     name: "🐧 Build Debian package"
     runs-on: ubuntu-latest
@@ -75,10 +58,10 @@ jobs:
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl redsea --installed
 
-  build-debian-buster:
-    name: "🐧 Build on Debian 10 (Buster)"
+  build-debian-bullseye:
+    name: "🐧 Build on Debian 11 (Bullseye)"
     runs-on: ubuntu-latest
-    container: debian:buster
+    container: debian:bullseye
 
     steps:
     - uses: actions/checkout@v4

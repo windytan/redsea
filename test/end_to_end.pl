@@ -30,6 +30,9 @@ sub main {
     testInputTEF();
     testIncompatibleOptions();
 
+    print "\n"
+      . ( $has_failures ? "Some tests failed" : "All tests passed" ) . "\n";
+
     exit $has_failures;
 }
 
