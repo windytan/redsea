@@ -28,6 +28,8 @@
 
 namespace redsea {
 
+namespace {
+
 // If the block error rate (0-100) exceeds this value over a longer period, assume that it's
 // because we lost synchronization. A lower value will make redsea give up in noisy conditions.
 constexpr int kMaxTolerableBLER = 85;
@@ -181,6 +183,8 @@ ErrorCorrectionResult correctBurstErrors(Block block, Offset expected_offset) {
   return result;
 }
 
+}  // namespace
+
 // Could this pulse realistically follow other?
 bool SyncPulse::couldFollow(const SyncPulse& other) const {
   // Overflows after 41 days of continuous data. This may cause us to discard 1 valid sync pulse
@@ -268,8 +272,9 @@ void BlockStream::findBlockInInputRegister() {
   acquireSync(block);
 
   if (is_in_sync_) {
-    if (expected_offset_ == Offset::C && block.offset == Offset::Cprime)
+    if (expected_offset_ == Offset::C && block.offset == Offset::Cprime) {
       expected_offset_ = Offset::Cprime;
+    }
 
     block.had_errors = (block.offset != expected_offset_);
     block_error_sum50_.push(block.had_errors);
@@ -297,10 +302,13 @@ void BlockStream::findBlockInInputRegister() {
       current_group_.setBlock(getBlockNumberForOffset(expected_offset_), block);
     }
 
-    expected_offset_ = getNextOffsetFor(expected_offset_);
+    const auto next_offset = getNextOffsetFor(expected_offset_);
 
-    if (expected_offset_ == Offset::A)
+    if (next_offset == Offset::A) {
       handleNewlyReceivedGroup();
+    }
+
+    expected_offset_ = next_offset;
   }
 }
 
@@ -311,6 +319,7 @@ void BlockStream::handleNewlyReceivedGroup() {
   current_group_   = Group();
 }
 
+// Has synchronization and a complete group has been received (some blocks may be missing)
 bool BlockStream::hasGroupReady() const {
   return has_group_ready_;
 }

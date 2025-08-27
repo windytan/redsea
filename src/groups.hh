@@ -27,6 +27,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "src/maybe.hh"
 #include "src/options.hh"
 #include "src/rft.hh"
 #include "src/text/radiotext.hh"
@@ -93,9 +94,11 @@ class Group {
   std::uint16_t getPI() const;
   float getBLER() const;
   int getNumErrors() const;
+  Maybe<double> getTimeFromStart() const;
+
   bool hasPI() const;
   bool hasBLER() const;
-  bool hasTime() const;
+  bool hasRxTime() const;
   std::chrono::time_point<std::chrono::system_clock> getRxTime() const;
   void printHex(std::ostream& stream) const;
   void setVersionC();
@@ -104,8 +107,9 @@ class Group {
 
   void disableOffsets();
   void setBlock(eBlockNumber block_num, Block block);
-  void setTime(std::chrono::time_point<std::chrono::system_clock> t);
+  void setRxTime(std::chrono::time_point<std::chrono::system_clock> t);
   void setAverageBLER(float bler);
+  void setTimeFromStart(double time_from_start);
 
  private:
   GroupType type_;
@@ -113,10 +117,13 @@ class Group {
   std::chrono::time_point<std::chrono::system_clock> time_received_;
   float bler_{0.f};
   std::uint32_t data_stream_{0};
+  // Seconds from the beginning of the file until the first bit of this group
+  double time_from_start_{0.0};
   bool has_type_{false};
   bool has_c_prime_{false};
   bool has_bler_{false};
-  bool has_time_{false};
+  bool has_rx_time_{false};
+  bool has_time_from_start_{false};
   bool no_offsets_{false};
 };
 

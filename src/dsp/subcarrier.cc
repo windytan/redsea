@@ -29,6 +29,7 @@
 #include "src/dsp/liquid_wrappers.hh"
 #include "src/io/bitbuffer.hh"
 #include "src/io/input.hh"
+#include "src/maybe.hh"
 
 namespace redsea {
 
@@ -39,6 +40,7 @@ constexpr float kAGCInitialGain      = 0.08f;
 constexpr float kLowpassCutoff_Hz    = 2400.0f;
 constexpr float kSymsyncBandwidth_Hz = 2200.0f;
 constexpr int kSymsyncDelay          = 3;
+constexpr int kResamplerDelay        = 13;
 constexpr float kSymsyncBeta         = 0.8f;
 constexpr float kPLLBandwidth_Hz     = 0.03f;
 constexpr float kPLLMultiplier       = 12.0f;
@@ -89,7 +91,7 @@ std::uint32_t DeltaDecoder::decode(std::uint32_t d) {
 }
 
 SubcarrierSet::SubcarrierSet(float samplerate)
-    : resample_ratio_(kTargetSampleRate_Hz / samplerate), resampler_(13) {
+    : resample_ratio_(kTargetSampleRate_Hz / samplerate), resampler_(kResamplerDelay) {
   for (auto& demod : demods_) {
     demod.agc.init(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain);
     demod.fir_lpf.init(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz);
@@ -107,7 +109,7 @@ void SubcarrierSet::reset() {
     demod.symsync.reset();
     demod.oscillator.reset();
   }
-  sample_num_ = 0;
+  sample_num_since_reset_ = 0;
 }
 
 // \return Reference to possibly resampled data; no resampling happens if resampling ratio is 1
@@ -143,7 +145,7 @@ const MPXBuffer& SubcarrierSet::resampleChunk(const MPXBuffer& input_chunk) {
   return resampled_chunk_;
 }
 
-// \brief Process a chunk of MPX
+// \brief Process a chunk of MPX into bits
 // \param input_chunk MPX data (any sample rate)
 // \param num_data_streams Number of RDS data streams to process (1 to 4)
 // \return Raw bits without any block synchronization
@@ -151,7 +153,9 @@ BitBuffer SubcarrierSet::processChunk(const MPXBuffer& input_chunk, int num_data
   const MPXBuffer& chunk = resampleChunk(input_chunk);
 
   BitBuffer bitbuffer;
-  bitbuffer.time_received = input_chunk.time_received;
+  bitbuffer.time_received         = input_chunk.time_received;
+  bitbuffer.chunk_time_from_start = static_cast<double>(sample_num_) / kTargetSampleRate_Hz;
+  bitbuffer.n_streams             = num_data_streams;
 
   // Pre-allocate the bit buffers
   constexpr float over_reserve = 1.1f;
@@ -161,19 +165,24 @@ BitBuffer SubcarrierSet::processChunk(const MPXBuffer& input_chunk, int num_data
     bitbuffer.bits[n_stream].reserve(expected_num_bits);
   }
 
-  for (size_t i = 0; i < chunk.used_size; i++) {
+  // This is for timestamping bits (groups); the whole processing delay at 171 kHz
+  const auto processing_delay_samples =
+      std::lround(kResamplerDelay * resample_ratio_ + demods_[0].fir_lpf.getGroupDelay() +
+                  1.5 * kSymsyncDelay * kDecimateRatio);
+
+  for (size_t i_sample = 0; i_sample < chunk.used_size; i_sample++) {
     for (int n_stream{0}; n_stream < num_data_streams; n_stream++) {
       // Running at 171 kHz (receiver's clock)
 
       auto& subcarrier_context = demods_[n_stream];
 
       // Mix down to baseband
-      const std::complex<float> sample_baseband =
-          subcarrier_context.oscillator.mixDown(std::complex<float>(chunk.data[i]), n_stream);
+      const std::complex<float> sample_baseband = subcarrier_context.oscillator.mixDown(
+          std::complex<float>(chunk.data[i_sample]), n_stream);
 
       demods_[n_stream].fir_lpf.push(sample_baseband);
 
-      if (sample_num_ % kDecimateRatio == 0) {
+      if (sample_num_since_reset_ % kDecimateRatio == 0) {
         // Running at 7.125 kHz (receiver's clock)
 
         std::complex<float> sample_lopass =
@@ -198,12 +207,17 @@ BitBuffer SubcarrierSet::processChunk(const MPXBuffer& input_chunk, int num_data
           if (biphase.valid) {
             // Running at 1.1875 kHz (transmitter's clock)
             bitbuffer.bits[n_stream].push_back(
-                static_cast<int>(subcarrier_context.delta_decoder.decode(biphase.data)));
+                TimedBit{static_cast<int>(subcarrier_context.delta_decoder.decode(biphase.data)),
+                         static_cast<float>(static_cast<int>(i_sample) - processing_delay_samples) /
+                             kTargetSampleRate_Hz});
           }
         }
       }  // decimate
       subcarrier_context.oscillator.step();
     }  // for n_stream
+
+    // Overflows every 7 hours* which resets the time_from_start to zero.
+    sample_num_++;
 
     // Overflows every 7 hours*. Two things will happen:
     //   1) The symbol synchronizer sees a sudden 75° phase jump**.
@@ -214,7 +228,7 @@ BitBuffer SubcarrierSet::processChunk(const MPXBuffer& input_chunk, int num_data
     //   *) (2^32) / (171000 Hz) ≈ 6 h 58 min
     //  **) ((2^32) % decimate_ratio) / (decimate_ratio * kSamplesPerSymbol) * 360° =
     //      ((2^32) %        24     ) / (      24       *         3        ) * 360° = 75°
-    sample_num_++;
+    sample_num_since_reset_++;
   }
 
   return bitbuffer;
@@ -227,7 +241,7 @@ bool SubcarrierSet::eof() const {
 // Seconds of audio processed since last reset.
 /// \note Not to be used for measurements, since it will lose precision as the counter grows.
 float SubcarrierSet::getSecondsSinceLastReset() const {
-  return static_cast<float>(sample_num_) / kTargetSampleRate_Hz;
+  return static_cast<float>(sample_num_since_reset_) / kTargetSampleRate_Hz;
 }
 
 }  // namespace redsea

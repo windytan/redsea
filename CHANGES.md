@@ -2,15 +2,24 @@
 
 We use [semantic versioning](https://semver.org/).
 
+## 1.3.0-SNAPSHOT (WIP)
+
+* New features:
+  * File offset timestamp (`--time-from-start`) shows the position of each group's
+    first bit in the input stream in seconds (see [wiki](https://github.com/windytan/redsea/wiki/Time-and-timestamps#file-offset-times))
+* CI etc:
+  * Remove build check for Ubuntu 20.04 as it's not available any more for runners
+  * Replaced Debian 10 build check with Debian 11
+
 ## 1.2.0 (2025-04-15)
 
 * Major new features:
-  * Add RDS2 streams / RFT support (#32): --streams
+  * Add RDS2 streams / RFT support (#32): `--streams` (see [wiki](https://github.com/windytan/redsea/wiki/Supported-RDS-features#rft))
 * Small new features:
   * Show RadioText A/B flag with `--show-partial`
 * Other changes:
   * Improve CSV loading speed
-  * Removed schema.json (not maintained) - the same information is now in the wiki
+  * Removed schema.json (not maintained) - the same information is now in the [wiki](https://github.com/windytan/redsea/wiki/Supported-RDS-features)
 
 ## 1.1.1 (2025-03-03)
 

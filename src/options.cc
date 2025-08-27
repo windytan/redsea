@@ -21,7 +21,6 @@
 
 #include <array>
 #include <cerrno>
-#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -36,9 +35,10 @@ namespace redsea {
 Options getOptions(int argc, char** argv) {
   Options options;
   int fec_flag{1};
+  int time_offset_flag{0};
 
   // clang-format off
-  const std::array<option, 20> long_options{{
+  const std::array<option, 21> long_options{{
       {"input-bits",   no_argument,       nullptr,   'b'},
       {"channels",     required_argument, nullptr,   'c'},
       {"feed-through", no_argument,       nullptr,   'e'},
@@ -57,6 +57,7 @@ Options getOptions(int argc, char** argv) {
       {"version",      no_argument,       nullptr,   'v'},
       {"output-hex",   no_argument,       nullptr,   'x'},
       {"no-fec",       no_argument,       &fec_flag, 0  },
+      {"time-from-start", no_argument,    &time_offset_flag,   1},
       {"help",         no_argument,       nullptr,   '?'},
       {nullptr,        0,                 nullptr,   0  }
   }};
@@ -164,8 +165,9 @@ Options getOptions(int argc, char** argv) {
       break;
   }
 
-  options.early_exit = options.print_usage || options.print_version;
-  options.use_fec    = fec_flag;
+  options.early_exit      = options.print_usage || options.print_version;
+  options.use_fec         = fec_flag;
+  options.time_from_start = time_offset_flag;
 
   if (argc > optind) {
     options.print_usage = true;
@@ -185,6 +187,11 @@ Options getOptions(int argc, char** argv) {
   if (options.streams && options.input_type != InputType::MPX_sndfile &&
       options.input_type != InputType::MPX_stdin && options.input_type != InputType::Hex) {
     throw std::runtime_error("RDS2 data streams are only supported for MPX and hex input");
+  }
+
+  if (options.time_from_start && options.input_type != InputType::MPX_stdin &&
+      options.input_type != InputType::MPX_sndfile) {
+    throw std::runtime_error("Time from start can only be shown for MPX input");
   }
 
   const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin && !options.print_usage &&

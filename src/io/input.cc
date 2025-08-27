@@ -126,6 +126,8 @@ void MPXReader::fillBuffer() {
     sf_write_float(outfile_, buffer_.data.data(), num_read_);
 }
 
+// @brief Read a chunk of samples on the specified PCM channel.
+// @note Remember to first call fillBuffer().
 // @throws logic_error if channel is out-of-bounds
 MPXBuffer& MPXReader::readChunk(std::uint32_t channel) {
   if (channel >= num_channels_) {
@@ -243,8 +245,9 @@ Group readHexGroup(const Options& options) {
     }
   }
 
-  if (options.timestamp)
-    group.setTime(std::chrono::system_clock::now());
+  if (options.timestamp) {
+    group.setRxTime(std::chrono::system_clock::now());
+  }
 
   return group;
 }

@@ -68,30 +68,47 @@ void Channel::processBit(bool bit, std::size_t which_stream) {
     processGroup(block_stream_[which_stream].popGroup(), which_stream);
 }
 
-// \param which_stream Which data stream was it received on, 0..3
-void Channel::processBits(const BitBuffer& buffer, std::size_t which_stream) {
-  for (std::size_t i_bit = 0; i_bit < buffer.bits[which_stream].size(); i_bit++) {
-    block_stream_[which_stream].pushBit(buffer.bits[which_stream].at(i_bit));
+// \param buffer A bit buffer corresponding to 1 chunk
+void Channel::processBits(const BitBuffer& buffer) {
+  for (int which_stream{}; which_stream < buffer.n_streams; which_stream++) {
+    for (int i_bit = 0; i_bit < static_cast<int>(buffer.bits[which_stream].size()); i_bit++) {
+      block_stream_[which_stream].pushBit(buffer.bits[which_stream].at(i_bit).value);
 
-    if (block_stream_[which_stream].hasGroupReady()) {
-      Group group = block_stream_[which_stream].popGroup();
-
-      // Calculate this group's rx time based on the buffer timestamp and bit offset
-      auto group_time = buffer.time_received -
-                        std::chrono::milliseconds(static_cast<int>(
-                            static_cast<double>(buffer.bits[which_stream].size() - 1 - i_bit) /
-                            kBitsPerSecond * 1e3));
-
-      // When the source is faster than real-time, backwards timestamp calculation
-      // produces meaningless results. We want to make sure that the time stays monotonic.
-      if (group_time < last_group_rx_time_) {
-        group_time = last_group_rx_time_;
+      if (options_.time_from_start) {
+        delayed_time_offset_[which_stream].push(
+            buffer.chunk_time_from_start +
+            buffer.bits[which_stream].at(i_bit).time_from_chunk_start);
       }
 
-      group.setTime(group_time);
-      processGroup(group, which_stream);
+      if (block_stream_[which_stream].hasGroupReady()) {
+        Group group = block_stream_[which_stream].popGroup();
 
-      last_group_rx_time_ = group_time;
+        if (options_.timestamp) {
+          // Calculate this group's rx time (in system clock time) based on the buffer timestamp and
+          // bit offset
+          auto group_time = buffer.time_received -
+                            std::chrono::milliseconds(static_cast<int>(
+                                static_cast<double>(buffer.bits[which_stream].size() - 1 - i_bit) /
+                                kBitsPerSecond * 1e3));
+
+          // When the source is faster than real-time, backwards timestamp calculation
+          // produces meaningless results. We want to make sure that the time stays monotonic.
+          if (group_time < last_group_rx_time_) {
+            group_time = last_group_rx_time_;
+          }
+
+          group.setRxTime(group_time);
+
+          last_group_rx_time_ = group_time;
+        }
+
+        if (options_.time_from_start) {
+          // Remember the time_from_start from 104 bits ago = first bit of this group
+          group.setTimeFromStart(delayed_time_offset_[which_stream].get());
+        }
+
+        processGroup(group, which_stream);
+      }
     }
   }
 }
@@ -99,14 +116,15 @@ void Channel::processBits(const BitBuffer& buffer, std::size_t which_stream) {
 // Handle this group as if it was just received.
 // \param which_stream Which data stream was it received on, 0..3
 void Channel::processGroup(Group group, std::size_t which_stream) {
-  if (options_.timestamp && !group.hasTime()) {
+  // If the rx timestamp wasn't set from the MPX buffer
+  if (options_.timestamp && !group.hasRxTime()) {
     auto now = std::chrono::system_clock::now();
-    group.setTime(now);
+    group.setRxTime(now);
 
     // When the source is faster than real-time, backwards timestamp calculation
     // produces meaningless results. We want to make sure that the time stays monotonic.
     if (now < last_group_rx_time_) {
-      group.setTime(last_group_rx_time_);
+      group.setRxTime(last_group_rx_time_);
     }
     last_group_rx_time_ = now;
   }
@@ -145,10 +163,10 @@ void Channel::processGroup(Group group, std::size_t which_stream) {
 
 // Process any remaining data
 void Channel::flush() {
-  for (std::size_t i = 1; i < block_stream_.size(); ++i) {
-    const Group remaining_group = block_stream_[i].flushCurrentGroup();
+  for (std::size_t which_stream = 0; which_stream < block_stream_.size(); ++which_stream) {
+    const Group remaining_group = block_stream_[which_stream].flushCurrentGroup();
     if (!remaining_group.isEmpty())
-      processGroup(remaining_group, i);
+      processGroup(remaining_group, which_stream);
   }
 }
 

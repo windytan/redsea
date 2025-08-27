@@ -169,6 +169,23 @@ class RunningAverage {
   std::size_t ptr_{};
 };
 
+template <typename T, std::size_t Length>
+class DelayLine {
+ public:
+  DelayLine() = default;
+  void push(T value) {
+    buffer_[ptr_] = value;
+    ptr_          = (ptr_ + 1) % buffer_.size();
+  }
+  T get() const {
+    return buffer_[ptr_];
+  }
+
+ private:
+  std::array<T, Length> buffer_{};
+  std::size_t ptr_{};
+};
+
 std::string rtrim(std::string s);
 
 }  // namespace redsea

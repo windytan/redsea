@@ -75,6 +75,7 @@ class MPXReader {
   SF_INFO sfinfo_{0, 0, 0, 0, 0, 0};
   SNDFILE* file_{nullptr};
   SNDFILE* outfile_{nullptr};
+  // How many samples was read, before dividing into channels
   sf_count_t num_read_{};
 };
 

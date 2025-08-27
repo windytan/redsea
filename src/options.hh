@@ -46,6 +46,7 @@ struct Options {
   bool is_num_channels_defined{};
   bool use_fec{true};
   bool streams{};
+  bool time_from_start{};
   float samplerate{};
   std::uint32_t num_channels{1};
   InputType input_type{InputType::MPX_stdin};

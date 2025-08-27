@@ -28,7 +28,7 @@
 #include "src/io/input.hh"
 #include "src/options.hh"
 
-namespace redsea {
+namespace {
 
 void printUsage() {
   std::cout
@@ -96,6 +96,15 @@ void printUsage() {
          "                       for formatting options (or try \"%c\"). Use \"%f\" to add\n"
          "                       hundredths of seconds.\n"
          "\n"
+         "                       This timestamp represents the time when the last bit of\n"
+         "                       the group was read in by redsea; see \"Time and timestamps\"\n"
+         "                       in the wiki for more.\n"
+         "\n"
+         "--time-from-start      Add the stream (file) position, in seconds, to each\n"
+         "                       group. It works only for MPX input and represents the\n"
+         "                       number of seconds from the beginning of the file until\n"
+         "                       the first bit of each group.\n"
+         "\n"
          "-u, --rbds             RBDS mode; use North American program type names and\n"
          "                       \"back-calculate\" the station's call sign from its PI\n"
          "                       code. Note that this calculation gives an incorrect call\n"
@@ -116,12 +125,12 @@ void printVersion() {
 }
 
 // \return Process exit code
-int processMPXInput(Options options) {
-  MPXReader mpx;
+int processMPXInput(redsea::Options options) {
+  redsea::MPXReader mpx;
 
   try {
     mpx.init(options);
-  } catch (BeyondEofError&) {
+  } catch (redsea::BeyondEofError&) {
     printUsage();
     return EXIT_FAILURE;
   } catch (const std::exception& e) {
@@ -137,24 +146,22 @@ int processMPXInput(Options options) {
   const int num_data_streams = options.streams ? 4 : 1;
 
   // Each PCM channel is matched with 1 subcarrier set
-  std::vector<std::unique_ptr<Channel>> channels;
-  std::vector<std::unique_ptr<SubcarrierSet>> subcarriers;
+  std::vector<std::unique_ptr<redsea::Channel>> channels;
+  std::vector<std::unique_ptr<redsea::SubcarrierSet>> subcarriers;
   for (std::uint32_t ch = 0; ch < options.num_channels; ch++) {
-    channels.emplace_back(std::make_unique<Channel>(options, ch, output_stream));
-    subcarriers.push_back(std::make_unique<SubcarrierSet>(options.samplerate));
+    channels.emplace_back(std::make_unique<redsea::Channel>(options, ch, output_stream));
+    subcarriers.push_back(std::make_unique<redsea::SubcarrierSet>(options.samplerate));
   }
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
     for (std::uint32_t ch = 0; ch < options.num_channels; ch++) {
       const auto bits = subcarriers[ch]->processChunk(mpx.readChunk(ch), num_data_streams);
-      for (int n_stream = 0; n_stream < num_data_streams; n_stream++) {
-        channels[ch]->processBits(bits, n_stream);
-        if (channels[ch]->getSecondsSinceCarrierLost() > 10.f &&
-            subcarriers[ch]->getSecondsSinceLastReset() > 5.f) {
-          subcarriers[ch]->reset();
-          channels[ch]->resetPI();
-        }
+      channels[ch]->processBits(bits);
+      if (channels[ch]->getSecondsSinceCarrierLost() > 10.f &&
+          subcarriers[ch]->getSecondsSinceLastReset() > 5.f) {
+        subcarriers[ch]->reset();
+        channels[ch]->resetPI();
       }
     }
   }
@@ -165,9 +172,9 @@ int processMPXInput(Options options) {
 }
 
 // \return Process exit code
-int processASCIIBitsInput(const Options& options) {
-  Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
-  AsciiBitReader ascii_reader(options);
+int processASCIIBitsInput(const redsea::Options& options) {
+  redsea::Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
+  redsea::AsciiBitReader ascii_reader(options);
 
   while (!ascii_reader.eof()) {
     channel.processBit(ascii_reader.readBit(), 0);
@@ -178,8 +185,8 @@ int processASCIIBitsInput(const Options& options) {
   return EXIT_SUCCESS;
 }
 
-int processHexInput(const Options& options) {
-  Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
+int processHexInput(const redsea::Options& options) {
+  redsea::Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
 
   while (!std::cin.eof()) {
     const auto group = readHexGroup(options);
@@ -190,8 +197,8 @@ int processHexInput(const Options& options) {
 }
 
 // \return Process exit code
-int processTEFInput(const Options& options) {
-  Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
+int processTEFInput(const redsea::Options& options) {
+  redsea::Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
 
   while (!std::cin.eof()) {
     channel.processGroup(readTEFGroup(options), 0);
@@ -200,7 +207,7 @@ int processTEFInput(const Options& options) {
   return EXIT_SUCCESS;
 }
 
-}  // namespace redsea
+}  // namespace
 
 int main(int argc, char** argv) {
   redsea::Options options;
@@ -213,11 +220,11 @@ int main(int argc, char** argv) {
   }
 
   if (options.print_usage) {
-    redsea::printUsage();
+    printUsage();
   }
 
   if (options.print_version) {
-    redsea::printVersion();
+    printVersion();
   }
 
   if (options.early_exit) {

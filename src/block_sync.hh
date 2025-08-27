@@ -22,6 +22,7 @@
 
 #include "src/constants.hh"
 #include "src/groups.hh"
+#include "src/io/bitbuffer.hh"
 #include "src/options.hh"
 #include "src/util.hh"
 

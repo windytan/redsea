@@ -45,6 +45,8 @@
 
 namespace redsea {
 
+namespace {
+
 // Programme Item Number (IEC 62106:2015, section 6.1.5.2)
 bool decodePIN(std::uint16_t pin, nlohmann::ordered_json* json) {
   const std::uint16_t day    = getBits<5>(pin, 11);
@@ -59,6 +61,8 @@ bool decodePIN(std::uint16_t pin, nlohmann::ordered_json* json) {
     return false;
   }
 }
+
+}  // namespace
 
 GroupType::GroupType(std::uint16_t type_code)
     : number(static_cast<std::uint16_t>(type_code >> 1U) & 0xFU),
@@ -113,6 +117,10 @@ int Group::getNumErrors() const {
   });
 }
 
+Maybe<double> Group::getTimeFromStart() const {
+  return {time_from_start_, has_time_from_start_};
+}
+
 bool Group::hasPI() const {
   return type_.version != GroupType::Version::C &&
          (blocks_[BLOCK1].is_received ||
@@ -131,8 +139,8 @@ bool Group::hasBLER() const {
   return has_bler_;
 }
 
-bool Group::hasTime() const {
-  return has_time_;
+bool Group::hasRxTime() const {
+  return has_rx_time_;
 }
 
 std::chrono::time_point<std::chrono::system_clock> Group::getRxTime() const {
@@ -185,15 +193,20 @@ void Group::setBlock(eBlockNumber block_num, Block block) {
   }
 }
 
-void Group::setTime(std::chrono::time_point<std::chrono::system_clock> t) {
+void Group::setRxTime(std::chrono::time_point<std::chrono::system_clock> t) {
   time_received_ = t;
-  has_time_      = true;
+  has_rx_time_   = true;
 }
 
 // \param bler Block error rate, percent
 void Group::setAverageBLER(float bler) {
   bler_     = bler;
   has_bler_ = true;
+}
+
+void Group::setTimeFromStart(double time_from_start) {
+  time_from_start_     = time_from_start;
+  has_time_from_start_ = true;
 }
 
 /**
@@ -366,6 +379,10 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     } else {
       decodeODAGroup(group);
     }
+  }
+
+  if (options_.time_from_start && group.getTimeFromStart().valid) {
+    json_["time_from_start"] = group.getTimeFromStart().data;
   }
 
   try {

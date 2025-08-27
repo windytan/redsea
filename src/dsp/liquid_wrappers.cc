@@ -79,6 +79,10 @@ std::size_t FIRFilter::length() const {
   return firfilt_crcf_get_length(object_);
 }
 
+float FIRFilter::getGroupDelay() {
+  return firfilt_crcf_groupdelay(object_, 0.f);
+}
+
 NCO::NCO(liquid_ncotype type, float freq)
     : object_(nco_crcf_create(type)), initial_frequency_(freq) {
   nco_crcf_set_frequency(object_, freq);
@@ -211,8 +215,8 @@ float Modem::getPhaseError() {
 #endif
 }
 
-Resampler::Resampler(std::uint32_t length)
-    : object_(resamp_rrrf_create(1.f, length, 0.47f, 60.0f, 32)) {
+Resampler::Resampler(std::uint32_t half_length)
+    : object_(resamp_rrrf_create(1.f, half_length, 0.47f, 60.0f, 32)) {
   if (object_ == nullptr) {
     throw std::runtime_error("error: Can't initialize resampler");
   }

@@ -35,18 +35,14 @@ extern "C" {
 }
 #pragma clang diagnostic pop
 
+#include "src/maybe.hh"
+
 namespace redsea {
 
 // Hertz to radians per sample
 inline float angularFreq(float hertz, float samplerate) {
   return hertz * k2Pi / samplerate;
 }
-
-template <typename T>
-struct Maybe {
-  T data;
-  bool valid;
-};
 
 }  // namespace redsea
 
@@ -82,6 +78,7 @@ class FIRFilter {
   void push(std::complex<float> s);
   std::complex<float> execute();
   std::size_t length() const;
+  float getGroupDelay();
 
  private:
   firfilt_crcf object_{nullptr};
@@ -156,7 +153,7 @@ class Resampler {
  public:
   static constexpr std::size_t kOutputArraySize{2ULL};
 
-  explicit Resampler(std::uint32_t length);
+  explicit Resampler(std::uint32_t half_length);
   Resampler(const Resampler&)             = delete;
   Resampler& operator=(const Resampler&)  = delete;
   Resampler(Resampler&& other)            = delete;

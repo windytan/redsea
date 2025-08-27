@@ -76,8 +76,10 @@ class SubcarrierSet {
   static constexpr int kDecimateRatio =
       static_cast<int>(kTargetSampleRate_Hz / kBitsPerSecond / 2 / kSamplesPerSymbol);
 
-  // Samples since last reset
+  // Samples since the beginning (at 171 kHz)
   std::uint32_t sample_num_{0};
+  // Samples since the last reset (at 171 kHz)
+  std::uint32_t sample_num_since_reset_{0};
   const float resample_ratio_;
 
   liquid::Resampler resampler_;
