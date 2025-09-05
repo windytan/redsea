@@ -7,7 +7,7 @@ We use [semantic versioning](https://semver.org/).
 * Major new features:
   * Add RDS2 streams / RFT support (#32): --streams
 * Small new features:
-  * Show RadioText A/B flag with --show-partial
+  * Show RadioText A/B flag with `--show-partial`
 * Other changes:
   * Improve CSV loading speed
   * Removed schema.json (not maintained) - the same information is now in the wiki

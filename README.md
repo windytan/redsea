@@ -8,13 +8,8 @@ decoder that supports many [RDS features][Wiki: Features].
 [![macos](https://github.com/windytan/redsea/workflows/macos/badge.svg)](https://github.com/windytan/redsea/actions/workflows/macos.yml?query=branch%3Amaster)
 [![windows](https://github.com/windytan/redsea/workflows/windows/badge.svg)](https://github.com/windytan/redsea/actions/workflows/windows.yml?query=branch%3Amaster)
 
-It prints [newline-delimited JSON](https://jsonlines.org/) where
-each line corresponds to one RDS group. It can also print "raw" undecoded hex blocks (`--output hex`).
-Please refer to the wiki for [input data formats][Wiki: Input].
-
-Redsea is compatible with the [RTL-SDR][About RTL-SDR] USB radio stick via the
-`rtl_fm` tool, and any other SDR via a tool like `csdr` (see [wiki][Wiki: Use cases]). It can decode MPX from
-raw PCM or audio files, ASCII bitstreams, the hex format used by RDS Spy, or the TEF6686 serial format.
+It can decode RDS live into [newline-delimited JSON](https://jsonlines.org/) where
+each line corresponds to one RDS group; or it can print them as raw hex.
 
 [About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
 [Wiki: Features]: https://github.com/windytan/redsea/wiki/Supported-RDS-features
@@ -34,8 +29,6 @@ Example output:
 
   * [How to install](#how-to-install)
   * [Usage](#usage)
-    * [Full usage](#full-usage)
-    * [Formatting and filtering the JSON output](#formatting-and-filtering-the-json-output)
   * [Requirements](#requirements)
   * [Troubleshooting](#troubleshooting)
     * [Can't find liquid-dsp on macOS](#cant-find-liquid-dsp-on-macos)
@@ -108,8 +101,15 @@ The compilation will still require at least 500 MB of free RAM.
 
 ## Usage
 
+See the full list of [command line options][Wiki: Command line options] in the wiki
+or type `redsea --help`.
+
+We also have more [usage examples][Wiki: Use cases] in the wiki.
+
+### From RTL-SDR to JSON
+
 Redsea reads an MPX signal from stdin by default. It expects the input
-to be raw 16-bit signed-integer PCM.
+to be raw 16-bit signed-integer PCM. This means it can easily be used with `rtl_fm`.
 
 Here's an example command that listens to 87.9 MHz using `rtl_fm` and displays
 the RDS groups:
@@ -118,88 +118,20 @@ the RDS groups:
 rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea -r 171k
 ```
 
-Please refer to the [wiki][Wiki: Use cases] for more details and usage examples.
+### From SPY files to JSON
+
+```bash
+redsea --input hex < sample_hex_file.spy
+```
+
+### From WAV files to hex
+
+```bash
+redsea -f mpx_input.wav --output hex
+```
 
 [Wiki: Use cases]: https://github.com/windytan/redsea/wiki/Use-cases
-
-
-### Full usage
-
-```
-radio_command | redsea [OPTIONS]
-redsea -f WAVEFILE
-
--b, --input-bits       Same as --input bits (for backwards compatibility).
-
--c, --channels CHANS   Number of channels in the raw input signal. Channels are
-                       interleaved streams of samples that are demodulated
-                       independently.
-
--e, --feed-through     Echo the input signal to stdout and print decoded groups
-                       to stderr. This only works for raw PCM.
-
--E, --bler             Display the average block error rate, or the percentage
-                       of blocks that had errors before error correction.
-                       Averaged over the last 12 groups. For hex input, this is
-                       the percentage of missing blocks.
-
--f, --file FILENAME    Read MPX input from a wave file with headers (.wav,
-                       .flac, ...). If you have headered wave data via stdin,
-                       use '-'. Or you can specify another format with --input.
-
--h, --input-hex        Same as --input hex (for backwards compatibility).
-
--i, --input FORMAT     Decode input as FORMAT (see the redsea wiki in github
-                       for more info).
-                         bits Unsynchronized ASCII bit stream (011010110...).
-                              All characters but '0' and '1' are ignored.
-                         hex  RDS Spy hex format. (Timestamps will be ignored)
-                         mpx  MPX as raw mono S16LE PCM. Remember to also
-                              specify --samplerate. If you're reading from a
-                              sound file with headers (WAV, FLAC, ...) don't
-                              specify this.
-                         tef  Serial data from the TEF6686 tuner.
-
--l, --loctable DIR     Load TMC location table from a directory in TMC Exchange
-                       format. This option can be specified multiple times to
-                       load several location tables.
-
---no-fec               Disable forward error correction; always reject blocks
-                       with incorrect syndromes. In noisy conditions, fewer errors
-                       will slip through, but also fewer blocks in total; see wiki
-                       for discussion.
-
--o, --output FORMAT    Print output as FORMAT:
-                         hex  RDS Spy hex format.
-                         json Newline-delimited JSON (default).
-
--p, --show-partial     Under noisy conditions, redsea may not be able to fully
-                       receive all information. Multi-group data such as PS
-                       names, RadioText, and alternative frequencies are
-                       especially vulnerable. This option makes it display them
-                       even if not fully received, prefixed with partial_.
-
--r, --samplerate RATE  Set sample frequency of raw PCM input in Hz. Will
-                       resample if this differs from 171000 Hz.
-
--R, --show-raw         Include raw group data as hex in the JSON stream.
-
--s, --streams          Decode RDS2 data streams 1, 2, and 3, if they exist.
-
--t, --timestamp FORMAT Add time of decoding to JSON groups; see man strftime
-                       for formatting options (or try "%c"). Use "%f" to add
-                       hundredths of seconds.
-
--u, --rbds             RBDS mode; use North American program type names and
-                       "back-calculate" the station's call sign from its PI
-                       code. Note that this calculation gives an incorrect call
-                       sign for most stations that transmit TMC.
-
--v, --version          Print version string and exit.
-
--x, --output-hex       Same as --output hex (for backwards compatibility).
-```
-
+[Wiki: Command line options]: https://github.com/windytan/redsea/wiki/Command-line-options
 
 ## Requirements
 
@@ -248,12 +180,6 @@ Try running this in the terminal:
 We welcome bug reports and documentation contributions. Or take a peek at our
 [open issues](https://github.com/windytan/redsea/issues) to see where we could use a hand. See
 [CONTRIBUTING](CONTRIBUTING.md) for more information.
-
-Also, if a station in your area is transmitting an interesting RDS feature
-that should be implemented in redsea, I would be happy to see a minute or
-two's worth of hex data using the `--output hex` switch. You could use a
-gist or an external pastebin service and post a link to it in our Github
-Discussions.
 
 ## Licensing
 
