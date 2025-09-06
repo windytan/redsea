@@ -11,9 +11,17 @@ project(
   version: '1.3.0-SNAPSHOT',
 )
 
+################
+### config.h ###
+################
+
 # Store version number to be compiled in
 conf = configuration_data()
 conf.set_quoted('VERSION', meson.project_version())
+
+# Where to store TMC event strings
+conf.set_quoted('DATADIR', join_paths(get_option('prefix'), get_option('datadir'), meson.project_name()))
+
 configure_file(output: 'config.h', configuration: conf)
 
 ########################
@@ -98,7 +106,6 @@ sources_no_main = [
   'src/tables.cc',
   'src/text/rdsstring.cc',
   'src/tmc/csv.cc',
-  'src/tmc/events_data.cc',
   'src/tmc/tmc.cc',
   'src/tmc/locationdb.cc',
   'src/util.cc',
@@ -110,6 +117,15 @@ executable(
   dependencies: [iconv, json, liquid, sndfile],
   install: true,
   override_options: override_options,
+)
+
+#################################
+### Install TMC event strings ###
+#################################
+
+install_data(
+  ['data/tmc_events.csv', 'data/tmc_suppl.csv'],
+  install_dir: join_paths(get_option('datadir'), meson.project_name())
 )
 
 ##############################

@@ -36,10 +36,10 @@
 
 #include <nlohmann/json.hpp>
 
+#include "config.h"
 #include "src/options.hh"
 #include "src/tables.hh"
 #include "src/tmc/csv.hh"
-#include "src/tmc/events.hh"
 #include "src/tmc/locationdb.hh"
 #include "src/util.hh"
 
@@ -296,7 +296,14 @@ std::string ucfirst(std::string in) {
 }
 
 void loadEventData() {
-  const CSVTable table{readCSVContainerWithTitles(tmc_data_events, ';')};
+  const CSVTable table{readCSVWithTitles(DATADIR "/tmc_events.csv", ';')};
+
+  if (table.rows.empty()) {
+    std::cout << "{\"debug\":\"Warning: could not load TMC event data from " DATADIR
+                 "/tmc_events.csv\"}\n"
+              << std::flush;
+  }
+
   for (const CSVRow& row : table.rows) {
     try {
       const std::uint16_t code = get_uint16(table, row, "Code");
@@ -340,7 +347,7 @@ void loadEventData() {
     }
   }
 
-  for (const CSVRow& row : readCSVContainer(tmc_data_suppl, ';')) {
+  for (const CSVRow& row : readCSV(DATADIR "/tmc_suppl.csv", ';')) {
     if (row.lengths.size() < 2)
       continue;
 
@@ -348,6 +355,12 @@ void loadEventData() {
     const std::string& desc = row.at(1);
 
     g_supplementary_data.insert({code, desc});
+  }
+
+  if (g_supplementary_data.empty()) {
+    std::cout << "{\"debug\":\"Warning: could not load TMC supplementary data from " DATADIR
+                 "/tmc_suppl.csv\"}\n"
+              << std::flush;
   }
 }
 
@@ -453,6 +466,9 @@ TMCService::TMCService(const Options& options)
       else
         std::cout << g_location_databases[ltn];
     }
+
+    // If user provided a location database, preload the event data as well
+    loadEventData();
   }
 }
 

@@ -28,6 +28,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 
 #include <sndfile.h>
 
@@ -169,7 +170,7 @@ bool AsciiBitReader::readBit() {
   while (chr != '0' && chr != '1' && chr != EOF) {
     chr = std::getchar();
     if (feed_thru_)
-      std::putchar(chr);
+      std::ignore = std::putchar(chr);
   }
 
   if (chr == EOF)

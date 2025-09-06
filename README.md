@@ -74,15 +74,15 @@ The snapshots are work-in-progress, but we attempt to always keep the main branc
         $ git clone https://github.com/windytan/redsea.git
         $ cd redsea
 
-### 3. Compile redsea
+### 3. Compile & install redsea
 
         $ meson setup build && cd build
         $ meson compile
+        $ meson install
 
-Now the binary executable is compiled and you can run it!
+Now the binary executable is installed and you can run it!
 
-You can install the binary using `meson install` if you so wish. By default,
-it will be installed under `/usr/local`, but this can be changed by providing
+By default, redsea will be installed under `/usr/local`, but this can be changed by providing
 e.g. `meson setup build --prefix /usr/local`. See the
 [Meson guide](https://mesonbuild.com/Quick-guide.html#compiling-a-meson-project)
 for more.
@@ -91,13 +91,6 @@ If you cloned the repository you can later get the latest updates and recompile:
 
         $ git pull
         $ cd build && meson compile
-
-If your Linux system has very little RAM (e.g. Raspberry Pi), please use the below
-line instead of `meson compile` to limit the number of build processes:
-
-        $ taskset -c 0 meson compile
-
-The compilation will still require at least 500 MB of free RAM.
 
 ## Usage
 
@@ -153,7 +146,6 @@ redsea -f mpx_input.wav --output hex
 * Linux/macOS/Cygwin/MSYS2+MinGW
 * C++14 compiler
 * meson + ninja
-* 500 MB of free memory for non-parallel build ([breakdown](https://github.com/windytan/redsea/issues/120#issuecomment-2559254338))
 
 ### Testing
 

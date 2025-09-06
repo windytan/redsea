@@ -7,6 +7,12 @@ We use [semantic versioning](https://semver.org/).
 * New features:
   * File offset timestamp (`--time-from-start`) shows the position of each group's
     first bit in the input stream in seconds (see [wiki](https://github.com/windytan/redsea/wiki/Time-and-timestamps#file-offset-times))
+* Other improvements:
+  * TMC event data is now stored in CSV files instead of source code.
+    * This should improve the compile-time memory usage.
+    * TMC data files get loaded when the first ever TMC message arrives; or at startup, if a location
+      database was given.
+    * Note that `meson install` needs to be called now to make TMC work properly. The files get installed in `/usr/share/redsea` by default.
 * CI etc:
   * Remove build check for Ubuntu 20.04 as it's not available any more for runners
   * Replaced Debian 10 build check with Debian 11
