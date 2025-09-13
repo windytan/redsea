@@ -95,10 +95,10 @@ SubcarrierSet::SubcarrierSet(float samplerate)
   for (auto& demod : demods_) {
     demod.agc.init(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain);
     demod.fir_lpf.init(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz);
-    demod.symsync.init(LIQUID_FIRFILT_RRC, kSamplesPerSymbol, kSymsyncDelay, kSymsyncBeta, 32);
+    demod.symsync.initRRC(kSamplesPerSymbol, kSymsyncDelay, kSymsyncBeta, 32);
     demod.symsync.setBandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
     demod.symsync.setOutputRate(1);
-    demod.oscillator.init(LIQUID_NCO, angularFreq(57000.f, kTargetSampleRate_Hz));
+    demod.oscillator.initNCO(angularFreq(57000.f, kTargetSampleRate_Hz));
     demod.oscillator.setPLLBandwidth(kPLLBandwidth_Hz / kTargetSampleRate_Hz);
   }
   resampler_.setRatio(resample_ratio_);

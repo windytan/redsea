@@ -36,12 +36,11 @@ Some guidelines for making good bug reports:
 
 ## How to build and run the tests
 
-Install Catch2, then in the redsea root run:
+Install Catch2, then run these in redsea's project directory:
 
     git lfs pull
     meson setup build -Dbuild_tests=true
     cd build
-    meson compile
     meson test
 
 ### Generate coverage report
@@ -73,7 +72,7 @@ there are things we can do to make it safer and more usable for us:
 * We aim for C++14 compatibility, so unfortunately more modern features can't be used.
 * We have some static analysis rules described in `.clang-tidy`.
 * Keep in mind redsea has a real-time requirement and it might be run on some
-  low-end 32-bit embedded platform. Unfortunately we don't have automated tests for
+  low-end 32-bit platform. Unfortunately we don't have automated tests for
   this.
 * Try to avoid resorting to manual memory management. We have an address sanitizer in
   CI but currently no leak checks.

@@ -16,9 +16,6 @@
  */
 #include "src/io/input.hh"
 
-// For fileno
-#include <stdio.h>
-
 #include <array>
 #include <chrono>
 #include <cmath>

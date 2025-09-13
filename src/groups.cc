@@ -32,12 +32,15 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
+#include "src/maybe.hh"
 #include "src/options.hh"
+#include "src/rft.hh"
 #include "src/tables.hh"
 #include "src/text/radiotext.hh"
 #include "src/text/rdsstring.hh"
@@ -802,15 +805,15 @@ void Station::decodeType4A(const Group& group) {
     const int local_offset_min = static_cast<int>((local_offset - std::trunc(local_offset)) * 60.0);
 
     if (local_offset_hour == 0 && local_offset_min == 0) {
-      static_cast<void>(std::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02dT%02d:%02d:00Z",
-                                      local_tm->tm_year + 1900, local_tm->tm_mon + 1,
-                                      local_tm->tm_mday, local_tm->tm_hour, local_tm->tm_min));
+      std::ignore = std::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02dT%02d:%02d:00Z",
+                                  local_tm->tm_year + 1900, local_tm->tm_mon + 1, local_tm->tm_mday,
+                                  local_tm->tm_hour, local_tm->tm_min);
     } else {
-      static_cast<void>(
+      std::ignore =
           std::snprintf(buffer.data(), buffer.size(), "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
                         local_tm->tm_year + 1900, local_tm->tm_mon + 1, local_tm->tm_mday,
                         local_tm->tm_hour, local_tm->tm_min, local_offset > 0 ? "+" : "-",
-                        local_offset_hour, std::abs(local_offset_min)));
+                        local_offset_hour, std::abs(local_offset_min));
     }
     clock_time_         = std::string(buffer.data());
     json_["clock_time"] = clock_time_;

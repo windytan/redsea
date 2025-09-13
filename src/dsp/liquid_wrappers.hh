@@ -23,8 +23,7 @@
 #include <cstdint>
 #include <vector>
 
-constexpr float kPi{3.14159265358979323846f};
-constexpr float k2Pi{2.f * kPi};
+#include "src/maybe.hh"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -35,7 +34,8 @@ extern "C" {
 }
 #pragma clang diagnostic pop
 
-#include "src/maybe.hh"
+constexpr float kPi{3.14159265358979323846f};
+constexpr float k2Pi{2.f * kPi};
 
 namespace redsea {
 
@@ -94,6 +94,7 @@ class NCO {
   NCO& operator=(NCO&& other) = delete;
   ~NCO();
   void init(liquid_ncotype type, float freq);
+  void initNCO(float freq);
   std::complex<float> mixDown(std::complex<float> s, int n_stream = 0);
   void step();
   void setPLLBandwidth(float);
@@ -115,6 +116,7 @@ class SymSync {
   SymSync() = default;
   void init(liquid_firfilt_type ftype, std::uint32_t k, std::uint32_t m, float beta,
             std::uint32_t num_filters);
+  void initRRC(std::uint32_t k, std::uint32_t m, float beta, std::uint32_t num_filters);
   SymSync(const SymSync&)             = delete;
   SymSync& operator=(const SymSync&)  = delete;
   SymSync(SymSync&& other)            = delete;

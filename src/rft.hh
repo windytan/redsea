@@ -64,13 +64,13 @@ inline std::uint32_t crc16_ccitt(const void* data, std::size_t address, std::siz
     return 0;
   }
 
-  std::uint32_t crc             = 0xFFFF;
-  const std::uint8_t* byte_data = static_cast<const std::uint8_t*>(data);
+  std::uint32_t crc     = 0xFFFF;
+  const auto* byte_data = static_cast<const std::uint8_t*>(data);
 
   for (std::size_t i = 0; i < length; ++i) {
     crc = static_cast<std::uint8_t>(crc >> 8U) | (crc << 8U);
     crc ^= byte_data[address + i];
-    crc ^= static_cast<std::uint8_t>(crc & 0xFFU) >> 4U;
+    crc ^= static_cast<std::uint8_t>((crc & 0xFFU) >> 4U);
     crc ^= (crc << 8U) << 4U;
     crc ^= ((crc & 0xFFU) << 4U) << 1U;
   }
@@ -89,8 +89,8 @@ class RFTFile {
   }
 
   void clear() {
-    for (std::size_t i = 0; i < received_.size(); i++) {
-      received_[i] = false;
+    for (auto&& r : received_) {
+      r = false;
     }
     is_printed_ = false;
     crc_chunks_.clear();
@@ -162,8 +162,8 @@ class RFTFile {
   }
 
  private:
-  static constexpr std::size_t kMaxNumSegments = 1 << 15;
-  static constexpr std::size_t kMaxNumCRCs     = 1 << 9;
+  static constexpr std::size_t kMaxNumSegments = 1U << 15U;
+  static constexpr std::size_t kMaxNumCRCs     = 1U << 9U;
 
   // 163.8 kB buffer in heap
   std::vector<RFTSegment> data_;

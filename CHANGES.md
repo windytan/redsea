@@ -12,7 +12,8 @@ We use [semantic versioning](https://semver.org/).
     * This should improve the compile-time memory usage.
     * TMC data files get loaded when the first ever TMC message arrives; or at startup, if a location
       database was given.
-    * Note that `meson install` needs to be called now to make TMC work properly. The files get installed in `/usr/share/redsea` by default.
+    * Note that `meson install` needs to be called now to make TMC work properly. The files get installed in
+      `/usr/local/share/redsea` by default.
 * CI etc:
   * Remove build check for Ubuntu 20.04 as it's not available any more for runners
   * Replaced Debian 10 build check with Debian 11

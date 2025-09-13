@@ -36,7 +36,7 @@ namespace {
 // plus UCS-2 control codes
 std::string getRDSCharString(std::uint8_t code) {
   // clang-format off
-  static const std::array<std::string, 256> codetable_G0({
+  const std::array<std::string, 256> codetable_G0({
     " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", "\n"," ", " ", "\r"," ", " ",
     " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", "\u00AD",
     " ", "!", "\"","#", "¤", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/",
@@ -146,10 +146,9 @@ std::string RDSString::str() const {
           [](const std::string& s, std::uint8_t b) { return s + getRDSCharString(b); });
 
     case Encoding::UCS2:
-      return decodeUCS2(std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size()));
+      return decodeUCS2({reinterpret_cast<const char*>(bytes.data()), bytes.size()});
 
-    case Encoding::UTF8:
-      return std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    case Encoding::UTF8: return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
   }
 
   return "";

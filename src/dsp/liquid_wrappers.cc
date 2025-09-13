@@ -23,6 +23,8 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include "src/maybe.hh"
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 // https://github.com/jgaeddert/liquid-dsp/issues/229
@@ -101,6 +103,10 @@ void NCO::init(liquid_ncotype type, float freq) {
   nco_crcf_set_frequency(object_, freq);
 }
 
+void NCO::initNCO(float freq) {
+  init(LIQUID_NCO, freq);
+}
+
 void NCO::reset() {
   nco_crcf_reset(object_);
   nco_crcf_set_frequency(object_, initial_frequency_);
@@ -148,6 +154,10 @@ void SymSync::init(liquid_firfilt_type ftype, std::uint32_t k, std::uint32_t m, 
     symsync_crcf_destroy(object_);
   object_ = symsync_crcf_create_rnyquist(ftype, k, m, beta, num_filters);
   out_.resize(8);
+}
+
+void SymSync::initRRC(std::uint32_t k, std::uint32_t m, float beta, std::uint32_t num_filters) {
+  init(LIQUID_FIRFILT_RRC, k, m, beta, num_filters);
 }
 
 SymSync::~SymSync() {

@@ -20,7 +20,9 @@
 #include <getopt.h>
 
 #include <array>
+#include <cctype>
 #include <cerrno>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -66,8 +68,8 @@ Options getOptions(int argc, char** argv) {
   int option_index{};
   int option_char{};
 
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rst:uvx", long_options.data(),
-                                    &option_index)) >= 0) {
+  while ((option_char = ::getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rst:uvx", long_options.data(),
+                                      &option_index)) >= 0) {
     switch (option_char) {
       case 0:  // Flag
         break;
