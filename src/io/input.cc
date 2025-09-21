@@ -16,6 +16,9 @@
  */
 #include "src/io/input.hh"
 
+// For fileno()
+#include <stdio.h>
+
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -30,7 +33,7 @@
 #include <sndfile.h>
 
 #include "src/constants.hh"
-#include "src/groups.hh"
+#include "src/group.hh"
 #include "src/options.hh"
 
 namespace redsea {
@@ -88,7 +91,7 @@ void MPXReader::init(const Options& options) {
                              " Hz, must be " + "no higher than " +
                              std::to_string(static_cast<int>(kMaximumSampleRate_Hz)) + " Hz");
   } else {
-    chunk_size_ = static_cast<sf_count_t>((kInputChunkSize / num_channels_) * num_channels_);
+    chunk_size_ = static_cast<sf_count_t>(kInputChunkSize / num_channels_) * num_channels_;
 
     is_eof_ = (num_channels_ >= buffer_.data.size());
   }

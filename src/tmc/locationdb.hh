@@ -18,12 +18,11 @@
 #define TMC_LOCATIONDB_H_
 
 #include <cstdint>
-#include <iostream>
+#include <iosfwd>
 #include <map>
 #include <string>
 
-namespace redsea {
-namespace tmc {
+namespace redsea::tmc {
 
 struct Point {
   std::uint16_t lcd{};
@@ -69,7 +68,6 @@ LocationDatabase loadLocationDatabase(const std::string& directory);
 // Read and return the location table number of a location database
 std::uint16_t readLTN(const std::string& directory);
 
-}  // namespace tmc
-}  // namespace redsea
+}  // namespace redsea::tmc
 
 #endif  // TMC_LOCATIONDB_H_

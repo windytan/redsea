@@ -76,11 +76,15 @@ The snapshots are work-in-progress, but we attempt to always keep the main branc
 
 ### 3. Compile & install redsea
 
-        $ meson setup build && cd build
-        $ meson compile
-        $ meson install
+        $ meson setup build && cd build  # Collect dependencies
+        $ taskset -c 0 meson compile     # Compile on a single core
+        $ meson install                  # Install system-wide
 
-Now the binary executable is installed and you can run it!
+If you have a lot of free memory you can also run a parallel build by changing the
+second line to just `meson compile`. See also our guide
+on [building on a low-end system][Wiki: Building on a low-end system].
+
+Now the binary executable is installed and you can run it like any other command!
 
 By default, redsea will be installed under `/usr/local`, but this can be changed by providing
 e.g. `meson setup build --prefix /usr/local`. See the
@@ -90,7 +94,9 @@ for more.
 If you cloned the repository you can later get the latest updates and recompile:
 
         $ git pull
-        $ cd build && meson compile
+        $ cd build && taskset -c 0 meson compile
+
+[Wiki: Building on a low-end system]: https://github.com/windytan/redsea/wiki/Building-on-a-low‐end-system
 
 ## Usage
 
@@ -139,7 +145,7 @@ redsea -f mpx_input.wav --output hex
 
 * libiconv – we use it to convert between text encodings
 * libsndfile – for reading .wav and other sound files
-* [liquid-dsp][liquid-dsp] – for filtering, resampling, and modem functions
+* [liquid-dsp][liquid-dsp] – for filtering, resampling, and layer 1 modem functions
 * nlohmann-json – formats our json output
 
 [liquid-dsp]: https://github.com/jgaeddert/liquid-dsp/releases/tag/v1.3.2
@@ -147,8 +153,9 @@ redsea -f mpx_input.wav --output hex
 ### For building
 
 * Linux/macOS/Cygwin/MSYS2+MinGW
-* C++14 compiler
+* C++17 compiler
 * meson + ninja
+* enough RAM (see [building on a low-end system][Wiki: Building on a low-end system])
 
 ### Testing (optional)
 

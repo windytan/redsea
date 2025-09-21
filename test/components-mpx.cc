@@ -7,6 +7,7 @@
 
 #include "../src/channel.hh"
 #include "../src/dsp/subcarrier.hh"
+#include "../src/io/bitbuffer.hh"
 #include "../src/io/input.hh"
 #include "../src/options.hh"
 

@@ -1,13 +1,13 @@
-#ifndef BASE64_H_
-#define BASE64_H_
+#include "src/rft/base64.hh"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
 namespace redsea {
 
-inline std::string asBase64(const void* data, std::size_t input_length) {
+std::string asBase64(const void* data, std::size_t input_length) {
   constexpr std::array<char, 64> base64_table = {
       {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
        'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
@@ -19,7 +19,7 @@ inline std::string asBase64(const void* data, std::size_t input_length) {
     return "";
   }
 
-  const auto* bytes = static_cast<const std::uint8_t*>(data);
+  const auto* const bytes = static_cast<const std::uint8_t*>(data);
 
   const std::size_t output_length = ((input_length + 2) / 3) * 4;
   std::string encoded;
@@ -38,17 +38,17 @@ inline std::string asBase64(const void* data, std::size_t input_length) {
     }
 
     // Encode 4 Base64 characters
-    encoded.push_back(base64_table[(chunk >> 18) & 0x3F]);
-    encoded.push_back(base64_table[(chunk >> 12) & 0x3F]);
+    encoded.push_back(base64_table[(chunk >> 18U) & 0x3FU]);
+    encoded.push_back(base64_table[(chunk >> 12U) & 0x3FU]);
 
     if (nbytes_in_chunk > 1) {
-      encoded.push_back(base64_table[(chunk >> 6) & 0x3F]);
+      encoded.push_back(base64_table[(chunk >> 6U) & 0x3FU]);
     } else {
       encoded.push_back('=');
     }
 
     if (nbytes_in_chunk == 3) {
-      encoded.push_back(base64_table[chunk & 0x3F]);
+      encoded.push_back(base64_table[chunk & 0x3FU]);
     } else {
       encoded.push_back('=');
     }
@@ -58,5 +58,3 @@ inline std::string asBase64(const void* data, std::size_t input_length) {
 }
 
 }  // namespace redsea
-
-#endif  // BASE64_H_

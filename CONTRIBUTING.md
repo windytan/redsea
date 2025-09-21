@@ -47,7 +47,6 @@ Install Catch2, then run these in redsea's project directory:
 
     meson setup -Db_coverage=true build -Dbuild_tests=true
     cd build
-    meson compile
     meson test
     ninja coverage-html
 
@@ -62,18 +61,20 @@ Let's face it, C++ is memory-unsafe and not the easiest language at that. But
 there are things we can do to make it safer and more usable for us:
 
 * Squashed commits with clear and concise [commit messages](https://www.gitkraken.com/learn/git/best-practices/git-commit-message) are preferred. Use force-push to update the PR branch if necessary.
-* Since 1.0, we wish to have tests in repo for all new features or bugfixes. The tests
+* Since 1.0, all new features and bugfixes should be accompanied by a test. The tests
   can be unit tests written in [Catch2](https://github.com/catchorg/Catch2/) (see `test/*.cc`),
   or they can be end-to-end tests against the CLI executable itself (some Perl examples
   in `test/end_to_end.pl`). Perl is only used for testing; all code should pass Perl::Critic
   level 3.
 * Ideally, all test data comes from some actual radio station and the source is cited.
 * C++ style is described in `.clang-format`; format-on-save is recommended.
-* We aim for C++14 compatibility, so unfortunately more modern features can't be used.
+* We aim for C++17 compatibility, so unfortunately more modern features can't be used.
 * We have some static analysis rules described in `.clang-tidy`.
 * Keep in mind redsea has a real-time requirement and it might be run on some
   low-end 32-bit platform. Unfortunately we don't have automated tests for
   this.
+* We even try to accommodate building on Raspberry Pi devices, which means we would like to
+  avoid heavy STL headers like `<sstream>`, `<regex>`, `<map>` etc.
 * Try to avoid resorting to manual memory management. We have an address sanitizer in
   CI but currently no leak checks.
 
@@ -89,6 +90,15 @@ Some design philosophy:
   output should be via stdout if possible
 
 The project uses [semantic versioning](https://semver.org/).
+
+## AI guidelines
+
+Feel free to use AI to help you write code. Before posting the generated code, please read and
+understand the code yourself.
+
+When you generate documentation, bug reports, or other kind of prose with AI, a nice final touch
+is to rewrite the entire text in your own words. This gives it a much more approachable tone! You can
+then tell the AI to just spell-check it.
 
 ## Join the discussion
 

@@ -25,7 +25,8 @@
 #include "config.h"
 #include "src/channel.hh"
 #include "src/dsp/subcarrier.hh"
-#include "src/groups.hh"
+#include "src/group.hh"
+#include "src/io/bitbuffer.hh"
 #include "src/io/input.hh"
 #include "src/options.hh"
 
@@ -69,7 +70,7 @@ void printUsage() {
          "\n"
          "-l, --loctable DIR     Load TMC location table from a directory in TMC Exchange\n"
          "                       format. This option can be specified multiple times to\n"
-         "                       load several location tables.\n"
+         "                       load several location tables (max. 16).\n"
          "\n"
          "--no-fec               Disable forward error correction; always reject blocks\n"
          "                       with incorrect syndromes. In noisy conditions, fewer errors\n"

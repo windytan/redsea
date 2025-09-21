@@ -31,7 +31,7 @@ constexpr float kTargetSampleRate_Hz  = 171'000.f;
 // Limits of the resamp_rrrf object
 constexpr float kLiquidMinimumResamplerRatio = 0.004f;
 constexpr float kMaximumSampleRate_Hz        = 40'000'000.f;
-static_assert(kMaximumSampleRate_Hz < kTargetSampleRate_Hz / kLiquidMinimumResamplerRatio, "");
+static_assert(kMaximumSampleRate_Hz < kTargetSampleRate_Hz / kLiquidMinimumResamplerRatio);
 
 constexpr float kMaxResampleRatio = kTargetSampleRate_Hz / kMinimumSampleRate_Hz;
 

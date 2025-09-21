@@ -6,7 +6,7 @@ namespace redsea {
 template <typename T>
 struct Maybe {
   T data;
-  bool valid;
+  bool valid{};
 };
 
 }  // namespace redsea

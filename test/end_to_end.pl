@@ -31,6 +31,7 @@ sub main {
     testInputTEF();
     testIncompatibleOptions();
     testVersionString();
+    testTMC();
 
     print "\n"
       . ( $has_failures ? "Some tests failed" : "All tests passed" ) . "\n";
@@ -59,8 +60,9 @@ sub testInputBits {
           . "0111001101100001010000011001100001000011010111000111\n"
           . "001000" );
 
+    PrintTestName('Decodes ASCII binary');
+
     for my $arg ( '-b', '--input bits', '--input-bits' ) {
-        PrintTestName( 'Option: ' . $arg );
         unlink($test_output_file);
         RunRedseaWithArgs(
             $arg . q{<} . $test_input_file . q{>} . $test_output_file );
@@ -71,7 +73,7 @@ sub testInputBits {
             ) != -1
         );
         close $test_output;
-        check( $result, 'decodes ASCII binary' );
+        check( $result, 'Option: ' . $arg );
     }
 
     return;
@@ -128,14 +130,43 @@ sub testInputTEF {
     return;
 }
 
+# Some sensible event description should be printed.
+# Note that we don't know if the TMC decoder produces correct results. We don't have the
+# "ground truth" data!
+# Moreso we just want to test that the event strings got loaded from the CSV files.
+sub testTMC {
+    createTestInputFile( "9602 4401 C9DE FDC4 @2019/05/04 17:55:00.91\n"
+          . "9602 040A 645A 204B @2019/05/04 17:55:01.02\n"
+          . "9602 3410 0267 CD46 @2019/05/04 17:55:01.21\n"
+          . "9602 8405 C852 2550 @2019/05/04 17:55:02.06\n"
+          . "9602 8405 48F4 0000 @2019/05/04 17:55:02.74\n" );
+
+    my $arg = "--input hex";
+    PrintTestName('TMC');
+    unlink($test_output_file);
+    RunRedseaWithArgs( $arg . q{<}
+          . $test_input_file
+          . q{| grep message >}
+          . $test_output_file );
+    open( my $test_output, q{<}, $test_output_file ) or croak $!;
+    my $result = (
+        index( <$test_output>, 'Roadworks. Heavy traffic has to be expected.' )
+          != -1 );
+    close $test_output;
+    check( $result, 'Prints something in the event description' );
+
+    return;
+}
+
 # Redsea should fail on incompatible options
 sub testIncompatibleOptions {
-    PrintTestName("Incompatible options");
+    PrintTestName("Incompatible options (error expected)");
     startupShouldFail("--streams --input bits");
 
     return;
 }
 
+# The version string should be printed and nothing else
 sub testVersionString {
     PrintTestName("Version string");
     my $exit_code = RunRedseaWithArgs(
@@ -152,7 +183,7 @@ sub testVersionString {
     close $test_stderr;
 
     check( $exit_code == 0 && $out_line_count == 1 && $err_line_count == 0,
-        'prints version string' );
+        'Option: --version' );
 
     return;
 }
@@ -164,7 +195,7 @@ sub testVersionString {
 # Just print the test name
 sub PrintTestName {
     my ($name) = @_;
-    print $name. q{ };
+    print "\n• " . $name . "\n";
 
     return;
 }
@@ -220,7 +251,9 @@ sub RunRedseaWithArgs {
 sub check {
     my ( $bool, $message ) = @_;
     if ( !$bool || $print_even_if_successful ) {
-        print(  ( $message // "" ) . "\n  "
+        print(  "  "
+              . ( $message // "" )
+              . "\n    "
               . ( $bool ? '[ OK ] ' : '[FAIL] ' )
               . "\n" );
 
@@ -234,7 +267,8 @@ sub check {
 sub prerequisite {
     my ( $bool, $message ) = @_;
     if ( !$bool || $print_even_if_successful ) {
-        print(  ( $message // "" ) . "\n  "
+        print(  "• "
+              . ( $message // "" ) . "\n  "
               . ( $bool ? '[ OK ] ' : '[FAIL] ' )
               . "\n" );
         exit(1) if ( !$bool );

@@ -6,7 +6,7 @@ project(
     'buildtype=release',
     'optimization=3',
     'prefix=/usr/local',
-    'cpp_std=c++14',
+    'cpp_std=c++17',
   ],
   version: '1.3.0-SNAPSHOT',
 )
@@ -33,7 +33,7 @@ add_project_arguments(cc.get_supported_arguments(['-Wno-unknown-pragmas']), lang
 
 # Explicit GNU extensions on Cygwin
 if build_machine.system() == 'cygwin'
-  override_options = ['cpp_std=gnu++14']
+  override_options = ['cpp_std=gnu++17']
 else
   override_options = []
 endif
@@ -98,16 +98,28 @@ endif
 sources_no_main = [
   'src/block_sync.cc',
   'src/channel.cc',
+  'src/decode/decode_oda.cc',
+  'src/decode/decode.cc',
   'src/dsp/liquid_wrappers.cc',
   'src/dsp/subcarrier.cc',
-  'src/groups.cc',
+  'src/freq.cc',
+  'src/group.cc',
   'src/io/input.cc',
+  'src/io/output.cc',
   'src/options.cc',
+  'src/rft/base64.cc',
+  'src/rft/crc.cc',
+  'src/rft/rft.cc',
+  'src/station.cc',
   'src/tables.cc',
+  'src/text/radiotext.cc',
   'src/text/rdsstring.cc',
+  'src/text/stringutil.cc',
   'src/tmc/csv.cc',
-  'src/tmc/tmc.cc',
+  'src/tmc/eventdb.cc',
   'src/tmc/locationdb.cc',
+  'src/tmc/message.cc',
+  'src/tmc/tmc.cc',
   'src/util.cc',
 ]
 

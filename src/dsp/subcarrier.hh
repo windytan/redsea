@@ -23,10 +23,11 @@
 
 #include "src/constants.hh"
 #include "src/dsp/liquid_wrappers.hh"
-#include "src/io/bitbuffer.hh"
 #include "src/io/input.hh"
 
 namespace redsea {
+
+struct BitBuffer;
 
 class BiphaseDecoder {
  public:
@@ -64,10 +65,10 @@ struct Demod {
 class SubcarrierSet {
  public:
   explicit SubcarrierSet(float samplerate);
-  bool eof() const;
+  [[nodiscard]] bool eof() const;
   BitBuffer processChunk(const MPXBuffer& input_chunk, int num_data_streams);
   void reset();
-  float getSecondsSinceLastReset() const;
+  [[nodiscard]] float getSecondsSinceLastReset() const;
 
  private:
   const MPXBuffer& resampleChunk(const MPXBuffer& input_chunk);

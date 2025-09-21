@@ -5,16 +5,21 @@ We use [semantic versioning](https://semver.org/).
 ## 1.3.0-SNAPSHOT (WIP)
 
 * New features:
-  * File offset timestamp (`--time-from-start`) shows the position of each group's
-    first bit in the input stream in seconds (see [wiki](https://github.com/windytan/redsea/wiki/Time-and-timestamps#file-offset-times))
-* Other improvements:
+  * File offset timestamp (`--time-from-start`) shows the position of each group
+    in the input stream in seconds (see [wiki](https://github.com/windytan/redsea/wiki/Time-and-timestamps#file-offset-times))
+* Removed features:
+  * Removed 'radio paging' support - it's obsoleted by rdsforum since 2021, our developers have never seen it,
+    and there is no test data available :)
+* Fixed bugs:
+  * Fixed a bug that prints a warning about sample rate when no samples are expected (#140).
+* Other changes:
+  * Redsea now requires C++17 due to some refactoring to improve build times on Raspberry Pi.
   * TMC event data is now stored in CSV files instead of source code.
-    * This should improve the compile-time memory usage.
+    * This should also improve the compile-time memory usage.
     * TMC data files get loaded when the first ever TMC message arrives; or at startup, if a location
       database was given.
     * Note that `meson install` needs to be called now to make TMC work properly. The files get installed in
       `/usr/local/share/redsea` by default.
-  * Don't print a warning about sample rate when no samples expected (#140).
 * CI etc:
   * Remove build check for Ubuntu 20.04 as it's not available any more for runners
   * Replaced Debian 10 build check with Debian 11

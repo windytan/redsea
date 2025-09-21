@@ -205,6 +205,11 @@ Options getOptions(int argc, char** argv) {
     options.samplerate = kTargetSampleRate_Hz;
   }
 
+  if (options.loctable_dirs.size() > kMaxNumLocationDatabases) {
+    throw std::runtime_error("A maximum of " + std::to_string(kMaxNumLocationDatabases) +
+                             " location databases can be loaded");
+  }
+
   return options;
 }
 

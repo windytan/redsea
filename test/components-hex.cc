@@ -1,9 +1,6 @@
 // Redsea tests: Component tests for hex input
 // All different kinds of messages we can receive should go here
 
-#include <cstdint>
-#include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -12,12 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
-#include "../src/block_sync.hh"
-#include "../src/channel.hh"
 #include "../src/constants.hh"
-#include "../src/groups.hh"
-#include "../src/options.hh"
-#include "../src/tmc/csv.hh"
 #include "test_helpers.hh"
 
 TEST_CASE("Basic info") {

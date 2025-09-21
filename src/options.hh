@@ -23,9 +23,11 @@
 
 namespace redsea {
 
-enum class InputType { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
+enum class InputType : std::uint8_t { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
 
-enum class OutputType { Hex, JSON };
+enum class OutputType : std::uint8_t { Hex, JSON };
+
+const std::uint32_t kMaxNumLocationDatabases = 16;
 
 struct Options {
   bool rbds{};

@@ -37,6 +37,7 @@ namespace {
 
 constexpr float kAGCBandwidth_Hz     = 500.0f;
 constexpr float kAGCInitialGain      = 0.08f;
+constexpr int kLowpassOrder          = 255;
 constexpr float kLowpassCutoff_Hz    = 2400.0f;
 constexpr float kSymsyncBandwidth_Hz = 2200.0f;
 constexpr int kSymsyncDelay          = 3;
@@ -94,7 +95,7 @@ SubcarrierSet::SubcarrierSet(float samplerate)
     : resample_ratio_(kTargetSampleRate_Hz / samplerate), resampler_(kResamplerDelay) {
   for (auto& demod : demods_) {
     demod.agc.init(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain);
-    demod.fir_lpf.init(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz);
+    demod.fir_lpf.init(kLowpassOrder, kLowpassCutoff_Hz / kTargetSampleRate_Hz);
     demod.symsync.initRRC(kSamplesPerSymbol, kSymsyncDelay, kSymsyncBeta, 32);
     demod.symsync.setBandwidth(kSymsyncBandwidth_Hz / kTargetSampleRate_Hz);
     demod.symsync.setOutputRate(1);
@@ -119,7 +120,7 @@ const MPXBuffer& SubcarrierSet::resampleChunk(const MPXBuffer& input_chunk) {
   }
 
   // ceil(resample_ratio) is enough, as per liquid-dsp's API, but std::ceil is not constexpr in
-  // C++14
+  // C++17
   constexpr std::size_t kMaxResamplerOutputSize = static_cast<std::size_t>(kMaxResampleRatio) + 1;
   std::array<float, kMaxResamplerOutputSize> resamp_output{};
 

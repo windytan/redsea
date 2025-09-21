@@ -5,17 +5,17 @@
 
 #include "../src/block_sync.hh"
 #include "../src/channel.hh"
-#include "../src/constants.hh"
-#include "../src/groups.hh"
+#include "../src/group.hh"
 #include "../src/options.hh"
 
 #include <cstdint>
 #include <initializer_list>
+#include <sstream>
 #include <vector>
 
 using HexInputData = std::initializer_list<std::uint64_t>;
 
-enum class DeleteOneBlock { Block1 = 0, Block2, Block3, Block4, None };
+enum class DeleteOneBlock : std::uint8_t { Block1 = 0, Block2, Block3, Block4, None };
 
 // Convert synchronized hex data into groups. Error correction is omitted and ignored.
 // \param block_to_delete Simulate losing some block to noise (same block in every group)

@@ -4,7 +4,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/block_sync.hh"
 #include "../src/options.hh"
 #include "test_helpers.hh"
 

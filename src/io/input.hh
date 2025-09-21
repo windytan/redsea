@@ -26,10 +26,12 @@
 #include <sndfile.h>
 
 #include "src/constants.hh"
-#include "src/groups.hh"
 #include "src/options.hh"
 
 namespace redsea {
+
+class Group;
+struct Options;
 
 // Read this many samples at a time
 constexpr std::size_t kInputChunkSize = 8192;

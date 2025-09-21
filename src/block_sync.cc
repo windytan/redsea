@@ -23,7 +23,7 @@
 #include <map>
 #include <utility>
 
-#include "src/groups.hh"
+#include "src/group.hh"
 #include "src/options.hh"
 
 namespace redsea {
@@ -252,7 +252,7 @@ void BlockStream::acquireSync(Block block) {
 
 // Receive a new bit
 void BlockStream::pushBit(bool bit) {
-  input_register_ = (input_register_ << 1U) + bit;
+  input_register_ = (input_register_ << 1U) + (bit ? 1U : 0U);
   num_bits_until_next_block_--;
   bitcount_++;
 

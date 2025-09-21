@@ -1,6 +1,5 @@
 // Redsea tests: Unit tests
 
-#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
@@ -8,8 +7,12 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/block_sync.hh"
-#include "../src/tmc/csv.hh"
+#include "src/rft/base64.hh"
+#include "src/rft/crc.hh"
+#include "src/simplemap.hh"
+#include "src/text/stringutil.hh"
+#include "src/tmc/csv.hh"
+#include "src/util.hh"
 
 TEST_CASE("Bitfield extraction") {
   constexpr std::uint16_t block1{0b0001'0010'0011'0100};
@@ -17,15 +20,15 @@ TEST_CASE("Bitfield extraction") {
 
   SECTION("Single block") {
     // clang-format off
-    CHECK(redsea::getBits<4>(block1, 0) ==             0b0100);
+    CHECK(redsea::getBits(block1, 0, 4) ==             0b0100);
 
-    CHECK(redsea::getBits<5>(block1, 4) ==      0b0'0011);
-    CHECK(redsea::getBits<6>(block1, 4) ==     0b10'0011);
-    CHECK(redsea::getBits<8>(block1, 4) ==   0b0010'0011);
-    CHECK(redsea::getBits<9>(block1, 4) == 0b1'0010'0011);
+    CHECK(redsea::getBits(block1, 4, 5) ==      0b0'0011);
+    CHECK(redsea::getBits(block1, 4, 6) ==     0b10'0011);
+    CHECK(redsea::getBits(block1, 4, 8) ==   0b0010'0011);
+    CHECK(redsea::getBits(block1, 4, 9) == 0b1'0010'0011);
 
-    CHECK(redsea::getBits<5>(block1, 5) ==     0b10'001);
-    CHECK(redsea::getBits<8>(block1, 5) == 0b1'0010'001);
+    CHECK(redsea::getBits(block1, 5, 5) ==     0b10'001);
+    CHECK(redsea::getBits(block1, 5, 8) == 0b1'0010'001);
 
     CHECK(redsea::getBool(block1, 12)   == true);
     // clang-format on
@@ -33,15 +36,15 @@ TEST_CASE("Bitfield extraction") {
 
   SECTION("Concatenation of two blocks") {
     // clang-format off
-    CHECK(redsea::getBits<4>(block1, block2, 0)                        == 0b1000);
+    CHECK(redsea::getBits(block1, block2, 0, 4)                        == 0b1000);
 
-    CHECK(redsea::getBits<5>(block1, block2, 4)  ==                0b0'0111);
-    CHECK(redsea::getBits<6>(block1, block2, 4)  ==               0b10'0111);
-    CHECK(redsea::getBits<8>(block1, block2, 4)  ==             0b0110'0111);
-    CHECK(redsea::getBits<9>(block1, block2, 4)  ==           0b1'0110'0111);
+    CHECK(redsea::getBits(block1, block2, 4, 5)  ==                0b0'0111);
+    CHECK(redsea::getBits(block1, block2, 4, 6)  ==               0b10'0111);
+    CHECK(redsea::getBits(block1, block2, 4, 8)  ==             0b0110'0111);
+    CHECK(redsea::getBits(block1, block2, 4, 9)  ==           0b1'0110'0111);
 
-    CHECK(redsea::getBits<12>(block1, block2, 8) ==   0b0100'0101'0110);
-    CHECK(redsea::getBits<12>(block1, block2, 9) == 0b1'0100'0101'011);
+    CHECK(redsea::getBits(block1, block2, 8, 12) ==   0b0100'0101'0110);
+    CHECK(redsea::getBits(block1, block2, 9, 12) == 0b1'0100'0101'011);
     // clang-format on
   }
 }
@@ -124,7 +127,7 @@ TEST_CASE("Base64 encoding") {
   const std::string encoded3 = redsea::asBase64(test_string3.c_str(), test_string3.size());
   CHECK(encoded3 == "bGlnaHQgdw==");
 
-  const std::string test_string4{""};
+  const std::string test_string4{};
   const std::string encoded4 = redsea::asBase64(test_string4.c_str(), test_string4.size());
   CHECK(encoded4 == "");
 }
@@ -151,4 +154,32 @@ TEST_CASE("Round-up division") {
   CHECK(redsea::divideRoundingUp(2, 2) == 1);
   CHECK(redsea::divideRoundingUp(1, 2) == 1);
   CHECK(redsea::divideRoundingUp(0, 2) == 0);
+}
+
+TEST_CASE("SimpleMap") {
+  SimpleMap<int, std::string> map{
+      {1, "one"  },
+      {2, "two"  },
+      {3, "three"},
+  };
+
+  CHECK(map.contains(1));
+  CHECK_FALSE(map.contains(4));
+
+  CHECK(map.at(2) == "two");
+
+  REQUIRE_THROWS_AS(map.at(4), std::out_of_range);
+
+  map.insert(4, "four");
+  CHECK(map.at(4) == "four");
+
+  map.insert(2, "deux");
+  CHECK(map.at(2) == "deux");
+
+  SimpleMap<int, std::pair<int, int>> complex_map;
+  complex_map.insert(1, {10, 20});
+  CHECK(complex_map.at(1).first == 10);
+
+  complex_map.at(1).second = 5;
+  CHECK(complex_map.at(1).second == 5);
 }

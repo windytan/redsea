@@ -29,6 +29,37 @@
 
 namespace redsea {
 
+CachedPI::Result CachedPI::update(const std::uint16_t pi) {
+  Result status(Result::SpuriousChange);
+
+  // Three repeats of the same PI --> confirmed change
+  if (has_previous_ && pi_prev1_ == pi_prev2_ && pi == pi_prev1_) {
+    status        = (pi == pi_confirmed_ ? Result::NoChange : Result::ChangeConfirmed);
+    pi_confirmed_ = pi;
+  }
+
+  // So noisy that two PIs in a row get corrupted --> drop
+  if (has_previous_ && (pi != pi_confirmed_ && pi_prev1_ != pi_confirmed_ && pi != pi_prev1_)) {
+    reset();
+  } else {
+    has_previous_ = true;
+  }
+
+  pi_prev2_ = pi_prev1_;
+  pi_prev1_ = pi;
+
+  return status;
+}
+
+std::uint16_t CachedPI::get() const {
+  return pi_confirmed_;
+}
+
+void CachedPI::reset() {
+  pi_confirmed_ = pi_prev1_ = pi_prev2_ = 0;
+  has_previous_                         = false;
+}
+
 /*
  * A Channel represents a single 'FM channel', or a multiplex signal on one
  * frequency. This also corresponds to channels in audio files. The station
@@ -61,7 +92,7 @@ Channel::Channel(const Options& options, std::ostream& output_stream, std::uint1
 
 // \param bit 0 or 1
 // \param which_stream Which data stream was it received on, 0..3
-void Channel::processBit(bool bit, std::size_t which_stream) {
+void Channel::processBit(bool bit, int which_stream) {
   block_stream_[which_stream].pushBit(bit);
 
   if (block_stream_[which_stream].hasGroupReady())
@@ -115,7 +146,7 @@ void Channel::processBits(const BitBuffer& buffer) {
 
 // Handle this group as if it was just received.
 // \param which_stream Which data stream was it received on, 0..3
-void Channel::processGroup(Group group, std::size_t which_stream) {
+void Channel::processGroup(Group group, int which_stream) {
   // If the rx timestamp wasn't set from the MPX buffer
   if (options_.timestamp && !group.hasRxTime()) {
     auto now = std::chrono::system_clock::now();
@@ -166,7 +197,7 @@ void Channel::flush() {
   for (std::size_t which_stream = 0; which_stream < block_stream_.size(); ++which_stream) {
     const Group remaining_group = block_stream_[which_stream].flushCurrentGroup();
     if (!remaining_group.isEmpty())
-      processGroup(remaining_group, which_stream);
+      processGroup(remaining_group, static_cast<int>(which_stream));
   }
 }
 

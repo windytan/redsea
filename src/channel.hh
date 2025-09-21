@@ -21,15 +21,17 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
+#include <iosfwd>
 
 #include "src/block_sync.hh"
 #include "src/constants.hh"
-#include "src/io/bitbuffer.hh"
 #include "src/options.hh"
+#include "src/station.hh"
 #include "src/util.hh"
 
 namespace redsea {
+
+struct BitBuffer;
 
 // Normally, the PI code is not expected to change. This class keeps track of the current PI
 // code and ignores spurious bit errors.
@@ -40,34 +42,11 @@ class CachedPI {
   CachedPI() = default;
 
   // Input the most recently received PI code.
-  Result update(const std::uint16_t pi) {
-    Result status(Result::SpuriousChange);
+  Result update(const std::uint16_t pi);
 
-    // Three repeats of the same PI --> confirmed change
-    if (has_previous_ && pi_prev1_ == pi_prev2_ && pi == pi_prev1_) {
-      status        = (pi == pi_confirmed_ ? Result::NoChange : Result::ChangeConfirmed);
-      pi_confirmed_ = pi;
-    }
+  [[nodiscard]] std::uint16_t get() const;
 
-    // So noisy that two PIs in a row get corrupted --> drop
-    if (has_previous_ && (pi != pi_confirmed_ && pi_prev1_ != pi_confirmed_ && pi != pi_prev1_)) {
-      reset();
-    } else {
-      has_previous_ = true;
-    }
-
-    pi_prev2_ = pi_prev1_;
-    pi_prev1_ = pi;
-
-    return status;
-  }
-  std::uint16_t get() const {
-    return pi_confirmed_;
-  }
-  void reset() {
-    pi_confirmed_ = pi_prev1_ = pi_prev2_ = 0;
-    has_previous_                         = false;
-  }
+  void reset();
 
  private:
   std::uint16_t pi_confirmed_{0};
@@ -80,11 +59,11 @@ class Channel {
  public:
   Channel(const Options& options, int which_channel, std::ostream& output_stream);
   Channel(const Options& options, std::ostream& output_stream, std::uint16_t pi);
-  void processBit(bool bit, std::size_t which_stream);
+  void processBit(bool bit, int which_stream);
   void processBits(const BitBuffer& buffer);
-  void processGroup(Group group, std::size_t which_stream);
+  void processGroup(Group group, int which_stream);
   void flush();
-  float getSecondsSinceCarrierLost() const;
+  [[nodiscard]] float getSecondsSinceCarrierLost() const;
   void resetPI();
 
  private:
