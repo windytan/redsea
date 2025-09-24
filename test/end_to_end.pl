@@ -21,6 +21,7 @@ my $print_even_if_successful = $true;
 my $has_failures             = $false;
 my $test_input_file          = 'redsea-test-input';
 my $test_output_file         = 'redsea-test-output';
+my $test_stderr_file         = 'redsea-test-stderr';
 
 main();
 
@@ -29,6 +30,7 @@ sub main {
     testInputBits();
     testInputTEF();
     testIncompatibleOptions();
+    testVersionString();
 
     print "\n"
       . ( $has_failures ? "Some tests failed" : "All tests passed" ) . "\n";
@@ -134,6 +136,27 @@ sub testIncompatibleOptions {
     return;
 }
 
+sub testVersionString {
+    PrintTestName("Version string");
+    my $exit_code = RunRedseaWithArgs(
+        q{--version} . q{>} . $test_output_file . q{ 2>} . $test_stderr_file );
+
+    open( my $test_output, q{<}, $test_output_file ) or croak $!;
+    while (<$test_output>) { }
+    my $out_line_count = $.;
+    close $test_output;
+
+    open( my $test_stderr, q{<}, $test_stderr_file ) or croak $!;
+    while (<$test_stderr>) { }
+    my $err_line_count = $.;
+    close $test_stderr;
+
+    check( $exit_code == 0 && $out_line_count == 1 && $err_line_count == 0,
+        'prints version string' );
+
+    return;
+}
+
 ###
 ### # Helper functions
 ###
@@ -165,7 +188,7 @@ sub RunRedseaWithArgs {
     my $timed_out       = $false;
     my $timeout_seconds = 5;
 
-    my $e = eval {
+    my $eval_result = eval {
 
         # Callback on ALRM
         local $SIG{ALRM} = sub { die "timeout\n" };
@@ -184,7 +207,7 @@ sub RunRedseaWithArgs {
         print "Failed to run $command: $!\n";
         exit(1);
     }
-    elsif ( not defined $e ) {
+    elsif ( not defined $eval_result ) {
         print "Failed to run eval\n";
         exit(1);
     }

@@ -197,7 +197,7 @@ Options getOptions(int argc, char** argv) {
   }
 
   const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin && !options.print_usage &&
-                              !options.init_error};
+                              !options.print_version && !options.init_error};
 
   if (assuming_raw_mpx && !options.is_rate_defined) {
     std::cerr << R"(warning: raw MPX sample rate not defined, assuming )" << kTargetSampleRate_Hz

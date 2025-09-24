@@ -14,6 +14,7 @@ We use [semantic versioning](https://semver.org/).
       database was given.
     * Note that `meson install` needs to be called now to make TMC work properly. The files get installed in
       `/usr/local/share/redsea` by default.
+  * Don't print a warning about sample rate when no samples expected (#140).
 * CI etc:
   * Remove build check for Ubuntu 20.04 as it's not available any more for runners
   * Replaced Debian 10 build check with Debian 11
