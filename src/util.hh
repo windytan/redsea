@@ -23,9 +23,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iomanip>
 #include <numeric>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -74,17 +72,28 @@ std::string getTimePointString(const std::chrono::time_point<std::chrono::system
 
 std::string join(const std::vector<std::string>& strings, const std::string& d);
 
+inline std::string getHexString(int value, int n) {
+  std::string result;
+  result.resize(n);
+  for (int i = 0; i < n; i++) {
+    const auto nybble =
+        (static_cast<unsigned int>(value) >> static_cast<unsigned int>(4 * (n - 1 - i)) & 0x0FU);
+    if (nybble < 10U)
+      result[i] = static_cast<char>('0' + nybble);
+    else
+      result[i] = static_cast<char>('A' + (nybble - 10U));
+  }
+
+  return result;
+}
+
+inline std::string getHexString(std::uint32_t value, int n) {
+  return getHexString(static_cast<int>(value), n);
+}
+
 template <int N>
 std::string getHexString(std::uint32_t value) {
-  static_assert(N > 0, "");
-  std::stringstream ss;
-
-  ss.fill('0');
-  ss.setf(std::ios_base::uppercase);
-
-  ss << std::hex << std::setw(N) << value;
-
-  return ss.str();
+  return getHexString(value, N);
 }
 
 template <int N>

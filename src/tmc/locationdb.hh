@@ -18,7 +18,7 @@
 #define TMC_LOCATIONDB_H_
 
 #include <cstdint>
-#include <iostream>
+#include <iosfwd>
 #include <map>
 #include <string>
 

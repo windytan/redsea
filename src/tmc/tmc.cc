@@ -25,11 +25,8 @@
 #include <cstdlib>
 #include <deque>
 #include <exception>
-#include <iomanip>
 #include <iostream>
 #include <map>
-#include <regex>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -125,23 +122,21 @@ std::string getUrgencyString(EventUrgency u) {
 }
 
 std::string getTimeString(std::uint16_t field_data) {
-  std::stringstream ss;
-
   if (field_data <= 95) {
-    ss << getHoursMinutesString(field_data / 4, 15 * (field_data % 4));
+    return getHoursMinutesString(field_data / 4, 15 * (field_data % 4));
 
   } else if (field_data <= 200) {
     const int days = (field_data - 96) / 24;
     const int hour = (field_data - 96) % 24;
     if (days == 0)
-      ss << "at " << std::setfill('0') << std::setw(2) << hour << ":00";
+      return "at " + getHoursMinutesString(hour, 0);
     else if (days == 1)
-      ss << "after 1 day at " << std::setfill('0') << std::setw(2) << hour << ":00";
+      return "after 1 day at " + getHoursMinutesString(hour, 0);
     else
-      ss << "after " << days << " days at " << std::setfill('0') << std::setw(2) << hour << ":00";
+      return "after " + std::to_string(days) + " days at " + getHoursMinutesString(hour, 0);
 
   } else if (field_data <= 231) {
-    ss << "day " << (field_data - 200) << " of the month";
+    return "day " + std::to_string(field_data - 200) + " of the month";
 
   } else {
     const std::uint16_t month = (field_data - 232) / 2;
@@ -150,10 +145,10 @@ std::string getTimeString(std::uint16_t field_data) {
                                                   "May",       "June",     "July",     "August",
                                                   "September", "October",  "November", "December"};
     if (month < 12)
-      ss << (end_or_mid ? "end of " : "mid-") + month_names[month];
+      return (end_or_mid ? "end of " : "mid-") + month_names[month];
   }
 
-  return ss.str();
+  return "";
 }
 
 std::vector<std::string> getScopeStrings(std::uint16_t mgs) {
@@ -195,9 +190,16 @@ std::uint16_t getQuantifierSize(QuantifierType qtype) {
   return 8;
 }
 
+std::string replace(const std::string& str, const std::string& from, const std::string& to) {
+  std::string result          = str;
+  const std::size_t start_pos = result.find(from);
+  if (start_pos != std::string::npos)
+    result.replace(start_pos, from.length(), to);
+  return result;
+}
+
 std::string getDescriptionWithQuantifier(const Event& event, std::uint16_t q_value) {
   std::string text("(Q)");
-  const std::regex q_regex("\\(Q\\)");
 
   if (getQuantifierSize(event.quantifier_type) == 5 && q_value == 0)
     q_value = 32;
@@ -286,7 +288,7 @@ std::string getDescriptionWithQuantifier(const Event& event, std::uint16_t q_val
     }
   }
 
-  return std::regex_replace(event.description_with_quantifier, q_regex, text);
+  return replace(event.description_with_quantifier, "(Q)", text);
 }
 
 std::string ucfirst(std::string in) {
@@ -321,12 +323,12 @@ void loadEventData() {
       else if (get_string(table, row, "U") == "X")
         event.urgency = EventUrgency::X;
 
-      if (std::regex_match(get_string(table, row, "T"), std::regex(".?D.?")))
+      if (get_string(table, row, "T").find('D') != std::string::npos)
         event.duration_type = DurationType::Dynamic;
-      else if (std::regex_match(get_string(table, row, "T"), std::regex(".?L.?")))
+      else if (get_string(table, row, "T").find('L') != std::string::npos)
         event.duration_type = DurationType::LongerLasting;
 
-      if (std::regex_match(get_string(table, row, "T"), std::regex("\\(")))
+      if (get_string(table, row, "T").find('(') != std::string::npos)
         event.show_duration = false;
 
       if (row_contains(table, row, "D") && get_int(table, row, "D") == 2)

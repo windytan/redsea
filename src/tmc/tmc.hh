@@ -23,13 +23,15 @@
 #include <string>
 #include <vector>
 
-#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 
-#include "src/options.hh"
 #include "src/text/rdsstring.hh"
 #include "src/util.hh"
 
 namespace redsea {
+
+struct Options;
+
 namespace tmc {
 
 enum class Direction : std::uint8_t { Positive = 0, Negative = 1 };

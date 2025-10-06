@@ -94,6 +94,7 @@ sources_no_main = [
   'src/dsp/subcarrier.cc',
   'src/groups.cc',
   'src/io/input.cc',
+  'src/io/output.cc',
   'src/options.cc',
   'src/tables.cc',
   'src/text/rdsstring.cc',

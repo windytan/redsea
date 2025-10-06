@@ -21,9 +21,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
-#include <iomanip>
-#include <ios>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -31,9 +28,8 @@ namespace redsea {
 
 // \brief Format hours, minutes as HH:MM
 std::string getHoursMinutesString(int hour, int minute) {
-  std::stringstream ss;
-  ss << std::setfill('0') << std::setw(2) << hour << ":" << std::setw(2) << minute;
-  return ss.str();
+  return std::to_string(hour).insert(0, 2 - std::to_string(hour).length(), '0') + ":" +
+         std::to_string(minute).insert(0, 2 - std::to_string(minute).length(), '0');
 }
 
 // \brief Format a system clock timestamp
@@ -109,23 +105,19 @@ int CarrierFrequency::kHz() const {
 
 // \brief Frequency as a human-readable string, rounded
 std::string CarrierFrequency::str() const {
-  std::stringstream ss;
   if (isValid()) {
     switch (band_) {
       case Band::FM: {
-        ss.precision(1);
-        ss << std::fixed << (static_cast<float>(kHz()) * 1e-3f) << " MHz";
-        break;
+        const int khz = kHz();
+        return std::to_string(khz / 1000) + "." + std::to_string((khz % 1000) / 100) + " MHz";
       }
 
       case Band::LF_MF: {
-        ss << kHz() << " kHz";
+        return std::to_string(kHz()) + " kHz";
       }
     }
-  } else {
-    ss << "N/A";
   }
-  return ss.str();
+  return "N/A";
 }
 
 bool operator==(const CarrierFrequency& f1, const CarrierFrequency& f2) {

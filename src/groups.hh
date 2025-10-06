@@ -21,7 +21,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
+#include <iosfwd>
 #include <map>
 #include <string>
 
@@ -38,7 +38,7 @@
 namespace redsea {
 
 // A scoped enum couldn't readily be used for indexing
-enum eBlockNumber { BLOCK1, BLOCK2, BLOCK3, BLOCK4 };
+enum eBlockNumber : std::uint8_t { BLOCK1, BLOCK2, BLOCK3, BLOCK4 };
 
 enum class Offset : std::uint8_t { A, B, C, Cprime, D, invalid };
 

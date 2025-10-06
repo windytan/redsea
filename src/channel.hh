@@ -21,15 +21,16 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
+#include <iosfwd>
 
 #include "src/block_sync.hh"
 #include "src/constants.hh"
-#include "src/io/bitbuffer.hh"
 #include "src/options.hh"
 #include "src/util.hh"
 
 namespace redsea {
+
+struct BitBuffer;
 
 // Normally, the PI code is not expected to change. This class keeps track of the current PI
 // code and ignores spurious bit errors.

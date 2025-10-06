@@ -16,11 +16,9 @@
  */
 #include "src/tmc/locationdb.hh"
 
-#include <climits>
 #include <cstdint>
 #include <exception>
 #include <ostream>
-#include <regex>
 #include <string>
 
 #include "ext/iconvpp/iconv.hpp"
@@ -69,11 +67,11 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
     }
   }
 
-  // Misspelled encodings in the wild (TODO a better way to do this)
-  if (std::regex_match(encoding, std::regex("ISO.8859-1\\b.*")))
-    encoding = "ISO-8859-1";
-  if (std::regex_match(encoding, std::regex("ISO.8859-15\\b.*")))
-    encoding = "ISO-8859-15";
+  // Misspelled encodings in the wild
+  if (encoding.find("ISO") == 0 && encoding.find("8859-") == 4 && encoding.size() > 9) {
+    const int which_iso8859 = std::stoi(encoding.substr(9));
+    encoding                = "ISO-8859-" + std::to_string(which_iso8859);
+  }
 
   const iconvpp::converter converter("UTF-8", encoding);
 

@@ -5,12 +5,12 @@
 
 #include "../src/block_sync.hh"
 #include "../src/channel.hh"
-#include "../src/constants.hh"
 #include "../src/groups.hh"
 #include "../src/options.hh"
 
 #include <cstdint>
 #include <initializer_list>
+#include <sstream>
 #include <vector>
 
 using HexInputData = std::initializer_list<std::uint64_t>;

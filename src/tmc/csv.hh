@@ -1,11 +1,10 @@
 #ifndef TMC_CSV_H_
 #define TMC_CSV_H_
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -40,8 +39,8 @@ struct CSVRow {
     return row_string.substr(offsets[i], lengths[i]);
   }
 
-  std::vector<std::size_t> offsets{};
-  std::vector<std::size_t> lengths{};
+  std::vector<std::size_t> offsets;
+  std::vector<std::size_t> lengths;
   std::string row_string;
 };
 
