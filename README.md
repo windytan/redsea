@@ -39,7 +39,7 @@ Example output:
 ## How to install
 
 Redsea needs to be built from source, but this is not very complicated. Commands are provided
-below (you can skip the `$` at the start of each command).
+below (you should skip the `$` at the start of each command).
 
 ### 1. Install dependencies
 
@@ -60,9 +60,9 @@ Or on macOS using Homebrew:
 Meson will later download nlohmann-json for you if it can't be found in the package repositories.
 
 It's also possible to build redsea on Windows, either in Cygwin or by building
-an .exe with MSYS2/MinGW. This is a bit more involved - instructions are in [the wiki][Wiki: Windows build].
+an .exe with MSYS2/MinGW. This is a bit more involved - [instructions][Wiki: Windows build] are in the wiki.
 
-[Wiki: Windows build]: (https://github.com/windytan/redsea/wiki/Installation#windows).
+[Wiki: Windows build]: https://github.com/windytan/redsea/wiki/Installation#windows
 
 ### 2. Get redsea
 
@@ -79,6 +79,9 @@ The snapshots are work-in-progress, but we attempt to always keep the main branc
         $ meson setup build && cd build
         $ meson compile
 
+If your build machine has very little RAM (e.g. Raspberry Pi) please refer to our guide
+on [building on a low-end system][Wiki: Building on a low-end system].
+
 Now the binary executable is compiled and you can run it!
 
 You can install the binary using `meson install` if you so wish. By default,
@@ -92,12 +95,7 @@ If you cloned the repository you can later get the latest updates and recompile:
         $ git pull
         $ cd build && meson compile
 
-If your Linux system has very little RAM (e.g. Raspberry Pi), please use the below
-line instead of `meson compile` to limit the number of build processes:
-
-        $ taskset -c 0 meson compile
-
-The compilation will still require at least 500 MB of free RAM.
+[Wiki: Building on a low-end system]: https://github.com/windytan/redsea/wiki/Building-on-a-low‐end-system
 
 ## Usage
 
@@ -135,29 +133,34 @@ redsea -f mpx_input.wav --output hex
 
 ## Requirements
 
-### Runtime
+### System
 
 * Linux/macOS/Windows
 * For realtime decoding, a Raspberry Pi 1 or faster
-* libiconv 1.16
-* libsndfile 1.0.31
-* [liquid-dsp][liquid-dsp] release 1.3.2
-* nlohmann-json
 * `rtl_fm` (from [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr)) or any
    other source that can output demodulated FM multiplex signals
 
+### Runtime dependencies
+
+* libiconv
+* libsndfile
+* [liquid-dsp][liquid-dsp]
+* nlohmann-json
+
 [liquid-dsp]: https://github.com/jgaeddert/liquid-dsp/releases/tag/v1.3.2
 
-### Build
+### For building
 
 * Linux/macOS/Cygwin/MSYS2+MinGW
 * C++14 compiler
 * meson + ninja
-* 500 MB of free memory for non-parallel build ([breakdown](https://github.com/windytan/redsea/issues/120#issuecomment-2559254338))
+* enough RAM (see [building on a low-end system][Wiki: Building on a low-end system])
 
-### Testing
+### Testing (optional)
 
 * Catch2
+
+See CONTRIBUTING.md for how to build and run the tests.
 
 ## Troubleshooting
 
