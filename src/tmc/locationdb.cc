@@ -18,16 +18,13 @@
 
 #include <cstdint>
 #include <exception>
-#include <ostream>
 #include <string>
 
 #include "ext/iconvpp/iconv.hpp"
 
 #include "src/tmc/csv.hh"
 
-namespace redsea {
-
-namespace tmc {
+namespace redsea::tmc {
 
 namespace {
 
@@ -182,12 +179,11 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
   return locdb;
 }
 
-std::ostream& operator<<(std::ostream& strm, const LocationDatabase& locdb) {
-  return strm << "{\"location_table_info\":{" << "\"ltn\":" << locdb.ltn << ","
-              << "\"num_points\":" << locdb.points.size() << ","
-              << "\"num_roads\":" << locdb.roads.size() << ","
-              << "\"num_names\":" << locdb.names.size() << "}}" << std::endl;
+std::string LocationDatabase::toString() const {
+  return R"({"location_table_info":{"ltn":)" + std::to_string(ltn) + "," +
+         "\"num_points\":" + std::to_string(points.size()) + "," +
+         "\"num_roads\":" + std::to_string(roads.size()) + "," +
+         "\"num_names\":" + std::to_string(names.size()) + "}}";
 }
 
-}  // namespace tmc
-}  // namespace redsea
+}  // namespace redsea::tmc

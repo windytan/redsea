@@ -1,13 +1,12 @@
-#include "events.hh"
-
 #include <array>
 #include <string>
 
-namespace redsea {
-namespace tmc {
+#include "src/tmc/eventdb.hh"
+
+namespace redsea::tmc {
 
 // clang-format off
-const std::array<std::string, 1553> tmc_data_events{
+const std::array<std::string, 1553> tmc_raw_data_events{
   "Code;Description;Description with Q;N;Q;T;D;U;C;R",
   "1;traffic problem;;;0;D;1;U;1;A50",
   "2;queuing traffic. Danger of stationary traffic;queuing traffic with average speeds (Q). Danger of stationary traffic;;4;D;1;U;1;A2.A1D",
@@ -1562,7 +1561,7 @@ const std::array<std::string, 1553> tmc_data_events{
   "2046;Convoy service required due to bad weather;;;0;D;2;U;9;Unn",
   "2047;(null message) {completely silent message, see protocol, sect. 3.5.4};;S;0;(D);2;;31;Y11" };
 
-const std::array<std::string, 233> tmc_data_suppl{
+const std::array<std::string, 233> tmc_raw_data_suppl{
   "1;heavy lorries are recommended to avoid the area",
   "2;follow signs",
   "3;follow diversion signs",
@@ -1798,5 +1797,4 @@ const std::array<std::string, 233> tmc_data_suppl{
   "255;Traffic queue length decreasing" };
 // clang-format on
 
-}  // namespace tmc
-}  // namespace redsea
+}  // namespace redsea::tmc

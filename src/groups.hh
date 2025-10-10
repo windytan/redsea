@@ -25,8 +25,6 @@
 #include <map>
 #include <string>
 
-#include <nlohmann/json.hpp>
-
 #include "src/maybe.hh"
 #include "src/options.hh"
 #include "src/rft.hh"
@@ -34,8 +32,11 @@
 #include "src/text/rdsstring.hh"
 #include "src/tmc/tmc.hh"
 #include "src/util.hh"
+#include "tree.hh"
 
 namespace redsea {
+
+class ObjectTree;
 
 // A scoped enum couldn't readily be used for indexing
 enum eBlockNumber : std::uint8_t { BLOCK1, BLOCK2, BLOCK3, BLOCK4 };
@@ -136,24 +137,24 @@ class Station {
   std::uint16_t getPI() const;
 
  private:
-  void decodeBasics(const Group& group);
-  void decodeType0(const Group& group);
-  void decodeType1(const Group& group);
-  void decodeType2(const Group& group);
-  void decodeType3A(const Group& group);
-  void decodeType4A(const Group& group);
-  void decodeType5(const Group& group);
-  void decodeType6(const Group& group);
-  void decodeType7A(const Group& group);
-  void decodeType9A(const Group& group);
-  void decodeType10A(const Group& group);
-  void decodeType14(const Group& group);
-  void decodeType15A(const Group& group);
-  void decodeType15B(const Group& group);
-  void decodeODAGroup(const Group& group);
-  void decodeC(const Group& group);
-  void parseEnhancedRT(const Group& group);
-  void parseDAB(const Group& group);
+  void decodeBasics(const Group& group, ObjectTree& out);
+  void decodeType0(const Group& group, ObjectTree& out);
+  void decodeType1(const Group& group, ObjectTree& out);
+  void decodeType2(const Group& group, ObjectTree& out);
+  void decodeType3A(const Group& group, ObjectTree& out);
+  void decodeType4A(const Group& group, ObjectTree& out);
+  void decodeType5(const Group& group, ObjectTree& out);
+  void decodeType6(const Group& group, ObjectTree& out);
+  void decodeType7A(const Group& group, ObjectTree& out);
+  void decodeType9A(const Group& group, ObjectTree& out);
+  void decodeType10A(const Group& group, ObjectTree& out);
+  void decodeType14(const Group& group, ObjectTree& out);
+  void decodeType15A(const Group& group, ObjectTree& out);
+  void decodeType15B(const Group& group, ObjectTree& out);
+  void decodeODAGroup(const Group& group, ObjectTree& out);
+  void decodeC(const Group& group, ObjectTree& out);
+  void parseEnhancedRT(const Group& group, ObjectTree& out);
+  void parseDAB(const Group& group, ObjectTree& out);
 
   std::uint16_t pi_{};
   bool has_pi_{false};
@@ -181,15 +182,13 @@ class Station {
   AltFreqList alt_freq_list_;
   Pager pager_;
 
-  nlohmann::ordered_json json_;
-
   tmc::TMCService tmc_;
 
   // One RFT file per pipe
   std::array<RFTFile, 16> rft_file_;
 };
 
-void parseRadioTextPlus(const Group& group, RadioText& rt, nlohmann::ordered_json& json_el);
+void parseRadioTextPlus(const Group& group, RadioText& rt, ObjectTree& out);
 
 }  // namespace redsea
 #endif  // GROUPS_H_

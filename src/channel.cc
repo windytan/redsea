@@ -19,7 +19,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
+#include <iosfwd>
 
 #include "src/constants.hh"
 #include "src/io/bitbuffer.hh"
@@ -38,7 +38,7 @@ namespace redsea {
  * bits, or groups. Usage of these inputs shouldn't be intermixed.
  *
  */
-Channel::Channel(const Options& options, int which_channel, std::ostream& output_stream = std::cout)
+Channel::Channel(const Options& options, int which_channel, std::ostream& output_stream)
     : options_(options),
       which_channel_(which_channel),
       output_stream_(output_stream),

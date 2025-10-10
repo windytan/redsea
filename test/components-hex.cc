@@ -2,6 +2,7 @@
 // All different kinds of messages we can receive should go here
 
 #include <cstdint>
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -466,6 +467,9 @@ TEST_CASE("RadioText Plus") {
     }, options, 0x53C5)};
     // clang-format on
 
+    REQUIRE(!json_lines.empty());
+    std::printf("%s\n", json_lines.back().dump().c_str());
+    REQUIRE(json_lines.back().contains("radiotext_plus"));
     REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["content-type"] == "item.artist");
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["data"] == "FIORELLA MANNOIA");

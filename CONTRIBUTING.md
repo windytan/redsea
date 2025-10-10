@@ -70,7 +70,7 @@ there are things we can do to make it safer and more usable for us:
   level 3.
 * Ideally, all test data comes from some actual radio station and the source is cited.
 * C++ style is described in `.clang-format`; format-on-save is recommended.
-* We aim for C++14 compatibility, so unfortunately more modern features can't be used.
+* We aim for C++17 compatibility, so unfortunately more modern features can't be used.
 * We have some static analysis rules described in `.clang-tidy`.
 * Keep in mind redsea has a real-time requirement and it might be run on some
   low-end 32-bit embedded platform. Unfortunately we don't have automated tests for

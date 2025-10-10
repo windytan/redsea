@@ -21,8 +21,8 @@
 
 #include <array>
 #include <cerrno>
+#include <cstdio>
 #include <cstdlib>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 
@@ -66,8 +66,8 @@ Options getOptions(int argc, char** argv) {
   int option_index{};
   int option_char{};
 
-  while ((option_char = getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rst:uvx", long_options.data(),
-                                    &option_index)) >= 0) {
+  while ((option_char = ::getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rst:uvx", long_options.data(),
+                                      &option_index)) >= 0) {
     switch (option_char) {
       case 0:  // Flag
         break;
@@ -198,8 +198,9 @@ Options getOptions(int argc, char** argv) {
                               !options.print_version && !options.init_error};
 
   if (assuming_raw_mpx && !options.is_rate_defined) {
-    std::cerr << R"(warning: raw MPX sample rate not defined, assuming )" << kTargetSampleRate_Hz
-              << R"( Hz)" << std::endl;
+    static_cast<void>(std::fprintf(stderr,
+                                   "warning: raw MPX sample rate not defined, assuming %.0f Hz\n",
+                                   kTargetSampleRate_Hz));
     options.samplerate = kTargetSampleRate_Hz;
   }
 

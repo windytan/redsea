@@ -119,7 +119,7 @@ const MPXBuffer& SubcarrierSet::resampleChunk(const MPXBuffer& input_chunk) {
   }
 
   // ceil(resample_ratio) is enough, as per liquid-dsp's API, but std::ceil is not constexpr in
-  // C++14
+  // C++17
   constexpr std::size_t kMaxResamplerOutputSize = static_cast<std::size_t>(kMaxResampleRatio) + 1;
   std::array<float, kMaxResamplerOutputSize> resamp_output{};
 
