@@ -22,16 +22,16 @@
 
 #include "ext/iconvpp/iconv.hpp"
 
-#include "src/tmc/csv.hh"
+#include "src/util/csv.hh"
 
 namespace redsea::tmc {
 
 namespace {
 
 // \throws Conversion errors from iconv
-std::string to_utf8(const std::string& input, const iconvpp::converter& converter) {
+std::string to_utf8(const std::string_view& input, const iconvpp::converter& converter) {
   std::string converted;
-  converter.convert(input, converted);
+  converter.convert(std::string(input), converted);
   return converted;
 }
 

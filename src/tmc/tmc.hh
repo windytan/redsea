@@ -22,7 +22,7 @@
 
 #include "src/text/rdsstring.hh"
 #include "src/tmc/message.hh"
-#include "src/util.hh"
+#include "src/util/util.hh"
 
 namespace redsea {
 

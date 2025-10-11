@@ -10,8 +10,8 @@ class ObjectTree;
 struct Options;
 
 std::string formatHex(const Group& group);
-void printAsHex(const Group& group, const Options& options, std::ostream& output_stream);
-void printAsJson(const ObjectTree& tree, std::ostream& stream);
+void printAsHex(const Group& group, const Options& options, std::ostream& output_ostream);
+void printAsJson(const ObjectTree& tree, std::ostream& output_ostream);
 
 }  // namespace redsea
 

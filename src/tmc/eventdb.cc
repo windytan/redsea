@@ -6,14 +6,14 @@
 #include <string>
 #include <utility>
 
-#include "src/tmc/csv.hh"
+#include "src/util/csv.hh"
 
 namespace redsea::tmc {
 
 namespace {
 
-std::map<std::uint16_t, Event> g_event_data;
-std::map<std::uint16_t, std::string> g_supplementary_data;
+std::map<std::uint16_t, Event> g_event_db;
+std::map<std::uint16_t, std::string> g_supplementary_descriptions;
 
 }  // namespace
 
@@ -38,29 +38,29 @@ std::uint16_t getQuantifierSize(QuantifierType qtype) {
 }
 
 bool isValidEventCode(std::uint16_t code) {
-  return g_event_data.find(code) != g_event_data.end();
+  return g_event_db.find(code) != g_event_db.end();
 }
 
 // Return a predefined TMC event by its code.
 Event getEvent(std::uint16_t code) {
-  if (g_event_data.find(code) != g_event_data.end())
-    return g_event_data.find(code)->second;
+  if (g_event_db.find(code) != g_event_db.end())
+    return g_event_db.find(code)->second;
   else
     return {};
 }
 
 bool isValidSupplementaryCode(std::uint16_t code) {
-  return g_supplementary_data.find(code) != g_supplementary_data.end();
+  return g_supplementary_descriptions.find(code) != g_supplementary_descriptions.end();
 }
 
 std::string getSupplementaryDescription(std::uint16_t code) {
-  if (g_supplementary_data.find(code) != g_supplementary_data.end())
-    return g_supplementary_data.find(code)->second;
+  if (g_supplementary_descriptions.find(code) != g_supplementary_descriptions.end())
+    return g_supplementary_descriptions.find(code)->second;
   else
     return "";
 }
 
-std::string getUrgencyString(EventUrgency u) {
+std::string_view getUrgencyString(EventUrgency u) {
   switch (u) {
     case EventUrgency::None: return "none";
     case EventUrgency::U:    return "U";
@@ -70,7 +70,7 @@ std::string getUrgencyString(EventUrgency u) {
 }
 
 bool isEventDataEmpty() {
-  return g_event_data.empty();
+  return g_event_db.empty();
 }
 
 void loadEventData() {
@@ -113,7 +113,7 @@ void loadEventData() {
 
       event.update_class = get_uint16(table, row, "C");
 
-      g_event_data[code] = std::move(event);
+      g_event_db[code] = std::move(event);
     } catch (const std::exception&) {
       continue;
     }
@@ -123,10 +123,10 @@ void loadEventData() {
     if (row.lengths.size() < 2)
       continue;
 
-    const auto code         = static_cast<std::uint16_t>(std::stoi(row.at(0)));
-    const std::string& desc = row.at(1);
+    const auto code = get_uint16(row, 0);
+    const auto desc = row.at(1);
 
-    g_supplementary_data.insert({code, desc});
+    g_supplementary_descriptions.insert({code, std::string{desc}});
   }
 }
 

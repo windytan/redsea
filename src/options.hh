@@ -23,9 +23,9 @@
 
 namespace redsea {
 
-enum class InputType { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
+enum class InputType : uint8_t { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
 
-enum class OutputType { Hex, JSON };
+enum class OutputType : uint8_t { Hex, JSON };
 
 struct Options {
   bool rbds{};

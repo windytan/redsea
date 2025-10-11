@@ -20,10 +20,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <iterator>
 #include <numeric>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "ext/iconvpp/iconv.hpp"
@@ -34,9 +34,9 @@ namespace {
 
 // EN 50067:1998, Annex E (pp. 73-76)
 // plus UCS-2 control codes
-std::string getRDSCharString(std::uint8_t code) {
+std::string_view getRDSCharString(std::uint8_t code) {
   // clang-format off
-  static const std::array<std::string, 256> codetable_G0({
+  constexpr std::array<std::string_view, 256> codetable_G0({
     " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", "\n"," ", " ", "\r"," ", " ",
     " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", "\u00AD",
     " ", "!", "\"","#", "¤", "%", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/",
@@ -67,6 +67,25 @@ std::string decodeUCS2(const std::string& src) {
   return dst;
 }
 
+// Length of a UTF-8 character starting at byte_start.
+// 0 on error.
+inline std::size_t charlen(const std::string& str, std::size_t byte_start) {
+  std::size_t nbyte{byte_start};
+
+  if (nbyte >= str.length())
+    return 0;
+
+  // While continuation bytes are seen
+  while ((static_cast<std::uint8_t>(str[nbyte]) & 0b1100'0000U) == 0b1000'0000U) {
+    nbyte++;
+
+    if (nbyte >= str.length())
+      return 0;
+  }
+
+  return nbyte - byte_start + 1;
+}
+
 constexpr std::uint8_t kStringTerminator{0x0D};
 constexpr std::uint8_t kBlankSpace{0x20};
 
@@ -86,7 +105,7 @@ void RDSString::set(std::size_t pos, std::uint8_t byte) {
   if (isComplete()) {
     try {
       last_complete_string_ = str();
-    } catch (std::exception&) {
+    } catch (...) {
       clear();
       return;
     }
@@ -141,9 +160,10 @@ std::string RDSString::str() const {
 
   switch (encoding_) {
     case Encoding::Basic:
-      return std::accumulate(
-          bytes.cbegin(), bytes.cend(), std::string(""),
-          [](const std::string& s, std::uint8_t b) { return s + getRDSCharString(b); });
+      return std::accumulate(bytes.cbegin(), bytes.cend(), std::string(""),
+                             [](const std::string& s, std::uint8_t b) {
+                               return s + std::string{getRDSCharString(b)};
+                             });
 
     case Encoding::UCS2:
       return decodeUCS2(std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size()));

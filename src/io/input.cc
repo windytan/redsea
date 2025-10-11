@@ -24,7 +24,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
-#include <exception>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -32,7 +31,7 @@
 #include <sndfile.h>
 
 #include "src/constants.hh"
-#include "src/groups.hh"
+#include "src/group.hh"
 #include "src/options.hh"
 
 namespace redsea {
@@ -90,7 +89,7 @@ void MPXReader::init(const Options& options) {
                              " Hz, must be " + "no higher than " +
                              std::to_string(static_cast<int>(kMaximumSampleRate_Hz)) + " Hz");
   } else {
-    chunk_size_ = static_cast<sf_count_t>((kInputChunkSize / num_channels_) * num_channels_);
+    chunk_size_ = (static_cast<sf_count_t>(kInputChunkSize) / num_channels_) * num_channels_;
 
     is_eof_ = (num_channels_ >= buffer_.data.size());
   }
@@ -109,7 +108,7 @@ bool MPXReader::eof() const {
 
 /*
  * Fill the internal buffer with fresh samples. This should be called before
- * the first channel is processed via ReadChunk().
+ * the first channel is processed via readChunk().
  *
  */
 void MPXReader::fillBuffer() {
@@ -164,15 +163,15 @@ std::uint32_t MPXReader::getNumChannels() const {
  */
 AsciiBitReader::AsciiBitReader(const Options& options) : feed_thru_(options.feed_thru) {}
 
-bool AsciiBitReader::readBit() {
+bool AsciiBitReader::readBit(std::istream& input_stream) {
   int chr = 0;
-  while (chr != '0' && chr != '1' && chr != EOF) {
-    chr = std::getchar();
+  while (chr != '0' && chr != '1' && chr != std::char_traits<char>::eof()) {
+    chr = input_stream.get();
     if (feed_thru_)
-      std::putchar(chr);
+      static_cast<void>(std::putchar(chr));
   }
 
-  if (chr == EOF)
+  if (chr == std::char_traits<char>::eof())
     is_eof_ = true;
 
   return (chr == '1');
@@ -186,15 +185,15 @@ bool AsciiBitReader::eof() const {
  * Read a single line containing an RDS group in the RDS Spy hex format.
  *
  */
-Group readHexGroup(const Options& options) {
+Group readHexGroup(const Options& options, std::istream& input_stream) {
   Group group;
   group.disableOffsets();
 
   bool group_complete = false;
 
-  while (!(group_complete || std::cin.eof())) {
+  while (!(group_complete || input_stream.eof())) {
     std::string line;
-    std::getline(std::cin, line);
+    std::getline(input_stream, line);
     if (options.feed_thru)
       std::cout << line << '\n';
 
@@ -217,7 +216,9 @@ Group readHexGroup(const Options& options) {
       int which_nibble = 0;
       while (which_nibble < 4) {
         if (line.length() < 1) {
-          group_complete = true;
+          // Abrupt end of line
+          block_still_valid = false;
+          group_complete    = true;
           break;
         }
 
@@ -227,7 +228,7 @@ Group readHexGroup(const Options& options) {
           try {
             const int nval = std::stoi(std::string(single), nullptr, 16);
             block.data     = static_cast<std::uint16_t>((block.data << 4U) + nval);
-          } catch (std::exception&) {
+          } catch (...) {
             block_still_valid = false;
           }
           which_nibble++;
@@ -271,7 +272,7 @@ Group readTEFGroup(const Options& options) {
         line               = line.substr(1);
         block1.data        = static_cast<std::uint16_t>(std::stol(line, nullptr, 16));
         block1.is_received = true;
-      } catch (const std::exception&) {
+      } catch (...) {
         continue;
       }
       group.setBlock(BLOCK1, block1);
@@ -295,7 +296,7 @@ Group readTEFGroup(const Options& options) {
         group.setBlock(BLOCK2, blocks[0]);
         group.setBlock(BLOCK3, blocks[1]);
         group.setBlock(BLOCK4, blocks[2]);
-      } catch (const std::exception&) {
+      } catch (...) {
         break;
       }
       break;

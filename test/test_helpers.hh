@@ -5,17 +5,19 @@
 
 #include "../src/block_sync.hh"
 #include "../src/channel.hh"
-#include "../src/groups.hh"
+#include "../src/group.hh"
+#include "../src/io/input.hh"
 #include "../src/options.hh"
 
 #include <cstdint>
 #include <initializer_list>
 #include <sstream>
+#include <string>
 #include <vector>
 
 using HexInputData = std::initializer_list<std::uint64_t>;
 
-enum class DeleteOneBlock { Block1 = 0, Block2, Block3, Block4, None };
+enum class DeleteOneBlock : std::uint8_t { Block1 = 0, Block2, Block3, Block4, None };
 
 // Convert synchronized hex data into groups. Error correction is omitted and ignored.
 // \param block_to_delete Simulate losing some block to noise (same block in every group)
@@ -29,7 +31,7 @@ inline std::vector<redsea::Group> hex2groups(const HexInputData& input_data,
     group.disableOffsets();
     for (auto nblock : {redsea::BLOCK1, redsea::BLOCK2, redsea::BLOCK3, redsea::BLOCK4}) {
       redsea::Block block;
-      block.data        = hexgroup >> (16 * (3 - static_cast<int>(nblock))) & 0xFFFF;
+      block.data        = (hexgroup >> (16U * (3U - static_cast<int>(nblock)))) & 0xFFFFU;
       block.is_received = static_cast<int>(nblock) != static_cast<int>(block_to_delete);
       group.setBlock(nblock, block);
     }
@@ -45,12 +47,12 @@ inline std::vector<nlohmann::ordered_json> asciibin2json(const std::string& bind
   std::vector<nlohmann::ordered_json> result;
 
   std::stringstream json_stream;
-  redsea::Channel channel(options, 0, json_stream);
+  redsea::Channel channel(options, 0);
 
   for (const auto& ascii_bit : bindata) {
     const int bit{ascii_bit == '1' ? 1 : 0};
 
-    channel.processBit(bit, 0);
+    channel.processBit(bit, 0, json_stream);
     if (!json_stream.str().empty()) {
       nlohmann::ordered_json jsonroot;
       json_stream >> jsonroot;
@@ -71,8 +73,11 @@ inline std::vector<redsea::Group> asciibin2groups(const std::string& bindata,
   redsea::BlockStream block_stream;
   block_stream.init(options);
 
-  for (const auto& ascii_bit : bindata) {
-    const int bit{ascii_bit == '1' ? 1 : 0};
+  std::stringstream ss(bindata);
+  redsea::AsciiBitReader ascii_reader(options);
+
+  while (!ascii_reader.eof()) {
+    const bool bit{ascii_reader.readBit(ss)};
 
     block_stream.pushBit(bit);
     if (block_stream.hasGroupReady()) {
@@ -90,11 +95,11 @@ inline std::vector<nlohmann::ordered_json> groups2json(const std::vector<redsea:
   std::vector<nlohmann::ordered_json> result;
 
   std::stringstream json_stream;
-  redsea::Channel channel(options, json_stream, pi);
+  redsea::Channel channel(options, 0, pi);
   for (const auto& group : data) {
     json_stream.str("");
     json_stream.clear();
-    channel.processGroup(group, 0);
+    channel.processAndPrintGroup(group, 0, json_stream);
     if (!json_stream.str().empty()) {
       nlohmann::ordered_json jsonroot;
       json_stream >> jsonroot;

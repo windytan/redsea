@@ -35,7 +35,7 @@ extern "C" {
 }
 #pragma clang diagnostic pop
 
-#include "src/maybe.hh"
+#include "src/util/maybe.hh"
 
 namespace redsea {
 
@@ -84,6 +84,7 @@ class FIRFilter {
   firfilt_crcf object_{nullptr};
 };
 
+// A quad NCO, for up to 4 streams
 class NCO {
  public:
   NCO() = default;

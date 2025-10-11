@@ -5,11 +5,16 @@
 #include <cstdlib>
 #include <fstream>
 #include <string>
+#include <variant>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
-#include "../src/block_sync.hh"
-#include "../src/tmc/csv.hh"
+#include "../src/rft.hh"
+#include "../src/util/base64.hh"
+#include "../src/util/csv.hh"
+#include "../src/util/tree.hh"
+#include "../src/util/util.hh"
 
 TEST_CASE("Bitfield extraction") {
   constexpr std::uint16_t block1{0b0001'0010'0011'0100};
@@ -124,7 +129,7 @@ TEST_CASE("Base64 encoding") {
   const std::string encoded3 = redsea::asBase64(test_string3.c_str(), test_string3.size());
   CHECK(encoded3 == "bGlnaHQgdw==");
 
-  const std::string test_string4{""};
+  const std::string test_string4{};
   const std::string encoded4 = redsea::asBase64(test_string4.c_str(), test_string4.size());
   CHECK(encoded4 == "");
 }
@@ -200,7 +205,7 @@ TEST_CASE("ObjectTree") {
     CHECK(std::holds_alternative<redsea::ObjectTree::array_t>(tree["array"].get()));
     CHECK(std::get<redsea::ObjectTree::array_t>(tree["array"].get()).size() == 2);
 
-    // Change already existing array element
+    // Change an already existing array element
     tree["array"][0] = "0";
     const auto str =
         std::get<std::string>(std::get<redsea::ObjectTree::array_t>(tree["array"].get())[0].get());

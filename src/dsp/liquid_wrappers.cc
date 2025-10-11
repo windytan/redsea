@@ -34,6 +34,18 @@ extern "C" {
 
 namespace liquid {
 
+namespace {
+
+float unwrap(float phase) {
+  if (phase > kPi)
+    return phase - k2Pi;
+  if (phase < -kPi)
+    return phase + k2Pi;
+  return phase;
+}
+
+}  // namespace
+
 void AGC::init(float bw, float initial_gain) {
   if (object_ != nullptr)
     agc_crcf_destroy(object_);
@@ -108,14 +120,6 @@ void NCO::reset() {
 
 std::complex<float> NCO::mixDown(std::complex<float> s, int n_stream) {
   return s * std::polar(1.f, -phases_[n_stream]);
-}
-
-float unwrap(float phase) {
-  if (phase > kPi)
-    return phase - k2Pi;
-  if (phase < -kPi)
-    return phase + k2Pi;
-  return phase;
 }
 
 void NCO::step() {

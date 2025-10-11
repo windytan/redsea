@@ -25,6 +25,7 @@
 #include "src/dsp/liquid_wrappers.hh"
 #include "src/io/bitbuffer.hh"
 #include "src/io/input.hh"
+#include "src/util/maybe.hh"
 
 namespace redsea {
 
@@ -35,6 +36,9 @@ class BiphaseDecoder {
 
  private:
   std::complex<float> prev_psk_symbol_{0.0f, 0.0f};
+
+  // Every other value should be ~1 and every other ~0; we use it to keep the biphase reading window
+  // in sync
   std::array<float, 128> clock_history_{};
   std::uint32_t clock_{};
   std::uint32_t clock_polarity_{};
@@ -43,10 +47,10 @@ class BiphaseDecoder {
 class DeltaDecoder {
  public:
   DeltaDecoder() = default;
-  std::uint32_t decode(std::uint32_t d);
+  bool decode(bool input_bit);
 
  private:
-  std::uint32_t prev_{0};
+  bool prev_input_{};
 };
 
 // \brief Demodulation context for one subcarrier
@@ -64,10 +68,11 @@ struct Demod {
 class SubcarrierSet {
  public:
   explicit SubcarrierSet(float samplerate);
-  bool eof() const;
-  BitBuffer processChunk(const MPXBuffer& input_chunk, int num_data_streams);
+  BitBuffer chunkToBits(const MPXBuffer& input_chunk, int num_data_streams);
   void reset();
-  float getSecondsSinceLastReset() const;
+
+  [[nodiscard]] bool eof() const;
+  [[nodiscard]] float getSecondsSinceLastReset() const;
 
  private:
   const MPXBuffer& resampleChunk(const MPXBuffer& input_chunk);
@@ -84,7 +89,7 @@ class SubcarrierSet {
 
   liquid::Resampler resampler_;
 
-  std::array<Demod, 4> demods_;
+  std::array<Demod, 4> datastream_demods_;
 
   MPXBuffer resampled_chunk_{};
 

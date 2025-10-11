@@ -1,8 +1,9 @@
 #include "output.hh"
 
-#include "src/groups.hh"
+#include "src/group.hh"
 #include "src/options.hh"
-#include "src/tree.hh"
+#include "src/util/tree.hh"
+#include "src/util/util.hh"
 
 #include <iomanip>
 #include <ostream>
@@ -17,7 +18,7 @@ namespace {
 
 // Convert an ObjectTree to nlohmann::json.
 // NOLINTNEXTLINE(misc-no-recursion)
-nlohmann::ordered_json convertToJson(const ObjectTree& lj) {
+nlohmann::ordered_json toJson(const ObjectTree& lj) {
   const auto& v = lj.get();
   if (std::holds_alternative<std::nullptr_t>(v))
     return nullptr;
@@ -31,12 +32,12 @@ nlohmann::ordered_json convertToJson(const ObjectTree& lj) {
     return std::get<std::string>(v);
   if (std::holds_alternative<ObjectTree::object_t>(v)) {
     nlohmann::ordered_json j = nlohmann::ordered_json::object();
-    for (auto& [k, child] : std::get<ObjectTree::object_t>(v)) j[k] = convertToJson(child);
+    for (auto& [k, child] : std::get<ObjectTree::object_t>(v)) j[k] = toJson(child);
     return j;
   }
   if (std::holds_alternative<ObjectTree::array_t>(v)) {
     nlohmann::ordered_json j = nlohmann::ordered_json::array();
-    for (auto& child : std::get<ObjectTree::array_t>(v)) j.push_back(convertToJson(child));
+    for (auto& child : std::get<ObjectTree::array_t>(v)) j.push_back(toJson(child));
     return j;
   }
   return {};  // should not happen
@@ -44,36 +45,36 @@ nlohmann::ordered_json convertToJson(const ObjectTree& lj) {
 
 }  // namespace
 
-void printAsHex(const Group& group, const Options& options, std::ostream& output_stream) {
+void printAsHex(const Group& group, const Options& options, std::ostream& output_ostream) {
   if (!group.isEmpty()) {
     if (group.getDataStream() > 0) {
-      output_stream << "#S" << group.getDataStream() << " ";
+      output_ostream << "#S" << group.getDataStream() << ' ';
     }
-    group.printHex(output_stream);
+    output_ostream << group.asHex();
     if (options.timestamp) {
-      output_stream << ' ' << getTimePointString(group.getRxTime(), options.time_format);
+      output_ostream << ' ' << getTimePointString(group.getRxTime().value, options.time_format);
     }
-    if (options.time_from_start && group.getTimeFromStart().valid) {
-      output_stream << ' ' << std::fixed << std::setprecision(6) << group.getTimeFromStart().data;
+    if (options.time_from_start && group.getTimeFromStart().has_value) {
+      output_ostream << ' ' << std::fixed << std::setprecision(6) << group.getTimeFromStart().value;
     }
-    output_stream << '\n' << std::flush;
+    output_ostream << '\n' << std::flush;
   }
 }
 
-void printAsJson(const ObjectTree& tree, std::ostream& stream) {
-  const nlohmann::ordered_json json = convertToJson(tree);
+void printAsJson(const ObjectTree& tree, std::ostream& output_ostream) {
+  const nlohmann::ordered_json json = toJson(tree);
 
   try {
-    // nlohmann::operator<< throws if a string contains non-UTF8 data.
+    // nlohmann::operator<< throws if a string contains non-UTF8 data!
     // It's better to throw while writing to a stringstream; otherwise
     // incomplete JSON objects could get printed.
     std::stringstream output_proxy_stream;
     output_proxy_stream << json;
-    stream << output_proxy_stream.str() << std::endl;
+    output_ostream << output_proxy_stream.str() << std::endl;
   } catch (const std::exception& e) {
     nlohmann::ordered_json json_from_exception;
     json_from_exception["debug"] = std::string(e.what());
-    stream << json_from_exception << std::endl;
+    output_ostream << json_from_exception << std::endl;
   }
 }
 
