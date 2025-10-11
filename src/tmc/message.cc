@@ -9,12 +9,13 @@
 #include <cstring>
 #include <deque>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include "src/tmc/eventdb.hh"
-#include "src/tree.hh"
-#include "src/util.hh"
+#include "src/util/tree.hh"
+#include "src/util/util.hh"
 
 namespace redsea::tmc {
 
@@ -102,11 +103,11 @@ std::string getTimeString(std::uint16_t field_data) {
   } else {
     const std::uint16_t month = (field_data - 232) / 2;
     const bool end_or_mid     = (field_data - 232) % 2;
-    const std::array<std::string, 12> month_names{"January",   "February", "March",    "April",
-                                                  "May",       "June",     "July",     "August",
-                                                  "September", "October",  "November", "December"};
+    constexpr std::array<std::string_view, 12> month_names{
+        "January", "February", "March",     "April",   "May",      "June",
+        "July",    "August",   "September", "October", "November", "December"};
     if (month < 12)
-      return (end_or_mid ? "end of " : "mid-") + month_names[month];
+      return (end_or_mid ? "end of " : "mid-") + std::string{month_names[month]};
   }
 
   return "";

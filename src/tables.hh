@@ -19,16 +19,17 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 namespace redsea {
 
-std::string getPTYNameString(std::uint16_t pty);
-std::string getPTYNameStringRBDS(std::uint16_t pty);
-std::string getCountryString(std::uint16_t cc, std::uint16_t ecc);
-std::string getLanguageString(std::uint16_t code);
-std::string getAppNameString(std::uint16_t aid);
-std::string getRTPlusContentTypeString(std::uint32_t content_type);
-std::string getDICodeString(std::uint16_t di);
+std::string_view getPTYNameString(std::uint16_t pty);
+std::string_view getPTYNameStringRBDS(std::uint16_t pty);
+std::string_view getCountryString(std::uint16_t cc, std::uint16_t ecc);
+std::string_view getLanguageString(std::uint16_t code);
+std::string_view getAppNameString(std::uint16_t aid);
+std::string_view getRTPlusContentTypeString(std::uint32_t content_type);
+std::string_view getDICodeString(std::uint16_t di);
 std::string getCallsignFromPI(std::uint16_t pi);
 
 }  // namespace redsea

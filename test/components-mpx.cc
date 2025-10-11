@@ -29,41 +29,98 @@ TEST_CASE("MPX file input") {
   options.sndfilename = "../test/resources/mpx-testfile-yksi.flac";
   options.input_type  = redsea::InputType::MPX_sndfile;
 
-  std::vector<nlohmann::ordered_json> json;
-
   redsea::MPXReader mpx;
   mpx.init(options);
   options.samplerate   = mpx.getSamplerate();
   options.num_channels = mpx.getNumChannels();
 
-  std::stringstream json_stream;
-  redsea::Channel channel(options, 0, json_stream);
   redsea::SubcarrierSet subcarriers(options.samplerate);
 
-  while (!mpx.eof()) {
-    mpx.fillBuffer();
-    const auto bits = subcarriers.processChunk(mpx.readChunk(0), 1);
+  std::stringstream output_stream;
 
-    for (const auto& bit : bits.bits[0]) {
-      channel.processBit(bit.value, 0);
-      if (!json_stream.str().empty()) {
-        nlohmann::ordered_json jsonroot;
-        json_stream >> jsonroot;
-        json.push_back(jsonroot);
+  SECTION("To hex") {
+    options.output_type = redsea::OutputType::Hex;
+    redsea::Channel channel(options, 0);
 
-        json_stream.str("");
-        json_stream.clear();
+    bool success{};
+
+    while (!mpx.eof()) {
+      mpx.fillBuffer();
+      const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), 1);
+
+      channel.processBits(bits, output_stream);
+
+      if (!output_stream.str().empty()) {
+        SUCCEED();
+        success = true;
+        break;
       }
+    }
+
+    if (!success) {
+      FAIL();
     }
   }
 
-  CHECK(json.size() == 2);
-  CHECK(json.at(0)["pi"] == "0x6201");
-  CHECK(json.at(0)["prog_type"] == "Serious classical");
+  SECTION("To JSON") {
+    redsea::Channel channel(options, 0);
+
+    std::vector<nlohmann::ordered_json> json;
+
+    while (!mpx.eof()) {
+      mpx.fillBuffer();
+      const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), 1);
+
+      channel.processBits(bits, output_stream);
+
+      if (!output_stream.str().empty()) {
+        nlohmann::ordered_json jsonroot;
+        output_stream >> jsonroot;
+        json.push_back(jsonroot);
+
+        output_stream.str("");
+        output_stream.clear();
+      }
+    }
+
+    CHECK(json.size() == 2);
+    CHECK(json.at(0)["pi"] == "0x6201");
+    CHECK(json.at(0)["prog_type"] == "Serious classical");
+  }
+
+  SECTION("Timestamp") {
+    options.timestamp = true;
+    redsea::Channel channel(options, 0);
+
+    std::vector<nlohmann::ordered_json> json;
+
+    while (!mpx.eof()) {
+      mpx.fillBuffer();
+      const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), 1);
+      channel.processBits(bits, output_stream);
+
+      if (!output_stream.str().empty()) {
+        nlohmann::ordered_json jsonroot;
+        output_stream >> jsonroot;
+        json.push_back(jsonroot);
+
+        output_stream.str("");
+        output_stream.clear();
+      }
+    }
+
+    REQUIRE(!json.empty());
+    REQUIRE(json.back().contains("rx_time"));
+
+    // There's not much else we can confidently test here without mocking system_clock
+  }
 }
 
 TEST_CASE("RDS2/RFT station logo from MPX") {
   redsea::Options options;
+
+  // This test signal was generated with Anthony96922's MiniRDS
+  // https://github.com/Anthony96922/MiniRDS
 
   options.sndfilename = "../test/resources/rds2-minirds-192k.flac";
   options.input_type  = redsea::InputType::MPX_sndfile;
@@ -75,16 +132,17 @@ TEST_CASE("RDS2/RFT station logo from MPX") {
   options.num_channels = mpx.getNumChannels();
 
   std::stringstream json_stream;
-  redsea::Channel channel(options, 0, json_stream);
+  redsea::Channel channel(options, 0);
   redsea::SubcarrierSet subcarriers(options.samplerate);
 
   constexpr int num_streams = 4;
+  bool success{};
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
-    const auto bits = subcarriers.processChunk(mpx.readChunk(0), num_streams);
+    const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), num_streams);
 
-    channel.processBits(bits);
+    channel.processBits(bits, json_stream);
     if (!json_stream.str().empty()) {
       nlohmann::ordered_json jsonroot;
       std::string line;
@@ -98,7 +156,8 @@ TEST_CASE("RDS2/RFT station logo from MPX") {
                 "0ICAWtkTSBI8K38CKSJCGnC3taGZLrTnp+9SxTKVprRi2aLGNBHK1bOmgfB6za0p"
                 "E45fijU1+g8vzrC0S1+S2vwAAAAASUVORK5CYII=");
           SUCCEED();
-          return;
+          success = true;
+          break;
         }
       }
 
@@ -107,7 +166,9 @@ TEST_CASE("RDS2/RFT station logo from MPX") {
     }
   }
 
-  FAIL();
+  if (!success) {
+    FAIL();
+  }
 }
 
 TEST_CASE("Time from start") {
@@ -124,18 +185,18 @@ TEST_CASE("Time from start") {
   options.num_channels = mpx.getNumChannels();
 
   std::stringstream json_stream;
-  redsea::Channel channel(options, 0, json_stream);
+  redsea::Channel channel(options, 0);
   redsea::SubcarrierSet subcarriers(options.samplerate);
 
   // One array element for each stream
-  constexpr int n_streams{4};
-  std::array<std::vector<double>, n_streams> seen_timestamps{};
+  constexpr int kNStreams{4};
+  std::array<std::vector<double>, kNStreams> seen_timestamps{};
 
   while (!mpx.eof()) {
     mpx.fillBuffer();
-    const auto bits = subcarriers.processChunk(mpx.readChunk(0), n_streams);
+    const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), kNStreams);
 
-    channel.processBits(bits);
+    channel.processBits(bits, json_stream);
     if (!json_stream.str().empty()) {
       nlohmann::ordered_json jsonroot;
       // Process each newline-terminated line one-by-one
@@ -146,7 +207,7 @@ TEST_CASE("Time from start") {
         REQUIRE(jsonroot.contains("time_from_start"));
         REQUIRE(jsonroot.contains("stream"));
         REQUIRE(jsonroot["stream"].is_number());
-        REQUIRE(jsonroot["stream"].get<int>() < n_streams);
+        REQUIRE(jsonroot["stream"].get<int>() < kNStreams);
         seen_timestamps[jsonroot["stream"].get<int>()].push_back(jsonroot["time_from_start"]);
       }
 
@@ -164,8 +225,15 @@ TEST_CASE("Time from start") {
   constexpr double kBitDuration   = 1 / 1187.5;
   constexpr double kGroupDuration = 104 * kBitDuration;
 
-  /* If you demodulate stream 0 of the test file, with a zero-delay demodulator (outside of redsea),
-     you can then visually get the following timestamps for reference:
+  // We used a simple BPSK demodulator to measure this offset in the FLAC file
+  // (It's where the first group starts in stream 0)
+  constexpr double kOverallShiftInTestFile_ms = 18.208;
+
+  constexpr double kGroupDurationMargin_ms            = 0.2;
+  constexpr double kAbsoluteTimeStream0Margin_ms      = 0.2;
+  constexpr double kAbsoluteTimeOtherStreamsMargin_ms = 1.6;
+
+  /* Measured manually in rds2-minirds-192k.flac:
     0.018208,1000 0008 E0CD 4D69
     0.105786,1000 2003 7477 6172
     0.193365,1000 0009 E0CD 6E69
@@ -176,7 +244,7 @@ TEST_CASE("Time from start") {
     ....
   */
 
-  for (int n_stream{}; n_stream < n_streams; n_stream++) {
+  for (int n_stream{}; n_stream < kNStreams; n_stream++) {
     double previous_timestamp{};
     int n_timestamp{};
 
@@ -188,13 +256,16 @@ TEST_CASE("Time from start") {
 
         // Groups should last 104 bits +/- 200 μs
         REQUIRE_THAT(timestamp - previous_timestamp,
-                     Catch::Matchers::WithinAbs(kGroupDuration, 2e-4));
+                     Catch::Matchers::WithinAbs(kGroupDuration, kGroupDurationMargin_ms * 1e-3));
 
         // The general offset of all groups in this test file
         // (It was only properly measured for stream 0 and the streams are offset from each other)
-        const double offset_margin_seconds = n_stream == 0 ? 0.0002 : 0.0016;
-        REQUIRE_THAT(std::fmod(timestamp, kGroupDuration),
-                     Catch::Matchers::WithinAbs(0.018208, offset_margin_seconds));
+        const double offset_margin_seconds = n_stream == 0
+                                                 ? kAbsoluteTimeStream0Margin_ms * 1e-3
+                                                 : kAbsoluteTimeOtherStreamsMargin_ms * 1e-3;
+        REQUIRE_THAT(
+            std::fmod(timestamp, kGroupDuration),
+            Catch::Matchers::WithinAbs(kOverallShiftInTestFile_ms * 1e-3, offset_margin_seconds));
       }
       previous_timestamp = timestamp;
       n_timestamp++;

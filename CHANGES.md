@@ -7,11 +7,17 @@ We use [semantic versioning](https://semver.org/).
 * New features:
   * File offset timestamp (`--time-from-start`) shows the position of each group's
     first bit in the input stream in seconds (see [wiki](https://github.com/windytan/redsea/wiki/Time-and-timestamps#file-offset-times))
-* Other improvements:
+* Deprecated features:
+  * "Radio paging" is deprecated and will be removed later. We couldn't find any real data to test
+    it on and the feature has been deprecated by RDS Forum since 2021.
+* Other fixes:
   * Don't print a warning about sample rate when no samples expected (#140).
-* CI etc:
+  * Fixed a case where zeros were added to clipped hex input lines instead of marking them erroneous.
+* Refactoring, CI, etc:
   * Remove build check for Ubuntu 20.04 as it's not available any more for runners
   * Replaced Debian 10 build check with Debian 11
+  * Decoupled some big libraries to make the build a little quicker on low-end systems
+  * C++17 is now required, to make the above possible
 
 ## 1.2.0 (2025-04-15)
 

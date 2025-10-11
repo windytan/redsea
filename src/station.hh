@@ -14,119 +14,28 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#ifndef GROUPS_H_
-#define GROUPS_H_
+#ifndef STATION_HH_
+#define STATION_HH_
 
 #include <array>
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <iosfwd>
 #include <map>
 #include <string>
 
-#include "src/maybe.hh"
+#include "src/group.hh"
 #include "src/options.hh"
 #include "src/rft.hh"
 #include "src/text/radiotext.hh"
 #include "src/text/rdsstring.hh"
 #include "src/tmc/tmc.hh"
-#include "src/util.hh"
-#include "tree.hh"
+#include "src/util/tree.hh"
+#include "src/util/util.hh"
 
 namespace redsea {
 
 class ObjectTree;
-
-// A scoped enum couldn't readily be used for indexing
-enum eBlockNumber : std::uint8_t { BLOCK1, BLOCK2, BLOCK3, BLOCK4 };
-
-enum class Offset : std::uint8_t { A, B, C, Cprime, D, invalid };
-
-class Block {
- public:
-  std::uint32_t raw{};
-  std::uint16_t data{};
-  bool is_received{false};
-  bool had_errors{false};
-  Offset offset{Offset::invalid};
-};
-
-class GroupType {
- public:
-  enum class Version : std::uint8_t { A, B, C };
-
-  GroupType() = default;
-  explicit GroupType(std::uint16_t type_code);
-
-  std::string str() const;
-
-  std::uint16_t number{};
-  Version version{Version::A};
-};
-
-bool operator<(const GroupType& type1, const GroupType& type2);
-
-class Pager {
- public:
-  int pac{};
-  int opc{};
-  int paging_code{};
-  int ecc{};
-  int ccf{};
-  int interval{};
-  void decode1ABlock4(std::uint16_t block4);
-};
-
-/*
- * A single RDS group transmitted as four 16-bit blocks.
- *
- */
-class Group {
- public:
-  Group() = default;
-
-  std::uint16_t get(eBlockNumber block_num) const;
-  bool has(eBlockNumber block_num) const;
-
-  bool isEmpty() const;
-  GroupType getType() const;
-  bool hasType() const;
-  std::uint16_t getPI() const;
-  float getBLER() const;
-  int getNumErrors() const;
-  Maybe<double> getTimeFromStart() const;
-
-  bool hasPI() const;
-  bool hasBLER() const;
-  bool hasRxTime() const;
-  std::chrono::time_point<std::chrono::system_clock> getRxTime() const;
-  void printHex(std::ostream& stream) const;
-  void setVersionC();
-  void setDataStream(std::uint32_t stream);
-  std::uint32_t getDataStream() const;
-
-  void disableOffsets();
-  void setBlock(eBlockNumber block_num, Block block);
-  void setRxTime(std::chrono::time_point<std::chrono::system_clock> t);
-  void setAverageBLER(float bler);
-  void setTimeFromStart(double time_from_start);
-
- private:
-  GroupType type_;
-  std::array<Block, 4> blocks_;
-  std::chrono::time_point<std::chrono::system_clock> time_received_;
-  float bler_{0.f};
-  std::uint32_t data_stream_{0};
-  // Seconds from the beginning of the file until the first bit of this group
-  double time_from_start_{0.0};
-  bool has_type_{false};
-  bool has_c_prime_{false};
-  bool has_bler_{false};
-  bool has_rx_time_{false};
-  bool has_time_from_start_{false};
-  bool no_offsets_{false};
-};
 
 class Station {
  public:
@@ -180,7 +89,6 @@ class Station {
   std::map<std::uint16_t, AltFreqList> eon_alt_freqs_;
   bool last_group_had_pi_{false};
   AltFreqList alt_freq_list_;
-  Pager pager_;
 
   tmc::TMCService tmc_;
 
@@ -191,4 +99,4 @@ class Station {
 void parseRadioTextPlus(const Group& group, RadioText& rt, ObjectTree& out);
 
 }  // namespace redsea
-#endif  // GROUPS_H_
+#endif  // STATION_HH_

@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 namespace redsea::tmc {
 
@@ -80,10 +81,10 @@ bool isValidEventCode(std::uint16_t code);
 Event getEvent(std::uint16_t code);
 bool isValidSupplementaryCode(std::uint16_t code);
 std::string getSupplementaryDescription(std::uint16_t code);
-std::string getUrgencyString(EventUrgency u);
+std::string_view getUrgencyString(EventUrgency u);
 
-extern const std::array<std::string, 1553> tmc_raw_data_events;
-extern const std::array<std::string, 233> tmc_raw_data_suppl;
+extern const std::array<std::string_view, 1553> tmc_raw_data_events;
+extern const std::array<std::string_view, 233> tmc_raw_data_suppl;
 
 bool isEventDataEmpty();
 void loadEventData();

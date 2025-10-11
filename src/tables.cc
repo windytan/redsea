@@ -16,18 +16,19 @@
  */
 #include "src/tables.hh"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
-#include <map>
 #include <string>
+#include <string_view>
 
 namespace redsea {
 
 // Program Type names (RDS)
 // EN 50067:1998, Annex F (pp. 77-78)
-std::string getPTYNameString(std::uint16_t pty) {
+std::string_view getPTYNameString(std::uint16_t pty) {
   // clang-format off
-  const std::array<std::string, 64> pty_names{
+  constexpr std::array<std::string_view, 64> pty_names{
     "No PTY",         "News",            "Current affairs",       "Information",
     "Sport",          "Education",       "Drama",                 "Culture",
     "Science",        "Varied",          "Pop music",             "Rock music",
@@ -43,9 +44,9 @@ std::string getPTYNameString(std::uint16_t pty) {
 
 // Program Type names (U.S. / RBDS)
 // U.S. RBDS Standard 1998, Annex F (pp. 95-96)
-std::string getPTYNameStringRBDS(std::uint16_t pty) {
+std::string_view getPTYNameStringRBDS(std::uint16_t pty) {
   // clang-format off
-  const std::array<std::string, 64> pty_names_rbds{
+  constexpr std::array<std::string_view, 64> pty_names_rbds{
     "No PTY",           "News",                  "Information",    "Sports",
     "Talk",             "Rock",                  "Classic rock",   "Adult hits",
     "Soft rock",        "Top 40",                "Country",        "Oldies",
@@ -62,60 +63,50 @@ std::string getPTYNameStringRBDS(std::uint16_t pty) {
 // 2-letter country codes
 // EN 50067:1998, Annex D, Table D.1 (p. 71)
 // RDS Forum R08/008_7, Table D.2 (p. 75)
-std::string getCountryString(std::uint16_t cc, std::uint16_t ecc) {
-  const std::map<std::uint16_t, std::array<std::string, 15>> country_codes{
-      {0xA0,
-       {"us", "us", "us", "us", "us", "us", "us", "us", "us", "us", "us", "--", "us", "us", "--"}},
-      {0xA1,
-       {"--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "ca", "ca", "ca", "ca", "gl"}},
-      {0xA2,
-       {"ai", "ag", "ec", "fk", "bb", "bz", "ky", "cr", "cu", "ar", "br", "bm", "an", "gp", "bs"}},
-      {0xA3,
-       {"bo", "co", "jm", "mq", "gf", "py", "ni", "--", "pa", "dm", "do", "cl", "gd", "tc", "gy"}},
-      {0xA4,
-       {"gt", "hn", "aw", "--", "ms", "tt", "pe", "sr", "uy", "kn", "lc", "sv", "ht", "ve", "--"}},
-      {0xA5,
-       {"--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "mx", "vc", "mx", "mx", "mx"}},
-      {0xA6,
-       {"--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "pm"}},
-      {0xD0,
-       {"cm", "cf", "dj", "mg", "ml", "ao", "gq", "ga", "gn", "za", "bf", "cg", "tg", "bj", "mw"}},
-      {0xD1,
-       {"na", "lr", "gh", "mr", "st", "cv", "sn", "gm", "bi", "--", "bw", "km", "tz", "et", "bg"}},
-      {0xD2,
-       {"sl", "zw", "mz", "ug", "sz", "ke", "so", "ne", "td", "gw", "zr", "ci", "tz", "zm", "--"}},
-      {0xD3,
-       {"--", "--", "eh", "--", "rw", "ls", "--", "sc", "--", "mu", "--", "sd", "--", "--", "--"}},
-      {0xE0,
-       {"de", "dz", "ad", "il", "it", "be", "ru", "ps", "al", "at", "hu", "mt", "de", "--", "eg"}},
-      {0xE1,
-       {"gr", "cy", "sm", "ch", "jo", "fi", "lu", "bg", "dk", "gi", "iq", "gb", "ly", "ro", "fr"}},
-      {0xE2,
-       {"ma", "cz", "pl", "va", "sk", "sy", "tn", "--", "li", "is", "mc", "lt", "rs", "es", "no"}},
-      {0xE3,
-       {"me", "ie", "tr", "mk", "--", "--", "--", "nl", "lv", "lb", "az", "hr", "kz", "se", "by"}},
-      {0xE4,
-       {"md", "ee", "kg", "--", "--", "ua", "ks", "pt", "si", "am", "--", "ge", "--", "--", "ba"}},
-      {0xF0,
-       {"au", "au", "au", "au", "au", "au", "au", "au", "sa", "af", "mm", "cn", "kp", "bh", "my"}},
-      {0xF1,
-       {"ki", "bt", "bd", "pk", "fj", "om", "nr", "ir", "nz", "sb", "bn", "lk", "tw", "kr", "hk"}},
-      {0xF2,
-       {"kw", "qa", "kh", "ws", "in", "mo", "vn", "ph", "jp", "sg", "mv", "id", "ae", "np", "vu"}},
-      {0xF3,
-       {"la", "th", "to", "--", "--", "--", "--", "--", "pg", "--", "ye", "--", "--", "fm", "mn"}}
-  };
+std::string_view getCountryString(std::uint16_t cc, std::uint16_t ecc) {
+  // clang-format off
+  constexpr std::array<std::pair<std::uint16_t, std::array<std::string_view, 15>>, 20>
+    country_codes{{
+      {0xA0, {"us", "us", "us", "us", "us", "us", "us", "us", "us", "us", "us", "--", "us", "us", "--"}},
+      {0xA1, {"--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "ca", "ca", "ca", "ca", "gl"}},
+      {0xA2, {"ai", "ag", "ec", "fk", "bb", "bz", "ky", "cr", "cu", "ar", "br", "bm", "an", "gp", "bs"}},
+      {0xA3, {"bo", "co", "jm", "mq", "gf", "py", "ni", "--", "pa", "dm", "do", "cl", "gd", "tc", "gy"}},
+      {0xA4, {"gt", "hn", "aw", "--", "ms", "tt", "pe", "sr", "uy", "kn", "lc", "sv", "ht", "ve", "--"}},
+      {0xA5, {"--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "mx", "vc", "mx", "mx", "mx"}},
+      {0xA6, {"--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "pm"}},
+      {0xD0, {"cm", "cf", "dj", "mg", "ml", "ao", "gq", "ga", "gn", "za", "bf", "cg", "tg", "bj", "mw"}},
+      {0xD1, {"na", "lr", "gh", "mr", "st", "cv", "sn", "gm", "bi", "--", "bw", "km", "tz", "et", "bg"}},
+      {0xD2, {"sl", "zw", "mz", "ug", "sz", "ke", "so", "ne", "td", "gw", "zr", "ci", "tz", "zm", "--"}},
+      {0xD3, {"--", "--", "eh", "--", "rw", "ls", "--", "sc", "--", "mu", "--", "sd", "--", "--", "--"}},
+      {0xE0, {"de", "dz", "ad", "il", "it", "be", "ru", "ps", "al", "at", "hu", "mt", "de", "--", "eg"}},
+      {0xE1, {"gr", "cy", "sm", "ch", "jo", "fi", "lu", "bg", "dk", "gi", "iq", "gb", "ly", "ro", "fr"}},
+      {0xE2, {"ma", "cz", "pl", "va", "sk", "sy", "tn", "--", "li", "is", "mc", "lt", "rs", "es", "no"}},
+      {0xE3, {"me", "ie", "tr", "mk", "--", "--", "--", "nl", "lv", "lb", "az", "hr", "kz", "se", "by"}},
+      {0xE4, {"md", "ee", "kg", "--", "--", "ua", "ks", "pt", "si", "am", "--", "ge", "--", "--", "ba"}},
+      {0xF0, {"au", "au", "au", "au", "au", "au", "au", "au", "sa", "af", "mm", "cn", "kp", "bh", "my"}},
+      {0xF1, {"ki", "bt", "bd", "pk", "fj", "om", "nr", "ir", "nz", "sb", "bn", "lk", "tw", "kr", "hk"}},
+      {0xF2, {"kw", "qa", "kh", "ws", "in", "mo", "vn", "ph", "jp", "sg", "mv", "id", "ae", "np", "vu"}},
+      {0xF3, {"la", "th", "to", "--", "--", "--", "--", "--", "pg", "--", "ye", "--", "--", "fm", "mn"}}
+    }};
+  // clang-format on
 
-  return (country_codes.find(ecc) != country_codes.end() && cc > 0)
-             ? country_codes.at(ecc).at(cc - 1)
-             : "--";
+  for (const auto& entry : country_codes) {
+    if (entry.first == ecc) {
+      if (cc > 0 && cc <= entry.second.size()) {
+        return entry.second.at(cc - 1);
+      } else {
+        return "--";
+      }
+    }
+  }
+  return "--";
 }
 
 // Program languages
 // EN 50067:1998, Annex J (p. 84)
-std::string getLanguageString(std::uint16_t code) {
+std::string_view getLanguageString(std::uint16_t code) {
   // clang-format off
-  const std::array<std::string, 128> languages{
+  constexpr std::array<std::string_view, 128> languages{
     "Unknown",     "Albanian",      "Breton",     "Catalan",
     "Croatian",    "Welsh",         "Czech",      "Danish",
     "German",      "English",       "Spanish",    "Esperanto",
@@ -157,9 +148,9 @@ std::string getLanguageString(std::uint16_t code) {
 // RDS Forum R13/041_2 (2013-09-05) and later
 // RDS Forum R17/032_1 (2017-07-20)
 // DHL 7/14/2020
-std::string getAppNameString(std::uint16_t aid) {
+std::string_view getAppNameString(std::uint16_t aid) {
   // clang-format off
-  const std::map<std::uint16_t, std::string> oda_apps{
+  constexpr std::array<std::pair<std::uint16_t, std::string_view>, 65> oda_apps{{
     {0x0000, "None"},
     {0x0093, "Cross referencing DAB within RDS"},
     {0x0BCB, "Leisure & Practical Info for Drivers"},
@@ -224,17 +215,23 @@ std::string getAppNameString(std::uint16_t aid) {
     {0xE5D7, "ELECTRABEL-DSM 6"},
     {0xE911, "EAS open protocol"},
     {0xFF7F, "RFT: Station logo"},
-    {0xFF80, "RFT+ (work title)"} };
+    {0xFF80, "RFT+ (work title)"}} };
   // clang-format on
 
-  return oda_apps.find(aid) != oda_apps.end() ? oda_apps.at(aid) : "(Unknown)";
+  for (const auto& entry : oda_apps) {
+    if (entry.first == aid) {
+      return entry.second;
+    }
+  }
+
+  return "(Unknown)";
 }
 
 // RadioText+ content types
 // RDS Forum R06/040_1 (2006-07-21)
-std::string getRTPlusContentTypeString(std::uint32_t content_type) {
+std::string_view getRTPlusContentTypeString(std::uint32_t content_type) {
   // clang-format off
-  const std::array<std::string, 66> content_type_names{
+  constexpr std::array<std::string_view, 66> content_type_names{
       "dummy_class",          "item.title",         "item.album",
       "item.tracknumber",     "item.artist",        "item.composition",
       "item.movement",        "item.conductor",     "item.composer",
@@ -264,9 +261,9 @@ std::string getRTPlusContentTypeString(std::uint32_t content_type) {
 
 // Decoder Identification (DI) and Dynamic PTY Indicator (PTYI) codes
 // EN 50067:1998, 3.2.1.5 (p. 41)
-std::string getDICodeString(std::uint16_t di) {
-  const std::array<std::string, 4> di_codes{"dynamic_pty", "compressed", "artificial_head",
-                                            "stereo"};
+std::string_view getDICodeString(std::uint16_t di) {
+  constexpr std::array<std::string_view, 4> di_codes{"dynamic_pty", "compressed", "artificial_head",
+                                                     "stereo"};
 
   return di < di_codes.size() ? di_codes[di] : "unknown";
 }
@@ -275,7 +272,7 @@ std::string getDICodeString(std::uint16_t di) {
 // NRSC-4-B (2011), page 18, D.7
 std::string getCallsignFromPI(std::uint16_t pi) {
   // clang-format off
-  const std::map<std::uint16_t, std::string> three_letter_codes{
+  constexpr std::array<std::pair<std::uint16_t, std::string_view>, 72> three_letter_codes{{
       {0x99A5, "KBW"}, {0x9992, "KOY"}, {0x9978, "WHO"}, {0x99A6, "KCY"},
       {0x9993, "KPQ"}, {0x999C, "WHP"}, {0x9990, "KDB"}, {0x9964, "KQV"},
       {0x999D, "WIL"}, {0x99A7, "KDF"}, {0x9994, "KSD"}, {0x997A, "WIP"},
@@ -293,17 +290,17 @@ std::string getCallsignFromPI(std::uint16_t pi) {
       {0x99B9, "WRC"}, {0x995D, "KMA"}, {0x9973, "WGR"}, {0x99A2, "WRR"},
       {0x995E, "KMJ"}, {0x999B, "WGY"}, {0x99A3, "WSB"}, {0x995F, "KNX"},
       {0x9975, "WHA"}, {0x99A4, "WSM"}, {0x9960, "KOA"}, {0x9976, "WHB"},
-      {0x9988, "WWJ"}, {0x99AB, "KOB"}, {0x9977, "WHK"}, {0x9989, "WWL"} };
+      {0x9988, "WWJ"}, {0x99AB, "KOB"}, {0x9977, "WHK"}, {0x9989, "WWL"} }};
 
   // TODO These should probably not be called "callsigns"
-  const std::map<std::uint16_t, std::string> linked_station_codes{
+  constexpr std::array<std::pair<std::uint16_t, std::string_view>, 14> linked_station_codes{{
       {0xB001, "NPR-1"},
       {0xB002, "CBC English - Radio One"}, {0xB003, "CBC English - Radio Two"},
       {0xB004, "CBC French => Radio-Canada - Première Chaîne"},
       {0xB005, "CBC French => Radio-Canada - Espace Musique"},
       {0xB006, "CBC"},   {0xB007, "CBC"},   {0xB008, "CBC"},   {0xB009, "CBC"},
       {0xB00A, "NPR-2"}, {0xB00B, "NPR-3"}, {0xB00C, "NPR-4"},
-      {0xB00D, "NPR-5"}, {0xB00E, "NPR-6"} };
+      {0xB00D, "NPR-5"}, {0xB00E, "NPR-6"} }};
   // clang-format on
 
   // Exceptions for zero nybbles
@@ -326,15 +323,20 @@ std::string getCallsignFromPI(std::uint16_t pi) {
 
   if (pi >= 0x9950 && pi <= 0x9EFF) {
     // Three-letter only
-    if (three_letter_codes.find(pi) != three_letter_codes.end())
-      callsign = three_letter_codes.at(pi);
+    const auto it =
+        std::lower_bound(three_letter_codes.begin(), three_letter_codes.end(), pi,
+                         [](const auto& entry, const auto& key) { return entry.first < key; });
+    if (it != three_letter_codes.end() && it->first == pi)
+      callsign = it->second;
 
   } else if (pi >> 12U == 0xB || pi >> 12U == 0xD || pi >> 12U == 0xE) {
     // Nationally-linked stations
     pi &= 0xF0FFU;
 
-    if (linked_station_codes.find(pi) != linked_station_codes.end())
-      callsign = linked_station_codes.at(pi);
+    const auto it = std::find_if(linked_station_codes.begin(), linked_station_codes.end(),
+                                 [pi](const auto& entry) { return entry.first == pi; });
+    if (it != linked_station_codes.end())
+      callsign = it->second;
 
   } else if (pi >= 0x1000 && pi <= 0x994F) {
     // Decode four-letter call sign

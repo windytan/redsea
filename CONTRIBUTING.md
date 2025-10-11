@@ -95,3 +95,7 @@ The project uses [semantic versioning](https://semver.org/).
 
 We have a [discussion section](https://github.com/windytan/redsea/discussions)
 on GitHub for questions and brainstorming.
+
+Online conversation is notorious for easily coming out as snarky or passive aggressive.
+We try to be mindful of this reality and actively try to consider the other person's perspective
+and assume good intent in the discussions.

@@ -10,6 +10,7 @@
 
 namespace redsea {
 
+// ObjectTree represents the output JSON structure
 class ObjectTree {
  public:
   using object_t = std::vector<std::pair<std::string, ObjectTree>>;

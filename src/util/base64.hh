@@ -33,17 +33,17 @@ inline std::string asBase64(const void* data, std::size_t input_length) {
     }
 
     // Encode 4 Base64 characters
-    encoded.push_back(base64_table[(chunk >> 18) & 0x3F]);
-    encoded.push_back(base64_table[(chunk >> 12) & 0x3F]);
+    encoded.push_back(base64_table[(chunk >> 18U) & 0x3FU]);
+    encoded.push_back(base64_table[(chunk >> 12U) & 0x3FU]);
 
     if (nbytes_in_chunk > 1) {
-      encoded.push_back(base64_table[(chunk >> 6) & 0x3F]);
+      encoded.push_back(base64_table[(chunk >> 6U) & 0x3FU]);
     } else {
       encoded.push_back('=');
     }
 
     if (nbytes_in_chunk == 3) {
-      encoded.push_back(base64_table[chunk & 0x3F]);
+      encoded.push_back(base64_table[chunk & 0x3FU]);
     } else {
       encoded.push_back('=');
     }

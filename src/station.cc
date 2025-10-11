@@ -14,23 +14,19 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/groups.hh"
+#include "src/station.hh"
 
 #include <array>
 #include <cassert>
-#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
 #include <exception>
 #include <initializer_list>
-#include <iomanip>
 #include <iostream>
 #include <map>
-#include <numeric>
 #include <set>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,14 +36,15 @@
 #include "src/tables.hh"
 #include "src/text/radiotext.hh"
 #include "src/text/rdsstring.hh"
-#include "src/tree.hh"
-#include "src/util.hh"
+#include "src/util/tree.hh"
+#include "src/util/util.hh"
 
 namespace redsea {
 
 namespace {
 
 // Programme Item Number (IEC 62106:2015, section 6.1.5.2)
+// TODO: Removed in RDS2
 bool decodePIN(std::uint16_t pin, ObjectTree& out) {
   const std::uint16_t day    = getBits<5>(pin, 11);
   const std::uint16_t hour   = getBits<5>(pin, 6);
@@ -63,182 +60,6 @@ bool decodePIN(std::uint16_t pin, ObjectTree& out) {
 }
 
 }  // namespace
-
-GroupType::GroupType(std::uint16_t type_code)
-    : number(static_cast<std::uint16_t>(type_code >> 1U) & 0xFU),
-      version((type_code & 0x1U) == 0 ? GroupType::Version::A : GroupType::Version::B) {}
-
-std::string GroupType::str() const {
-  if (version == Version::C)
-    return "C";
-  return std::string(std::to_string(number) + (version == Version::A ? "A" : "B"));
-}
-
-bool operator==(const GroupType& type1, const GroupType& type2) {
-  return type1.number == type2.number && type1.version == type2.version;
-}
-
-bool operator<(const GroupType& type1, const GroupType& type2) {
-  return (type1.number < type2.number) ||
-         (type1.number == type2.number && type1.version < type2.version);
-}
-
-std::uint16_t Group::get(eBlockNumber block_num) const {
-  return blocks_[block_num].data;
-}
-
-bool Group::has(eBlockNumber block_num) const {
-  return blocks_[block_num].is_received;
-}
-
-bool Group::isEmpty() const {
-  return !(has(BLOCK1) || has(BLOCK2) || has(BLOCK3) || has(BLOCK4));
-}
-
-// Remember to check if hasPI()
-std::uint16_t Group::getPI() const {
-  if (blocks_[BLOCK1].is_received)
-    return blocks_[BLOCK1].data;
-  else if (blocks_[BLOCK3].is_received && blocks_[BLOCK3].offset == Offset::Cprime)
-    return blocks_[BLOCK3].data;
-  else
-    return 0x0000;
-}
-
-// \return Block error rate, percent
-// \note Remember to check if hasBLER()
-float Group::getBLER() const {
-  return bler_;
-}
-
-int Group::getNumErrors() const {
-  return std::accumulate(blocks_.cbegin(), blocks_.cend(), 0, [](int a, Block b) {
-    return a + ((b.had_errors || !b.is_received) ? 1 : 0);
-  });
-}
-
-Maybe<double> Group::getTimeFromStart() const {
-  return {time_from_start_, has_time_from_start_};
-}
-
-bool Group::hasPI() const {
-  return type_.version != GroupType::Version::C &&
-         (blocks_[BLOCK1].is_received ||
-          (blocks_[BLOCK3].is_received && blocks_[BLOCK3].offset == Offset::Cprime));
-}
-
-GroupType Group::getType() const {
-  return type_;
-}
-
-bool Group::hasType() const {
-  return has_type_;
-}
-
-bool Group::hasBLER() const {
-  return has_bler_;
-}
-
-bool Group::hasRxTime() const {
-  return has_rx_time_;
-}
-
-std::chrono::time_point<std::chrono::system_clock> Group::getRxTime() const {
-  return time_received_;
-}
-
-void Group::disableOffsets() {
-  no_offsets_ = true;
-}
-
-void Group::setVersionC() {
-  type_.version = GroupType::Version::C;
-  has_type_     = true;
-}
-
-void Group::setDataStream(std::uint32_t stream) {
-  data_stream_ = stream;
-}
-
-std::uint32_t Group::getDataStream() const {
-  return data_stream_;
-}
-
-void Group::setBlock(eBlockNumber block_num, Block block) {
-  blocks_[block_num] = block;
-
-  if (has_type_)
-    return;
-
-  if (block_num == BLOCK2) {
-    type_ = GroupType(getBits<5>(block.data, 11));
-    if (type_.version == GroupType::Version::A) {
-      has_type_ = true;
-    } else {
-      has_type_ = (has_c_prime_ || no_offsets_);
-    }
-
-  } else if (block_num == BLOCK4) {
-    if (has_c_prime_ && !has_type_) {
-      const GroupType potential_type(getBits<5>(block.data, 11));
-      if (potential_type.number == 15 && potential_type.version == GroupType::Version::B) {
-        type_     = potential_type;
-        has_type_ = true;
-      }
-    }
-  }
-
-  if (block.offset == Offset::Cprime && has(BLOCK2)) {
-    has_type_ = (type_.version == GroupType::Version::B);
-  }
-}
-
-void Group::setRxTime(std::chrono::time_point<std::chrono::system_clock> t) {
-  time_received_ = t;
-  has_rx_time_   = true;
-}
-
-// \param bler Block error rate, percent
-void Group::setAverageBLER(float bler) {
-  bler_     = bler;
-  has_bler_ = true;
-}
-
-void Group::setTimeFromStart(double time_from_start) {
-  time_from_start_     = time_from_start;
-  has_time_from_start_ = true;
-}
-
-/**
- * Print the raw group data into a stream, encoded as hex, like in RDS Spy.
- *
- * Invalid blocks are replaced with "----".
- *
- * @param stream The stream to print to (not to be confused with RDS2 data streams)
- */
-void Group::printHex(std::ostream& stream) const {
-  std::ios old_stream_state(nullptr);
-  old_stream_state.copyfmt(stream);
-
-  stream.fill('0');
-  stream.setf(std::ios_base::uppercase);
-
-  for (const eBlockNumber block_num : {BLOCK1, BLOCK2, BLOCK3, BLOCK4}) {
-    const Block& block = blocks_[block_num];
-    if (block.is_received) {
-      stream << std::hex << std::setw(4) << block.data;
-    } else {
-      stream << "----";
-    }
-
-    if (block_num != BLOCK4) {
-      stream << " ";
-    }
-  }
-
-  // Restore ostream format
-  stream.copyfmt(old_stream_state);
-}
 
 /*
  * A Station represents a single broadcast carrier identified by its RDS PI
@@ -270,7 +91,7 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     out["stream"] = group.getDataStream();
   }
 
-  if (group.getType().version != GroupType::Version::C) {
+  if (group.getType().value.version != GroupType::Version::C) {
     // Allow 1 group with missed PI. For subsequent misses, don't process at all.
     if (group.hasPI()) {
       last_group_had_pi_ = true;
@@ -298,11 +119,11 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
   }  // if not C
 
   if (options_.timestamp) {
-    out["rx_time"] = getTimePointString(group.getRxTime(), options_.time_format);
+    out["rx_time"] = getTimePointString(group.getRxTime().value, options_.time_format);
   }
 
-  if (group.hasBLER()) {
-    out["bler"] = std::lround(group.getBLER());
+  if (group.getBLER().has_value) {
+    out["bler"] = std::lround(group.getBLER().value);
   }
 
   if (options_.num_channels > 1) {
@@ -310,9 +131,7 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
   }
 
   if (options_.show_raw) {
-    std::stringstream ss;
-    group.printHex(ss);
-    out["raw_data"] = ss.str();
+    out["raw_data"] = group.asHex();
   }
 
   decodeBasics(group, out);
@@ -329,8 +148,8 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
   // A -----ooooo-OOo--
   // B ---OOooOOOOOOO--
 
-  if (group.hasType()) {
-    const GroupType& type = group.getType();
+  if (group.getType().has_value) {
+    const GroupType& type = group.getType().value;
 
     if (type.version == GroupType::Version::C) {
       decodeC(group, out);
@@ -381,8 +200,8 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
     }
   }
 
-  if (options_.time_from_start && group.getTimeFromStart().valid) {
-    out["time_from_start"] = group.getTimeFromStart().data;
+  if (options_.time_from_start && group.getTimeFromStart().has_value) {
+    out["time_from_start"] = group.getTimeFromStart().value;
   }
 
   printAsJson(out, stream);
@@ -394,22 +213,22 @@ std::uint16_t Station::getPI() const {
 
 // Decode basic information common to (almost) all groups
 void Station::decodeBasics(const Group& group, ObjectTree& out) {
-  if (group.getType().version == GroupType::Version::C) {
+  if (group.getType().value.version == GroupType::Version::C) {
     out["group"] = "C";
   } else if (group.has(BLOCK2)) {
     const std::uint16_t pty = getBits<5>(group.get(BLOCK2), 5);
 
-    if (group.hasType())
-      out["group"] = group.getType().str();
+    if (group.getType().has_value)
+      out["group"] = group.getType().value.str();
 
     out["tp"] = getBool(group.get(BLOCK2), 10);
 
     out["prog_type"] = options_.rbds ? getPTYNameStringRBDS(pty) : getPTYNameString(pty);
-  } else if (group.getType().number == 15 && group.getType().version == GroupType::Version::B &&
-             group.has(BLOCK4)) {
+  } else if (group.getType().value.number == 15 &&
+             group.getType().value.version == GroupType::Version::B && group.has(BLOCK4)) {
     const std::uint16_t pty = getBits<5>(group.get(BLOCK4), 5);
 
-    out["group"] = group.getType().str();
+    out["group"] = group.getType().value.str();
 
     out["tp"]        = getBool(group.get(BLOCK4), 10);
     out["prog_type"] = options_.rbds ? getPTYNameStringRBDS(pty) : getPTYNameString(pty);
@@ -433,7 +252,7 @@ void Station::decodeType0(const Group& group, ObjectTree& out) {
   }
 
   // Block 3: Alternative frequencies
-  if (group.getType().version == GroupType::Version::A) {
+  if (group.getType().value.version == GroupType::Version::A) {
     alt_freq_list_.insert(getUint8(group.get(BLOCK3), 8));
     alt_freq_list_.insert(getUint8(group.get(BLOCK3), 0));
 
@@ -523,16 +342,15 @@ void Station::decodeType1(const Group& group, ObjectTree& out) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
+  // TODO: Removed in RDS2 -> now RFU
   pin_ = group.get(BLOCK4);
 
   if (pin_ != 0x0000 && !decodePIN(pin_, out)) {
     out["debug"].push_back("invalid PIN");
   }
 
-  if (group.getType().version == GroupType::Version::A) {
-    pager_.paging_code = getBits<3>(group.get(BLOCK2), 2);
-    if (pager_.paging_code != 0)
-      pager_.interval = getBits<2>(group.get(BLOCK2), 0);
+  if (group.getType().value.version == GroupType::Version::A) {
+    // TODO: Removed in RDS2 -> now RFU
     linkage_la_        = getBool(group.get(BLOCK3), 15);
     out["has_linkage"] = linkage_la_;
 
@@ -540,14 +358,6 @@ void Station::decodeType1(const Group& group, ObjectTree& out) {
 
     switch (slow_label_variant) {
       case 0:
-        if (pager_.paging_code != 0) {
-          pager_.opc = getBits<4>(group.get(BLOCK3), 8);
-
-          // No PIN (IEC 62106:2015, section M.3.2.5.3)
-          if (group.has(BLOCK4) && getBits<5>(group.get(BLOCK4), 11) == 0)
-            pager_.decode1ABlock4(group.get(BLOCK4));
-        }
-
         ecc_ = getUint8(group.get(BLOCK3), 0);
         cc_  = getBits<4>(pi_, 12);
 
@@ -557,22 +367,17 @@ void Station::decodeType1(const Group& group, ObjectTree& out) {
         }
         break;
 
+      // TODO: Removed in RDS2 -> now RFU
       case 1:
         tmc_id_       = getBits<12>(group.get(BLOCK3), 0);
         out["tmc_id"] = tmc_id_;
         break;
 
       case 2:
-        if (pager_.paging_code != 0) {
-          pager_.pac = getBits<6>(group.get(BLOCK3), 0);
-          pager_.opc = getBits<4>(group.get(BLOCK3), 8);
-
-          // No PIN (IEC 62105:2015, section M.3.2.5.3)
-          if (group.has(BLOCK4) && getBits<5>(group.get(BLOCK4), 11) == 0)
-            pager_.decode1ABlock4(group.get(BLOCK4));
-        }
+        // Pager is deprecated
         break;
 
+      // TODO: Removed in RDS2 -> now RFU
       case 3:
         out["language"] = getLanguageString(getUint8(group.get(BLOCK3), 0));
         break;
@@ -605,8 +410,9 @@ void Station::decodeType2(const Group& group, ObjectTree& out) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  const size_t radiotext_position = getBits<4>(group.get(BLOCK2), 0) *
-                                    (group.getType().version == GroupType::Version::A ? 4UL : 2UL);
+  const size_t radiotext_position =
+      getBits<4>(group.get(BLOCK2), 0) *
+      (group.getType().value.version == GroupType::Version::A ? 4UL : 2UL);
 
   const bool ab            = getBool(group.get(BLOCK2), 4);
   const bool is_ab_changed = radiotext_.isABChanged(ab);
@@ -644,7 +450,7 @@ void Station::decodeType2(const Group& group, ObjectTree& out) {
     radiotext_.text.clear();
   }
 
-  if (group.getType().version == GroupType::Version::A) {
+  if (group.getType().value.version == GroupType::Version::A) {
     radiotext_.text.resize(64);
     radiotext_.update(radiotext_position, getUint8(group.get(BLOCK3), 8),
                       getUint8(group.get(BLOCK3), 0));
@@ -654,7 +460,7 @@ void Station::decodeType2(const Group& group, ObjectTree& out) {
 
   if (group.has(BLOCK4)) {
     radiotext_.update(
-        radiotext_position + (group.getType().version == GroupType::Version::A ? 2 : 0),
+        radiotext_position + (group.getType().value.version == GroupType::Version::A ? 2 : 0),
         getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
   }
 
@@ -684,7 +490,7 @@ void Station::decodeType3A(const Group& group, ObjectTree& out) {
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
-  if (group.getType().version != GroupType::Version::A)
+  if (group.getType().value.version != GroupType::Version::A)
     return;
 
   const GroupType oda_group_type(getBits<5>(group.get(BLOCK2), 0));
@@ -813,7 +619,7 @@ void Station::decodeType5(const Group& group, ObjectTree& out) {
   const auto address                 = getBits<5>(group.get(BLOCK2), 0);
   out["transparent_data"]["address"] = address;
 
-  if (group.getType().version == GroupType::Version::A) {
+  if (group.getType().value.version == GroupType::Version::A) {
     const std::array<std::uint8_t, 4> data{
         getUint8(group.get(BLOCK3), 8), getUint8(group.get(BLOCK3), 0),
         getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0)};
@@ -856,7 +662,7 @@ void Station::decodeType5(const Group& group, ObjectTree& out) {
 void Station::decodeType6(const Group& group, ObjectTree& out) {
   out["in_house_data"].push_back(getBits<5>(group.get(BLOCK2), 0));
 
-  if (group.getType().version == GroupType::Version::A) {
+  if (group.getType().value.version == GroupType::Version::A) {
     if (group.has(BLOCK3)) {
       out["in_house_data"].push_back(getBits<16>(group.get(BLOCK3), 0));
       if (group.has(BLOCK4)) {
@@ -910,7 +716,7 @@ void Station::decodeType14(const Group& group, ObjectTree& out) {
   out["other_network"]["pi"] = getPrefixedHexString<4>(on_pi);
   out["other_network"]["tp"] = getBool(group.get(BLOCK2), 4);
 
-  if (group.getType().version == GroupType::Version::B) {
+  if (group.getType().value.version == GroupType::Version::B) {
     out["other_network"]["ta"] = getBool(group.get(BLOCK2), 3);
     return;
   }
@@ -1038,7 +844,7 @@ void Station::decodeType15B(const Group& group, ObjectTree& out) {
 
 /* Open Data Application */
 void Station::decodeODAGroup(const Group& group, ObjectTree& out) {
-  if (oda_app_for_group_.find(group.getType()) == oda_app_for_group_.end()) {
+  if (oda_app_for_group_.find(group.getType().value) == oda_app_for_group_.end()) {
     out["unknown_oda"]["raw_data"] =
         getHexString<2>(group.get(BLOCK2) & 0b11111U) + " " +
         (group.has(BLOCK3) ? getHexString<4>(group.get(BLOCK3)) : "----") + " " +
@@ -1047,7 +853,7 @@ void Station::decodeODAGroup(const Group& group, ObjectTree& out) {
     return;
   }
 
-  const std::uint16_t oda_app_id = oda_app_for_group_[group.getType()];
+  const std::uint16_t oda_app_id = oda_app_for_group_[group.getType().value];
 
   switch (oda_app_id) {
     // DAB cross-referencing
@@ -1317,20 +1123,6 @@ void Station::parseDAB(const Group& group, ObjectTree& out) {
     }
 
     out["dab"]["ensemble_id"] = getPrefixedHexString<4>(group.get(BLOCK4));
-  }
-}
-
-void Pager::decode1ABlock4(std::uint16_t block4) {
-  const int sub_type = getBits<1>(block4, 10);
-  if (sub_type == 0) {
-    pac = getBits<6>(block4, 4);
-    opc = getBits<4>(block4, 0);
-  } else if (sub_type == 1) {
-    const int sub_usage = getBits<2>(block4, 8);
-    if (sub_usage == 0)
-      ecc = getBits<6>(block4, 0);
-    else if (sub_usage == 3)
-      ccf = getBits<4>(block4, 0);
   }
 }
 

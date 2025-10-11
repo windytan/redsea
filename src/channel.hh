@@ -26,7 +26,8 @@
 #include "src/block_sync.hh"
 #include "src/constants.hh"
 #include "src/options.hh"
-#include "src/util.hh"
+#include "src/station.hh"
+#include "src/util/util.hh"
 
 namespace redsea {
 
@@ -62,7 +63,7 @@ class CachedPI {
 
     return status;
   }
-  std::uint16_t get() const {
+  [[nodiscard]] std::uint16_t get() const {
     return pi_confirmed_;
   }
   void reset() {
@@ -79,21 +80,21 @@ class CachedPI {
 
 class Channel {
  public:
-  Channel(const Options& options, int which_channel, std::ostream& output_stream);
-  Channel(const Options& options, std::ostream& output_stream, std::uint16_t pi);
-  void processBit(bool bit, std::size_t which_stream);
-  void processBits(const BitBuffer& buffer);
-  void processGroup(Group group, std::size_t which_stream);
-  void flush();
-  float getSecondsSinceCarrierLost() const;
+  Channel(const Options& options, int which_channel);
+  Channel(const Options& options, int which_channel, std::uint16_t pi);
+  void processBit(bool bit, std::size_t which_data_stream, std::ostream& output_ostream);
+  void processBits(const BitBuffer& buffer, std::ostream& output_ostream);
+  void processAndPrintGroup(Group group, std::size_t which_data_stream,
+                            std::ostream& output_ostream);
+  void flush(std::ostream& output_ostream);
+  [[nodiscard]] float getSecondsSinceCarrierLost() const;
   void resetPI();
 
  private:
   Options options_{};
   int which_channel_{};
-  std::ostream& output_stream_;
   CachedPI cached_pi_;
-  std::array<BlockStream, 4> block_stream_;
+  std::array<BlockStream, 4> block_streams_;
   Station station_;
   RunningAverage<float, kNumBlerAverageGroups> bler_average_;
   std::chrono::time_point<std::chrono::system_clock> last_group_rx_time_;

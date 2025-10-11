@@ -23,19 +23,18 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <exception>
 #include <map>
 #include <string>
 #include <vector>
 
 #include "src/options.hh"
 #include "src/tables.hh"
-#include "src/tmc/csv.hh"
 #include "src/tmc/eventdb.hh"
 #include "src/tmc/locationdb.hh"
 #include "src/tmc/message.hh"
-#include "src/tree.hh"
-#include "src/util.hh"
+#include "src/util/csv.hh"
+#include "src/util/tree.hh"
+#include "src/util/util.hh"
 
 namespace redsea::tmc {
 namespace {
@@ -72,11 +71,11 @@ std::map<std::uint16_t, ServiceKey> loadServiceKeyTable() {
     ServiceKey key;
 
     try {
-      encid        = static_cast<std::uint16_t>(std::stoi(row.at(0)));
-      key.xorval   = static_cast<std::uint8_t>(std::stoi(row.at(1)));
-      key.xorstart = static_cast<std::uint8_t>(std::stoi(row.at(2)));
-      key.nrot     = static_cast<std::uint8_t>(std::stoi(row.at(3)));
-    } catch (const std::exception&) {
+      encid        = get_uint16(row, 0);
+      key.xorval   = get_uint16(row, 1);
+      key.xorstart = get_uint16(row, 2);
+      key.nrot     = get_uint16(row, 3);
+    } catch (...) {
       continue;
     }
 

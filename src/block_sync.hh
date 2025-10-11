@@ -21,9 +21,9 @@
 #include <cstdint>
 
 #include "src/constants.hh"
-#include "src/groups.hh"
+#include "src/group.hh"
 #include "src/options.hh"
-#include "src/util.hh"
+#include "src/util/util.hh"
 
 namespace redsea {
 
@@ -31,13 +31,13 @@ struct SyncPulse {
   Offset offset{Offset::invalid};
   std::uint32_t bit_position{};
 
-  bool couldFollow(const SyncPulse& other) const;
+  [[nodiscard]] bool couldFollow(const SyncPulse& other) const;
 };
 
 class SyncPulseBuffer {
  public:
   void push(Offset offset, std::uint32_t bitcount);
-  bool isSequenceFound() const;
+  [[nodiscard]] bool isSequenceFound() const;
 
  private:
   std::array<SyncPulse, 4> pulses_;
@@ -55,9 +55,9 @@ class BlockStream {
   void init(const Options& options);
   void pushBit(bool bit);
   Group popGroup();
-  bool hasGroupReady() const;
-  Group flushCurrentGroup() const;
-  std::uint32_t getNumBitsSinceSyncLost() const;
+  [[nodiscard]] bool hasGroupReady() const;
+  [[nodiscard]] Group flushCurrentGroup() const;
+  [[nodiscard]] std::uint32_t getNumBitsSinceSyncLost() const;
 
  private:
   void acquireSync(Block block);
