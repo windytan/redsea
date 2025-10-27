@@ -45,7 +45,6 @@ TEST_CASE("MPX file input") {
     bool success{};
 
     while (!mpx.eof()) {
-      mpx.fillBuffer();
       const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), 1);
 
       channel.processBits(bits, output_stream);
@@ -68,7 +67,6 @@ TEST_CASE("MPX file input") {
     std::vector<nlohmann::ordered_json> json;
 
     while (!mpx.eof()) {
-      mpx.fillBuffer();
       const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), 1);
 
       channel.processBits(bits, output_stream);
@@ -95,7 +93,6 @@ TEST_CASE("MPX file input") {
     std::vector<nlohmann::ordered_json> json;
 
     while (!mpx.eof()) {
-      mpx.fillBuffer();
       const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), 1);
       channel.processBits(bits, output_stream);
 
@@ -139,7 +136,6 @@ TEST_CASE("RDS2/RFT station logo from MPX") {
   bool success{};
 
   while (!mpx.eof()) {
-    mpx.fillBuffer();
     const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), num_streams);
 
     channel.processBits(bits, json_stream);
@@ -193,7 +189,6 @@ TEST_CASE("Time from start") {
   std::array<std::vector<double>, kNStreams> seen_timestamps{};
 
   while (!mpx.eof()) {
-    mpx.fillBuffer();
     const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), kNStreams);
 
     channel.processBits(bits, json_stream);

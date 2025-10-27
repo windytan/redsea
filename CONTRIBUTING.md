@@ -41,14 +41,12 @@ Install Catch2, then in the redsea root run:
     git lfs pull
     meson setup build -Dbuild_tests=true
     cd build
-    meson compile
     meson test
 
 ### Generate coverage report
 
     meson setup -Db_coverage=true build -Dbuild_tests=true
     cd build
-    meson compile
     meson test
     ninja coverage-html
 

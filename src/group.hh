@@ -82,7 +82,7 @@ class Group {
   Maybe<std::chrono::time_point<std::chrono::system_clock>> time_received_;
   Maybe<float> bler_;
   // Seconds from the beginning of the file until the first bit of this group
-  Maybe<double> time_from_start_{};
+  Maybe<double> time_from_start_;
   bool has_c_prime_{false};
   bool no_offsets_{false};
 };

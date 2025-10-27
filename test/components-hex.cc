@@ -1,7 +1,6 @@
 // Redsea tests: Component tests for hex input
 // All different kinds of messages we can receive should go here
 
-#include <cstdio>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -462,7 +461,6 @@ TEST_CASE("RadioText Plus") {
     // clang-format on
 
     REQUIRE(!json_lines.empty());
-    std::printf("%s\n", json_lines.back().dump().c_str());
     REQUIRE(json_lines.back().contains("radiotext_plus"));
     REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["content-type"] == "item.artist");

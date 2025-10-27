@@ -156,7 +156,7 @@ redsea -f mpx_input.wav --output hex
 * meson + ninja
 * enough RAM (see [building on a low-end system][Wiki: Building on a low-end system])
 
-### Testing (optional)
+### Testing (optional, for development)
 
 * Catch2
 

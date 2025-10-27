@@ -80,10 +80,12 @@ Maybe<std::chrono::time_point<std::chrono::system_clock>> Group::getRxTime() con
   return time_received_;
 }
 
+// Don't expect the C' offset for version B groups (e.g. hex input)
 void Group::disableOffsets() {
   no_offsets_ = true;
 }
 
+// Group is version C (RDS2 extra data streams)
 void Group::setVersionC() {
   type_ = makeGroupTypeC();
 }

@@ -61,13 +61,14 @@ class MPXReader {
   MPXReader& operator=(MPXReader&& other) = delete;
   ~MPXReader();
   void init(const Options& options);
-  bool eof() const;
-  void fillBuffer();
-  MPXBuffer& readChunk(std::uint32_t channel);
-  float getSamplerate() const;
-  std::uint32_t getNumChannels() const;
+  [[nodiscard]] bool eof() const;
+  [[nodiscard]] MPXBuffer& readChunk(std::uint32_t channel);
+  [[nodiscard]] float getSamplerate() const;
+  [[nodiscard]] std::uint32_t getNumChannels() const;
 
  private:
+  void fillBuffer();
+
   std::uint32_t num_channels_{};
   sf_count_t chunk_size_{};
   bool is_eof_{true};

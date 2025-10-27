@@ -42,7 +42,7 @@ struct Options {
   bool timestamp{};
   bool bler{};
   bool show_raw{};
-  bool is_rate_defined{};
+  bool is_custom_rate_defined{};
   bool is_num_channels_defined{};
   bool use_fec{true};
   bool streams{};

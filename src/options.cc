@@ -27,8 +27,51 @@
 #include <string>
 
 #include "src/constants.hh"
+#include "src/util/maybe.hh"
 
 namespace redsea {
+
+namespace {
+
+void warn(const std::string& message) {
+  static_cast<void>(std::fprintf(stderr, "redsea: warning: %s\n", message.c_str()));
+}
+
+// \brief Parse a possibly SI-suffixed number out of a C-string.
+template <typename T>
+Maybe<T> parseSI(char* cstr) {
+  static_assert(std::is_same_v<T, float> || std::is_same_v<T, std::int32_t>);
+  if (cstr == nullptr || *cstr == '\0') {
+    return {};
+  }
+
+  errno        = 0;
+  char* endptr = cstr;
+  T value;
+  if constexpr (std::is_same_v<T, float>)
+    value = std::strtof(cstr, &endptr);
+  else
+    value = std::strtol(cstr, &endptr, 10);
+
+  if (errno == ERANGE) {
+    // Value out of range
+    return {};
+  }
+
+  T factor = 1;
+  if (std::tolower(*endptr) == 'k') {
+    factor = 1000;
+  } else if (std::toupper(*endptr) == 'M') {
+    factor = 1'000'000;
+  } else if (*endptr != '\0') {
+    // Extra characters
+    return {};
+  }
+
+  return Maybe<T>{value * factor};
+}
+
+}  // namespace
 
 /// @throws std::runtime_error for option validation errors
 /// @note May also print a warning to stderr
@@ -36,6 +79,11 @@ Options getOptions(int argc, char** argv) {
   Options options;
   int fec_flag{1};
   int time_offset_flag{0};
+  int help_flag{0};
+  bool has_custom_input_type{};
+
+  // Channels take up memory, and we don't want to fill it up by accident.
+  constexpr int kMaxNumChannels{32};
 
   // clang-format off
   const std::array<option, 21> long_options{{
@@ -58,7 +106,7 @@ Options getOptions(int argc, char** argv) {
       {"output-hex",   no_argument,       nullptr,   'x'},
       {"no-fec",       no_argument,       &fec_flag, 0  },
       {"time-from-start", no_argument,    &time_offset_flag,   1},
-      {"help",         no_argument,       nullptr,   '?'},
+      {"help",         no_argument,       &help_flag,   1},
       {nullptr,        0,                 nullptr,   0  }
   }};
   // clang-format on
@@ -69,18 +117,19 @@ Options getOptions(int argc, char** argv) {
   while ((option_char = ::getopt_long(argc, argv, "bc:eEf:hi:l:o:pr:Rst:uvx", long_options.data(),
                                       &option_index)) >= 0) {
     switch (option_char) {
-      case 0:  // Flag
-        break;
+      // Some flag
+      case 0: break;
       case 'b':  // For backwards compatibility
-        options.input_type = InputType::ASCIIbits;
+        options.input_type    = InputType::ASCIIbits;
+        has_custom_input_type = true;
         break;
       case 'c': {
-        options.num_channels = static_cast<std::uint32_t>(std::strtoul(optarg, nullptr, 10));
-        // Channels take up memory, and we don't want to fill it up by accident.
-        constexpr int kMaxNumChannels{32};
-        if (errno == ERANGE || options.num_channels < 1 || options.num_channels > kMaxNumChannels) {
+        const auto parsed_channels = parseSI<std::int32_t>(optarg);
+        if (!parsed_channels.has_value || parsed_channels.value <= 0 ||
+            parsed_channels.value > kMaxNumChannels) {
           throw std::runtime_error("check the number of channels");
         }
+        options.num_channels            = static_cast<std::uint32_t>(parsed_channels.value);
         options.is_num_channels_defined = true;
         break;
       }
@@ -91,7 +140,8 @@ Options getOptions(int argc, char** argv) {
         options.input_type  = InputType::MPX_sndfile;
         break;
       case 'h':  // For backwards compatibility
-        options.input_type = InputType::Hex;
+        options.input_type    = InputType::Hex;
+        has_custom_input_type = true;
         break;
       case 'i': {
         const std::string input_type(optarg);
@@ -106,6 +156,7 @@ Options getOptions(int argc, char** argv) {
         } else {
           throw std::runtime_error("unknown input format '" + input_type + "'");
         }
+        has_custom_input_type = true;
         break;
       }
       case 'o': {
@@ -119,31 +170,22 @@ Options getOptions(int argc, char** argv) {
         }
         break;
       }
-      case 'x':  // For backwards compatibility
-        options.output_type = OutputType::Hex;
-        break;
+      case 'x': options.output_type = OutputType::Hex; break;  // For backwards compatibility
       case 'p': options.show_partial = true; break;
       case 'r': {
-        const std::string optstr(optarg);
-        float factor = 1.f;
-        if (optstr.size() > 1) {
-          if (std::tolower(optstr.back()) == 'k')
-            factor = 1e3f;
-          else if (std::toupper(optstr.back()) == 'M')
-            factor = 1e6f;
+        const auto parsed_rate = parseSI<float>(optarg);
+        if (!parsed_rate.has_value) {
+          throw std::runtime_error("check the sample rate parameter");
         }
-        options.samplerate = std::strtof(optarg, nullptr) * factor;
-        if (errno == ERANGE) {
-          throw std::runtime_error("check the sample rate");
-        }
-        if (options.samplerate < kMinimumSampleRate_Hz ||
-            options.samplerate > kMaximumSampleRate_Hz) {
-          throw std::runtime_error("sample rate was set to " + std::to_string(options.samplerate) +
+        if (parsed_rate.value < kMinimumSampleRate_Hz ||
+            parsed_rate.value > kMaximumSampleRate_Hz) {
+          throw std::runtime_error("sample rate was set to " + std::to_string(parsed_rate.value) +
                                    ", but it must be between " +
                                    std::to_string(kMinimumSampleRate_Hz) + " and " +
-                                   std::to_string(kMaximumSampleRate_Hz) + " Hz\n");
+                                   std::to_string(kMaximumSampleRate_Hz) + " Hz");
         }
-        options.is_rate_defined = true;
+        options.samplerate             = parsed_rate.value;
+        options.is_custom_rate_defined = true;
         break;
       }
       case 'R': options.show_raw = true; break;
@@ -155,7 +197,7 @@ Options getOptions(int argc, char** argv) {
       case 'u': options.rbds = true; break;
       case 'l': options.loctable_dirs.emplace_back(optarg); break;
       case 'v': options.print_version = true; break;
-      case '?': options.print_usage = true; break;
+      case '?':
       default:
         options.print_usage = true;
         options.init_error  = true;
@@ -166,8 +208,8 @@ Options getOptions(int argc, char** argv) {
   }
 
   options.early_exit      = options.print_usage || options.print_version;
-  options.use_fec         = fec_flag;
-  options.time_from_start = time_offset_flag;
+  options.use_fec         = (fec_flag == 1);
+  options.time_from_start = (time_offset_flag == 1);
 
   if (argc > optind) {
     options.print_usage = true;
@@ -175,8 +217,21 @@ Options getOptions(int argc, char** argv) {
     options.early_exit  = true;
   }
 
+  if (help_flag == 1) {
+    options.print_usage = true;
+    options.early_exit  = true;
+  }
+
+  //
+  // Fatal validation errors - we don't know what the user asked redsea to do
+  //
+
+  if (has_custom_input_type && !options.sndfilename.empty()) {
+    throw std::runtime_error("incompatible options: --input and --file");
+  }
+
   if (options.feed_thru && options.input_type == InputType::MPX_sndfile) {
-    throw std::runtime_error("feed-thru is not supported for audio file inputs");
+    throw std::runtime_error("feed-thru is not supported for MPX file input (try via stdin)");
   }
 
   if (options.num_channels > 1 && options.input_type != InputType::MPX_stdin &&
@@ -191,17 +246,57 @@ Options getOptions(int argc, char** argv) {
 
   if (options.time_from_start && options.input_type != InputType::MPX_stdin &&
       options.input_type != InputType::MPX_sndfile) {
-    throw std::runtime_error("Time from start can only be shown for MPX input");
+    throw std::runtime_error("--time-from-start only works for MPX input");
+  }
+
+  //
+  // Warnings - we can start the program, but results may be surprising!
+  // https://en.wikipedia.org/wiki/Principle_of_least_astonishment
+  //
+
+  if (!options.use_fec &&
+      (options.input_type == InputType::Hex || options.input_type == InputType::TEF6686)) {
+    warn("--no-fec ignored for hex or tef6686 input");
+  }
+
+  if (options.show_partial && options.output_type == OutputType::Hex) {
+    warn("--show-partial ignored for hex output");
+  }
+
+  if (options.show_raw && options.output_type == OutputType::Hex) {
+    warn("--show-raw ignored for hex output");
+  }
+
+  if (!options.loctable_dirs.empty() && options.output_type == OutputType::Hex) {
+    warn("--loctable ignored for hex output");
+  }
+
+  if (options.bler && options.output_type == OutputType::Hex) {
+    warn("--bler ignored for hex output");
+  }
+
+  // --rbds doesn't have any effect for hex output either, but we choose not to warn about it
+
+  if (options.is_custom_rate_defined) {
+    if (options.input_type != InputType::MPX_stdin &&
+        options.input_type != InputType::MPX_sndfile) {
+      // Strictly, it's only supported for raw PCM, but we'll print it as a warning from input.cc
+      throw std::runtime_error("sample rate is only supported for MPX input");
+    }
   }
 
   const bool assuming_raw_mpx{options.input_type == InputType::MPX_stdin && !options.print_usage &&
                               !options.print_version && !options.init_error};
 
-  if (assuming_raw_mpx && !options.is_rate_defined) {
-    static_cast<void>(std::fprintf(stderr,
-                                   "warning: raw MPX sample rate not defined, assuming %.0f Hz\n",
-                                   kTargetSampleRate_Hz));
+  if (assuming_raw_mpx && !options.is_custom_rate_defined) {
+    warn("raw MPX sample rate not defined, assuming " +
+         std::to_string(static_cast<int>(kTargetSampleRate_Hz)) + " Hz");
+
     options.samplerate = kTargetSampleRate_Hz;
+  }
+
+  if (options.streams && options.input_type == InputType::Hex) {
+    warn("--streams has no effect for hex input (streams are read automatically)");
   }
 
   return options;

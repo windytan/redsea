@@ -4,22 +4,29 @@ We use [semantic versioning](https://semver.org/).
 
 ## 1.3.0-SNAPSHOT (WIP)
 
+File offset timestamps, bugfixes, and general maintenance. This version requires C++17.
+
 * New features:
   * File offset timestamp (`--time-from-start`) shows the position of each group's
     first bit in the input stream in seconds (see [wiki](https://github.com/windytan/redsea/wiki/Time-and-timestamps#file-offset-times))
-* Deprecated features:
-  * "Radio paging" is deprecated and will be removed later. We couldn't find any real data to test
-    it on and the feature has been deprecated by RDS Forum since 2021.
+* Removed features:
+  * "Radio paging" was removed (it was only decoded internally anyway). We haven't found any real data
+    to test it on and the feature has been deprecated by RDS Forum since 2021.
 * Other fixes:
   * Don't print a warning about sample rate when no samples expected (#140).
-  * Fixed a case where zeros were added to clipped hex input lines instead of marking them erroneous.
+  * Print more specific error messages if a file can't be opened (instead of "system error").
+  * Validate the combination of command-line options more thoroughly, to reduce surprising behavior.
+  * Fix a case where truncated hex input lines were accepted by mistake.
 * Refactoring, CI, etc:
-  * Remove build check for Ubuntu 20.04 as it's not available any more for runners
+  * Remove support for Ubuntu 20.04 as it's not available any more for CI runners
   * Replaced Debian 10 build check with Debian 11
-  * Decoupled some big libraries to make the build a little quicker on low-end systems
+  * Decoupled some big headers to make the build a little quicker on low-end systems
   * C++17 is now required, to make the above possible
+  * Improved test coverage
 
 ## 1.2.0 (2025-04-15)
+
+RDS2 station logo support and general maintenance.
 
 * Major new features:
   * Add RDS2 streams / RFT support (#32): `--streams` (see [wiki](https://github.com/windytan/redsea/wiki/Supported-RDS-features#rft))
@@ -31,6 +38,8 @@ We use [semantic versioning](https://semver.org/).
 
 ## 1.1.1 (2025-03-03)
 
+Bugfix update.
+
 * Bug fixes:
   * Fix a regression in 1.1 that caused the groups to sometimes not appear
     immediately after reception (#126)
@@ -38,6 +47,8 @@ We use [semantic versioning](https://semver.org/).
   * Catch2 is an optional build dependency (building tests is optional)
 
 ## 1.1 (2024-12-28)
+
+Minor new features, bugfixes, and build system changes.
 
 * New features:
   * Decode 'broadcaster use' data in Slow labeling codes (variant 6)
@@ -56,6 +67,8 @@ We use [semantic versioning](https://semver.org/).
 
 ## 1.0.1 (2024-07-19)
 
+Bugfix update.
+
 * Fixes:
   * Fix a crash (uncaught json exception) when attempting to serialize a string that's
     invalid UTF-8, e.g. if long PS gets corrupted
@@ -64,6 +77,8 @@ We use [semantic versioning](https://semver.org/).
     after 3.5 hours of runtime and another one after 41 days of constant data
 
 ## 1.0 (2024-06-27)
+
+Build system overhaul, minor new features and bugfixes.
 
 * New features:
   * Add support for Enhanced RadioText (eRT)

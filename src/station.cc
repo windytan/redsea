@@ -136,39 +136,36 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
 
   decodeBasics(group, out);
 
-  // ODA support in groups
-  // ---------------------
-  //
-  // -  can't be used for ODA
-  // o  can be used for ODA
-  // O  ODA only
-  //
-  //             111111
-  //   0123456789012345
-  // A -----ooooo-OOo--
-  // B ---OOooOOOOOOO--
-
   if (group.getType().has_value) {
     const GroupType& type = group.getType().value;
 
     if (type.version == GroupType::Version::C) {
+      // Any Version C group (RDS2 streams only)
       decodeC(group, out);
-      // These groups can't be used for ODA
+
     } else if (type.number == 0) {
+      // Basic tuning and switching information, PS name
       decodeType0(group, out);
     } else if (type.number == 1) {
+      // Slow labelling codes
       decodeType1(group, out);
     } else if (type.number == 2) {
+      // RadioText
       decodeType2(group, out);
     } else if (type.number == 3 && type.version == GroupType::Version::A) {
+      // ODA identification
       decodeType3A(group, out);
     } else if (type.number == 4 && type.version == GroupType::Version::A) {
+      // Clock-time and date
       decodeType4A(group, out);
     } else if (type.number == 10 && type.version == GroupType::Version::A) {
+      // PTY name
       decodeType10A(group, out);
     } else if (type.number == 14) {
+      // EON
       decodeType14(group, out);
     } else if (type.number == 15 && type.version == GroupType::Version::B) {
+      // Fast switching information
       decodeType15B(group, out);
 
       // Other groups can be reassigned for ODA by a 3A group
@@ -178,24 +175,26 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
       // Below: Groups that could optionally be used for ODA but have
       // another primary function
     } else if (type.number == 5) {
+      // Transparent Data (pre-2021)
       decodeType5(group, out);
     } else if (type.number == 6) {
+      // In-house Applications (pre-2021)
       decodeType6(group, out);
-    } else if (type.number == 7 && type.version == GroupType::Version::A) {
-      decodeType7A(group, out);
     } else if (type.number == 8 && type.version == GroupType::Version::A) {
       if (group.has(BLOCK2) && group.has(BLOCK3) && group.has(BLOCK4))
         tmc_.receiveUserGroup(getBits<5>(group.get(BLOCK2), 0), group.get(BLOCK3),
                               group.get(BLOCK4), out);
     } else if (type.number == 9 && type.version == GroupType::Version::A) {
+      // Emergency Warning System (pre-2021)
       decodeType9A(group, out);
 
     } else if (type.number == 15 && type.version == GroupType::Version::A) {
+      // Long PS (RDS2)
       decodeType15A(group, out);
 
-      // ODA-only groups
-      // 3B, 4B, 7B, 8B, 9B, 10B, 11A, 11B, 12A, 12B, 13B
     } else {
+      // ODA-only groups
+      // 3B, 4B, 7A, 7B, 8B, 9B, 10B, 11A, 11B, 12A, 12B, 13B
       decodeODAGroup(group, out);
     }
   }
@@ -674,12 +673,6 @@ void Station::decodeType6(const Group& group, ObjectTree& out) {
       out["in_house_data"].push_back(getBits<16>(group.get(BLOCK4), 0));
     }
   }
-}
-
-// Group 7A: Radio Paging
-void Station::decodeType7A(const Group& group, ObjectTree& out) {
-  static_cast<void>(group);
-  out["debug"].push_back("TODO: 7A");
 }
 
 // Group 9A: Emergency warning systems

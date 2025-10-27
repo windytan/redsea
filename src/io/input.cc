@@ -50,34 +50,43 @@ void MPXReader::init(const Options& options) {
 
   switch (options.input_type) {
     case InputType::MPX_stdin: {
+      // We will split it into channels later, if needed
       sfinfo_.channels   = 1;
       sfinfo_.format     = SF_FORMAT_RAW | SF_FORMAT_PCM_16;
       sfinfo_.samplerate = static_cast<int>(std::lround(options.samplerate));
       sfinfo_.frames     = 0;
-      file_              = sf_open_fd(::fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
+      file_              = ::sf_open_fd(::fileno(stdin), SFM_READ, &sfinfo_, SF_TRUE);
       if (feed_thru_)
-        outfile_ = sf_open_fd(::fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
+        outfile_ = ::sf_open_fd(::fileno(stdout), SFM_WRITE, &sfinfo_, SF_TRUE);
 
       break;
     }
     case InputType::MPX_sndfile: {
-      file_         = sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
-      num_channels_ = static_cast<std::uint32_t>(sfinfo_.channels);
+      file_ = ::sf_open(options.sndfilename.c_str(), SFM_READ, &sfinfo_);
+      if (file_ != nullptr) {
+        num_channels_ = static_cast<std::uint32_t>(sfinfo_.channels);
 
-      if (options.is_rate_defined)
-        std::cerr << "warning: ignoring sample rate parameter" << std::endl;
-      if (options.is_num_channels_defined)
-        std::cerr << "warning: ignoring number of channels parameter" << std::endl;
+        if (options.is_custom_rate_defined) {
+          std::cerr
+              << "redsea: warning: reading sample rate from the file header, ignoring parameter"
+              << std::endl;
+        }
+        if (options.is_num_channels_defined) {
+          std::cerr << "redsea: warning: reading number of channels from the file header, ignoring "
+                       "parameter"
+                    << std::endl;
+        }
+      }
       break;
     }
     default: return;
   }
 
-  if (!file_) {
-    if (sf_error(file_) == 26 || options.input_type == InputType::MPX_stdin)
+  if (file_ == nullptr) {
+    if (::sf_error(file_) == 26 || options.input_type == InputType::MPX_stdin)
       throw BeyondEofError();
 
-    throw std::runtime_error(sf_error_number(sf_error(file_)));
+    throw std::runtime_error(::sf_strerror(file_));
   } else if (sfinfo_.samplerate < static_cast<int>(kMinimumSampleRate_Hz)) {
     throw std::runtime_error(
         "sample rate is " + std::to_string(sfinfo_.samplerate) + " Hz, must be " +
@@ -96,23 +105,19 @@ void MPXReader::init(const Options& options) {
 }
 
 MPXReader::~MPXReader() {
-  sf_close(file_);
+  static_cast<void>(::sf_close(file_));
 
   if (feed_thru_)
-    sf_close(outfile_);
+    static_cast<void>(::sf_close(outfile_));
 }
 
 bool MPXReader::eof() const {
   return is_eof_;
 }
 
-/*
- * Fill the internal buffer with fresh samples. This should be called before
- * the first channel is processed via readChunk().
- *
- */
+// @brief Fill the internal buffer with fresh samples.
 void MPXReader::fillBuffer() {
-  num_read_ = sf_read_float(file_, buffer_.data.data(), chunk_size_);
+  num_read_ = ::sf_read_float(file_, buffer_.data.data(), chunk_size_);
 
   buffer_.time_received = std::chrono::system_clock::now();
 
@@ -121,12 +126,13 @@ void MPXReader::fillBuffer() {
 
   buffer_.used_size = static_cast<size_t>(num_read_);
 
-  if (feed_thru_)
-    sf_write_float(outfile_, buffer_.data.data(), num_read_);
+  if (feed_thru_) {
+    static_cast<void>(::sf_write_float(outfile_, buffer_.data.data(), num_read_));
+  }
 }
 
 // @brief Read a chunk of samples on the specified PCM channel.
-// @note Remember to first call fillBuffer().
+// @note Channel 0 MUST be processed first; it will trigger the next buffer read.
 // @throws logic_error if channel is out-of-bounds
 MPXBuffer& MPXReader::readChunk(std::uint32_t channel) {
   if (channel >= num_channels_) {
@@ -134,8 +140,13 @@ MPXBuffer& MPXReader::readChunk(std::uint32_t channel) {
                            std::to_string(num_channels_) + "-channel signal");
   }
 
-  if (is_eof_)
+  if (channel == 0) {
+    fillBuffer();
+  }
+
+  if (is_eof_) {
     return buffer_;
+  }
 
   if (num_channels_ == 1) {
     return buffer_;

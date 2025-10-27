@@ -43,7 +43,7 @@ jobs:
         meson setup -Dwerror=true build && cd build && meson compile
     - name: Run basic end-to-end tests
       shell: msys2 {0}
-      run: perl test/end_to_end.pl build/redsea.exe
+      run: perl test/end_to_end.pl --skip-sox --skip-lfs build/redsea.exe
 
   build-windows-cygwin:
     name: "🪟 Build on Windows with Cygwin"
@@ -87,4 +87,4 @@ jobs:
       run: meson setup -Dwerror=true build && cd build && meson compile
     - name: Run basic end-to-end tests
       shell: C:\cygwin\bin\bash.exe -eo pipefail '{0}'
-      run: perl test/end_to_end.pl build/redsea
+      run: perl test/end_to_end.pl --skip-sox --skip-lfs build/redsea
