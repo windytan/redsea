@@ -5,11 +5,16 @@
 #include <cstdlib>
 #include <fstream>
 #include <string>
+#include <variant>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
-#include "../src/block_sync.hh"
-#include "../src/tmc/csv.hh"
+#include "../src/rft.hh"
+#include "../src/util/base64.hh"
+#include "../src/util/csv.hh"
+#include "../src/util/tree.hh"
+#include "../src/util/util.hh"
 
 TEST_CASE("Bitfield extraction") {
   constexpr std::uint16_t block1{0b0001'0010'0011'0100};
@@ -124,7 +129,7 @@ TEST_CASE("Base64 encoding") {
   const std::string encoded3 = redsea::asBase64(test_string3.c_str(), test_string3.size());
   CHECK(encoded3 == "bGlnaHQgdw==");
 
-  const std::string test_string4{""};
+  const std::string test_string4{};
   const std::string encoded4 = redsea::asBase64(test_string4.c_str(), test_string4.size());
   CHECK(encoded4 == "");
 }
@@ -151,4 +156,75 @@ TEST_CASE("Round-up division") {
   CHECK(redsea::divideRoundingUp(2, 2) == 1);
   CHECK(redsea::divideRoundingUp(1, 2) == 1);
   CHECK(redsea::divideRoundingUp(0, 2) == 0);
+}
+
+TEST_CASE("ObjectTree") {
+  redsea::ObjectTree tree;
+
+  SECTION("String") {
+    CHECK(tree.empty());
+
+    tree["string1"] = "value";
+    tree["string2"] = "another value";
+
+    CHECK(!tree.empty());
+    CHECK(std::holds_alternative<std::string>(tree["string1"].get()));
+    CHECK(std::get<std::string>(tree["string1"].get()) == "value");
+    CHECK(std::holds_alternative<std::string>(tree["string2"].get()));
+    CHECK(std::get<std::string>(tree["string2"].get()) == "another value");
+  }
+
+  SECTION("Integer") {
+    CHECK(!tree.contains("number"));
+
+    tree["number"] = 42;
+
+    CHECK(tree.contains("number"));
+    CHECK(std::holds_alternative<int>(tree["number"].get()));
+    CHECK(std::get<int>(tree["number"].get()) == 42);
+  }
+
+  SECTION("Bool") {
+    tree["bool"] = true;
+
+    CHECK(std::holds_alternative<bool>(tree["bool"].get()));
+    CHECK(std::get<bool>(tree["bool"].get()) == true);
+  }
+
+  SECTION("Double") {
+    tree["double"] = 3.14;
+
+    CHECK(std::holds_alternative<double>(tree["double"].get()));
+    CHECK(std::get<double>(tree["double"].get()) == 3.14);
+  }
+
+  SECTION("Array") {
+    tree["array"].push_back("first");
+    tree["array"].push_back("second");
+
+    CHECK(std::holds_alternative<redsea::ObjectTree::array_t>(tree["array"].get()));
+    CHECK(std::get<redsea::ObjectTree::array_t>(tree["array"].get()).size() == 2);
+
+    // Change an already existing array element
+    tree["array"][0] = "0";
+    const auto str =
+        std::get<std::string>(std::get<redsea::ObjectTree::array_t>(tree["array"].get())[0].get());
+    CHECK(str == "0");
+
+    // Array resizes automatically
+    tree["array"][4] = "4";
+    CHECK(std::get<redsea::ObjectTree::array_t>(tree["array"].get()).size() == 5);
+
+    // operator[] creates an array automatically
+    tree["newarray"][2] = "2";
+    CHECK(std::get<redsea::ObjectTree::array_t>(tree["newarray"].get()).size() == 3);
+  }
+
+  SECTION("Subtree") {
+    tree["object"]["key1"] = "val1";
+    tree["object"]["key2"] = 2;
+
+    CHECK(std::holds_alternative<redsea::ObjectTree::object_t>(tree["object"].get()));
+    CHECK(std::get<redsea::ObjectTree::object_t>(tree["object"].get()).size() == 2);
+  }
 }

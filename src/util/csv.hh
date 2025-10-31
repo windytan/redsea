@@ -3,41 +3,15 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <map>
-#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace redsea {
 
 struct CSVRow {
-  CSVRow(const std::string& line, char delimiter) {
-    offsets.reserve(8);
-    lengths.reserve(8);
-    std::size_t start = 0;
-    std::size_t end   = 0;
-
-    std::size_t length_until_line_feed = 0;
-    while (length_until_line_feed < line.size() && line[length_until_line_feed] != '\r' &&
-           line[length_until_line_feed] != '\n') {
-      length_until_line_feed++;
-    }
-
-    while (end < length_until_line_feed) {
-      end = line.find(delimiter, start);
-      if (end == std::string::npos)
-        end = length_until_line_feed;
-      offsets.push_back(start);
-      lengths.push_back(end - start);
-      start = end + 1;
-    }
-    row_string = line;
-  }
-  std::string at(std::size_t i) const {
-    if (i >= offsets.size())
-      throw std::out_of_range("Index out of range");
-    return row_string.substr(offsets[i], lengths[i]);
-  }
+  CSVRow(const std::string_view& line, char delimiter);
+  [[nodiscard]] std::string at(std::size_t i) const;
 
   std::vector<std::size_t> offsets;
   std::vector<std::size_t> lengths;
@@ -45,7 +19,7 @@ struct CSVRow {
 };
 
 struct CSVTable {
-  std::map<std::string, std::size_t> titles;
+  std::vector<std::string> titles;
   std::vector<CSVRow> rows;
 };
 
@@ -55,7 +29,7 @@ template <typename Container>
 std::vector<CSVRow> readCSVContainer(const Container& csvdata, char delimiter) {
   std::vector<CSVRow> lines;
 
-  for (const std::string& line : csvdata) {
+  for (const auto& line : csvdata) {
     lines.emplace_back(line, delimiter);
   }
 
@@ -79,11 +53,11 @@ CSVTable readCSVContainerWithTitles(const Container& csvdata, char delimiter) {
 
   bool is_title_row = true;
 
-  for (const std::string& line : csvdata) {
+  for (const auto& line : csvdata) {
     if (is_title_row) {
       CSVRow row{line, delimiter};
       for (std::size_t i = 0; i < row.lengths.size(); i++) {
-        table.titles[row.row_string.substr(row.offsets[i], row.lengths[i])] = i;
+        table.titles.emplace_back(row.row_string.substr(row.offsets[i], row.lengths[i]));
       }
       is_title_row = false;
     } else {
@@ -101,11 +75,15 @@ std::string get_string(const CSVTable& table, const CSVRow& row, const std::stri
 // @throws exceptions from std::stoi
 int get_int(const CSVTable& table, const CSVRow& row, const std::string& title);
 
+int get_int(const CSVRow& row, std::size_t index);
+
 // Find an element by its title and return it as uint16_t.
 // @throws exceptions from std::stoi
 std::uint16_t get_uint16(const CSVTable& table, const CSVRow& row, const std::string& title);
 
-// Find an element by its title and return it as bool.
+std::uint16_t get_uint16(const CSVRow& row, std::size_t index);
+
+// Does the row contain a field with this title?
 bool row_contains(const CSVTable& table, const CSVRow& row, const std::string& title);
 
 }  // namespace redsea

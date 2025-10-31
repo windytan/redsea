@@ -1,8 +1,6 @@
 // Redsea tests: Component tests for hex input
 // All different kinds of messages we can receive should go here
 
-#include <cstdint>
-#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -12,12 +10,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 
-#include "../src/block_sync.hh"
-#include "../src/channel.hh"
-#include "../src/constants.hh"
-#include "../src/groups.hh"
-#include "../src/options.hh"
-#include "../src/tmc/csv.hh"
+#include "src/io/input.hh"
 #include "test_helpers.hh"
 
 TEST_CASE("Basic info") {
@@ -112,6 +105,7 @@ TEST_CASE("PIN & SLC (Group 1)") {
 
   SECTION("PIN, SLC variants 0 & 3") {
     // YLE Yksi (fi) 2016-09-15
+    // NOTE: PIN has disappeared from the RDS standard in 2021. Nowadays these bits are RFU.
     // clang-format off
     const auto json_lines{hex2json({
       0x6201'10E0'00E1'7C54,
@@ -466,6 +460,8 @@ TEST_CASE("RadioText Plus") {
     }, options, 0x53C5)};
     // clang-format on
 
+    REQUIRE(!json_lines.empty());
+    REQUIRE(json_lines.back().contains("radiotext_plus"));
     REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["content-type"] == "item.artist");
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["data"] == "FIORELLA MANNOIA");
@@ -573,11 +569,29 @@ TEST_CASE("Alternative frequencies") {
 
     REQUIRE(json_lines.size() == 12);
     REQUIRE(json_lines.back().contains("alt_frequencies_b"));
+
+    // https://web.archive.org/web/20160622055936/http://yle.fi/uutiset/taajuudet/6009222
     CHECK(json_lines.back()["alt_frequencies_b"]["tuned_frequency"] == 94'000);
     CHECK(listEquals(json_lines.back()["alt_frequencies_b"]["same_programme"],
                      {97'000, 90'300, 95'000, 96'100, 99'100}));
     CHECK(listEquals(json_lines.back()["alt_frequencies_b"]["regional_variants"],
                      {94'300, 96'000, 97'900, 96'900, 107'800, 105'800}));
+  }
+
+  SECTION("Method B with --show-partial") {
+    options.show_partial = true;
+
+    // YLE Helsinki (fi) 2016-09-15
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x6403'0447'F741'4920, 0x6403'0440'415F'594C, 0x6403'0441'4441'4520, 0x6403'0442'5541'484B
+    }, options, 0x6403)};
+    // clang-format on
+
+    REQUIRE(json_lines.size() == 4);
+    REQUIRE(json_lines[0].contains("partial_alt_frequencies"));
+    CHECK(listEquals(json_lines[0]["partial_alt_frequencies"], {94'000}));
+    REQUIRE(json_lines[1].contains("partial_alt_frequencies"));
   }
 }
 
@@ -790,123 +804,6 @@ TEST_CASE("DAB cross-referencing") {
   CHECK(json_lines.back()["dab"]["kilohertz"] == 225'648);
 }
 
-// Note: We don't actually know if any of these TMC are correctly decoded, but they do look kind of
-// sensible, which is better than nothing?
-TEST_CASE("TMC") {
-  redsea::Options options;
-
-  SECTION("System info") {
-    // DR P4 København (da) 2019-05-04
-    // walczakp/rds-spy-logs/Denmark/9602 - 2019-05-04 17-55-01.spy
-    // clang-format off
-    const auto json_lines{hex2json({
-      0x9602'3410'0267'CD46,
-      0x9602'3410'5B49'CD46},
-    options, 0x9602)};
-    // clang-format on
-
-    REQUIRE(json_lines.size() == 2);
-    CHECK(json_lines.at(0)["open_data_app"]["oda_group"] == "8A");
-    CHECK(json_lines.at(0)["open_data_app"]["app_name"] == "RDS-TMC: ALERT-C");
-    CHECK(json_lines.at(0)["tmc"]["system_info"]["is_encrypted"] == false);
-    CHECK(json_lines.at(0)["tmc"]["system_info"]["location_table"] == 9);
-    CHECK(json_lines.at(1)["tmc"]["system_info"]["service_id"] == 45);
-    CHECK(json_lines.at(1)["tmc"]["system_info"]["gap"] == 5);
-    CHECK(json_lines.at(1)["tmc"]["system_info"]["ltcc"] == 9);
-  }
-
-  SECTION("Message 1") {
-    // DR P4 København (da) 2019-05-04
-    // walczakp/rds-spy-logs/Denmark/9602 - 2019-05-04 17-55-01.spy
-    // clang-format off
-    const auto json_lines{hex2json({
-      0x9602'3410'0267'CD46,
-
-      0x9602'8405'C852'2550,
-      0x9602'8405'48F4'0000},
-    options, 0x9602)};
-    // clang-format on
-
-    REQUIRE(json_lines.size() == 3);
-    REQUIRE(json_lines.at(2)["tmc"].contains("message"));
-    CHECK(listEquals(json_lines.at(2)["tmc"]["message"]["event_codes"], {82}));
-    CHECK(json_lines.at(2)["tmc"]["message"]["update_class"] == 32);
-    CHECK(json_lines.at(2)["tmc"]["message"]["description"] ==
-          "Roadworks. Heavy traffic has to be expected.");
-    CHECK(json_lines.at(2)["tmc"]["message"]["location"] == 9552);
-    CHECK(json_lines.at(2)["tmc"]["message"]["direction"] == "single");
-    CHECK(json_lines.at(2)["tmc"]["message"]["extent"] == "-1");
-    CHECK(json_lines.at(2)["tmc"]["message"]["until"] == "mid-July");
-    CHECK(json_lines.at(2)["tmc"]["message"]["urgency"] == "none");
-  }
-
-  SECTION("Message 2: Speed limit") {
-    // DR P4 København (da) 2019-05-04
-    // walczakp/rds-spy-logs/Denmark/9602 - 2019-05-04 17-55-01.spy
-    // clang-format off
-    const auto json_lines{hex2json({
-      0x9602'3410'0267'CD46,
-
-      0x9602'8406'D2BD'06DB,
-      0x9602'8406'4384'7E00},
-    options, 0x9602)};
-    // clang-format on
-
-    REQUIRE(json_lines.at(2)["tmc"].contains("message"));
-    CHECK(listEquals(json_lines.at(2)["tmc"]["message"]["event_codes"], {701}));
-    CHECK(json_lines.at(2)["tmc"]["message"]["update_class"] == 11);
-    CHECK(json_lines.at(2)["tmc"]["message"]["description"] == "Roadworks.");
-    CHECK(json_lines.at(2)["tmc"]["message"]["speed_limit"] == "80 km/h");
-    CHECK(json_lines.at(2)["tmc"]["message"]["location"] == 1755);
-    CHECK(json_lines.at(2)["tmc"]["message"]["direction"] == "single");
-    CHECK(json_lines.at(2)["tmc"]["message"]["extent"] == "-2");
-    CHECK(json_lines.at(2)["tmc"]["message"]["until"] == "mid-November");
-    CHECK(json_lines.at(2)["tmc"]["message"]["urgency"] == "none");
-  }
-
-  SECTION("Message 3: Multi-event") {
-    // Radio-K (at) 2021-07-26
-    // walczakp/rds-spy-logs/Austria/A502_-_2021-07-26_19-26-33.spy
-    // clang-format off
-    const auto json_lines{hex2json({
-      0xA502'3410'0064'CD46,
-
-      0xA502'8405'C201'7BEB,
-      0xA502'8405'415D'2C8C},
-    options, 0xA502)};
-    // clang-format on
-
-    REQUIRE(json_lines.size() == 3);
-    REQUIRE(json_lines.at(2)["tmc"].contains("message"));
-    CHECK(listEquals(json_lines.at(2)["tmc"]["message"]["event_codes"], {513, 803}));
-    CHECK(json_lines.at(2)["tmc"]["message"]["update_class"] == 5);
-    CHECK(json_lines.at(2)["tmc"]["message"]["description"] ==
-          "Single alternate line traffic. Construction work.");
-    CHECK(json_lines.at(2)["tmc"]["message"]["location"] == 31723);
-    CHECK(json_lines.at(2)["tmc"]["message"]["direction"] == "single");
-    CHECK(json_lines.at(2)["tmc"]["message"]["extent"] == "-0");
-    CHECK(json_lines.at(2)["tmc"]["message"]["urgency"] == "none");
-  }
-
-  SECTION("Message 4: Multi-event with quantifier") {
-    // Ö1 (at) 2017-12-27
-    // rds-spy-logs/Austria/A203 - 2017-12-27 18-22-00 AT LA OE1 92.1.rds
-    // clang-format off
-    const auto json_lines{hex2json({
-      0xA201'3010'0064'CD46,
-
-      0xA201'8003'C641'8097,
-      0xA201'8003'441F'4865},
-    options, 0xA201)};
-    // clang-format on
-
-    REQUIRE(json_lines.size() == 3);
-    REQUIRE(json_lines.at(2)["tmc"].contains("message"));
-    CHECK(json_lines.at(2)["tmc"]["message"]["description"] ==
-          "Delays of up to 15 minutes. Stationary traffic.");
-  }
-}
-
 TEST_CASE("Unspecified ODA") {
   redsea::Options options;
 
@@ -922,21 +819,36 @@ TEST_CASE("Unspecified ODA") {
 
 TEST_CASE("Block error rate (BLER) reporting") {
   redsea::Options options;
-  options.bler = true;
 
-  constexpr int num_erroneous_blocks = 1;
+  SECTION("Disabled") {
+    options.bler = false;
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x7827'F928'7827'F928
+    }, options, 0x7827, DeleteOneBlock::Block2)};
+    // clang-format on
 
-  // clang-format off
-  const auto json_lines{hex2json({
-    0x7827'F928'7827'F928
-  }, options, 0x7827, DeleteOneBlock::Block2)};
-  // clang-format on
+    REQUIRE(!json_lines.empty());
+    REQUIRE(!json_lines.back().contains("bler"));
+  }
 
-  REQUIRE(!json_lines.empty());
-  REQUIRE(json_lines.back().contains("bler"));
-  // 1 block out of kNumBlerAverageGroups was missing
-  CHECK(json_lines.back()["bler"] ==
-        num_erroneous_blocks * 100 / (4 * redsea::kNumBlerAverageGroups));
+  SECTION("Enabled") {
+    options.bler = true;
+
+    constexpr int num_erroneous_blocks = 1;
+
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x7827'F928'7827'F928
+    }, options, 0x7827, DeleteOneBlock::Block2)};
+    // clang-format on
+
+    REQUIRE(!json_lines.empty());
+    REQUIRE(json_lines.back().contains("bler"));
+    // 1 block out of kNumBlerAverageGroups was missing
+    CHECK(json_lines.back()["bler"] ==
+          num_erroneous_blocks * 100 / (4 * redsea::kNumBlerAverageGroups));
+  }
 }
 
 TEST_CASE("Invalid data") {
@@ -950,6 +862,124 @@ TEST_CASE("Invalid data") {
       0xE24D'F400'E20D'FC20
     }, options, 0xE24D));
     // clang-format on
+  }
+}
+
+TEST_CASE("Rx time for hex input") {
+  redsea::Options options;
+
+  SECTION("Disabled") {
+    options.timestamp = false;
+
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x7827'F928'7827'F928
+    }, options, 0x7827)};
+    // clang-format on
+
+    REQUIRE(!json_lines.empty());
+    REQUIRE(!json_lines.back().contains("rx_time"));
+  }
+
+  SECTION("Enabled") {
+    options.timestamp = true;
+
+    // clang-format off
+    const auto json_lines{hex2json({
+      0x7827'F928'7827'F928
+    }, options, 0x7827)};
+    // clang-format on
+
+    REQUIRE(!json_lines.empty());
+    REQUIRE(json_lines.back().contains("rx_time"));
+    // There's not much else we can confidently test here without mocking system_clock
+  }
+}
+
+TEST_CASE("ASCII hex input format") {
+  redsea::Options options;
+  std::stringstream ss;
+
+  // This format should be compatible with the .spy format used by RDS Spy.
+  // But note that redsea does not decode the timestamp information.
+  // The specification can be found on page 23 at:
+  // https://rdsspy.com/download/mainapp/rdsspy.pdf
+
+  SECTION("Simple") {
+    ss << "7827 F928 7827 F928\n" << "6255 3538 0001 6552\n";
+
+    const auto group1 = redsea::readHexGroup(options, ss);
+    const auto group2 = redsea::readHexGroup(options, ss);
+
+    CHECK(group1.asHex() == "7827 F928 7827 F928");
+    CHECK(group2.asHex() == "6255 3538 0001 6552");
+  }
+
+  SECTION("No spaces") {
+    ss << "7827F9287827F928\n" << "6255353800016552\n";
+
+    const auto group1 = redsea::readHexGroup(options, ss);
+    const auto group2 = redsea::readHexGroup(options, ss);
+
+    CHECK(group1.asHex() == "7827 F928 7827 F928");
+    CHECK(group2.asHex() == "6255 3538 0001 6552");
+  }
+
+  SECTION("Title line, comments, mixed case, empty lines, odd spacing") {
+    ss << "<hex data>\n7827 f928 78 27 F928 First group\n"
+       << "\n"
+       << "6255 3538 0001 6552 Second group\n";
+
+    const auto group1 = redsea::readHexGroup(options, ss);
+    const auto group2 = redsea::readHexGroup(options, ss);
+
+    CHECK(group1.asHex() == "7827 F928 7827 F928");
+    CHECK(group2.asHex() == "6255 3538 0001 6552");
+  }
+
+  SECTION("RDS2 data streams") {
+    ss << "E24D 4401 D02F 1942\n" << "#S1 E24D E400 E24D 0000\n" << "#S2 E24D F400 E20D FC20\n";
+
+    const auto group1 = redsea::readHexGroup(options, ss);
+    const auto group2 = redsea::readHexGroup(options, ss);
+    const auto group3 = redsea::readHexGroup(options, ss);
+
+    CHECK(group1.getDataStream() == 0U);
+    CHECK(group2.getDataStream() == 1U);
+    CHECK(group3.getDataStream() == 2U);
+    CHECK(group1.asHex() == "E24D 4401 D02F 1942");
+    CHECK(group2.asHex() == "E24D E400 E24D 0000");
+    CHECK(group3.asHex() == "E24D F400 E20D FC20");
+  }
+
+  SECTION("Missing block") {
+    ss << "7827 ---- 7827 F928\n";
+
+    const auto group1 = redsea::readHexGroup(options, ss);
+
+    CHECK(group1.asHex() == "7827 ---- 7827 F928");
+  }
+
+  SECTION("Line too short") {
+    ss << "6255 3538 000\n";
+
+    const auto group1 = redsea::readHexGroup(options, ss);
+
+    // Lines should be at least 16 characters
+    CHECK(group1.isEmpty());
+  }
+
+  SECTION("Last blocks cut short") {
+    ss << "7827 F928 7827 F92\n";
+    ss << "6255    3538 000\n";
+
+    const auto group1 = redsea::readHexGroup(options, ss);
+    const auto group2 = redsea::readHexGroup(options, ss);
+
+    // The only option is to throw away the entire block
+    CHECK(group1.asHex() == "7827 F928 7827 ----");
+    // Spacing makes the input over 16 characters -> still .spy compatible
+    CHECK(group2.asHex() == "6255 3538 ---- ----");
   }
 }
 

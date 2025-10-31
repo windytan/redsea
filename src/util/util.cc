@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
-#include "src/util.hh"
+#include "src/util/util.hh"
 
 #include <array>
 #include <chrono>

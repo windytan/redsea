@@ -6,9 +6,12 @@
 namespace redsea {
 
 class Group;
+class ObjectTree;
 struct Options;
 
-void printAsHex(const Group& group, const Options& options, std::ostream& output_stream);
+std::string formatHex(const Group& group);
+void printAsHex(const Group& group, const Options& options, std::ostream& output_ostream);
+void printAsJson(const ObjectTree& tree, std::ostream& output_ostream);
 
 }  // namespace redsea
 

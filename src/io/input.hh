@@ -22,12 +22,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <iosfwd>
 #include <string>
 
 #include <sndfile.h>
 
 #include "src/constants.hh"
-#include "src/groups.hh"
+#include "src/group.hh"
 
 namespace redsea {
 
@@ -60,13 +61,14 @@ class MPXReader {
   MPXReader& operator=(MPXReader&& other) = delete;
   ~MPXReader();
   void init(const Options& options);
-  bool eof() const;
-  void fillBuffer();
-  MPXBuffer& readChunk(std::uint32_t channel);
-  float getSamplerate() const;
-  std::uint32_t getNumChannels() const;
+  [[nodiscard]] bool eof() const;
+  [[nodiscard]] MPXBuffer& readChunk(std::uint32_t channel);
+  [[nodiscard]] float getSamplerate() const;
+  [[nodiscard]] std::uint32_t getNumChannels() const;
 
  private:
+  void fillBuffer();
+
   std::uint32_t num_channels_{};
   sf_count_t chunk_size_{};
   bool is_eof_{true};
@@ -84,15 +86,15 @@ class MPXReader {
 class AsciiBitReader {
  public:
   explicit AsciiBitReader(const Options& options);
-  bool readBit();
-  bool eof() const;
+  bool readBit(std::istream& input_stream);
+  [[nodiscard]] bool eof() const;
 
  private:
   bool is_eof_{false};
   bool feed_thru_{false};
 };
 
-Group readHexGroup(const Options& options);
+Group readHexGroup(const Options& options, std::istream& input_stream);
 Group readTEFGroup(const Options& options);
 
 }  // namespace redsea

@@ -6,7 +6,7 @@ project(
     'buildtype=release',
     'optimization=3',
     'prefix=/usr/local',
-    'cpp_std=c++14',
+    'cpp_std=c++17',
   ],
   version: '1.3.0-SNAPSHOT',
 )
@@ -25,7 +25,7 @@ add_project_arguments(cc.get_supported_arguments(['-Wno-unknown-pragmas']), lang
 
 # Explicit GNU extensions on Cygwin
 if build_machine.system() == 'cygwin'
-  override_options = ['cpp_std=gnu++14']
+  override_options = ['cpp_std=gnu++17']
 else
   override_options = []
 endif
@@ -92,17 +92,21 @@ sources_no_main = [
   'src/channel.cc',
   'src/dsp/liquid_wrappers.cc',
   'src/dsp/subcarrier.cc',
-  'src/groups.cc',
+  'src/group.cc',
   'src/io/input.cc',
   'src/io/output.cc',
   'src/options.cc',
+  'src/rft.cc',
+  'src/station.cc',
   'src/tables.cc',
   'src/text/rdsstring.cc',
-  'src/tmc/csv.cc',
   'src/tmc/events_data.cc',
+  'src/tmc/eventdb.cc',
+  'src/tmc/message.cc',
   'src/tmc/tmc.cc',
   'src/tmc/locationdb.cc',
-  'src/util.cc',
+  'src/util/csv.cc',
+  'src/util/util.cc',
 ]
 
 executable(
@@ -129,6 +133,7 @@ if build_tests
       'test/components-bits.cc',
       'test/components-hex.cc',
       'test/components-mpx.cc',
+      'test/components-tmc.cc',
       'test/units.cc',
     ],
     dependencies: [iconv, json, liquid, sndfile, catch2],

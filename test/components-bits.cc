@@ -4,9 +4,30 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/block_sync.hh"
 #include "../src/options.hh"
 #include "test_helpers.hh"
+
+TEST_CASE("ASCII input format") {
+  redsea::Options options;
+
+  // You can add anything in-between! Just the bits matter.
+  const std::string test_data{
+      "This is some test data for redsea's ASCII bit input format\n"
+      "0010001011100001   0111001100"
+      "0010010110000011\r\n"
+      "1100111110\n"
+      "0010000001100101 # This is a comment"
+      "1011----01001101101001001000000110111110"};
+
+  // Two repeats to give redsea a chance to sync
+  const auto groups{asciibin2groups(test_data + test_data, options)};
+
+  CHECK(groups.size() == 2);
+  CHECK(groups[1].has(redsea::BLOCK1));
+  CHECK(groups[1].get(redsea::BLOCK1) == 0x22E1);
+  CHECK(groups[1].has(redsea::BLOCK4));
+  CHECK(groups[1].get(redsea::BLOCK4) == 0x6920);
+}
 
 TEST_CASE("PI search") {
   redsea::Options options;

@@ -16,11 +16,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies (apt)
-      run: sudo apt install meson ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
+      run: sudo apt install meson ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl sox
     - name: meson setup
       run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
+    - name: Download test data
+      run: git lfs pull
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl build/redsea
 
@@ -31,32 +33,36 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies (apt)
-      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
+      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl sox
     - name: Install meson (pip3)
       run: pip3 install --user meson
     - name: meson setup
       run: meson setup -Dwerror=true build
     - name: compile
       run: cd build && meson compile
+    - name: Download test data
+      run: git lfs pull
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl build/redsea
 
   build-ubuntu-deb-package:
     name: "🐧 Build Debian package"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - uses: actions/checkout@v4
     - name: Install Debian packaging tools
-      run: sudo apt install build-essential devscripts debhelper equivs perl
+      run: sudo apt update && sudo apt install build-essential devscripts debhelper equivs perl sox
     - name: Install Build-Depends
       run: sudo mk-build-deps --install --tool 'apt-get --yes'
     - name: Build .deb
       run: debuild -us -uc
     - name: Install .deb
       run: sudo dpkg -i ../redsea_*.deb
+    - name: Download test data
+      run: git lfs pull
     - name: Run basic end-to-end tests
-      run: perl test/end_to_end.pl redsea --installed
+      run: perl test/end_to_end.pl --installed redsea
 
   build-debian-bullseye:
     name: "🐧 Build on Debian 11 (Bullseye)"
@@ -74,4 +80,4 @@ jobs:
     - name: compile
       run: export PATH=$PATH:$HOME/.local/bin && cd build && meson compile
     - name: Run basic end-to-end tests
-      run: perl test/end_to_end.pl build/redsea
+      run: perl test/end_to_end.pl --skip-sox --skip-lfs build/redsea

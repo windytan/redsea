@@ -32,7 +32,7 @@ namespace redsea {
 // extract N-bit integer from word, starting at starting_at from the right
 template <std::size_t N>
 std::uint16_t getBits(std::uint16_t word, std::size_t starting_at) {
-  static_assert(N > 0U && N <= 16U, "");
+  static_assert(N > 0U && N <= 16U);
   assert(starting_at + N <= 16U);
   return static_cast<std::uint16_t>(word >> starting_at) &
          (static_cast<std::uint16_t>(1U << N) - 1U);
@@ -42,7 +42,7 @@ std::uint16_t getBits(std::uint16_t word, std::size_t starting_at) {
 // starting_at from the right
 template <std::size_t N>
 std::uint32_t getBits(std::uint16_t word1, std::uint16_t word2, std::size_t starting_at) {
-  static_assert(N > 0U && N <= 32U, "");
+  static_assert(N > 0U && N <= 32U);
   assert(starting_at + N <= 32U);
   const auto concat =
       static_cast<std::uint32_t>(word2 + (static_cast<std::uint32_t>(word1) << 16U));
@@ -62,7 +62,7 @@ inline std::uint8_t getUint8(std::uint16_t word, std::size_t bit_pos) {
 
 template <typename T>
 constexpr T divideRoundingUp(T dividend, T divisor) {
-  static_assert(std::is_integral<T>::value, "");
+  static_assert(std::is_integral_v<T>);
   return (dividend + divisor - 1) / divisor;
 }
 
@@ -106,9 +106,9 @@ class CarrierFrequency {
   enum class Band : std::uint8_t { LF_MF, FM };
 
   explicit CarrierFrequency(std::uint16_t code, Band band = Band::FM);
-  bool isValid() const;
-  int kHz() const;
-  std::string str() const;
+  [[nodiscard]] bool isValid() const;
+  [[nodiscard]] int kHz() const;
+  [[nodiscard]] std::string str() const;
   friend bool operator==(const CarrierFrequency& f1, const CarrierFrequency& f2);
   friend bool operator<(const CarrierFrequency& f1, const CarrierFrequency& f2);
 
@@ -121,9 +121,9 @@ class AltFreqList {
  public:
   AltFreqList() = default;
   void insert(std::uint16_t af_code);
-  bool isComplete() const;
-  bool isMethodB() const;
-  std::vector<int> getRawList() const;
+  [[nodiscard]] bool isComplete() const;
+  [[nodiscard]] bool isMethodB() const;
+  [[nodiscard]] std::vector<int> getRawList() const;
   void clear();
 
  private:
@@ -168,7 +168,7 @@ class RunningAverage {
     ptr_ = (ptr_ + 1) % history_.size();
   }
 
-  float getAverage() const {
+  [[nodiscard]] float getAverage() const {
     return history_.empty() ? 0.f : static_cast<float>(sum_) / history_.size();
   }
 
@@ -186,7 +186,7 @@ class DelayLine {
     buffer_[ptr_] = value;
     ptr_          = (ptr_ + 1) % buffer_.size();
   }
-  T get() const {
+  [[nodiscard]] T get() const {
     return buffer_[ptr_];
   }
 

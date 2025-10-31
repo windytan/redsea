@@ -23,9 +23,9 @@
 
 namespace redsea {
 
-enum class InputType { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
+enum class InputType : uint8_t { MPX_stdin, MPX_sndfile, ASCIIbits, Hex, TEF6686 };
 
-enum class OutputType { Hex, JSON };
+enum class OutputType : uint8_t { Hex, JSON };
 
 struct Options {
   bool rbds{};
@@ -42,7 +42,7 @@ struct Options {
   bool timestamp{};
   bool bler{};
   bool show_raw{};
-  bool is_rate_defined{};
+  bool is_custom_rate_defined{};
   bool is_num_channels_defined{};
   bool use_fec{true};
   bool streams{};

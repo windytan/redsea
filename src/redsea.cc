@@ -24,7 +24,7 @@
 #include "config.h"
 #include "src/channel.hh"
 #include "src/dsp/subcarrier.hh"
-#include "src/groups.hh"
+#include "src/group.hh"
 #include "src/io/input.hh"
 #include "src/options.hh"
 
@@ -32,9 +32,11 @@ namespace {
 
 void printUsage() {
   std::cout
-      << "radio_command | redsea [OPTIONS]\n"
-         "redsea [OPTIONS] -r <samplerate> < raw_signal_file.s16\n\n"
-         "-b, --input-bits       Same as --input bits (for backwards compatibility).\n"
+      << "Usage:\n\n"
+         "Live from radio:   rtl_fm [rtl_options] | redsea -r <samplerate> [redsea_options]\n"
+         "From WAV file:     redsea -f <input_wave_file.wav>\n"
+         "From raw PCM file: redsea -r <samplerate> < raw_pcm_file.raw\n\n"
+         "-b, --input-bits       (for backwards compatibility)\n"
          "\n"
          "-c, --channels CHANS   Number of channels in the raw input signal. Channels are\n"
          "                       interleaved streams of samples that are demodulated\n"
@@ -52,9 +54,9 @@ void printUsage() {
          "                       .flac, ...). If you have headered wave data via stdin,\n"
          "                       use '-'. Or you can specify another format with --input.\n"
          "\n"
-         "-h, --input-hex        Same as --input hex (for backwards compatibility).\n"
+         "-h, --input-hex        (for backwards compatibility)\n"
          "\n"
-         "-i, --input FORMAT     Decode input as FORMAT (see the redsea wiki in github\n"
+         "-i, --input FORMAT     Decode stdin input as FORMAT (see the redsea wiki in github\n"
          "                       for more info).\n"
          "                         bits Unsynchronized ASCII bit stream (01101011...). All "
          "characters\n"
@@ -124,6 +126,7 @@ void printVersion() {
 #endif
 }
 
+// \brief Process MPX from stdin or a file
 // \return Process exit code
 int processMPXInput(redsea::Options options) {
   redsea::MPXReader mpx;
@@ -134,14 +137,14 @@ int processMPXInput(redsea::Options options) {
     printUsage();
     return EXIT_FAILURE;
   } catch (const std::exception& e) {
-    std::cerr << "error: Can't open audio file: " << e.what() << "\n";
+    std::cerr << "redsea: error: Can't open input file (" << e.what() << ")\n";
     return EXIT_FAILURE;
   }
 
   options.samplerate   = mpx.getSamplerate();
   options.num_channels = mpx.getNumChannels();
 
-  auto& output_stream = options.feed_thru ? std::cerr : std::cout;
+  auto& output_ostream = options.feed_thru ? std::cerr : std::cout;
 
   const int num_data_streams = options.streams ? 4 : 1;
 
@@ -149,15 +152,14 @@ int processMPXInput(redsea::Options options) {
   std::vector<std::unique_ptr<redsea::Channel>> channels;
   std::vector<std::unique_ptr<redsea::SubcarrierSet>> subcarriers;
   for (std::uint32_t ch = 0; ch < options.num_channels; ch++) {
-    channels.emplace_back(std::make_unique<redsea::Channel>(options, ch, output_stream));
+    channels.emplace_back(std::make_unique<redsea::Channel>(options, ch));
     subcarriers.push_back(std::make_unique<redsea::SubcarrierSet>(options.samplerate));
   }
 
   while (!mpx.eof()) {
-    mpx.fillBuffer();
     for (std::uint32_t ch = 0; ch < options.num_channels; ch++) {
-      const auto bits = subcarriers[ch]->processChunk(mpx.readChunk(ch), num_data_streams);
-      channels[ch]->processBits(bits);
+      const auto bits = subcarriers[ch]->chunkToBits(mpx.readChunk(ch), num_data_streams);
+      channels[ch]->processBits(bits, output_ostream);
       if (channels[ch]->getSecondsSinceCarrierLost() > 10.f &&
           subcarriers[ch]->getSecondsSinceLastReset() > 5.f) {
         subcarriers[ch]->reset();
@@ -166,42 +168,50 @@ int processMPXInput(redsea::Options options) {
     }
   }
 
-  for (std::uint32_t ch = 0; ch < options.num_channels; ch++) channels[ch]->flush();
+  for (std::uint32_t ch = 0; ch < options.num_channels; ch++) channels[ch]->flush(output_ostream);
 
   return EXIT_SUCCESS;
 }
 
+// \brief Decode ASCII bit input from stdin
 // \return Process exit code
 int processASCIIBitsInput(const redsea::Options& options) {
-  redsea::Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
+  redsea::Channel channel(options, 0);
   redsea::AsciiBitReader ascii_reader(options);
 
+  auto& output_ostream = options.feed_thru ? std::cerr : std::cout;
+
   while (!ascii_reader.eof()) {
-    channel.processBit(ascii_reader.readBit(), 0);
+    channel.processBit(ascii_reader.readBit(std::cin), 0, output_ostream);
   }
 
-  channel.flush();
+  channel.flush(output_ostream);
 
   return EXIT_SUCCESS;
 }
 
+// \brief Decode ASCII hex input from stdin
+// \return Process exit code
 int processHexInput(const redsea::Options& options) {
-  redsea::Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
+  redsea::Channel channel(options, 0);
+  auto& output_ostream = options.feed_thru ? std::cerr : std::cout;
 
   while (!std::cin.eof()) {
-    const auto group = readHexGroup(options);
-    channel.processGroup(group, group.getDataStream());
+    const auto group = readHexGroup(options, std::cin);
+    channel.processAndPrintGroup(group, group.getDataStream(), output_ostream);
   }
 
   return EXIT_SUCCESS;
 }
 
+// \brief Decode TEF6686 serial input from stdin
 // \return Process exit code
 int processTEFInput(const redsea::Options& options) {
-  redsea::Channel channel(options, 0, options.feed_thru ? std::cerr : std::cout);
+  redsea::Channel channel(options, 0);
+  auto& output_ostream = options.feed_thru ? std::cerr : std::cout;
 
   while (!std::cin.eof()) {
-    channel.processGroup(readTEFGroup(options), 0);
+    channel.processAndPrintGroup(readTEFGroup(options), 0, output_ostream);
   }
 
   return EXIT_SUCCESS;
@@ -215,7 +225,7 @@ int main(int argc, char** argv) {
   try {
     options = redsea::getOptions(argc, argv);
   } catch (const std::exception& e) {
-    std::cerr << "error: " << e.what() << std::endl;
+    std::cerr << "redsea: error: " << e.what() << std::endl;
     return EXIT_FAILURE;
   }
 

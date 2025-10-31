@@ -9,11 +9,12 @@ namespace redsea {
 
 struct TimedBit {
   // 1 / 0
-  int value;
+  bool value;
   // Time offset of the bit, in seconds from the start of the input chunk
   float time_from_chunk_start;
 };
 
+// Bits as demodulated from MPX
 struct BitBuffer {
   // Timestamp for when the *last* bit of the group was received, in system time
   std::chrono::time_point<std::chrono::system_clock> time_received;
