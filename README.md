@@ -160,7 +160,7 @@ redsea -f mpx_input.wav --output hex
 ### For building
 
 * Linux/macOS/Cygwin/MSYS2+MinGW
-* C++17 compiler
+* C++17 compiler (GCC 9 or later)
 * meson + ninja
 * enough RAM (see [building on a low-end system][Wiki: Building on a low-end system])
 

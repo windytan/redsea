@@ -27,19 +27,24 @@ jobs:
       run: perl test/end_to_end.pl build/redsea
 
   build-ubuntu-22-04:
-    name: "🐧 Build on Ubuntu 22.04"
+    name: "🐧 Build on Ubuntu 22.04 (GCC 9)"
     runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies (apt)
-      run: sudo apt install python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl sox
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+        sudo apt-get update
+        sudo apt-get install -y gcc-9 g++-9 python3-pip ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl sox git-lfs
     - name: Install meson (pip3)
       run: pip3 install --user meson
     - name: meson setup
-      run: meson setup -Dwerror=true build
+      run: export CC=gcc-9 CXX=g++-9 && meson setup -Dwerror=true build
     - name: compile
-      run: cd build && meson compile
+      run: export CC=gcc-9 CXX=g++-9 && cd build && meson compile
     - name: Download test data
       run: git lfs pull
     - name: Run basic end-to-end tests
