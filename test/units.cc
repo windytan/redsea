@@ -11,6 +11,7 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "../src/rft.hh"
+#include "../src/text/rdsstring.hh"
 #include "../src/util/base64.hh"
 #include "../src/util/csv.hh"
 #include "../src/util/tree.hh"
@@ -226,5 +227,49 @@ TEST_CASE("ObjectTree") {
 
     CHECK(std::holds_alternative<redsea::ObjectTree::object_t>(tree["object"].get()));
     CHECK(std::get<redsea::ObjectTree::object_t>(tree["object"].get()).size() == 2);
+  }
+}
+
+TEST_CASE("UTF-8 sanitization") {
+  SECTION("Valid ASCII") {
+    CHECK(redsea::sanitizeUtf8("hello") == "hello");
+    CHECK(redsea::sanitizeUtf8("") == "");
+  }
+
+  SECTION("Valid multi-byte sequences") {
+    // 2-byte: ° (C2 B0)
+    CHECK(redsea::sanitizeUtf8("22°C") == "22°C");
+    // 3-byte: € (E2 82 AC)
+    CHECK(redsea::sanitizeUtf8("100€") == "100€");
+    // Mixed Cyrillic (2-byte each): Київ
+    CHECK(redsea::sanitizeUtf8("Київ") == "Київ");
+  }
+
+  SECTION("Invalid start byte (continuation byte alone)") {
+    // 0x80 is a continuation byte, not a valid start
+    CHECK(redsea::sanitizeUtf8(std::string("\x80")) == "?");
+    CHECK(redsea::sanitizeUtf8(std::string("a\x80" "b")) == "a?b");
+  }
+
+  SECTION("Invalid continuation byte") {
+    // 2-byte start (C2) followed by invalid continuation (41 = 'A')
+    CHECK(redsea::sanitizeUtf8(std::string("\xC2" "A")) == "?A");
+  }
+
+  SECTION("Truncated 2-byte sequence at end") {
+    // C2 alone at end (expects another byte)
+    CHECK(redsea::sanitizeUtf8(std::string("test\xC2")) == "test?");
+  }
+
+  SECTION("Truncated 3-byte sequence at end") {
+    // E2 82 at end (expects one more byte for €)
+    CHECK(redsea::sanitizeUtf8(std::string("test\xE2\x82")) == "test?");
+    // E2 alone
+    CHECK(redsea::sanitizeUtf8(std::string("test\xE2")) == "test?");
+  }
+
+  SECTION("Truncated 4-byte sequence at end") {
+    // F0 9F 98 at end (expects one more byte for emoji)
+    CHECK(redsea::sanitizeUtf8(std::string("test\xF0\x9F\x98")) == "test?");
   }
 }

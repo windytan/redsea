@@ -68,28 +68,106 @@ std::string decodeUCS2(const std::string& src) {
 }
 
 // Length of a UTF-8 character starting at byte_start.
-// 0 on error.
+// Returns 1 on error (treat as single byte) to allow continuing.
+// Returns 0 if already at or past end of string.
 inline std::size_t charlen(const std::string& str, std::size_t byte_start) {
-  std::size_t nbyte{byte_start};
-
-  if (nbyte >= str.length())
+  if (byte_start >= str.length())
     return 0;
 
-  // While continuation bytes are seen
-  while ((static_cast<std::uint8_t>(str[nbyte]) & 0b1100'0000U) == 0b1000'0000U) {
-    nbyte++;
+  const std::uint8_t b = static_cast<std::uint8_t>(str[byte_start]);
 
-    if (nbyte >= str.length())
-      return 0;
+  // ASCII
+  if ((b & 0x80U) == 0x00U)
+    return 1;
+
+  std::size_t len = 0;
+  if ((b & 0xE0U) == 0xC0U)
+    len = 2;
+  else if ((b & 0xF0U) == 0xE0U)
+    len = 3;
+  else if ((b & 0xF8U) == 0xF0U)
+    len = 4;
+  else
+    return 1; // Invalid start byte
+
+  if (byte_start + len > str.length())
+    return 1; // Incomplete sequence
+
+  // Verify continuation bytes
+  for (std::size_t i = 1; i < len; ++i) {
+    if ((static_cast<std::uint8_t>(str[byte_start + i]) & 0xC0U) != 0x80U)
+      return 1; // Invalid sequence
   }
 
-  return nbyte - byte_start + 1;
+  return len;
 }
 
 constexpr std::uint8_t kStringTerminator{0x0D};
 constexpr std::uint8_t kBlankSpace{0x20};
 
 }  // namespace
+
+// Sanitize a UTF-8 string by replacing invalid/incomplete sequences with '?'.
+// This ensures the output is always valid UTF-8 for JSON serialization.
+std::string sanitizeUtf8(const std::string& src) {
+  std::string result;
+  result.reserve(src.size());
+
+  std::size_t i = 0;
+  while (i < src.size()) {
+    const std::uint8_t b = static_cast<std::uint8_t>(src[i]);
+
+    // Determine expected sequence length from first byte
+    std::size_t seq_len = 0;
+    if ((b & 0x80U) == 0x00U) {
+      // 1-byte ASCII: 0xxxxxxx
+      seq_len = 1;
+    } else if ((b & 0xE0U) == 0xC0U) {
+      // 2-byte sequence: 110xxxxx
+      seq_len = 2;
+    } else if ((b & 0xF0U) == 0xE0U) {
+      // 3-byte sequence: 1110xxxx
+      seq_len = 3;
+    } else if ((b & 0xF8U) == 0xF0U) {
+      // 4-byte sequence: 11110xxx
+      seq_len = 4;
+    } else {
+      // Invalid start byte (continuation byte or 0xF8+)
+      result += '?';
+      i++;
+      continue;
+    }
+
+    // Check if we have enough bytes remaining
+    if (i + seq_len > src.size()) {
+      // Incomplete sequence at end of string
+      result += '?';
+      break;
+    }
+
+    // Validate continuation bytes (must be 10xxxxxx)
+    bool valid = true;
+    for (std::size_t j = 1; j < seq_len; j++) {
+      const std::uint8_t cb = static_cast<std::uint8_t>(src[i + j]);
+      if ((cb & 0xC0U) != 0x80U) {
+        valid = false;
+        break;
+      }
+    }
+
+    if (valid) {
+      // Valid sequence - copy it
+      result.append(src, i, seq_len);
+      i += seq_len;
+    } else {
+      // Invalid sequence - replace first byte and continue
+      result += '?';
+      i++;
+    }
+  }
+
+  return result;
+}
 
 RDSString::RDSString(std::size_t len) : data_(len) {}
 
@@ -214,7 +292,7 @@ std::string RDSString::getLastCompleteString(std::size_t start, std::size_t len)
     byte_end += clen;
   }
 
-  return byte_end < last_complete_string_.length()
+  return byte_end <= last_complete_string_.length()
              ? last_complete_string_.substr(byte_start, byte_end - byte_start)
              : "";
 }

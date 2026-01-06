@@ -59,5 +59,9 @@ class RDSString {
   std::string last_complete_string_;
 };
 
+// Sanitize a UTF-8 string by replacing invalid/incomplete sequences with '?'.
+// This ensures the output is always valid UTF-8 for JSON serialization.
+std::string sanitizeUtf8(const std::string& src);
+
 }  // namespace redsea
 #endif  // RDSSTRING_H_

@@ -525,6 +525,8 @@ void Station::decodeType3A(const Group& group, ObjectTree& out) {
 
     // Enhanced RadioText (eRT)
     case 0x6552:
+      // eRT can be up to 128 bytes (32 segments x 4 bytes)
+      ert_.text.resize(128);
       ert_.text.setEncoding(getBool(oda_message, 0) ? RDSString::Encoding::UTF8
                                                     : RDSString::Encoding::UCS2);
       ert_.text.setDirection(getBool(oda_message, 1) ? RDSString::Direction::RTL
@@ -812,11 +814,12 @@ void Station::decodeType15A(const Group& group, ObjectTree& out) {
   }
 
   if ((group.has(BLOCK3) || group.has(BLOCK4)) && long_ps_.text.isComplete()) {
-    out["long_ps"] = rtrim(long_ps_.text.getLastCompleteString());
+    // Long PS uses UTF-8 encoding, sanitize before output
+    out["long_ps"] = sanitizeUtf8(rtrim(long_ps_.text.getLastCompleteString()));
   } else if (options_.show_partial) {
     try {
-      // May throw if UCS-2
-      out["partial_long_ps"] = long_ps_.text.str();
+      // May throw if UCS-2; sanitize UTF-8 for partial display
+      out["partial_long_ps"] = sanitizeUtf8(long_ps_.text.str());
     } catch (const std::exception& e) {
       out["debug"].push_back(e.what());
       return;
@@ -1051,7 +1054,8 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, ObjectTree& out) {
     if (text.length() > 0 && tag.content_type != 0) {
       ObjectTree tag_tree;
       tag_tree["content-type"] = getRTPlusContentTypeString(tag.content_type);
-      tag_tree["data"]         = rtrim(text);
+      // Sanitize UTF-8 for eRT+ to handle incomplete multi-byte sequences
+      tag_tree["data"]         = sanitizeUtf8(rtrim(text));
       out["tags"].push_back(tag_tree);
     }
   }
@@ -1068,7 +1072,8 @@ void Station::parseEnhancedRT(const Group& group, ObjectTree& out) {
   }
 
   if (ert_.text.isComplete()) {
-    out["enhanced_radiotext"] = rtrim(ert_.text.getLastCompleteString());
+    // Sanitize UTF-8 before output to handle incomplete multi-byte sequences
+    out["enhanced_radiotext"] = sanitizeUtf8(rtrim(ert_.text.getLastCompleteString()));
   }
 }
 
