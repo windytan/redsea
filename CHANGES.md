@@ -2,6 +2,13 @@
 
 We use [semantic versioning](https://semver.org/).
 
+## Current HEAD (WIP)
+
+* Fixes to eRT/eRT+ decoding (#152) by VasylSamoilov:
+  * Show incomplete UTF-8 characters as '?' instead of discarding the entire string
+  * Allow messages of up to 128 bytes in length
+  * Fix off-by-one in the RadioText+ tag placement for eRT
+
 ## 1.3.0 (2026-01-02)
 
 File offset timestamps, bugfixes, and general maintenance. This version requires C++17.

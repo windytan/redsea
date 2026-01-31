@@ -8,7 +8,7 @@ project(
     'prefix=/usr/local',
     'cpp_std=c++17',
   ],
-  version: '1.3.0',
+  version: '1.3.1-SNAPSHOT',
 )
 
 # Store version number to be compiled in
