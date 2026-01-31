@@ -196,6 +196,12 @@ sub test_InputRawPCM {
     checkStdoutMatches('"pi":');
     checkStderrEmpty();
 
+    printAssertName('Resample from 0.192M');
+    checkExitSuccess(
+        runRedseaWithArgs("--samplerate 0.192M < $pcm_file_192k") );
+    checkStdoutMatches('"pi":');
+    checkStderrEmpty();
+
     # Just typing "redsea" will launch this default function, for
     # backward compatibility. But we have a warning for new users.
     printAssertName('No options 171k');
