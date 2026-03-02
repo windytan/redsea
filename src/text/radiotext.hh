@@ -40,6 +40,7 @@ class RadioText {
   Plus plus;
   std::string previous_potentially_complete_message;
   int ab{};
+  bool output_this_cycle{};  // Prevents duplicate output within same cycle (#118)
 };
 
 class ProgramServiceName {

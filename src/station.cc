@@ -443,10 +443,16 @@ void Station::decodeType2(const Group& group, ObjectTree& out) {
     radiotext_.previous_potentially_complete_message = potentially_complete_message;
   }
 
+  // Allows the same message to be output again in a new cycle (#118)
+  if (radiotext_position == 0) {
+    radiotext_.output_this_cycle = false;
+  }
+
   // The transmitter requests us to clear the buffer (message contents will change).
   // Note: This is sometimes overused in the wild.
   if (is_ab_changed) {
     radiotext_.text.clear();
+    radiotext_.output_this_cycle = false;
   }
 
   if (group.getType().value.version == GroupType::Version::A) {
@@ -465,11 +471,18 @@ void Station::decodeType2(const Group& group, ObjectTree& out) {
 
   // Transmitter used Method 1 or 2 convey the length of the string.
   if (radiotext_.text.isComplete()) {
-    out["radiotext"] = rtrim(radiotext_.text.getLastCompleteString());
+    // Only output once per cycle to avoid duplicates when padding follows terminator (#118)
+    if (!radiotext_.output_this_cycle) {
+      out["radiotext"]             = rtrim(radiotext_.text.getLastCompleteString());
+      radiotext_.output_this_cycle = true;
+    }
 
     // Method 3 was used instead (and was confirmed by a repeat).
   } else if (has_potentially_complete_message) {
-    out["radiotext"] = rtrim(std::move(potentially_complete_message));
+    if (!radiotext_.output_this_cycle) {
+      out["radiotext"]             = rtrim(std::move(potentially_complete_message));
+      radiotext_.output_this_cycle = true;
+    }
 
     // The string is not complete yet, but user wants to see it anyway.
   } else if (options_.show_partial) {
