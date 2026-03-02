@@ -8,6 +8,8 @@ We use [semantic versioning](https://semver.org/).
   * Show incomplete UTF-8 characters as '?' instead of discarding the entire string
   * Allow messages of up to 128 bytes in length
   * Fix off-by-one in the RadioText+ tag placement for eRT
+* Fixed an issue where RadioText was constantly re-printed if the station used both string
+  terminators and space-padding (#118)
 
 ## 1.3.0 (2026-01-02)
 
