@@ -368,7 +368,28 @@ TEST_CASE("Radiotext") {
     }
   }
 
-  SECTION("Repeated message is correctly displayed") {
+  SECTION("Message changes") {
+    const auto json_lines{hex2json(
+        {0x6202'2150'4749'524C, 0x6202'2151'5327'2047, 0x6202'2152'454E'4552, 0x6202'2153'4154'494F,
+         0x6202'2154'4E20'2D20, 0x6202'2155'5275'6E20, 0x6202'2156'6465'7669, 0x6202'2157'6C20'7275,
+         0x6202'2158'6E0D'2020, 0x6202'2140'5061'7061, 0x6202'2141'6E61'6E61, 0x6202'2142'616D'616E,
+         0x6202'2143'204B'2D70, 0x6202'2144'6F70'2D73, 0x6202'2145'686F'770D},
+        options, 0x6202)};
+
+    REQUIRE(json_lines.size() == 15);
+    REQUIRE(json_lines[8].contains("radiotext"));
+    CHECK(json_lines[8]["radiotext"] == "GIRLS' GENERATION - Run devil run");
+    REQUIRE(json_lines[14].contains("radiotext"));
+    CHECK(json_lines[14]["radiotext"] == "Papananaaman K-pop-show");
+
+    // Other lines shouldn't have RadioText
+    for (std::size_t i = 0; i < json_lines.size(); i++) {
+      if (i != 8 && i != 14)
+        REQUIRE_FALSE(json_lines[i].contains("radiotext"));
+    }
+  }
+
+  SECTION("Repeated message") {
     // Radio Nova (fi)
     const auto json_lines{
         hex2json({0x6209'2540'5261'6469, 0x6209'2541'6F20'4E6F, 0x6209'2542'7661'2070,
