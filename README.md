@@ -1,6 +1,6 @@
 # redsea RDS decoder
 
-redsea is a lightweight command-line [FM-RDS](https://en.wikipedia.org/wiki/Radio_Data_System)
+**redsea** is a lightweight command-line [FM-RDS](https://en.wikipedia.org/wiki/Radio_Data_System)
 decoder that supports many [RDS features][Wiki: Features].
 
 [![release](https://img.shields.io/github/release/windytan/redsea.svg)](https://github.com/windytan/redsea/releases/latest)
@@ -15,10 +15,12 @@ each line corresponds to one RDS group; or it can print them as raw hex.
 [Wiki: Features]: https://github.com/windytan/redsea/wiki/Supported-RDS-features
 [Wiki: Input]: https://github.com/windytan/redsea/wiki/Input-formats
 
-Simple usage:
+Simple usage, note the sampling rate of 171k, which is recommended for redsea.
+
+```bash
+rtl_fm -f 89.3M -s 171k - | redsea -r 171k
 ```
-$ rtl_fm -f 89.3 -s 171k - | redsea -r 171k
-```
+
 Example output:
 
 ```json
@@ -43,28 +45,34 @@ Example output:
 ## How to install
 
 Redsea is written in C++ and needs to be built from source, but this is not very complicated. Commands are provided
-below (you should skip the `$` at the start of each command).
+below.
 
 ### 1. Install dependencies
 
 On Ubuntu:
 
-        $ sudo apt install git build-essential meson libsndfile1-dev libliquid-dev
+```bash
+sudo apt install git build-essential meson libsndfile1-dev libliquid-dev
+```
 
 Or on older Debians:
 
-        $ sudo apt-get install python3-pip ninja-build build-essential libsndfile1-dev libliquid-dev nlohmann-json3-dev
-        $ pip3 install --user meson
+```bash
+sudo apt-get install python3-pip ninja-build build-essential libsndfile1-dev libliquid-dev nlohmann-json3-dev
+pip3 install --user meson
+```
 
 Or on macOS using Homebrew:
 
-        $ brew install meson libsndfile liquid-dsp nlohmann-json
-        $ xcode-select --install
+```
+brew install meson libsndfile liquid-dsp nlohmann-json
+xcode-select --install
+```
 
 Meson will later download nlohmann-json for you if it can't be found in the package repositories.
 
 It's also possible to build redsea on Windows, either in Cygwin or by building
-an .exe with MSYS2/MinGW. This is a bit more involved - [instructions][Wiki: Windows build] are in the wiki.
+an `*.exe` with MSYS2/MinGW. This is a bit more involved - [instructions][Wiki: Windows build] are in the wiki.
 
 [Wiki: Windows build]: https://github.com/windytan/redsea/wiki/Installation#windows
 
@@ -75,13 +83,17 @@ Downloading a [release version](https://github.com/windytan/redsea/releases) is 
 Alternatively, if you wish to have the latest snapshot, you can also clone this git repository.
 The snapshots are work-in-progress, but we attempt to always keep the main branch in a working condition.
 
-        $ git clone https://github.com/windytan/redsea.git
-        $ cd redsea
+```bash
+git clone https://github.com/windytan/redsea.git
+cd redsea
+```
 
 ### 3. Compile redsea
 
-        $ meson setup build && cd build
-        $ meson compile
+```bash
+meson setup build && cd build
+meson compile
+```
 
 If your build machine has very little RAM (e.g. Raspberry Pi) please refer to our guide
 on [building on a low-end system][Wiki: Building on a low-end system].
@@ -96,8 +108,10 @@ for more.
 
 If you cloned the repository you can later get the latest updates and recompile:
 
-        $ git pull
-        $ cd build && meson compile
+```bash
+git pull
+cd build && meson compile
+```
 
 [Wiki: Building on a low-end system]: https://github.com/windytan/redsea/wiki/Building-on-a-low‐end-system
 
@@ -122,7 +136,7 @@ rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea -r 171k
 
 ### From SPY files to JSON
 
-.spy (or .rds) is the common hexadecimal RDS logging format.
+`*.spy` (or `*.rds`) is the common hexadecimal RDS logging format.
 
 ```bash
 redsea --input hex < sample_hex_file.spy
@@ -137,6 +151,10 @@ from a pipe (stdin) using `-f -`.
 ```bash
 redsea -f mpx_input.wav --output hex
 ```
+
+Note that not all `rtl_fm` versions write a WAV header with parameter `-E wav`. You might
+need to do that with sox, see `rtl_fm  -f 104900k -s 171k - | sox -t raw -r 171k -es -b 16 - -c 1 104900.wav`
+
 
 [Wiki: Use cases]: https://github.com/windytan/redsea/wiki/Use-cases
 [Wiki: Command line options]: https://github.com/windytan/redsea/wiki/Command-line-options
@@ -180,13 +198,17 @@ If you've installed [liquid-dsp][liquid-dsp] yet meson can't find it, it's
 possible that XCode command line tools aren't installed. Run this command to fix
 it:
 
-    xcode-select --install
+```
+xcode-select --install
+```
 
 ### Can't find liquid-dsp on Linux
 
 Try running this in the terminal:
 
-    sudo ldconfig
+```bash
+sudo ldconfig
+```
 
 ## Contributing
 
