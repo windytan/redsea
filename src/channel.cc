@@ -59,6 +59,8 @@ Channel::Channel(const Options& options, int which_channel, std::uint16_t pi)
 // \param bit 0 or 1
 // \param which_data_stream Which data stream was it received on, 0..3
 void Channel::processBit(bool bit, std::size_t which_data_stream, std::ostream& output_ostream) {
+  assert(which_data_stream < block_streams_.size());
+
   block_streams_[which_data_stream].pushBit(bit);
 
   if (block_streams_[which_data_stream].hasGroupReady())
@@ -118,6 +120,8 @@ void Channel::processBits(const BitBuffer& buffer, std::ostream& output_ostream)
 /// \param output_ostream Where to print the output
 void Channel::processAndPrintGroup(Group group, std::size_t which_data_stream,
                                    std::ostream& output_ostream) {
+  assert(which_data_stream < block_streams_.size());
+
   // If the rx timestamp wasn't set from the MPX buffer we'll set it now (hex/bits input?)
   if (options_.timestamp && !group.getRxTime().has_value) {
     const auto now = std::chrono::system_clock::now();

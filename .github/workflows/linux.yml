@@ -9,6 +9,8 @@ on:
   workflow_dispatch:
 
 jobs:
+  # * Run e2e tests against release binary (no unit/component tests)
+  # * Use apt-provided dependencies
   build-ubuntu-24-04:
     name: "🐧 Build on Ubuntu 24.04"
     runs-on: ubuntu-24.04
@@ -26,6 +28,9 @@ jobs:
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl build/redsea
 
+  # * Run e2e tests against release binary (no unit/component tests)
+  # * Use apt-provided dependencies (but get meson from pip)
+  # * Older GCC
   build-ubuntu-22-04:
     name: "🐧 Build on Ubuntu 22.04 (GCC 9)"
     runs-on: ubuntu-22.04
@@ -50,6 +55,7 @@ jobs:
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl build/redsea
 
+  # Build a .deb, install it system-wide, and run e2e tests against it
   build-ubuntu-deb-package:
     name: "🐧 Build Debian package"
     runs-on: ubuntu-24.04
@@ -69,6 +75,9 @@ jobs:
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl --installed redsea
 
+  # Older Debian
+  # * Use apt-provided dependencies (but get meson from pip)
+  # * Run e2e tests against release binary (no unit/component tests, no MPX input tests)
   build-debian-bullseye:
     name: "🐧 Build on Debian 11 (Bullseye)"
     runs-on: ubuntu-latest

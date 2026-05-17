@@ -207,6 +207,7 @@ void Station::updateAndPrint(const Group& group, std::ostream& stream) {
 }
 
 std::uint16_t Station::getPI() const {
+  assert(has_pi_);
   return pi_;
 }
 
@@ -236,6 +237,8 @@ void Station::decodeBasics(const Group& group, ObjectTree& out) {
 
 // Group 0: Basic tuning and switching information
 void Station::decodeType0(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 0);
+
   // Block 2: Flags
   const std::uint16_t segment_address         = getBits<2>(group.get(BLOCK2), 0);
   const bool is_di                            = getBool(group.get(BLOCK2), 2);
@@ -338,6 +341,8 @@ void Station::decodeType0(const Group& group, ObjectTree& out) {
 
 // Group 1: Programme Item Number and slow labelling codes
 void Station::decodeType1(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 1);
+
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
@@ -406,6 +411,8 @@ void Station::decodeType1(const Group& group, ObjectTree& out) {
 //             reliably in noisy conditions.
 // See https://github.com/windytan/redsea/wiki/Some-RadioText-research
 void Station::decodeType2(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 2);
+
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
@@ -499,6 +506,9 @@ void Station::decodeType2(const Group& group, ObjectTree& out) {
 
 // Group 3A: Application identification for Open Data
 void Station::decodeType3A(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 3 &&
+         group.getType().value.version == GroupType::Version::A);
+
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
@@ -560,6 +570,9 @@ void Station::decodeType3A(const Group& group, ObjectTree& out) {
 
 // Group 4A: Clock-time and date
 void Station::decodeType4A(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 4 &&
+         group.getType().value.version == GroupType::Version::A);
+
   if (!(group.has(BLOCK3) && group.has(BLOCK4)))
     return;
 
@@ -630,6 +643,8 @@ void Station::decodeType4A(const Group& group, ObjectTree& out) {
 
 // Group 5: Transparent data channels
 void Station::decodeType5(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 5);
+
   const auto address                 = getBits<5>(group.get(BLOCK2), 0);
   out["transparent_data"]["address"] = address;
 
@@ -674,6 +689,8 @@ void Station::decodeType5(const Group& group, ObjectTree& out) {
 
 // Group 6: In-house applications
 void Station::decodeType6(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 6);
+
   out["in_house_data"].push_back(getBits<5>(group.get(BLOCK2), 0));
 
   if (group.getType().value.version == GroupType::Version::A) {
@@ -693,11 +710,16 @@ void Station::decodeType6(const Group& group, ObjectTree& out) {
 // Group 9A: Emergency warning systems
 void Station::decodeType9A(const Group& group, ObjectTree& out) {
   static_cast<void>(group);
+  assert(group.getType().has_value && group.getType().value.number == 9 &&
+         group.getType().value.version == GroupType::Version::A);
   out["debug"].push_back("TODO: 9A");
 }
 
 // Group 10A: Programme Type Name
 void Station::decodeType10A(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 10 &&
+         group.getType().value.version == GroupType::Version::A);
+
   if (!group.has(BLOCK3) || !group.has(BLOCK4))
     return;
 
@@ -717,6 +739,8 @@ void Station::decodeType10A(const Group& group, ObjectTree& out) {
 
 // Group 14: Enhanced Other Networks information
 void Station::decodeType14(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 14);
+
   if (!(group.has(BLOCK4)))
     return;
 
@@ -815,6 +839,9 @@ void Station::decodeType14(const Group& group, ObjectTree& out) {
 /* Group 15A: Long PS or ODA */
 // @note Based on captures and https://www.rds.org.uk/2010/Glossary-Of-Terms.htm
 void Station::decodeType15A(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 15 &&
+         group.getType().value.version == GroupType::Version::A);
+
   const std::uint16_t segment_address = getBits<3>(group.get(BLOCK2), 0);
 
   if (group.has(BLOCK3)) {
@@ -842,6 +869,10 @@ void Station::decodeType15A(const Group& group, ObjectTree& out) {
 
 /* Group 15B: Fast basic tuning and switching information */
 void Station::decodeType15B(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 15 &&
+         group.getType().value.version == GroupType::Version::B);
+  assert(group.has(BLOCK2) || group.has(BLOCK4));
+
   const auto block_num                = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
   const std::uint16_t segment_address = getBits<2>(group.get(BLOCK2), 0);
   const bool is_di                    = getBool(group.get(BLOCK2), 2);

@@ -9,6 +9,10 @@ on:
   workflow_dispatch:
 
 jobs:
+  # * Run all tests against release binary with sanitizers enabled
+  # * Run all tests against debug binary
+  # * Use homebrew-provided dependencies
+  # * Install redsea system-wide
   build-test-macos:
     name: "🍎 Build and test on macOS"
     runs-on: macos-latest
@@ -17,13 +21,21 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install dependencies (brew)
       run: brew install meson libsndfile liquid-dsp nlohmann-json catch2 sox
+    - name: Download test data
+      run: git lfs pull
     - name: meson setup
       run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false build -Dbuild_tests=true
     - name: Compile & install
       run: cd build && meson install
-    - name: Download test data
-      run: git lfs pull
     - name: Run unit & component tests
       run: cd build && meson test
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl --installed redsea
+    - name: meson setup (debug)
+      run: meson setup --buildtype=debug -Dwerror=true -Dbuild_tests=true build-debug
+    - name: Compile (debug)
+      run: cd build-debug && meson compile
+    - name: Run unit & component tests (debug)
+      run: cd build-debug && meson test
+    - name: Run basic end-to-end tests (debug)
+      run: perl test/end_to_end.pl build-debug/redsea

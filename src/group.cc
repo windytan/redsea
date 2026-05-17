@@ -1,5 +1,6 @@
 #include "src/group.hh"
 
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <numeric>
@@ -30,10 +31,13 @@ bool operator<(const GroupType& type1, const GroupType& type2) {
 }
 
 std::uint16_t Group::get(eBlockNumber block_num) const {
+  assert(block_num < blocks_.size());
+  assert(has(block_num));
   return blocks_[block_num].data;
 }
 
 bool Group::has(eBlockNumber block_num) const {
+  assert(block_num < blocks_.size());
   return blocks_[block_num].is_received;
 }
 
@@ -97,6 +101,7 @@ std::uint32_t Group::getDataStream() const {
 }
 
 void Group::setBlock(eBlockNumber block_num, Block block) {
+  assert(block_num < 4);
   blocks_[block_num] = block;
 
   // Try to find out the group type if unknown so far

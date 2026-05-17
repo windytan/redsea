@@ -119,6 +119,7 @@ void NCO::reset() {
 }
 
 std::complex<float> NCO::mixDown(std::complex<float> s, int n_stream) {
+  assert(n_stream >= 0 && n_stream < 4);
   return s * std::polar(1.f, -phases_[n_stream]);
 }
 

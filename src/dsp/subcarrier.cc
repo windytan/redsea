@@ -58,6 +58,7 @@ Maybe<bool> BiphaseDecoder::push(std::complex<float> psk_symbol) {
   prev_psk_symbol_          = psk_symbol;
 
   // Every other value should be ~1 and every other ~0.
+  assert(clock_ < clock_history_.size());
   clock_history_[clock_] = std::abs(biphase_symbol.real());
   clock_++;
 
@@ -93,6 +94,7 @@ bool DeltaDecoder::decode(bool input_bit) {
 
 SubcarrierSet::SubcarrierSet(float samplerate)
     : resample_ratio_(kTargetSampleRate_Hz / samplerate), resampler_(kResamplerDelay) {
+  assert(samplerate >= kMinimumSampleRate_Hz && samplerate <= kMaximumSampleRate_Hz);
   for (auto& demod : datastream_demods_) {
     demod.agc.init(kAGCBandwidth_Hz / kTargetSampleRate_Hz, kAGCInitialGain);
     demod.fir_lpf.init(255, kLowpassCutoff_Hz / kTargetSampleRate_Hz);
@@ -151,6 +153,9 @@ const MPXBuffer& SubcarrierSet::resampleChunk(const MPXBuffer& input_chunk) {
 // \param num_data_streams Number of RDS data streams to process (1 to 4)
 // \return Raw bits without any block synchronization
 BitBuffer SubcarrierSet::chunkToBits(const MPXBuffer& input_chunk, int num_data_streams) {
+  assert(num_data_streams >= 1 && num_data_streams <= 4);
+  assert(input_chunk.used_size <= input_chunk.data.size());
+
   const MPXBuffer& chunk = resampleChunk(input_chunk);
 
   BitBuffer bitbuffer;
