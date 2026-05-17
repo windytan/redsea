@@ -28,11 +28,14 @@ jobs:
           mingw-w64-x86_64-meson
           mingw-w64-x86_64-nlohmann-json
           mingw-w64-x86_64-python3
-    # Disable glibc specific checks and headers
+    # Clone liquid-dsp but:
+    # * Disable glibc-specific checks and headers
+    # * Check out a version before logging was implemented (logging uses some POSIX-only calls)
     - name: Patch & build liquid-dsp
       shell: msys2 {0}
       run: |
         git clone https://github.com/jgaeddert/liquid-dsp.git && cd liquid-dsp
+        git checkout v1.7.0
         perl -i -p -e 's/(AC_CHECK_LIB\(\[c\].+| sys\/resource.h)//g' configure.ac
         ./bootstrap.sh && ./configure --prefix=/mingw64 && make
         make install
