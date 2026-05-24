@@ -1121,7 +1121,9 @@ void parseRadioTextPlus(const Group& group, RadioText& rt, ObjectTree& out) {
 void Station::parseEnhancedRT(const Group& group, ObjectTree& out) {
   const std::size_t position = getBits<5>(group.get(BLOCK2), 0) * 4U;
 
-  ert_.update(position, getUint8(group.get(BLOCK3), 8), getUint8(group.get(BLOCK3), 0));
+  if (group.has(BLOCK3)) {
+    ert_.update(position, getUint8(group.get(BLOCK3), 8), getUint8(group.get(BLOCK3), 0));
+  }
 
   if (group.has(BLOCK4)) {
     ert_.update(position + 2U, getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0));
