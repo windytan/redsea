@@ -109,8 +109,8 @@ void decodeLocation(const LocationDatabase& db, Message& message, std::uint16_t 
       out["tmc"]["message"]["coordinates"][i]["lon"] = static_cast<double>(points[i].lon);
     }
 
-    if (points.size() > 1 && points.at(0).name1.length() > 0 &&
-        points.at(points.size() - 1).name1.length() > 0) {
+    if (points.size() > 1 && !points.at(0).name1.empty() &&
+        !points.at(points.size() - 1).name1.empty()) {
       out["tmc"]["message"]["span_from"] = points.at(0).name1;
       out["tmc"]["message"]["span_to"]   = points.at(points.size() - 1).name1;
     }
@@ -119,7 +119,7 @@ void decodeLocation(const LocationDatabase& db, Message& message, std::uint16_t 
       const Road road = db.roads.at(roa_lcd);
       if (!road.road_number.empty())
         out["tmc"]["message"]["road_number"] = road.road_number;
-      if (road.name.length() > 0)
+      if (!road.name.empty())
         out["tmc"]["message"]["road_name"] = road.name;
       else if (!db.points.at(lcd).road_name.empty())
         out["tmc"]["message"]["road_name"] = db.points.at(lcd).road_name;

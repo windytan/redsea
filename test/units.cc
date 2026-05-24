@@ -248,12 +248,14 @@ TEST_CASE("UTF-8 sanitization") {
   SECTION("Invalid start byte (continuation byte alone)") {
     // 0x80 is a continuation byte, not a valid start
     CHECK(redsea::sanitizeUtf8(std::string("\x80")) == "?");
-    CHECK(redsea::sanitizeUtf8(std::string("a\x80" "b")) == "a?b");
+    CHECK(redsea::sanitizeUtf8(std::string("a\x80"
+                                           "b")) == "a?b");
   }
 
   SECTION("Invalid continuation byte") {
     // 2-byte start (C2) followed by invalid continuation (41 = 'A')
-    CHECK(redsea::sanitizeUtf8(std::string("\xC2" "A")) == "?A");
+    CHECK(redsea::sanitizeUtf8(std::string("\xC2"
+                                           "A")) == "?A");
   }
 
   SECTION("Truncated 2-byte sequence at end") {

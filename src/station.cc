@@ -28,6 +28,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -79,7 +80,8 @@ Station::Station(const Options& options, int which_channel, std::uint16_t pi)
   // NOLINTEND(cppcoreguidelines-prefer-member-initializer)
 }
 
-// @param stream The stream to print to (not to be confused with RDS2 data streams)
+/// @brief Receive a new group, update station state, and print the json line
+/// @param stream The stream to print to (not to be confused with RDS2 data streams)
 void Station::updateAndPrint(const Group& group, std::ostream& stream) {
   if (!has_pi_) {
     return;
@@ -762,8 +764,7 @@ void Station::decodeType14(const Group& group, ObjectTree& out) {
     case 1:
     case 2:
     case 3:
-      if (eon_ps_names_.find(on_pi) == eon_ps_names_.end())
-        eon_ps_names_.emplace(on_pi, RDSString(8));
+      eon_ps_names_.try_emplace(on_pi, RDSString(8));
 
       eon_ps_names_[on_pi].set(2U * eon_variant, getUint8(group.get(BLOCK3), 8));
       eon_ps_names_[on_pi].set(2U * eon_variant + 1, getUint8(group.get(BLOCK3), 0));
@@ -1133,14 +1134,14 @@ void Station::parseDAB(const Group& group, ObjectTree& out) {
     // Ensemble table
 
     const auto mode = getBits<2>(group.get(BLOCK2), 2);
-    const std::array<std::string, 4> modes{"unspecified", "I", "II or III", "IV"};
+    constexpr std::array<std::string_view, 4> modes{"unspecified", "I", "II or III", "IV"};
     out["dab"]["mode"] = modes[mode];
 
     const std::uint32_t freq = 16 * getBits<18>(group.get(BLOCK2), group.get(BLOCK3), 0);
 
     out["dab"]["kilohertz"] = freq;
 
-    const std::map<std::uint32_t, std::string> dab_channels({
+    static const std::map<std::uint32_t, std::string_view> dab_channels({
         // clang-format off
         { 174'928,  "5A"}, { 176'640,  "5B"}, { 178'352,  "5C"}, { 180'064,  "5D"},
         { 181'936,  "6A"}, { 183'648,  "6B"}, { 185'360,  "6C"}, { 187'072,  "6D"},

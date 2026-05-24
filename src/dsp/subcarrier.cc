@@ -239,10 +239,6 @@ BitBuffer SubcarrierSet::chunkToBits(const MPXBuffer& input_chunk, int num_data_
   return bitbuffer;
 }
 
-bool SubcarrierSet::eof() const {
-  return is_eof_;
-}
-
 // Seconds of signal processed since last reset.
 /// \note Not to be used for measurements, since it will lose precision as the counter grows.
 float SubcarrierSet::getSecondsSinceLastReset() const {

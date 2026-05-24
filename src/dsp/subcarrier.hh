@@ -71,7 +71,6 @@ class SubcarrierSet {
   BitBuffer chunkToBits(const MPXBuffer& input_chunk, int num_data_streams);
   void reset();
 
-  [[nodiscard]] bool eof() const;
   [[nodiscard]] float getSecondsSinceLastReset() const;
 
  private:
@@ -92,8 +91,6 @@ class SubcarrierSet {
   std::array<Demod, 4> datastream_demods_;
 
   MPXBuffer resampled_chunk_{};
-
-  bool is_eof_{false};
 };
 
 }  // namespace redsea

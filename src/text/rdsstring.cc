@@ -74,7 +74,7 @@ inline std::size_t charlen(const std::string& str, std::size_t byte_start) {
   if (byte_start >= str.length())
     return 0;
 
-  const std::uint8_t b = static_cast<std::uint8_t>(str[byte_start]);
+  const auto b = static_cast<std::uint8_t>(str[byte_start]);
 
   // ASCII
   if ((b & 0x80U) == 0x00U)
@@ -88,15 +88,15 @@ inline std::size_t charlen(const std::string& str, std::size_t byte_start) {
   else if ((b & 0xF8U) == 0xF0U)
     len = 4;
   else
-    return 1; // Invalid start byte
+    return 1;  // Invalid start byte
 
   if (byte_start + len > str.length())
-    return 1; // Incomplete sequence
+    return 1;  // Incomplete sequence
 
   // Verify continuation bytes
   for (std::size_t i = 1; i < len; ++i) {
     if ((static_cast<std::uint8_t>(str[byte_start + i]) & 0xC0U) != 0x80U)
-      return 1; // Invalid sequence
+      return 1;  // Invalid sequence
   }
 
   return len;
@@ -115,7 +115,7 @@ std::string sanitizeUtf8(const std::string& src) {
 
   std::size_t i = 0;
   while (i < src.size()) {
-    const std::uint8_t b = static_cast<std::uint8_t>(src[i]);
+    const auto b = static_cast<std::uint8_t>(src[i]);
 
     // Determine expected sequence length from first byte
     std::size_t seq_len = 0;
@@ -148,7 +148,7 @@ std::string sanitizeUtf8(const std::string& src) {
     // Validate continuation bytes (must be 10xxxxxx)
     bool valid = true;
     for (std::size_t j = 1; j < seq_len; j++) {
-      const std::uint8_t cb = static_cast<std::uint8_t>(src[i + j]);
+      const auto cb = static_cast<std::uint8_t>(src[i + j]);
       if ((cb & 0xC0U) != 0x80U) {
         valid = false;
         break;

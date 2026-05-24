@@ -237,7 +237,6 @@ void Resampler::setRatio(float ratio) {
 
 Resampler::~Resampler() {
   if (object_ != nullptr)
-
     resamp_rrrf_destroy(object_);
 }
 
