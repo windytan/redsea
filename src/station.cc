@@ -886,8 +886,8 @@ void Station::decodeType15B(const Group& group, ObjectTree& out) {
   assert(group.has(BLOCK2) || group.has(BLOCK4));
 
   const auto block_num                = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
-  const std::uint16_t segment_address = getBits<2>(group.get(BLOCK2), 0);
-  const bool is_di                    = getBool(group.get(BLOCK2), 2);
+  const std::uint16_t segment_address = getBits<2>(group.get(block_num), 0);
+  const bool is_di                    = getBool(group.get(block_num), 2);
 
   out["di"][getDICodeString(segment_address)] = is_di;
   out["ta"]                                   = getBool(group.get(block_num), 4);
