@@ -106,6 +106,10 @@ void MPXReader::init(const Options& options) {
                    "parameter"
                 << std::endl;
     }
+    if (num_channels_ < 1 || num_channels_ > kMaxNumChannels) {
+      throw std::runtime_error("file has unsupported number of channels: " +
+                               std::to_string(num_channels_));
+    }
   }
 
   chunk_size_ = (static_cast<sf_count_t>(kInputChunkSize) / num_channels_) * num_channels_;

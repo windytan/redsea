@@ -23,6 +23,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -66,6 +67,14 @@ Maybe<T> parseSI(char* cstr) {
   } else if (*endptr != '\0') {
     // Extra characters
     return {};
+  }
+
+  if (factor > 1) {
+    const T max_safe = std::numeric_limits<T>::max() / factor;
+    const T min_safe = std::numeric_limits<T>::min() / factor;
+    if (value > max_safe || value < min_safe) {
+      return {};
+    }
   }
 
   return Maybe<T>{value * factor};

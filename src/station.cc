@@ -618,8 +618,16 @@ void Station::decodeType4A(const Group& group, ObjectTree& out) {
   utc_plus_offset_tm.tm_min   = static_cast<int>(minute_utc);
   utc_plus_offset_tm.tm_sec   = static_cast<int>(local_offset * 3600.0);
 
-  const std::time_t local_t     = std::mktime(&utc_plus_offset_tm);
+  const std::time_t local_t = std::mktime(&utc_plus_offset_tm);
+  if (local_t == -1) {
+    out["debug"].push_back("invalid date/time");
+    return;
+  }
   const std::tm* const local_tm = std::localtime(&local_t);
+  if (local_tm == nullptr) {
+    out["debug"].push_back("invalid date/time");
+    return;
+  }
 
   const bool is_date_valid =
       hour_utc <= 23 && minute_utc <= 59 && std::fabs(std::trunc(local_offset)) <= 14.0;
