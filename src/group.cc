@@ -48,7 +48,7 @@ bool Group::isEmpty() const {
 Maybe<std::uint16_t> Group::getPI() const {
   Maybe<std::uint16_t> result;
 
-  if (type_.value.version == GroupType::Version::C)
+  if (type_.has_value && type_.value.version == GroupType::Version::C)
     return result;
 
   if (blocks_[BLOCK1].is_received)

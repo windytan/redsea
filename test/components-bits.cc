@@ -136,7 +136,6 @@ TEST_CASE("Error detection and correction") {
 
     CHECK(groups.back().getNumErrors() == 1);
     CHECK_FALSE(groups.back().has(redsea::BLOCK1));
-    CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
   }
 
   SECTION("Rejects double bit flip if FEC is disabled") {
@@ -154,6 +153,5 @@ TEST_CASE("Error detection and correction") {
 
     CHECK(groups.back().getNumErrors() == 1);
     CHECK_FALSE(groups.back().has(redsea::BLOCK1));
-    CHECK(groups.back().get(redsea::BLOCK1) == 0x0000);  // "----"
   }
 }

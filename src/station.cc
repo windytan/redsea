@@ -215,13 +215,16 @@ std::uint16_t Station::getPI() const {
 
 // Decode basic information common to (almost) all groups
 void Station::decodeBasics(const Group& group, ObjectTree& out) {
+  if (!group.getType().has_value) {
+    return;
+  }
+
   if (group.getType().value.version == GroupType::Version::C) {
     out["group"] = "C";
   } else if (group.has(BLOCK2)) {
     const std::uint16_t pty = getBits<5>(group.get(BLOCK2), 5);
 
-    if (group.getType().has_value)
-      out["group"] = group.getType().value.str();
+    out["group"] = group.getType().value.str();
 
     out["tp"] = getBool(group.get(BLOCK2), 10);
 
