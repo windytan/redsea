@@ -140,7 +140,6 @@ LocationDatabase loadLocationDatabase(const std::string& directory) {
       if (point.roa_lcd == 0 && locdb.segments.find(point.seg_lcd) != locdb.segments.end()) {
         point.roa_lcd   = locdb.segments.at(point.seg_lcd).roa_lcd;
         point.road_name = locdb.roads.at(point.roa_lcd).name;
-        point.road_name = locdb.names[rnid];
       }
 
       locdb.points[point.lcd] = point;
