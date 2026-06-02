@@ -104,6 +104,14 @@ void Group::setBlock(eBlockNumber block_num, Block block) {
   assert(block_num < 4);
   blocks_[block_num] = block;
 
+  if (!block.is_received) {
+    return;
+  }
+
+  if (block_num == BLOCK3 && block.offset == Offset::Cprime) {
+    has_c_prime_ = true;
+  }
+
   // Try to find out the group type if unknown so far
   if (!type_.has_value) {
     if (block_num == BLOCK2) {

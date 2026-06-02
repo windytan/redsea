@@ -42,7 +42,7 @@ class Station {
   Station() = delete;
   Station(const Options& options, int which_channel, std::uint16_t pi);
   Station(const Options& options, int which_channel);
-  void updateAndPrint(const Group& group, std::ostream& stream);
+  void updateAndPrintJson(const Group& group, std::ostream& stream);
   std::uint16_t getPI() const;
 
  private:

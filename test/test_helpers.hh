@@ -31,9 +31,12 @@ inline std::vector<redsea::Group> hex2groups(const HexInputData& input_data,
     group.disableOffsets();
     for (auto nblock : {redsea::BLOCK1, redsea::BLOCK2, redsea::BLOCK3, redsea::BLOCK4}) {
       redsea::Block block;
-      block.data        = (hexgroup >> (16U * (3U - static_cast<int>(nblock)))) & 0xFFFFU;
-      block.is_received = static_cast<int>(nblock) != static_cast<int>(block_to_delete);
-      group.setBlock(nblock, block);
+      if (block_to_delete == DeleteOneBlock::None ||
+          nblock != static_cast<redsea::eBlockNumber>(block_to_delete)) {
+        block.is_received = true;
+        block.data        = (hexgroup >> (16U * (3U - static_cast<int>(nblock)))) & 0xFFFFU;
+        group.setBlock(nblock, block);
+      }
     }
     groups.push_back(group);
   }

@@ -163,7 +163,7 @@ void Channel::processAndPrintGroup(Group group, std::size_t which_data_stream,
   if (options_.output_type == redsea::OutputType::Hex) {
     printAsHex(group, options_, output_ostream);
   } else {
-    station_.updateAndPrint(group, output_ostream);
+    station_.updateAndPrintJson(group, output_ostream);
   }
 }
 

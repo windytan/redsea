@@ -4,16 +4,21 @@ We use [semantic versioning](https://semver.org/).
 
 ## Current HEAD (WIP)
 
-* Fix the number-of-channels sanity check only being applied to raw pcm input.
-* Fix signed integer overflow in the number parsing in options.cc
-* Fixes to eRT/eRT+ decoding (#152) by VasylSamoilov:
-  * Show incomplete UTF-8 characters as '?' instead of discarding the entire string
-  * Allow messages of up to 128 bytes in length
-  * Fix off-by-one in the RadioText+ tag placement for eRT
-* Fix an issue where RadioText was constantly re-printed if the station used both string
-  terminators and space-padding (#118)
-* Fix MinGW/MSYS2 build by pinning liquid-dsp to v1.7.0 on MSYS2
-* Fix bug in 15B decoding when Block 2 is absent
+* Bug fixes:
+  * Fix the number-of-channels sanity check only being applied to raw pcm input.
+  * Fix signed integer overflow in the number parsing in options.cc
+  * Fixes to eRT/eRT+ decoding (#152) by VasylSamoilov:
+    * Show incomplete UTF-8 characters as '?' instead of discarding the entire string
+    * Allow messages of up to 128 bytes in length
+    * Fix off-by-one in the RadioText+ tag placement for eRT
+  * Fix an issue where RadioText was constantly re-printed if the station used both string
+    terminators and space-padding (#118)
+  * Fix MinGW/MSYS2 CI build by pinning liquid-dsp to v1.7.0 on MSYS2
+  * Fix C' offset detection - type B groups can now be received even when block 2 is lost
+    (MPX/bitstring input)
+  * Fix bug in 15B decoding when Block 2 is absent, uncovered by the above
+  * Fix bug in legacy 5A/5B (Transparent data channels): don't attempt to decode missing
+    block 3/4
 
 ## 1.3.0 (2026-01-02)
 
