@@ -13,7 +13,8 @@ We use [semantic versioning](https://semver.org/).
 * Fix an issue where RadioText was constantly re-printed if the station used both string
   terminators and space-padding (#118)
 * Fix MinGW/MSYS2 build by pinning liquid-dsp to v1.7.0 on MSYS2
-* Fix bug in 15B decoding when Block 2 is absent
+* Fix C' offset detection - type B groups can now be received even when block 2 is lost
+* Fix bug in 15B decoding when Block 2 is absent, uncovered by the above
 
 ## 1.3.0 (2026-01-02)
 

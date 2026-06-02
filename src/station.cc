@@ -82,7 +82,7 @@ Station::Station(const Options& options, int which_channel, std::uint16_t pi)
 
 /// @brief Receive a new group, update station state, and print the json line
 /// @param stream The stream to print to (not to be confused with RDS2 data streams)
-void Station::updateAndPrint(const Group& group, std::ostream& stream) {
+void Station::updateAndPrintJson(const Group& group, std::ostream& stream) {
   if (!has_pi_) {
     return;
   }
@@ -661,7 +661,12 @@ void Station::decodeType5(const Group& group, ObjectTree& out) {
   const auto address                 = getBits<5>(group.get(BLOCK2), 0);
   out["transparent_data"]["address"] = address;
 
-  if (group.getType().value.version == GroupType::Version::A) {
+  if (!group.has(BLOCK4))
+    return;
+
+  if (group.getType().value.version == GroupType::Version::A && group.has(BLOCK3)) {
+    // 5A
+
     const std::array<std::uint8_t, 4> data{
         getUint8(group.get(BLOCK3), 8), getUint8(group.get(BLOCK3), 0),
         getUint8(group.get(BLOCK4), 8), getUint8(group.get(BLOCK4), 0)};
@@ -688,7 +693,9 @@ void Station::decodeType5(const Group& group, ObjectTree& out) {
     }
 
     out["transparent_data"]["as_text"] = decoded_text.str();
-  } else {
+  } else if (group.getType().value.version == GroupType::Version::B) {
+    // 5B
+
     const std::array<std::uint8_t, 2> data{getUint8(group.get(BLOCK4), 8),
                                            getUint8(group.get(BLOCK4), 0)};
 
@@ -885,7 +892,10 @@ void Station::decodeType15B(const Group& group, ObjectTree& out) {
          group.getType().value.version == GroupType::Version::B);
   assert(group.has(BLOCK2) || group.has(BLOCK4));
 
-  const auto block_num                = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
+  const auto block_num = group.has(BLOCK2) ? BLOCK2 : BLOCK4;
+  if (!group.has(block_num))
+    return;
+
   const std::uint16_t segment_address = getBits<2>(group.get(block_num), 0);
   const bool is_di                    = getBool(group.get(block_num), 2);
 

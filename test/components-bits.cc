@@ -7,7 +7,7 @@
 #include "../src/options.hh"
 #include "test_helpers.hh"
 
-TEST_CASE("ASCII input format") {
+TEST_CASE("ASCII bits input format") {
   redsea::Options options;
 
   // You can add anything in-between! Just the bits matter.
@@ -153,5 +153,39 @@ TEST_CASE("Error detection and correction") {
 
     CHECK(groups.back().getNumErrors() == 1);
     CHECK_FALSE(groups.back().has(redsea::BLOCK1));
+  }
+}
+
+TEST_CASE("Group type deduction") {
+  redsea::Options options;
+
+  SECTION("Type B: Offset C' with missing block 2") {
+    // Дорожное 2017-07-03 (with simulated ECC words)
+    // 0x7827'0000'7827'F928 (a 15B group)
+    // clang-format off
+    const auto groups{asciibin2groups({
+      // block 1 (A): 0x7827 + checkword 0b1010110111
+      "01111000001001111010110111"
+      // block 2: invalid placeholder
+      "00000000000000000000000000"
+      // block 3 (C'): 0x7827 + checkword 0b0100011011
+      "01111000001001110100011011"
+      // block 4 (D): 0xF928 + checkword 0b0111000001
+      "11111001001010000111000001"
+      // Repeat to allow sync acquisition
+      "01111000001001111010110111"
+      "00000000000000000000000000"
+      "01111000001001110100011011"
+      "11111001001010000111000001"
+    }, options)};
+    const auto json_lines{groups2json(groups, options, 0x7827)};
+    // clang-format on
+
+    REQUIRE(json_lines.empty() == false);
+    REQUIRE(json_lines.back().find("group") != json_lines.back().end());
+
+    CHECK(json_lines.back()["group"] == "15B");
+    CHECK(json_lines.back()["prog_type"] == "Varied");
+    CHECK(json_lines.back()["tp"] == false);
   }
 }

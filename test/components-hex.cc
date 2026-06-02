@@ -72,18 +72,7 @@ TEST_CASE("Basic info") {
     CHECK(json_lines[0]["tp"] == false);
   }
 
-  SECTION("Using Group 15B (Block 2 lost)") {
-    // Дорожное 2017-07-03
-    // clang-format off
-    const auto json_lines{hex2json({
-      0x7827'F928'7827'F928
-    }, options, 0x7827, DeleteOneBlock::Block2)};
-    // clang-format on
-
-    CHECK(json_lines[0]["group"] == "15B");
-    CHECK(json_lines[0]["prog_type"] == "Varied");
-    CHECK(json_lines[0]["tp"] == false);
-  }
+  // The test for 15B with missing block 2 is in components-bits.cc
 }
 
 TEST_CASE("PTY name") {
@@ -879,7 +868,7 @@ TEST_CASE("Block error rate (BLER) reporting") {
     options.bler = false;
     // clang-format off
     const auto json_lines{hex2json({
-      0x7827'F928'7827'F928
+      0x7827'0000'7827'F928
     }, options, 0x7827, DeleteOneBlock::Block2)};
     // clang-format on
 
@@ -894,7 +883,7 @@ TEST_CASE("Block error rate (BLER) reporting") {
 
     // clang-format off
     const auto json_lines{hex2json({
-      0x7827'F928'7827'F928
+      0x7827'0000'7827'F928
     }, options, 0x7827, DeleteOneBlock::Block2)};
     // clang-format on
 
