@@ -64,7 +64,7 @@ pip3 install --user meson
 
 Or on macOS using Homebrew:
 
-```
+```bash
 brew install meson libsndfile liquid-dsp nlohmann-json
 xcode-select --install
 ```
