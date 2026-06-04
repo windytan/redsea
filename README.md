@@ -15,7 +15,7 @@ each line corresponds to one RDS group; or it can print them as raw hex.
 [Wiki: Features]: https://github.com/windytan/redsea/wiki/Supported-RDS-features
 [Wiki: Input]: https://github.com/windytan/redsea/wiki/Input-formats
 
-Simple usage, note the sampling rate of 171k, which is recommended for redsea.
+Simple usage (note the recommended sampling rate of 171k):
 
 ```bash
 rtl_fm -f 89.3M -s 171k - | redsea -r 171k
