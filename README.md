@@ -154,8 +154,6 @@ redsea -f mpx_input.wav --output hex
 
 Note that not all `rtl_fm` versions write a WAV header with parameter `-E wav`. You might
 need to do that with sox, see `rtl_fm  -f 104900k -s 171k - | sox -t raw -r 171k -es -b 16 - -c 1 104900.wav`
-
-
 [Wiki: Use cases]: https://github.com/windytan/redsea/wiki/Use-cases
 [Wiki: Command line options]: https://github.com/windytan/redsea/wiki/Command-line-options
 
