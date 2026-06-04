@@ -196,7 +196,7 @@ If you've installed [liquid-dsp][liquid-dsp] yet meson can't find it, it's
 possible that XCode command line tools aren't installed. Run this command to fix
 it:
 
-```
+```bash
 xcode-select --install
 ```
 
