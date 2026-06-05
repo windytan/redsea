@@ -55,6 +55,7 @@ TEST_CASE("Basic info") {
                                     0x9423'0802'0000'4B41, 0x9423'0807'0000'2020},
                                    options, 0x9423)};
 
+    REQUIRE_FALSE(json_lines.empty());
     CHECK(json_lines.back()["pi"] == "0x9423");
     CHECK(json_lines.back()["ps"] == "  KRKA  ");
   }
@@ -67,6 +68,7 @@ TEST_CASE("Basic info") {
     }, options, 0x7827)};
     // clang-format on
 
+    REQUIRE_FALSE(json_lines.empty());
     CHECK(json_lines[0]["group"] == "15B");
     CHECK(json_lines[0]["prog_type"] == "Varied");
     CHECK(json_lines[0]["tp"] == false);
@@ -130,6 +132,7 @@ TEST_CASE("Callsign") {
     // walczakp/rds-spy-logs/USA/4569 - 2020-08-19 20-45-06.spy
     const auto json_lines{hex2json({0x4569'00C8'CDCD'416E}, options, 0x4569)};
 
+    REQUIRE_FALSE(json_lines.empty());
     CHECK(json_lines.back()["callsign"] == "KUFX");
   }
 
@@ -139,6 +142,7 @@ TEST_CASE("Callsign") {
     // walczakp/rds-spy-logs/USA/16C6 - 2019-05-04 21-43-25.spy
     const auto json_lines{hex2json({0x16C6'00EA'E0CD'6F77}, options, 0x16C6)};
 
+    REQUIRE_FALSE(json_lines.empty());
     CHECK(json_lines.back()["callsign_uncertain"] == "KCOS");
   }
 
@@ -149,6 +153,7 @@ TEST_CASE("Callsign") {
     // walczakp/rds-spy-logs/Canada/B203 - 2019-05-05 09-33-12.spy
     const auto json_lines{hex2json({0xB203'21C1'5553'4943}, options, 0xB203)};
 
+    REQUIRE_FALSE(json_lines.empty());
     CHECK(json_lines.back()["callsign"] == "CBC English - Radio Two");
   }
 
@@ -157,6 +162,7 @@ TEST_CASE("Callsign") {
 
     const auto json_lines{hex2json({0x4569'00C8'CDCD'416E}, options, 0x4569)};
 
+    REQUIRE_FALSE(json_lines.empty());
     CHECK_FALSE(json_lines.back().contains("callsign"));
   }
 }
@@ -454,6 +460,7 @@ TEST_CASE("RDS2 Enhanced RadioText") {
   }, options, 0x6255)};
   // clang-format on
 
+  REQUIRE_FALSE(json_lines.empty());
   CHECK(json_lines.back()["enhanced_radiotext"] == "Järviradio RDS2 ERT");
 }
 
@@ -504,7 +511,7 @@ TEST_CASE("RadioText Plus") {
     }, options, 0x53C5)};
     // clang-format on
 
-    REQUIRE(!json_lines.empty());
+    REQUIRE_FALSE(json_lines.empty());
     REQUIRE(json_lines.back().contains("radiotext_plus"));
     REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["content-type"] == "item.artist");
@@ -536,6 +543,7 @@ TEST_CASE("RadioText Plus") {
     }, options, 0xD318)};
     // clang-format on
 
+    REQUIRE_FALSE(json_lines.empty());
     REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["content-type"] == "item.artist");
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["data"] == "Christina Stürmer");
@@ -562,6 +570,7 @@ TEST_CASE("RDS2 Long PS") {
     }, options, 0x49B1)};
     // clang-format on
 
+    REQUIRE_FALSE(json_lines.empty());
     REQUIRE(json_lines.back().contains("long_ps"));
     CHECK(json_lines.back()["long_ps"] == "Breeze 100.6 Gold Coast");
   }
@@ -576,6 +585,7 @@ TEST_CASE("RDS2 Long PS") {
     }, options, 0x6255)};
     // clang-format on
 
+    REQUIRE_FALSE(json_lines.empty());
     REQUIRE(json_lines.back().contains("long_ps"));
     CHECK(json_lines.back()["long_ps"] == "JäRVIRADIO");  // sic
   }
@@ -817,6 +827,7 @@ TEST_CASE("EON") {
     // Deutschlandfunk Kultur (de) 2016-12-25
     const auto json_lines{hex2json({0xD220'EA90'D220'D313}, options, 0xD220)};
 
+    REQUIRE_FALSE(json_lines.empty());
     CHECK(json_lines.back()["pi"] == "0xD220");
 
     // Refers to Bayern 3
@@ -872,8 +883,8 @@ TEST_CASE("Block error rate (BLER) reporting") {
     }, options, 0x7827, DeleteOneBlock::Block2)};
     // clang-format on
 
-    REQUIRE(!json_lines.empty());
-    REQUIRE(!json_lines.back().contains("bler"));
+    REQUIRE_FALSE(json_lines.empty());
+    REQUIRE_FALSE(json_lines.back().contains("bler"));
   }
 
   SECTION("Enabled") {
@@ -887,7 +898,7 @@ TEST_CASE("Block error rate (BLER) reporting") {
     }, options, 0x7827, DeleteOneBlock::Block2)};
     // clang-format on
 
-    REQUIRE(!json_lines.empty());
+    REQUIRE_FALSE(json_lines.empty());
     REQUIRE(json_lines.back().contains("bler"));
     // 1 block out of kNumBlerAverageGroups was missing
     CHECK(json_lines.back()["bler"] ==
@@ -921,8 +932,8 @@ TEST_CASE("Rx time for hex input") {
     }, options, 0x7827)};
     // clang-format on
 
-    REQUIRE(!json_lines.empty());
-    REQUIRE(!json_lines.back().contains("rx_time"));
+    REQUIRE_FALSE(json_lines.empty());
+    REQUIRE_FALSE(json_lines.back().contains("rx_time"));
   }
 
   SECTION("Enabled") {
@@ -934,7 +945,7 @@ TEST_CASE("Rx time for hex input") {
     }, options, 0x7827)};
     // clang-format on
 
-    REQUIRE(!json_lines.empty());
+    REQUIRE_FALSE(json_lines.empty());
     REQUIRE(json_lines.back().contains("rx_time"));
     // There's not much else we can confidently test here without mocking system_clock
   }
@@ -1037,5 +1048,6 @@ TEST_CASE("Hex output format") {
   }, options, 0x7827, DeleteOneBlock::Block2)};
   // clang-format on
 
+  REQUIRE_FALSE(json_lines.empty());
   CHECK(json_lines.back()["raw_data"] == "7827 ---- 7827 F928");
 };

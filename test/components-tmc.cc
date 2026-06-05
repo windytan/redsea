@@ -72,6 +72,7 @@ TEST_CASE("TMC") {
     options, 0x9602)};
     // clang-format on
 
+    REQUIRE(json_lines.size() == 3);
     REQUIRE(json_lines.at(2)["tmc"].contains("message"));
     CHECK(listEquals(json_lines.at(2)["tmc"]["message"]["event_codes"], {701}));
     CHECK(json_lines.at(2)["tmc"]["message"]["update_class"] == 11);

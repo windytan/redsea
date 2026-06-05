@@ -103,6 +103,7 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
 
+    REQUIRE_FALSE(groups.empty());
     CHECK(groups.back().getNumErrors() == 1);
   }
 
@@ -117,6 +118,7 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
 
+    REQUIRE_FALSE(groups.empty());
     CHECK(groups.back().getNumErrors() == 1);
     CHECK(groups.back().has(redsea::BLOCK1));
     CHECK(groups.back().get(redsea::BLOCK1) == 0x22E1);
@@ -134,6 +136,7 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
 
+    REQUIRE_FALSE(groups.empty());
     CHECK(groups.back().getNumErrors() == 1);
     CHECK_FALSE(groups.back().has(redsea::BLOCK1));
   }
@@ -151,6 +154,7 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
 
+    REQUIRE_FALSE(groups.empty());
     CHECK(groups.back().getNumErrors() == 1);
     CHECK_FALSE(groups.back().has(redsea::BLOCK1));
   }
@@ -181,7 +185,7 @@ TEST_CASE("Group type deduction") {
     const auto json_lines{groups2json(groups, options, 0x7827)};
     // clang-format on
 
-    REQUIRE(json_lines.empty() == false);
+    REQUIRE_FALSE(json_lines.empty());
     REQUIRE(json_lines.back().find("group") != json_lines.back().end());
 
     CHECK(json_lines.back()["group"] == "15B");
