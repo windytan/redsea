@@ -139,7 +139,7 @@ void MPXReader::fillBuffer() {
     // 'R' 'I' 'F' 'F' in little-endian
     if (num_read_ >= 2 && test_samples[0] == 0x4952 && test_samples[1] == 0x4646) {
       std::cerr << "redsea: warning: expected raw PCM via pipe, but the data looks like WAV. "
-                   "(You can use '--file -' to read WAV from the pipe.)"
+                   "Did you mean to use the -f option?"
                 << std::endl;
     }
 
