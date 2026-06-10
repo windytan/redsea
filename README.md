@@ -212,8 +212,8 @@ sudo ldconfig
 ## Contributing
 
 We welcome bug reports and documentation contributions. Or take a peek at our
-[open issues](https://github.com/windytan/redsea/issues) to see where we could use a hand. New code is contributed using pull requests; See
-[CONTRIBUTING](CONTRIBUTING.md) for more information.
+[open issues](https://github.com/windytan/redsea/issues) to see where we could use a hand. New code is contributed using pull requests. See
+[CONTRIBUTING](CONTRIBUTING.md) for guidelines.
 
 ## Licensing
 

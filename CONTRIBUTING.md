@@ -13,12 +13,11 @@ issues, are very useful for the development of redsea.
 
 Some guidelines for making good bug reports:
 
-* If the problem only appears with some **input signal** it would be very helpful if you could
-  provide a copy of this signal for testing. If it's cumbersome to upload then don't
+* Include the **input signal** that reproduces the bug. If it's cumbersome to upload then don't
   worry, we can find ways around it.
-* Be sure to include basic information about your system (operating system, what kind
-  of computer, which version of redsea)
-* If there is an **error message**, remember to include it.
+* Include basic information about your system: Operating system? What kind
+  of computer? Which version of redsea?
+* Include any **error message** and any **warnings**.
 
 ## How to contribute source code
 
@@ -42,6 +41,15 @@ Some rules we wish to follow:
 * Try to avoid resorting to manual memory management. We have an address sanitizer in
   CI but currently no leak checks.
 * If possible, we would really like to keep redsea fast enough to run in real time on a Raspberry Pi 1 Model B (see [benchmarks](https://github.com/windytan/redsea/wiki/Benchmark-results) for inspiration).
+
+## Using AI
+
+Avoid pushing raw LLM output from sites like ChatGPT, Claude, or Copilot. AI-assisted programming is
+generally okay, but you yourself must examine and understand each line of code you submit.
+
+It's much preferable to rewrite all code by yourself before making a PR.
+
+Don't post any AI-generated content in the issues or discussions.
 
 ## How to build and run the tests
 
