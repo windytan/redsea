@@ -40,8 +40,8 @@ class ObjectTree;
 class Station {
  public:
   Station() = delete;
-  Station(const Options& options, int which_channel, std::uint16_t pi);
-  Station(const Options& options, int which_channel);
+  Station(Options options, int which_channel, std::uint16_t pi);
+  Station(Options options, int which_channel);
   void updateAndPrintJson(const Group& group, std::ostream& stream);
   std::uint16_t getPI() const;
 

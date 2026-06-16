@@ -52,6 +52,7 @@ std::uint16_t readLTN(const std::string& directory) {
   return ltn;
 }
 
+/// \throw std::runtime_error if the location table can't be loaded
 LocationDatabase loadLocationDatabase(const std::string& directory) {
   LocationDatabase locdb;
   std::string encoding("UTF-8");
