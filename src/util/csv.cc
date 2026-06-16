@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <fstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -46,12 +47,13 @@ std::string CSVRow::at(std::size_t i) const {
   return row_string.substr(offsets[i], lengths[i]);
 }
 
+/// \throw std::runtime_error if the file can't be read
 std::vector<CSVRow> readCSV(const std::string& filename, char delimiter) {
   std::vector<CSVRow> lines;
 
   std::ifstream in(filename);
   if (!in.is_open())
-    return lines;
+    throw std::runtime_error("readCSV: unable to open file " + filename);
 
   for (std::string line; std::getline(in, line);) {
     lines.emplace_back(line, delimiter);
@@ -62,17 +64,19 @@ std::vector<CSVRow> readCSV(const std::string& filename, char delimiter) {
   return lines;
 }
 
+/// \throw std::runtime_error if the file can't be read
 CSVTable readCSVWithTitles(const std::string& filename, char delimiter) {
   std::vector<std::string> lines;
 
   std::ifstream in(filename);
-  if (in.is_open()) {
-    for (std::string line; std::getline(in, line);) {
-      lines.push_back(line);
-    }
+  if (!in.is_open())
+    throw std::runtime_error("readCSVWithTitles: unable to open file " + filename);
 
-    in.close();
+  for (std::string line; std::getline(in, line);) {
+    lines.push_back(line);
   }
+
+  in.close();
 
   return readCSVContainerWithTitles(lines, delimiter);
 }

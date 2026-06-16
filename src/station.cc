@@ -68,11 +68,11 @@ bool decodePIN(std::uint16_t pin, ObjectTree& out) {
  *
  * @param which_channel Which PCM channel the station is on
  */
-Station::Station(const Options& options, int which_channel)
-    : options_(options), which_channel_(which_channel), tmc_(options) {}
+Station::Station(Options options, int which_channel)
+    : options_(std::move(options)), which_channel_(which_channel) {}
 
-Station::Station(const Options& options, int which_channel, std::uint16_t pi)
-    : Station(options, which_channel) {
+Station::Station(Options options, int which_channel, std::uint16_t pi)
+    : Station(std::move(options), which_channel) {
   // A delegating constructor can't have other mem-initializers
   // NOLINTBEGIN(cppcoreguidelines-prefer-member-initializer)
   pi_     = pi;

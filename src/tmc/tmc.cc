@@ -27,7 +27,6 @@
 #include <string>
 #include <vector>
 
-#include "src/options.hh"
 #include "src/tables.hh"
 #include "src/tmc/eventdb.hh"
 #include "src/tmc/locationdb.hh"
@@ -40,6 +39,7 @@ namespace redsea::tmc {
 namespace {
 
 std::map<std::uint16_t, LocationDatabase> g_location_databases;
+std::map<std::uint16_t, ServiceKey> g_service_key_table;
 
 std::vector<std::string> getScopeStrings(std::uint16_t mgs) {
   const bool mgs_i{getBool(mgs, 3)};
@@ -129,19 +129,32 @@ void decodeLocation(const LocationDatabase& db, Message& message, std::uint16_t 
 
 }  // namespace
 
-TMCService::TMCService(const Options& options)
-    : message_(is_encrypted_), service_key_table_(loadServiceKeyTable()), ps_(8) {
-  if (!options.loctable_dirs.empty() && g_location_databases.empty()) {
-    for (const std::string& loctable_dir : options.loctable_dirs) {
+TMCService::TMCService() : message_(is_encrypted_), ps_(8) {}
+
+/// \throw std::runtime_error if the location table can't be loaded
+void TMCService::init(const std::vector<std::string>& loctable_dirs, bool feed_thru) {
+  try {
+    g_service_key_table = loadServiceKeyTable();
+    /// NOLINTNEXTLINE(bugprone-empty-catch)
+  } catch (const std::exception& e) {
+    // Ignore errors on purpose
+  }
+
+  if (!loctable_dirs.empty() && g_location_databases.empty()) {
+    for (const std::string& loctable_dir : loctable_dirs) {
       const auto ltn            = readLTN(loctable_dir);
       g_location_databases[ltn] = loadLocationDatabase(loctable_dir);
-      if (options.feed_thru)
+      if (feed_thru)
         static_cast<void>(
             std::fprintf(stderr, "%s\n", g_location_databases[ltn].toString().c_str()));
       else
         static_cast<void>(std::printf("%s\n", g_location_databases[ltn].toString().c_str()));
     }
   }
+}
+
+void TMCService::clearDatabases() {
+  g_location_databases.clear();
 }
 
 void TMCService::receiveSystemGroup(std::uint16_t message, ObjectTree& out) {
@@ -289,8 +302,8 @@ void TMCService::receiveUserGroup(std::uint16_t x, std::uint16_t y, std::uint16_
       Message single_message(is_encrypted_);
       single_message.pushSingle(x, y, z);
 
-      if (is_encrypted_ && service_key_table_.find(encid_) != service_key_table_.end())
-        single_message.decrypt(service_key_table_[encid_]);
+      if (is_encrypted_ && g_service_key_table.find(encid_) != g_service_key_table.end())
+        single_message.decrypt(g_service_key_table[encid_]);
 
       if (!single_message.tree().empty()) {
         out["tmc"]["message"] = single_message.tree();
@@ -306,8 +319,8 @@ void TMCService::receiveUserGroup(std::uint16_t x, std::uint16_t y, std::uint16_
 
       message_.pushMulti(x, y, z);
       if (message_.isComplete()) {
-        if (is_encrypted_ && service_key_table_.find(encid_) != service_key_table_.end())
-          message_.decrypt(service_key_table_[encid_]);
+        if (is_encrypted_ && g_service_key_table.find(encid_) != g_service_key_table.end())
+          message_.decrypt(g_service_key_table[encid_]);
 
         if (!message_.tree().empty()) {
           out["tmc"]["message"] = message_.tree();

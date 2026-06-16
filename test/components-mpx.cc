@@ -1,5 +1,6 @@
 // Redsea tests: Component tests that read MPX files
 
+#include <filesystem>
 #include <sstream>
 #include <vector>
 
@@ -28,6 +29,8 @@ TEST_CASE("MPX file input") {
 
   options.sndfilename = "../test/resources/mpx-testfile-yksi.flac";
   options.input_type  = redsea::InputType::MPX_container;
+
+  REQUIRE(std::filesystem::exists(options.sndfilename));
 
   redsea::MPXReader mpx;
   mpx.init(options);
@@ -123,6 +126,8 @@ TEST_CASE("RDS2/RFT station logo from MPX") {
   options.input_type  = redsea::InputType::MPX_container;
   options.streams     = true;
 
+  REQUIRE(std::filesystem::exists(options.sndfilename));
+
   redsea::MPXReader mpx;
   mpx.init(options);
   options.samplerate   = mpx.getSamplerate();
@@ -174,6 +179,8 @@ TEST_CASE("Time from start") {
   options.input_type      = redsea::InputType::MPX_container;
   options.time_from_start = true;
   options.streams         = true;
+
+  REQUIRE(std::filesystem::exists(options.sndfilename));
 
   redsea::MPXReader mpx;
   mpx.init(options);
