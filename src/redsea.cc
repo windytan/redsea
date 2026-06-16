@@ -242,6 +242,12 @@ int main(int argc, char** argv) {
     return options.init_error ? EXIT_FAILURE : EXIT_SUCCESS;
   }
 
+  try {
+    redsea::tmc::TMCService::init(options.loctable_dirs, options.feed_thru);
+  } catch (const std::exception& e) {
+    std::cerr << "redsea: error: Failed to load TMC location table (" << e.what() << ")\n";
+  }
+
   switch (options.input_type) {
     case redsea::InputType::MPX_raw_stdin: return processMPXInput(options);
     case redsea::InputType::MPX_container: return processMPXInput(options);

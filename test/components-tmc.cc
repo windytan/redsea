@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
+#include <filesystem>
 #include <nlohmann/json.hpp>
 
+#include "catch2/catch_approx.hpp"
 #include "src/tmc/tmc.hh"
 #include "test_helpers.hh"
 
@@ -12,6 +14,8 @@
 
 TEST_CASE("TMC") {
   redsea::Options options;
+  redsea::tmc::TMCService::init({}, false);
+  redsea::tmc::TMCService::clearDatabases();
 
   SECTION("System info") {
     // DR P4 København (da) 2019-05-04
@@ -129,5 +133,42 @@ TEST_CASE("TMC") {
     REQUIRE(json_lines.at(2)["tmc"].contains("message"));
     CHECK(json_lines.at(2)["tmc"]["message"]["description"] ==
           "Delays of up to 15 minutes. Stationary traffic.");
+  }
+
+  SECTION("Load mock location table") {
+    REQUIRE(std::filesystem::is_directory("../test/resources/mock_locdb"));
+    options.loctable_dirs = {"../test/resources/mock_locdb"};
+    redsea::tmc::TMCService::init(options.loctable_dirs, options.feed_thru);
+
+    // Fake data for the mock location table
+    // clang-format off
+    const auto json_lines{
+        hex2json({
+          0x1234'3450'0067'CD46,
+          0x1234'8440'1838'0400,
+          0x1234'8445'40E2'8000,
+          0x1234'8447'40E2'8000,
+          0x1234'8449'4ABD'0072},
+    options, 0x1234)};
+    // clang-format on
+
+    REQUIRE(json_lines.size() == 5);
+    CHECK(json_lines.at(0)["tmc"]["system_info"]["is_encrypted"] == false);
+    CHECK(json_lines.at(0)["tmc"]["system_info"]["location_table"] == 1);
+    REQUIRE(json_lines.at(4)["tmc"].contains("message"));
+    CHECK(json_lines.at(4)["tmc"]["message"]["location"] == 114);
+    REQUIRE(json_lines.at(4)["tmc"]["message"].contains("road_name"));
+    CHECK(json_lines.at(4)["tmc"]["message"]["road_name"] == "Käpykatu");
+    REQUIRE(json_lines.at(4)["tmc"]["message"].contains("coordinates"));
+    CHECK(json_lines.at(4)["tmc"]["message"]["coordinates"][0]["lat"] == Catch::Approx(60.1914));
+    CHECK(json_lines.at(4)["tmc"]["message"]["coordinates"][0]["lon"] == Catch::Approx(24.9233));
+  }
+
+  SECTION("Nonexistent location table failure mode") {
+    REQUIRE(!std::filesystem::exists("/nonexistent_location_table"));
+    options.loctable_dirs = {"/nonexistent_location_table"};
+    redsea::tmc::TMCService::clearDatabases();
+    REQUIRE_THROWS_AS(redsea::tmc::TMCService::init(options.loctable_dirs, options.feed_thru),
+                      std::runtime_error);
   }
 }

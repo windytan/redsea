@@ -33,9 +33,12 @@ namespace tmc {
 
 class TMCService {
  public:
-  explicit TMCService(const Options& options);
+  explicit TMCService();
   void receiveSystemGroup(std::uint16_t message, ObjectTree& out);
   void receiveUserGroup(std::uint16_t x, std::uint16_t y, std::uint16_t z, ObjectTree& out);
+
+  static void init(const std::vector<std::string>& loctable_dirs, bool feed_thru);
+  static void clearDatabases();
 
  private:
   bool is_initialized_{false};
@@ -46,7 +49,6 @@ class TMCService {
   std::uint16_t encid_{0};
   std::uint16_t ltcc_{0};
   Message message_;
-  std::map<std::uint16_t, ServiceKey> service_key_table_;
   RDSString ps_;
   std::map<std::uint16_t, AltFreqList> other_network_freqs_;
 };
@@ -54,4 +56,4 @@ class TMCService {
 }  // namespace tmc
 }  // namespace redsea
 
-#endif  // TMC_H_
+#endif  // TMC_TMC_H_
