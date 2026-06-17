@@ -140,7 +140,7 @@ TEST_CASE("TMC") {
     options.loctable_dirs = {"../test/resources/mock_locdb"};
     redsea::tmc::TMCService::init(options.loctable_dirs, options.feed_thru);
 
-    // Fake data for the mock location table
+    // Fake data to pull entries from the mock location table
     // clang-format off
     const auto json_lines{
         hex2json({
