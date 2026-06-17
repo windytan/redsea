@@ -280,6 +280,7 @@ Options getOptions(int argc, char** argv) {
 
   if (!options.loctable_dirs.empty() && options.output_type == OutputType::Hex) {
     warn("--loctable ignored for hex output");
+    options.loctable_dirs.clear();
   }
 
   if (options.bler && options.output_type == OutputType::Hex) {
