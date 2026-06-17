@@ -28,7 +28,7 @@ jobs:
     - name: Compile & install
       run: cd build && meson install
     - name: Run unit & component tests
-      run: cd build && meson test
+      run: cd build && meson test -v --print-errorlogs
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl --installed redsea
     - name: meson setup (debug)
@@ -36,6 +36,6 @@ jobs:
     - name: Compile (debug)
       run: cd build-debug && meson compile
     - name: Run unit & component tests (debug)
-      run: cd build-debug && meson test
+      run: cd build-debug && meson test -v --print-errorlogs
     - name: Run basic end-to-end tests (debug)
       run: perl test/end_to_end.pl build-debug/redsea

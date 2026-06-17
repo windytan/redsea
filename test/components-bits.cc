@@ -87,6 +87,8 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group};
     const auto groups{asciibin2groups(test_data, options)};
 
+    REQUIRE(groups.size() == 2);
+    CHECK(groups.back().asHex() == "22E1 2583 2065 6920");
     CHECK(groups.back().getNumErrors() == 0);
   }
 
@@ -103,7 +105,8 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
 
-    REQUIRE_FALSE(groups.empty());
+    REQUIRE(groups.size() == 3);
+    CHECK(groups.back().asHex() == "---- 2583 2065 6920");
     CHECK(groups.back().getNumErrors() == 1);
   }
 
@@ -118,7 +121,8 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
 
-    REQUIRE_FALSE(groups.empty());
+    REQUIRE(groups.size() == 3);
+    CHECK(groups.back().asHex() == "22E1 2583 2065 6920");
     CHECK(groups.back().getNumErrors() == 1);
     CHECK(groups.back().has(redsea::BLOCK1));
     CHECK(groups.back().get(redsea::BLOCK1) == 0x22E1);
@@ -136,7 +140,8 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
 
-    REQUIRE_FALSE(groups.empty());
+    REQUIRE(groups.size() == 3);
+    CHECK(groups.back().asHex() == "---- 2583 2065 6920");
     CHECK(groups.back().getNumErrors() == 1);
     CHECK_FALSE(groups.back().has(redsea::BLOCK1));
   }
@@ -154,7 +159,8 @@ TEST_CASE("Error detection and correction") {
     const std::string test_data{correct_group + correct_group + broken_group};
     const auto groups{asciibin2groups(test_data, options)};
 
-    REQUIRE_FALSE(groups.empty());
+    REQUIRE(groups.size() == 3);
+    CHECK(groups.back().asHex() == "---- 2583 2065 6920");
     CHECK(groups.back().getNumErrors() == 1);
     CHECK_FALSE(groups.back().has(redsea::BLOCK1));
   }

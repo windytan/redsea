@@ -39,6 +39,8 @@ main();
 
 sub main {
     print "Redsea end-to-end tests\n";
+    print "\nPlatform: ".`uname -ms`;
+    print "\n";
 
     test_NoUnreachableTests();
     test_Prerequisites();
@@ -50,6 +52,7 @@ sub main {
     test_InputRawPCM();
     test_IncompatibleOptions();
     test_MildlyIncompatibleOptions();
+    test_CommandLineOptionBranches();
     test_InvalidOptions();
     test_VersionString();
 
@@ -279,6 +282,74 @@ sub test_InputTEF {
     return;
 }
 
+sub test_CommandLineOptionBranches {
+    printTestName("More command-line option branches");
+
+    my $spy_file = 'test/resources/rds2.spy';
+    printAssertName("");
+    checkExitSuccess(runRedseaWithArgs("--output hex --streams -f $flac_file"));
+    system("cp ".$test_output_file." ".$spy_file);
+    check( -f $spy_file && -s $spy_file, 'Hex input fixture should exist' );
+
+    printAssertName("-h -x");
+    checkExitSuccess( runRedseaWithArgs( "-h -x", $spy_file ) );
+    checkStdoutMatches('^#S1 ---- ---- 0000 00AD');
+    checkStderrEmpty();
+
+    printAssertName("--timestamp (hex in/out)");
+    checkExitSuccess(
+        runRedseaWithArgs(
+            "--input hex --output hex --timestamp %Y", $spy_file
+        )
+    );
+    checkStdoutMatches('^#S1 ---- ---- 0000 00AD \d+');
+    checkStderrEmpty();
+
+    printAssertName("--rbds");
+    checkExitSuccess( runRedseaWithArgs( "--input hex --rbds", $spy_file ) );
+    checkStdoutMatches('"callsign_uncertain":"KAAA"');
+    checkStderrEmpty();
+
+    printAssertName("--no-fec (but hex input)");
+    checkExitSuccess( runRedseaWithArgs( "--input hex --no-fec", $spy_file ) );
+    checkStdoutMatches('"pi":"0x1000"');
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --no-fec ignored');
+
+    printAssertName("--show-partial (but hex output)");
+    checkExitSuccess(
+        runRedseaWithArgs( "--input hex --output hex --show-partial", $spy_file ) );
+    checkStdoutMatches('^#S1 ---- ---- 0000 00AD');
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --show-partial ignored');
+
+    printAssertName("--bler (but hex input)");
+    checkExitSuccess(
+        runRedseaWithArgs( "--input hex --output hex --bler", $spy_file ) );
+    checkStdoutMatches('^#S1 ---- ---- 0000 00AD');
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --bler ignored');
+
+    printAssertName("--streams (but hex input)");
+    checkExitSuccess( runRedseaWithArgs( "--input hex --streams", $spy_file ) );
+    checkStdoutMatches('"pi":"0x1000"');
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --streams has no effect');
+
+    printAssertName("--loctable (but hex output)");
+    checkExitSuccess(
+        runRedseaWithArgs(
+            "--input hex --output hex --loctable test/resources/mock_locdb",
+            $spy_file
+        )
+    );
+    checkFileContentsDoesntMatch( $test_output_file, "location_table_info", 'stdout' );
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --loctable ignored');
+
+    return;
+}
+
 # Redsea should not start with incompatible options
 sub test_IncompatibleOptions {
     printTestName("Incompatible options (fatal)");
@@ -304,6 +375,9 @@ sub test_IncompatibleOptions {
     if ( !skipped( $skip_lfs, '--input mpx --file' ) ) {
         printAssertName("--input mpx --file");
         startupShouldFail("--input mpx --file $flac_file");
+
+        printAssertName("--feed-through --file");
+        startupShouldFail("--feed-through --file $flac_file");
     }
 
     unlink($test_input_file);
@@ -553,6 +627,33 @@ sub checkStderrEmpty {
     return;
 }
 
+
+sub checkStderrNumLines {
+    my ($expected_num_lines) = @_;
+
+    my $n_lines;
+
+    my $stderr_empty =
+        -e $test_stderr_file
+      ? -z $test_stderr_file
+      : $true;
+    if ($stderr_empty) {
+        $n_lines = 0;
+    }
+    else {
+        open( my $file, q{<}, $test_stderr_file ) or croak $!;
+        while ( my $line = <$file> ) {
+            $n_lines++ if ( $line =~ /\S/x );
+        }
+        close $file;
+    }
+    printf "%30s", "";
+    check( $n_lines == $expected_num_lines,
+        "should see " . $expected_num_lines . " line(s) via stderr" );
+
+    return;
+}
+
 # Check that (possibly only the first line of) the file matches regex
 sub checkFileContentsMatches {
     my ( $file_path, $regex, $test_name ) = @_;
@@ -571,6 +672,34 @@ sub checkFileContentsMatches {
                 $file_exists
                   && ( ( $content // "" ) =~ $regex ? $true : $false ),
                 "$test_name should match /$regex/"
+            )
+        )
+      )
+    {
+        previewFileContents($file_path);
+    }
+
+    return;
+}
+
+# Check that (possibly only the first line of) does not match
+sub checkFileContentsDoesntMatch {
+    my ( $file_path, $regex, $test_name ) = @_;
+    my $file_exists = -e $file_path;
+    my $content;
+    if ($file_exists) {
+        open( my $file, q{<}, $file_path ) or croak $!;
+        $content = do { local $/ = ""; <$file> };
+        close $file;
+    }
+
+    printf "%30s", "";
+    if (
+        !(
+            check(
+                $file_exists
+                  && ( ( $content // "" ) !~ $regex ? $true : $false ),
+                "$test_name should not match /$regex/"
             )
         )
       )
