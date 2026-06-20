@@ -28,6 +28,36 @@ jobs:
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl build/redsea
 
+  # * Run all tests against release binary
+  # * Build liquid-dsp from source with fast-math enabled
+  build-ubuntu-24-04-liquid-fast-math:
+    name: "🐧 Build & test on Ubuntu 24.04, fast-math liquid-dsp"
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies (apt)
+      run: sudo apt install autoconf automake build-essential catch2 git libsndfile1-dev meson ninja-build nlohmann-json3-dev perl sox
+    - name: Build liquid-dsp with fast-math
+      run: |
+        git clone https://github.com/jgaeddert/liquid-dsp.git
+        cd liquid-dsp
+        ./bootstrap.sh
+        CFLAGS='-O3 -ffast-math' ./configure --prefix=/usr/local
+        make
+        sudo make install
+        sudo ldconfig
+    - name: meson setup
+      run: PKG_CONFIG_PATH=/usr/local/lib/pkgconfig meson setup -Dwerror=true -Dbuild_tests=true build
+    - name: compile
+      run: PKG_CONFIG_PATH=/usr/local/lib/pkgconfig meson compile -C build
+    - name: Run unit & component tests
+      run: PKG_CONFIG_PATH=/usr/local/lib/pkgconfig meson test -C build
+    - name: Download test data
+      run: git lfs pull
+    - name: Run basic end-to-end tests
+      run: perl test/end_to_end.pl build/redsea
+
   # * Run e2e tests against release binary (no unit/component tests)
   # * Use apt-provided dependencies (but get meson from pip)
   # * Older GCC
