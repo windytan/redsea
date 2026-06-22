@@ -188,20 +188,26 @@ sub test_InputRawPCM {
     system("sox $flac_file -r 192k $wav_file_192k");
     check( !$?, 'Create test WAV file 192k' );
 
+    printAssertName('Deprecated default functionality');
+    checkExitSuccess( runRedseaWithArgs("--samplerate 171k < $pcm_file_171k") );
+    checkStdoutMatches('"pi":');
+    checkStderrNumLines(1);
+    checkStderrMatches('warning.*deprecated');
+
     printAssertName('Resample from 192k');
-    checkExitSuccess( runRedseaWithArgs("--samplerate 192k < $pcm_file_192k") );
+    checkExitSuccess( runRedseaWithArgs("-i mpx --samplerate 192k < $pcm_file_192k") );
     checkStdoutMatches('"pi":');
     checkStderrEmpty();
 
     printAssertName('Resample from 192000');
     checkExitSuccess(
-        runRedseaWithArgs("--samplerate 192000 < $pcm_file_192k") );
+        runRedseaWithArgs("-i mpx --samplerate 192000 < $pcm_file_192k") );
     checkStdoutMatches('"pi":');
     checkStderrEmpty();
 
     printAssertName('Resample from 0.192M');
     checkExitSuccess(
-        runRedseaWithArgs("--samplerate 0.192M < $pcm_file_192k") );
+        runRedseaWithArgs("-i mpx --samplerate 0.192M < $pcm_file_192k") );
     checkStdoutMatches('"pi":');
     checkStderrEmpty();
 
@@ -210,6 +216,7 @@ sub test_InputRawPCM {
     printAssertName('No options 171k');
     checkExitSuccess( runRedseaWithArgs("< $pcm_file_171k") );
     checkStdoutMatches('"pi":');
+    checkStderrNumLines(2); # Missing sample rate AND input type
     checkStderrMatches('warning');
 
     # Invalid PCM is undetectable. Redsea will just produce no output.
@@ -217,14 +224,15 @@ sub test_InputRawPCM {
 
     # Note: using FLAC file as raw PCM input :) It won't work.
     checkExitSuccess(
-        runRedseaWithArgs("--samplerate 192k --output hex < $flac_file") );
+        runRedseaWithArgs("-i mpx --samplerate 192k --output hex < $flac_file") );
     checkStdoutEmpty();
     checkStderrEmpty();
 
     # User specified raw PCM but the input looks like WAV! Mistake?
     printAssertName("WAV given, PCM expected");
-    checkExitSuccess( runRedseaWithArgs("-r 171k < $wav_file_192k") );
+    checkExitSuccess( runRedseaWithArgs("-i mpx -r 171k < $wav_file_192k") );
     checkStdoutEmpty();    # Because the sample rate is now wrong
+    checkStderrNumLines(1);
     checkStderrMatches('warning: .*WAV.*');
 
     unlink($pcm_file_192k);
@@ -395,16 +403,19 @@ sub test_MildlyIncompatibleOptions {
     if ( not skipped( $skip_lfs, 'FLAC file not found' ) ) {
         checkExitSuccess(
             runRedseaWithArgs("--file $flac_file --samplerate 192000") );
+        checkStderrNumLines(1);
         checkStderrMatches('warning');
     }
 
     printAssertName("--output hex --show-raw");
     checkExitSuccess(
-        runRedseaWithArgs( "--output hex --show-raw", $test_input_file ) );
+        runRedseaWithArgs( "--input mpx --samplerate 171k --output hex --show-raw", $test_input_file ) );
+    checkStderrNumLines(1);
     checkStderrMatches('warning');
 
     printAssertName("--input mpx (no samplerate)");
     checkExitSuccess( runRedseaWithArgs( "--input mpx", $test_input_file ) );
+    checkStderrNumLines(1);
     checkStderrMatches('warning');
 
     unlink($test_input_file);
@@ -420,11 +431,13 @@ sub test_InvalidOptions {
 
     printAssertName("Invalid option (long)");
     checkExitFailure( runRedseaWithArgs(q{--this-longopt-does-not-exist}) );
+    checkStderrNumLines(1);
     checkStderrMatches('(unrecognized|unknown|invalid) option');
     checkStdoutMatches('^Usage:');
 
     printAssertName("Invalid option (short)");
     checkExitFailure( runRedseaWithArgs(q{-z}) );
+    checkStderrNumLines(1);
     checkStderrMatches('(unrecognized|unknown|invalid) option');
     checkStdoutMatches('^Usage:');
 
@@ -452,6 +465,7 @@ sub test_InvalidOptions {
         printAssertName($_);
         checkExitFailure( runRedseaWithArgs($_) );
         checkStdoutMatches('^Usage:');
+        checkStderrNumLines(1);
         checkStderrMatches('requires');
     }
 
@@ -480,6 +494,7 @@ sub test_VersionString {
     printAssertName("--help with invalid options");
     checkExitFailure( runRedseaWithArgs(q{--help --samplerate}) );
     checkStdoutMatches('^Usage:');
+    checkStderrNumLines(1);
     checkStderrMatches('requires');
 
     printAssertName("--help with other options");
@@ -624,6 +639,28 @@ sub checkStderrEmpty {
     }
 
     return;
+}
+
+sub checkStderrNumLines {
+    my $expected_num_lines = $_[0];
+
+    my $n_lines;
+
+    my $stderr_empty =
+        -e $test_stderr_file
+      ? -z $test_stderr_file
+      : $true;
+    if ($stderr_empty) {
+        $n_lines = 0;
+    } else {
+        open( my $file, q{<}, $test_stderr_file ) or croak $!;
+        for (<$file>) {
+            $n_lines++ if (/\S/);
+        }
+        close $file;
+    }
+    printf "%30s", "";
+    check( $n_lines == $expected_num_lines, "should see ".$expected_num_lines." line(s) via stderr" );
 }
 
 # Check that (possibly only the first line of) the file matches regex
