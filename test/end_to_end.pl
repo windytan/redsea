@@ -13,10 +13,10 @@ package redsea::test::end_to_end;
 use warnings qw/FATAL all/;
 use strict;
 use 5.017;
-use IPC::Cmd qw/can_run/;
 use Carp;
 use utf8;
 use open qw/:std :utf8/;
+use IPC::Cmd qw/can_run/;
 
 my $true  = 1;
 my $false = 0;
@@ -31,6 +31,8 @@ my $test_input_file  = '/tmp/redsea-test-input';
 my $test_output_file = '/tmp/redsea-test-output';
 my $test_stderr_file = '/tmp/redsea-test-stderr';
 
+my $is_in_ci = ( $ENV{'GITHUB_ACTIONS'} // "" ) eq "true";
+
 my $has_failures      = $false;
 my $num_skipped_tests = 0;
 
@@ -39,8 +41,10 @@ main();
 
 sub main {
     print "Redsea end-to-end tests\n";
-    print "\nPlatform: ".`uname -ms`;
+    print "\nPlatform: ";
+    system("uname -ms");
     print "\n";
+    system( $exec_name. " --version" );
 
     test_NoUnreachableTests();
     test_Prerequisites();
@@ -205,9 +209,9 @@ sub test_InputRawPCM {
     checkStdoutMatches('"pi":');
     checkStderrEmpty();
 
-    # Just typing "redsea" will launch this default function, for
-    # backward compatibility. But we have a warning for new users.
-    printAssertName('No options 171k');
+    # Just typing "redsea" but opening an input pipe will launch this default
+    # function, for backward compatibility. But we have a warning for new users.
+    printAssertName('Just typing redsea (pipe)');
     checkExitSuccess( runRedseaWithArgs("< $pcm_file_171k") );
     checkStdoutMatches('"pi":');
     checkStderrMatches('warning');
@@ -286,9 +290,6 @@ sub test_CommandLineOptionBranches {
     printTestName("More command-line option branches");
 
     my $spy_file = 'test/resources/rds2.spy';
-    printAssertName("");
-    checkExitSuccess(runRedseaWithArgs("--output hex --streams -f $flac_file"));
-    system("cp ".$test_output_file." ".$spy_file);
     check( -f $spy_file && -s $spy_file, 'Hex input fixture should exist' );
 
     printAssertName("-h -x");
@@ -318,7 +319,10 @@ sub test_CommandLineOptionBranches {
 
     printAssertName("--show-partial (but hex output)");
     checkExitSuccess(
-        runRedseaWithArgs( "--input hex --output hex --show-partial", $spy_file ) );
+        runRedseaWithArgs(
+            "--input hex --output hex --show-partial", $spy_file
+        )
+    );
     checkStdoutMatches('^#S1 ---- ---- 0000 00AD');
     checkStderrNumLines(1);
     checkStderrMatches('warning: --show-partial ignored');
@@ -343,7 +347,8 @@ sub test_CommandLineOptionBranches {
             $spy_file
         )
     );
-    checkFileContentsDoesntMatch( $test_output_file, "location_table_info", 'stdout' );
+    checkFileContentsDoesntMatch( $test_output_file, "location_table_info",
+        'stdout' );
     checkStderrNumLines(1);
     checkStderrMatches('warning: --loctable ignored');
 
@@ -465,8 +470,17 @@ sub test_InvalidOptions {
 sub test_VersionString {
     printTestName("Version string, usage help");
 
-    printAssertName("--version");
+    # Typing "redsea" without any pipe input should print usage.
+    # TODO: Disabled on CI for now, until the default mpx input
+    # functionality is removed.
+    if ( not skipped( $is_in_ci, 'Only works in interactive tty' ) ) {
+        printAssertName('Just typing redsea');
+        checkExitFailure( runRedseaWithArgs(q{}) );
+        checkStderrEmpty();
+        checkStdoutMatches('^Usage:');
+    }
 
+    printAssertName("--version");
     checkExitSuccess( runRedseaWithArgs(q{--version}) );
     checkStdoutMatches('^redsea');
 
@@ -501,7 +515,7 @@ sub test_NoUnreachableTests {
     open( my $s, q{<}, __FILE__ ) or croak $!;
     while (<$s>) {
         if (/^sub\ (test_\S+)\ /x) { push @all_tests, $1; }
-        if (/^\ +(test_\S+)\(/x) { $calls{$1}++; }
+        if (/^\ +(test_\S+)\(/x)   { $calls{$1}++; }
     }
     close($s);
 
@@ -626,7 +640,6 @@ sub checkStderrEmpty {
 
     return;
 }
-
 
 sub checkStderrNumLines {
     my ($expected_num_lines) = @_;
