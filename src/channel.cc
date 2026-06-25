@@ -54,6 +54,7 @@ Channel::Channel(const Options& options, int which_channel, std::uint16_t pi)
 
   cached_pi_.update(pi);
   cached_pi_.update(pi);
+  cached_pi_.update(pi);
 }
 
 // \param bit 0 or 1

@@ -15,6 +15,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  */
+#include <unistd.h>
+
 #include <cstdint>
 #include <exception>
 #include <iostream>
@@ -93,6 +95,7 @@ void printUsage() {
          "-R, --show-raw         Include raw group data as hex in the JSON stream.\n"
          "\n"
          "-s, --streams          Decode RDS2 data streams 1, 2, and 3, if they exist.\n"
+         "                       Not needed with hex input (always decoded).\n"
          "\n"
          "-t, --timestamp FORMAT Add time of decoding to JSON groups; see man strftime\n"
          "                       for formatting options (or try \"%c\"). Use \"%f\" to add\n"
@@ -135,7 +138,6 @@ int processMPXInput(redsea::Options options) {
     mpx.init(options);
   } catch (redsea::BeyondEofError&) {
     std::cerr << "redsea: error: Unexpected end of input\n";
-    printUsage();
     return EXIT_FAILURE;
   } catch (const std::exception& e) {
     std::cerr << "redsea: error: Can't open input file (" << e.what() << ")\n";
@@ -221,6 +223,11 @@ int processTEFInput(const redsea::Options& options) {
 }  // namespace
 
 int main(int argc, char** argv) {
+  if (isatty(fileno(stdin)) && argc == 1) {
+    printUsage();
+    return EXIT_FAILURE;
+  }
+
   redsea::Options options;
 
   try {
