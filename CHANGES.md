@@ -2,8 +2,10 @@
 
 We use [semantic versioning](https://semver.org/).
 
-## Current HEAD (WIP)
+## 1.3.1
 
+* UX changes:
+  * Exit if a TMC location table is provided but can't be loaded.
 * Bug fixes:
   * Fix the number-of-channels sanity check only being applied to raw pcm input.
   * Fix signed integer overflow in the number parsing in options.cc
