@@ -27,15 +27,15 @@ jobs:
       run: meson setup -Dwerror=true -Db_sanitize=address,undefined -Db_lundef=false build -Dbuild_tests=true
     - name: Compile & install
       run: cd build && meson install
-    - name: Run unit & component tests
-      run: cd build && meson test -v --print-errorlogs
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl --installed redsea
+    - name: Run unit & component tests
+      run: cd build && meson test -v --print-errorlogs
     - name: meson setup (debug)
       run: meson setup --buildtype=debug -Dwerror=true -Dbuild_tests=true build-debug
     - name: Compile (debug)
       run: cd build-debug && meson compile
-    - name: Run unit & component tests (debug)
-      run: cd build-debug && meson test -v --print-errorlogs
     - name: Run basic end-to-end tests (debug)
       run: perl test/end_to_end.pl build-debug/redsea
+    - name: Run unit & component tests (debug)
+      run: cd build-debug && meson test -v --print-errorlogs

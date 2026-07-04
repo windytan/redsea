@@ -87,7 +87,7 @@ TEST_CASE("PTY name") {
   }, options, 0x3ABC)};
   // clang-format on
 
-  CHECK(json_lines.size() == 2);
+  REQUIRE(json_lines.size() == 2);
   CHECK(json_lines.at(1)["pty_name"] == "CRI.CN ");
 }
 
@@ -104,7 +104,7 @@ TEST_CASE("PIN & SLC (Group 1)") {
     }, options, 0x6201)};
     // clang-format on
 
-    CHECK(json_lines.size() == 2);
+    REQUIRE(json_lines.size() == 2);
     CHECK(json_lines.at(0)["prog_item_number"] == 31828);
     CHECK(json_lines.at(0)["prog_item_started"]["day"] == 15);
     CHECK(json_lines.at(0)["prog_item_started"]["time"] == "17:20");
@@ -117,7 +117,7 @@ TEST_CASE("PIN & SLC (Group 1)") {
     // walczakp/rds-spy-logs/Italy/5218 - 2019-05-04 22-24-42.spy
     const auto json_lines{hex2json({0x5218'1520'6DAB'0000}, options, 0X5218)};
 
-    CHECK(json_lines.size() == 1);
+    REQUIRE(json_lines.size() == 1);
     CHECK(json_lines.at(0)["slc_broadcaster_bits"] == "0x5AB");
   }
 }
