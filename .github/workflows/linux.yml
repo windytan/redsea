@@ -51,12 +51,12 @@ jobs:
       run: PKG_CONFIG_PATH=/usr/local/lib/pkgconfig meson setup -Dwerror=true -Dbuild_tests=true build
     - name: compile
       run: PKG_CONFIG_PATH=/usr/local/lib/pkgconfig meson compile -C build
-    - name: Run unit & component tests
-      run: PKG_CONFIG_PATH=/usr/local/lib/pkgconfig meson test -C build -v --print-errorlogs
     - name: Download test data
       run: git lfs pull
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl build/redsea
+    - name: Run unit & component tests
+      run: PKG_CONFIG_PATH=/usr/local/lib/pkgconfig meson test -C build -v --print-errorlogs
 
   # * Run e2e tests against release binary (no unit/component tests)
   # * Use apt-provided dependencies (but get meson from pip)

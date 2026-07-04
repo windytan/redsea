@@ -131,8 +131,9 @@ sub test_InputBits {
         printAssertName( 'Option: ' . $arg );
         checkExitSuccess( runRedseaWithArgs( $arg, $test_input_file ) );
         checkStdoutMatches(
-'{"pi":"0x22E1","group":"2A","tp":true,"prog_type":"Easy listening"}'
+'^{"pi":"0x22E1","group":"2A","tp":true,"prog_type":"Easy listening"}'
         );
+        checkStdoutNumLines(1);
         checkStderrEmpty();
     }
 
@@ -641,28 +642,50 @@ sub checkStderrEmpty {
     return;
 }
 
-sub checkStderrNumLines {
-    my ($expected_num_lines) = @_;
-
+# Count non-empty lines in file
+sub fileNumLines {
+    my ($infile) = @_;
     my $n_lines;
 
-    my $stderr_empty =
-        -e $test_stderr_file
-      ? -z $test_stderr_file
+    my $file_empty =
+        -e $infile
+      ? -z $infile
       : $true;
-    if ($stderr_empty) {
+    if ($file_empty) {
         $n_lines = 0;
     }
     else {
-        open( my $file, q{<}, $test_stderr_file ) or croak $!;
+        open( my $file, q{<}, $infile ) or croak $!;
         while ( my $line = <$file> ) {
             $n_lines++ if ( $line =~ /\S/x );
         }
         close $file;
     }
+
+    return $n_lines;
+}
+
+# Expect n non-empty lines via stderr
+sub checkStderrNumLines {
+    my ($expected_num_lines) = @_;
+
+    my $n_lines = fileNumLines($test_stderr_file);
     printf "%30s", "";
     check( $n_lines == $expected_num_lines,
         "should see " . $expected_num_lines . " line(s) via stderr" );
+
+    return;
+}
+
+
+# Expect n non-empty lines via stderr
+sub checkStdoutNumLines {
+    my ($expected_num_lines) = @_;
+
+    my $n_lines = fileNumLines($test_output_file);
+    printf "%30s", "";
+    check( $n_lines == $expected_num_lines,
+        "should see " . $expected_num_lines . " line(s) via stdout" );
 
     return;
 }
