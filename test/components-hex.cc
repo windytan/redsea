@@ -19,23 +19,24 @@ TEST_CASE("Basic info") {
   SECTION("Using Group 0A") {
     // YLE X3M (fi) 2016-09-15
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x6204'0130'966B'594C,
       0x6204'0131'93CD'4520,
       0x6204'0132'E472'5833,
       0x6204'0137'966B'4D20
-    }, options, 0x6204)};
+    }, options, 0x6204);
     // clang-format on
 
     REQUIRE(json_lines.size() == 4);
 
     for (const auto& group : json_lines) {
+      REQUIRE(group.is_object());
       CHECK(group["pi"] == "0x6204");
       CHECK(group["group"] == "0A");
-      CHECK(json_lines[0]["prog_type"] == "Varied");
+      CHECK(group["prog_type"] == "Varied");
       CHECK(group["tp"] == false);
       CHECK(group["ta"] == true);
-      CHECK(json_lines[0]["is_music"] == false);
+      CHECK(group["is_music"] == false);
     }
 
     // https://github.com/windytan/redsea/issues/86
@@ -51,11 +52,12 @@ TEST_CASE("Basic info") {
 
   SECTION("Using Group 0B") {
     // Radio Krka (si)
-    const auto json_lines{hex2json({0x9423'0800'0000'2020, 0x9423'0801'0000'4B52,
-                                    0x9423'0802'0000'4B41, 0x9423'0807'0000'2020},
-                                   options, 0x9423)};
+    const auto json_lines = hex2json({0x9423'0800'0000'2020, 0x9423'0801'0000'4B52,
+                                      0x9423'0802'0000'4B41, 0x9423'0807'0000'2020},
+                                     options, 0x9423);
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     CHECK(json_lines.back()["pi"] == "0x9423");
     CHECK(json_lines.back()["ps"] == "  KRKA  ");
   }
@@ -63,15 +65,16 @@ TEST_CASE("Basic info") {
   SECTION("Using Group 15B") {
     // Дорожное 2017-07-03
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x7827'F928'7827'F928
-    }, options, 0x7827)};
+    }, options, 0x7827);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
-    CHECK(json_lines[0]["group"] == "15B");
-    CHECK(json_lines[0]["prog_type"] == "Varied");
-    CHECK(json_lines[0]["tp"] == false);
+    REQUIRE(json_lines.back().is_object());
+    CHECK(json_lines.back()["group"] == "15B");
+    CHECK(json_lines.back()["prog_type"] == "Varied");
+    CHECK(json_lines.back()["tp"] == false);
   }
 
   // The test for 15B with missing block 2 is in components-bits.cc
@@ -81,14 +84,17 @@ TEST_CASE("PTY name") {
   redsea::Options options;
   // walczakp/rds-spy-logs/Poland/3ABC - 2019-05-04 22-36-23.spy
   // clang-format off
-  const auto json_lines{hex2json({
+  const auto json_lines = hex2json({
     0x3ABC'A750'4352'492E,
     0x3ABC'A751'434E'0D0D
-  }, options, 0x3ABC)};
+  }, options, 0x3ABC);
   // clang-format on
 
   REQUIRE(json_lines.size() == 2);
-  CHECK(json_lines.at(1)["pty_name"] == "CRI.CN ");
+  REQUIRE(json_lines[0].is_object());
+  REQUIRE(json_lines[1].is_object());
+  REQUIRE(json_lines[1].contains("pty_name"));
+  CHECK(json_lines.back()["pty_name"] == "CRI.CN ");
 }
 
 TEST_CASE("PIN & SLC (Group 1)") {
@@ -98,13 +104,15 @@ TEST_CASE("PIN & SLC (Group 1)") {
     // YLE Yksi (fi) 2016-09-15
     // NOTE: PIN has disappeared from the RDS standard in 2021. Nowadays these bits are RFU.
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x6201'10E0'00E1'7C54,
       0x6201'10E0'3027'7C54
-    }, options, 0x6201)};
+    }, options, 0x6201);
     // clang-format on
 
     REQUIRE(json_lines.size() == 2);
+    REQUIRE(json_lines[0].is_object());
+    REQUIRE(json_lines[1].is_object());
     CHECK(json_lines.at(0)["prog_item_number"] == 31828);
     CHECK(json_lines.at(0)["prog_item_started"]["day"] == 15);
     CHECK(json_lines.at(0)["prog_item_started"]["time"] == "17:20");
@@ -115,10 +123,11 @@ TEST_CASE("PIN & SLC (Group 1)") {
   SECTION("SLC variant 6") {
     // RTL 102.5 (it) 2019-05-04
     // walczakp/rds-spy-logs/Italy/5218 - 2019-05-04 22-24-42.spy
-    const auto json_lines{hex2json({0x5218'1520'6DAB'0000}, options, 0X5218)};
+    const auto json_lines = hex2json({0x5218'1520'6DAB'0000}, options, 0X5218);
 
     REQUIRE(json_lines.size() == 1);
-    CHECK(json_lines.at(0)["slc_broadcaster_bits"] == "0x5AB");
+    REQUIRE(json_lines.back().is_object());
+    CHECK(json_lines.back()["slc_broadcaster_bits"] == "0x5AB");
   }
 }
 
@@ -130,7 +139,7 @@ TEST_CASE("Callsign") {
 
     // 98.5 KFOX (KUFX) (us) 2020-08-19
     // walczakp/rds-spy-logs/USA/4569 - 2020-08-19 20-45-06.spy
-    const auto json_lines{hex2json({0x4569'00C8'CDCD'416E}, options, 0x4569)};
+    const auto json_lines = hex2json({0x4569'00C8'CDCD'416E}, options, 0x4569);
 
     REQUIRE_FALSE(json_lines.empty());
     CHECK(json_lines.back()["callsign"] == "KUFX");
@@ -140,9 +149,10 @@ TEST_CASE("Callsign") {
     options.rbds = true;
 
     // walczakp/rds-spy-logs/USA/16C6 - 2019-05-04 21-43-25.spy
-    const auto json_lines{hex2json({0x16C6'00EA'E0CD'6F77}, options, 0x16C6)};
+    const auto json_lines = hex2json({0x16C6'00EA'E0CD'6F77}, options, 0x16C6);
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     CHECK(json_lines.back()["callsign_uncertain"] == "KCOS");
   }
 
@@ -151,18 +161,20 @@ TEST_CASE("Callsign") {
 
     // CBC Radio 2 (ca)
     // walczakp/rds-spy-logs/Canada/B203 - 2019-05-05 09-33-12.spy
-    const auto json_lines{hex2json({0xB203'21C1'5553'4943}, options, 0xB203)};
+    const auto json_lines = hex2json({0xB203'21C1'5553'4943}, options, 0xB203);
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     CHECK(json_lines.back()["callsign"] == "CBC English - Radio Two");
   }
 
   SECTION("No callsign for non-RBDS station") {
     options.rbds = false;
 
-    const auto json_lines{hex2json({0x4569'00C8'CDCD'416E}, options, 0x4569)};
+    const auto json_lines = hex2json({0x4569'00C8'CDCD'416E}, options, 0x4569);
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     CHECK_FALSE(json_lines.back().contains("callsign"));
   }
 }
@@ -178,14 +190,15 @@ TEST_CASE("Radiotext") {
 
     // JACK 96.9 (ca) 2019-05-05
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0xC954'24F0'4A41'434B,  // "JACK"
       0xC954'24F1'2039'362E,  // " 96."
       0xC954'24F2'390D'0000   // "9\r  "
-    }, options, 0xC954)};
+    }, options, 0xC954);
     // clang-format on
 
     REQUIRE(json_lines.size() == 3);
+    REQUIRE(json_lines.back().is_object());
     CHECK(json_lines.back()["radiotext"] == "JACK 96.9");
 
     // Other lines shouldn't have RadioText
@@ -197,7 +210,7 @@ TEST_CASE("Radiotext") {
   SECTION("String length method B: Padded to 64 characters") {
     // Radio Grün-Weiß (at) 2021-07-18
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0xA959'2410'4641'4E43,  // "FANC"
       0xA959'2411'5920'2D20,  // "Y - "
       0xA959'2412'426F'6C65,  // "Bole"
@@ -209,10 +222,11 @@ TEST_CASE("Radiotext") {
       0xA959'241A'2020'2020, 0xA959'241B'2020'2020,
       0xA959'241C'2020'2020, 0xA959'241D'2020'2020,
       0xA959'241E'2020'2020, 0xA959'241F'2020'2020
-    }, options, 0xA959)};
+    }, options, 0xA959);
     // clang-format on
 
     REQUIRE(json_lines.size() == 16);
+    REQUIRE(json_lines.back().is_object());
     CHECK(json_lines.back()["radiotext"] == "FANCY - Bolero");
 
     // Other lines shouldn't have RadioText
@@ -226,15 +240,16 @@ TEST_CASE("Radiotext") {
 
     // AMP (ca) 2019-05-03
     // walczakp/rds-spy-logs/Canada/CD59 - 2019-05-03 23-56-06.spy
-    const auto json_lines{hex2json(
+    const auto json_lines = hex2json(
         {0xCD59'2120'414D'5020, 0xCD59'2121'2020'2020, 0xCD59'2122'2020'2020, 0xCD59'2123'2020'2020,
          0xCD59'2124'2020'2020, 0xCD59'2125'2020'2020, 0xCD59'2126'2020'2020, 0xCD59'2127'2020'2020,
          0xCD59'2128'2020'2020, 0xCD59'2129'2020'2020, 0xCD59'212A'2020'2020, 0xCD59'212B'2020'2020,
          0xCD59'212C'2020'2020, 0xCD59'212D'2020'2020, 0xCD59'212E'2020'2020,
          0xCD59'212F'2020'2020},
-        options, 0xCD59)};
+        options, 0xCD59);
 
     REQUIRE(json_lines.size() == 16);
+    REQUIRE(json_lines.back().is_object());
     CHECK(json_lines.back()["radiotext"] == "AMP");
 
     // Other lines shouldn't have RadioText
@@ -245,13 +260,13 @@ TEST_CASE("Radiotext") {
 
   SECTION("String length method B using Group 2B") {
     // Radio Krka (si)
-    const auto json_lines{hex2json(
+    const auto json_lines = hex2json(
         {0x9423'2800'0000'5052, 0x9423'2801'0000'494A, 0x9423'2802'0000'4554, 0x9423'2803'0000'4E4F,
          0x9423'2804'0000'2050, 0x9423'2805'0000'4F53, 0x9423'2806'0000'4C55, 0x9423'2807'0000'5341,
          0x9423'2808'0000'4E4A, 0x9423'2809'0000'4520, 0x9423'280A'0000'5241, 0x9423'280B'0000'4449,
          0x9423'280C'0000'4120, 0x9423'280D'0000'4B52, 0x9423'280E'0000'4B41,
          0x9423'280F'0000'2020},
-        options, 0x9423)};
+        options, 0x9423);
 
     REQUIRE(json_lines.size() == 16);
     CHECK(json_lines.back()["radiotext"] == "PRIJETNO POSLUSANJE RADIA KRKA");
@@ -265,7 +280,7 @@ TEST_CASE("Radiotext") {
   SECTION("String length method C: Random-length string with no terminator") {
     // Antenne Kärnten (at) 2021-07-26
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0xA540'2540'526F'6262,  // "Robb"  // REPEAT 1
       0xA540'2541'6965'2057,  // "ie W"
       0xA540'2542'696C'6C69,  // "illi"
@@ -279,7 +294,7 @@ TEST_CASE("Radiotext") {
       0xA540'2544'2D20'4665,
       0xA540'2545'656C'2020,
       0xA540'2540'526F'6262,             // REPEAT 3 starts - length confirmed
-    }, options, 0xA540)};
+    }, options, 0xA540);
     // clang-format on
 
     REQUIRE(json_lines.size() == 13);
@@ -294,7 +309,7 @@ TEST_CASE("Radiotext") {
   SECTION("Non-ASCII character from 'basic character set'") {
     // YLE Vega (fi) 2016-09-15
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x6205'2440'5665'6761,  // "Vega"
       0x6205'2441'204B'7691,  // " kvä"
       0x6205'2442'6C6C'2020,  // "ll  "
@@ -306,7 +321,7 @@ TEST_CASE("Radiotext") {
       0x6205'244B'2020'2020, 0x6205'244C'2020'2020,
       0x6205'244D'2020'2020, 0x6205'244E'2020'2020,
       0x6205'244F'2020'2020
-    }, options, 0x6205)};
+    }, options, 0x6205);
     // clang-format on
 
     REQUIRE(json_lines.size() == 16);
@@ -318,16 +333,17 @@ TEST_CASE("Radiotext") {
 
     // Antenne Kärnten (at) 2021-07-26
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0xA540'2540'526F'6262,  // "Robb"
       0xA540'2541'6965'2057,  // "ie W"
       0xA540'2542'696C'6C69,  // "illi"
       0xA540'2543'616D'7320,  // "ams "
       0xA540'2544'2D20'4665   // "- Fe"
-    }, options, 0xA540)};
+    }, options, 0xA540);
     // clang-format on
 
     REQUIRE(json_lines.size() == 5);
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("partial_radiotext"));
     CHECK(json_lines.back()["partial_radiotext"] ==
           "Robbie Williams - Fe"
@@ -343,42 +359,47 @@ TEST_CASE("Radiotext") {
     // Radio Austria (at) 2024
     // The station sends terminator 0x0D followed by padding spaces.
     // RadioText should be output exactly once per cycle (when string becomes complete).
-    const auto json_lines{hex2json(
+    const auto json_lines = hex2json(
         {0xA3E0'2550'5375'7065, 0xA3E0'2551'7273'7461, 0xA3E0'2552'7273'2026, 0xA3E0'2553'2053'7570,
          0xA3E0'2554'6572'6869, 0xA3E0'2555'7473'0D20, 0xA3E0'2556'2020'2020, 0xA3E0'2557'2020'2020,
          0xA3E0'2558'2020'2020, 0xA3E0'2559'2020'2020, 0xA3E0'255A'2020'2020, 0xA3E0'255B'2020'2020,
          0xA3E0'255C'2020'2020, 0xA3E0'255D'2020'2020, 0xA3E0'255E'2020'2020,
          0xA3E0'255F'2020'2020},
-        options, 0xA3E0)};
+        options, 0xA3E0);
 
     REQUIRE(json_lines.size() == 16);
     // RadioText completes on line 6 (index 5) when terminator is received
+    REQUIRE(json_lines[5].is_object());
     REQUIRE(json_lines[5].contains("radiotext"));
     CHECK(json_lines[5]["radiotext"] == "Superstars & Superhits");
 
     // Other lines shouldn't have RadioText (including subsequent padding groups)
     for (std::size_t i = 0; i < json_lines.size(); i++) {
+      REQUIRE(json_lines[i].is_object());
       if (i != 5)
         REQUIRE_FALSE(json_lines[i].contains("radiotext"));
     }
   }
 
   SECTION("Message changes") {
-    const auto json_lines{hex2json(
+    const auto json_lines = hex2json(
         {0x6202'2150'4749'524C, 0x6202'2151'5327'2047, 0x6202'2152'454E'4552, 0x6202'2153'4154'494F,
          0x6202'2154'4E20'2D20, 0x6202'2155'5275'6E20, 0x6202'2156'6465'7669, 0x6202'2157'6C20'7275,
          0x6202'2158'6E0D'2020, 0x6202'2140'5061'7061, 0x6202'2141'6E61'6E61, 0x6202'2142'616D'616E,
          0x6202'2143'204B'2D70, 0x6202'2144'6F70'2D73, 0x6202'2145'686F'770D},
-        options, 0x6202)};
+        options, 0x6202);
 
     REQUIRE(json_lines.size() == 15);
+    REQUIRE(json_lines[8].is_object());
     REQUIRE(json_lines[8].contains("radiotext"));
     CHECK(json_lines[8]["radiotext"] == "GIRLS' GENERATION - Run devil run");
+    REQUIRE(json_lines[14].is_object());
     REQUIRE(json_lines[14].contains("radiotext"));
     CHECK(json_lines[14]["radiotext"] == "Papananaaman K-pop-show");
 
     // Other lines shouldn't have RadioText
     for (std::size_t i = 0; i < json_lines.size(); i++) {
+      REQUIRE(json_lines[i].is_object());
       if (i != 8 && i != 14)
         REQUIRE_FALSE(json_lines[i].contains("radiotext"));
     }
@@ -386,7 +407,7 @@ TEST_CASE("Radiotext") {
 
   SECTION("Repeated message") {
     // Radio Nova (fi)
-    const auto json_lines{
+    const auto json_lines =
         hex2json({0x6209'2540'5261'6469, 0x6209'2541'6F20'4E6F, 0x6209'2542'7661'2070,
                   0x6209'2543'6172'6173, 0x6209'2544'2073'656B, 0x6209'2545'6F69'7475,
                   0x6209'2546'7320'6B6C, 0x6209'2547'6173'7369, 0x6209'2548'6B6F'6974,
@@ -398,12 +419,16 @@ TEST_CASE("Radiotext") {
                   0x6209'2548'6B6F'6974, 0x6209'2549'6120'6A61, 0x6209'254A'2074'7979,
                   0x6209'254B'6C69'6B6B, 0x6209'254C'6169'6D70, 0x6209'254D'6961'2075,
                   0x6209'254E'7574'7575, 0x6209'254F'6B73'6961},
-                 options, 0x6209)};
+                 options, 0x6209);
 
     REQUIRE(json_lines.size() == 32);
+
+    REQUIRE(json_lines[15].is_object());
     REQUIRE(json_lines[15].contains("radiotext"));
     CHECK(json_lines[15]["radiotext"] ==
           "Radio Nova paras sekoitus klassikoita ja tyylikkaimpia uutuuksia");
+
+    REQUIRE(json_lines[31].is_object());
     REQUIRE(json_lines[31].contains("radiotext"));
     CHECK(json_lines[31]["radiotext"] ==
           "Radio Nova paras sekoitus klassikoita ja tyylikkaimpia uutuuksia");
@@ -424,14 +449,15 @@ TEST_CASE("Radiotext failing corner cases", "[!mayfail]") {
 
     // JACK 96.9 (ca) 2019-05-05
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0xC954'24F2'390D'0000,   // "9\r  "
       0xC954'24F0'4A41'434B,  // "JACK"
       0xC954'24F1'2039'362E  // " 96."
-    }, options, 0xC954)};
+    }, options, 0xC954);
     // clang-format on
 
     REQUIRE(json_lines.size() == 3);
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("radiotext"));
     CHECK(json_lines.back()["radiotext"] == "JACK 96.9");
 
@@ -447,7 +473,7 @@ TEST_CASE("RDS2 Enhanced RadioText") {
 
   // Järviradio (fi)
   // clang-format off
-  const auto json_lines{hex2json({
+  const auto json_lines = hex2json({
     // eRT ODA identifier
     0x6255'3538'0001'6552,
     // Text data
@@ -457,10 +483,11 @@ TEST_CASE("RDS2 Enhanced RadioText") {
     0x6255'C523'5244'5332,
     0x6255'C524'2045'5254,
     0x6255'C525'0D0D'0D0D,
-  }, options, 0x6255)};
+  }, options, 0x6255);
   // clang-format on
 
   REQUIRE_FALSE(json_lines.empty());
+  REQUIRE(json_lines.back().is_object());
   CHECK(json_lines.back()["enhanced_radiotext"] == "Järviradio RDS2 ERT");
 }
 
@@ -489,7 +516,7 @@ TEST_CASE("RadioText Plus") {
   // Some encoders forget that RT+ length field means _additional_ length, so we need to rtrim
   SECTION("Off-by-one encoder bug workaround") {
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       // RT+ ODA identifier
       0x53C5'3558'0000'4BD7,
       // RT+
@@ -508,10 +535,11 @@ TEST_CASE("RadioText Plus") {
       0x53C5'255E'2020'2020, 0x53C5'255F'2020'2020,
       // RT+ (second one)
       0x53C5'C548'8020'0A6A,
-    }, options, 0x53C5)};
+    }, options, 0x53C5);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("radiotext_plus"));
     REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["content-type"] == "item.artist");
@@ -524,7 +552,7 @@ TEST_CASE("RadioText Plus") {
   SECTION("Containing non-ASCII characters") {
     // Antenne 2016-09-17
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       // RT+ ODA identifier
       0xD318'3558'0000'4BD7,
       // RT+ (we need two of these to confirm)
@@ -540,10 +568,13 @@ TEST_CASE("RadioText Plus") {
       0xD318'254E'6F6E'206D, 0xD318'254F'6972'2020,
       // RT+ (second one)
       0xD318'C558'8D20'0DCF
-    }, options, 0xD318)};
+    }, options, 0xD318);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
+    REQUIRE(json_lines.back()["radiotext_plus"].is_object());
+    REQUIRE(json_lines.back()["radiotext_plus"]["tags"].is_array());
     REQUIRE(json_lines.back()["radiotext_plus"]["tags"].size() == 2);
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["content-type"] == "item.artist");
     CHECK(json_lines.back()["radiotext_plus"]["tags"][0]["data"] == "Christina Stürmer");
@@ -558,7 +589,7 @@ TEST_CASE("RDS2 Long PS") {
   SECTION("Space-padded") {
     // The Breeze Gold Coast 100.6 (au) 2024-05-17
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x49B1'F180'4272'6565,
       0x49B1'F181'7A65'2031,
       0x49B1'F182'3030'2E36,
@@ -567,10 +598,11 @@ TEST_CASE("RDS2 Long PS") {
       0x49B1'F185'6173'7400,
       0x49B1'F186'0000'0000,
       0x49B1'F187'0000'0000
-    }, options, 0x49B1)};
+    }, options, 0x49B1);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("long_ps"));
     CHECK(json_lines.back()["long_ps"] == "Breeze 100.6 Gold Coast");
   }
@@ -578,14 +610,15 @@ TEST_CASE("RDS2 Long PS") {
   SECTION("String-terminated, contains non-ASCII UTF-8 character") {
     // Järviradio (fi)
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x6255'F520'4AC3'A452,
       0x6255'F521'5649'5241,
       0x6255'F522'4449'4F0D
-    }, options, 0x6255)};
+    }, options, 0x6255);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("long_ps"));
     CHECK(json_lines.back()["long_ps"] == "JäRVIRADIO");  // sic
   }
@@ -597,15 +630,16 @@ TEST_CASE("Alternative frequencies") {
   SECTION("Method A") {
     // YLE Yksi (fi) 2016-09-15
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x6201'00F7'E704'5349,
       0x6201'00F0'2217'594C,
       0x6201'00F1'1139'4520,
       0x6201'00F2'0A14'594B
-    }, options, 0x6201)};
+    }, options, 0x6201);
     // clang-format on
 
     REQUIRE(json_lines.size() == 4);
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("alt_frequencies_a"));
     CHECK(listEquals(json_lines.back()["alt_frequencies_a"],
                      {87'900, 90'900, 89'800, 89'200, 93'200, 88'500, 89'500}));
@@ -614,14 +648,15 @@ TEST_CASE("Alternative frequencies") {
   SECTION("Method B") {
     // YLE Helsinki (fi) 2016-09-15
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x6403'0447'F741'4920, 0x6403'0440'415F'594C, 0x6403'0441'4441'4520, 0x6403'0442'5541'484B,
       0x6403'0447'1C41'4920, 0x6403'0440'6841'594C, 0x6403'0441'5E41'4520, 0x6403'0442'414B'484B,
       0x6403'0447'4156'4920, 0x6403'0440'CB41'594C, 0x6403'0441'B741'4520, 0x6403'0442'4174'484B
-    }, options, 0x6403)};
+    }, options, 0x6403);
     // clang-format on
 
     REQUIRE(json_lines.size() == 12);
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("alt_frequencies_b"));
 
     // https://web.archive.org/web/20160622055936/http://yle.fi/uutiset/taajuudet/6009222
@@ -637,12 +672,13 @@ TEST_CASE("Alternative frequencies") {
 
     // YLE Helsinki (fi) 2016-09-15
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x6403'0447'F741'4920, 0x6403'0440'415F'594C, 0x6403'0441'4441'4520, 0x6403'0442'5541'484B
-    }, options, 0x6403)};
+    }, options, 0x6403);
     // clang-format on
 
     REQUIRE(json_lines.size() == 4);
+    REQUIRE(json_lines[0].is_object());
     REQUIRE(json_lines[0].contains("partial_alt_frequencies"));
     CHECK(listEquals(json_lines[0]["partial_alt_frequencies"], {94'000}));
     REQUIRE(json_lines[1].contains("partial_alt_frequencies"));
@@ -654,9 +690,10 @@ TEST_CASE("Clock-time and date") {
 
   SECTION("During DST") {
     // BR-KLASSIK (de) 2017-04-04
-    const auto json_lines{hex2json({0xD314'41C1'C3EF'5AC4}, options, 0xD314)};
+    const auto json_lines = hex2json({0xD314'41C1'C3EF'5AC4}, options, 0xD314);
 
     REQUIRE(json_lines.size() == 1);
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("clock_time"));
     CHECK(json_lines.back()["clock_time"] == "2017-04-04T23:43:00+02:00");
   }
@@ -664,9 +701,10 @@ TEST_CASE("Clock-time and date") {
   SECTION("Outside of DST") {
     // 104.6RTL (de) 2018-11-01
     // walczakp/rds-spy-logs/Germany/D42A - 2018-11-01 14-17-16 DE BER RTL104_6.rds
-    const auto json_lines{hex2json({0xD42A'4541'C86E'D482}, options, 0xD42A)};
+    const auto json_lines = hex2json({0xD42A'4541'C86E'D482}, options, 0xD42A);
 
     REQUIRE(json_lines.size() == 1);
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("clock_time"));
     CHECK(json_lines.back()["clock_time"] == "2018-11-01T14:18:00+01:00");
   }
@@ -676,18 +714,20 @@ TEST_CASE("Clock-time and date") {
 
     // 98.5 KFOX (KUFX) (us) 2020-08-19
     // walczakp/rds-spy-logs/USA/4569 - 2020-08-19 20-45-06.spy
-    const auto json_lines{hex2json({0x4569'40DD'CD92'3BAE}, options, 0x4569)};
+    const auto json_lines = hex2json({0x4569'40DD'CD92'3BAE}, options, 0x4569);
 
     REQUIRE(json_lines.size() == 1);
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("clock_time"));
     CHECK(json_lines.back()["clock_time"] == "2020-08-19T20:46:00-07:00");
   }
 
   SECTION("Zero UTC offset") {
     // Vikerraadio (ee) 2016-07-18 (though ee is not actually UTC+0)
-    const auto json_lines{hex2json({0x22E1'4581'C1E7'4280}, options, 0x22E1)};
+    const auto json_lines = hex2json({0x22E1'4581'C1E7'4280}, options, 0x22E1);
 
     REQUIRE(json_lines.size() == 1);
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("clock_time"));
     CHECK(json_lines.back()["clock_time"] == "2016-07-18T20:10:00Z");
   }
@@ -695,13 +735,15 @@ TEST_CASE("Clock-time and date") {
   SECTION("Across local midnight") {
     // https://github.com/windytan/redsea/issues/83
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0xF201'441D'D299'5EC4,
       0xF201'441D'D299'6004
-    }, options, 0xF201)};
+    }, options, 0xF201);
     // clang-format on
 
     REQUIRE(json_lines.size() == 2);
+    REQUIRE(json_lines[0].is_object());
+    REQUIRE(json_lines[1].is_object());
     REQUIRE(json_lines[0].contains("clock_time"));
     REQUIRE(json_lines[1].contains("clock_time"));
     CHECK(json_lines[0]["clock_time"] == "2022-05-25T23:59:00+02:00");
@@ -711,13 +753,15 @@ TEST_CASE("Clock-time and date") {
   SECTION("Across UTC midnight") {
     // https://github.com/windytan/redsea/issues/83
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0xF201'441D'D299'7EC4,
       0xF201'441D'D29A'0004
-    }, options, 0xF201)};
+    }, options, 0xF201);
     // clang-format on
 
     REQUIRE(json_lines.size() == 2);
+    REQUIRE(json_lines[0].is_object());
+    REQUIRE(json_lines[1].is_object());
     REQUIRE(json_lines[0].contains("clock_time"));
     REQUIRE(json_lines[1].contains("clock_time"));
     CHECK(json_lines[0]["clock_time"] == "2022-05-26T01:59:00+02:00");
@@ -726,13 +770,14 @@ TEST_CASE("Clock-time and date") {
 
   SECTION("Invalid MJD is handled cleanly") {
     // Integer underflow fixed in 1.0.0
-    const auto json_lines{hex2json(
+    const auto json_lines = hex2json(
         {
             0xD314'41C0'7530'5AC4  // MJD = 15000
         },
-        options, 0xD314)};
+        options, 0xD314);
 
     REQUIRE(json_lines.size() == 1);
+    REQUIRE(json_lines.back().is_object());
     CHECK_FALSE(json_lines.back().contains("clock_time"));
   }
 }
@@ -745,7 +790,7 @@ TEST_CASE("Transparent data channels") {
 
   // Radio 10 (nl) 2019-05-04
   // walczakp/rds-spy-logs/Netherlands/83D2 - 2019-05-04 23-00-53.spy
-  const auto json_lines{hex2json(
+  const auto json_lines = hex2json(
       {0x83D2'5540'00C8'006D, 0x83D2'5541'FF00'0000, 0x83D2'5542'00E2'00E3, 0x83D2'5543'00C8'00E0,
        0x83D2'5544'00DE'00D8, 0x83D2'5545'00DF'00E4, 0x83D2'5546'5452'4453, 0x83D2'5547'3430'3031,
        0x83D2'5548'2052'656C, 0x83D2'5549'6561'7365, 0x83D2'554A'2030'3230, 0x83D2'554B'3130'3930,
@@ -754,9 +799,10 @@ TEST_CASE("Transparent data channels") {
        0x83D2'5554'7061'0037, 0x83D2'5555'0020'2037, 0x83D2'5556'0020'2037, 0x83D2'5557'0020'2020,
        0x83D2'5558'2020'2020, 0x83D2'5559'2020'2020, 0x83D2'555A'2020'2020, 0x83D2'555B'2020'2020,
        0x83D2'555C'2020'2020, 0x83D2'555D'2020'2020, 0x83D2'555E'2020'2020, 0x83D2'555F'2053'20AC},
-      options, 0x83D2)};
+      options, 0x83D2);
 
   REQUIRE(json_lines.size() == 32);
+  REQUIRE(json_lines.back().is_object());
   CHECK(json_lines.back()["transparent_data"].contains("full_text"));
 
   const auto full_text =
@@ -772,16 +818,21 @@ TEST_CASE("In-house applications") {
 
   // BR-KLASSIK (de) 2017-04-04
   // clang-format off
-  const auto json_lines{hex2json({
+  const auto json_lines = hex2json({
     0xD314'61C0'AFFE'AFFE,
     0xD314'61C1'D100'0A19,
     0xD314'61C2'0000'0B01,
     0xD314'61C3'2005'2015,
     0xD314'61DF'0000'D314},
-  options, 0xD314)};
+  options, 0xD314);
   // clang-format on
 
   REQUIRE(json_lines.size() == 5);
+  for (const auto& line : json_lines) {
+    REQUIRE(line.is_object());
+    REQUIRE(line.contains("in_house_data"));
+    REQUIRE(line["in_house_data"].is_array());
+  }
   CHECK(listEquals(json_lines.at(0)["in_house_data"], {0x00, 0xAFFE, 0xAFFE}));
   CHECK(listEquals(json_lines.at(1)["in_house_data"], {0x01, 0xD100, 0x0A19}));
   CHECK(listEquals(json_lines.at(2)["in_house_data"], {0x02, 0x0000, 0x0B01}));
@@ -795,7 +846,7 @@ TEST_CASE("EON") {
   SECTION("Using 14A groups") {
     // YLE X (fi) 2016-09-15
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x6202'E150'594C'6203,
       0x6202'E151'4553'6203,
       0x6202'E152'554F'6203,
@@ -804,10 +855,13 @@ TEST_CASE("EON") {
       0x6202'E15C'0000'6203,
       0x6202'E15D'4800'6203,
       0x6202'E15E'7C83'6203},
-    options, 0x6202)};
+    options, 0x6202);
     // clang-format on
 
     REQUIRE(json_lines.size() == 8);
+    for (const auto& line : json_lines) {
+      REQUIRE(line.is_object());
+    }
     CHECK(json_lines.at(3)["pi"] == "0x6202");
 
     // Refers to YLE Suomi 94.0 MHz
@@ -825,12 +879,19 @@ TEST_CASE("EON") {
 
   SECTION("Using 14B groups") {
     // Deutschlandfunk Kultur (de) 2016-12-25
-    const auto json_lines{hex2json({0xD220'EA90'D220'D313}, options, 0xD220)};
+    const auto json_lines = hex2json({0xD220'EA90'D220'D313}, options, 0xD220);
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
+    REQUIRE(json_lines.back().contains("pi"));
+    REQUIRE(json_lines.back().contains("other_network"));
     CHECK(json_lines.back()["pi"] == "0xD220");
 
     // Refers to Bayern 3
+    REQUIRE(json_lines.back()["other_network"].is_object());
+    REQUIRE(json_lines.back()["other_network"].contains("pi"));
+    REQUIRE(json_lines.back()["other_network"].contains("tp"));
+    REQUIRE(json_lines.back()["other_network"].contains("ta"));
     CHECK(json_lines.back()["other_network"]["pi"] == "0xD313");
     CHECK(json_lines.back()["other_network"]["tp"] == true);
     CHECK(json_lines.back()["other_network"]["ta"] == false);
@@ -838,10 +899,15 @@ TEST_CASE("EON") {
 
   SECTION("Alt frequencies") {
     // Radio Gioconda (it)
-    const auto json_lines{
-        hex2json({0x53C5'E554'E2AD'53C6, 0x53C5'E554'C2CD'53C6}, options, 0x53C5)};
+    const auto json_lines =
+        hex2json({0x53C5'E554'E2AD'53C6, 0x53C5'E554'C2CD'53C6}, options, 0x53C5);
 
     REQUIRE(json_lines.size() == 2);
+    REQUIRE(json_lines.back().is_object());
+    REQUIRE(json_lines.back().contains("other_network"));
+    REQUIRE(json_lines.back()["other_network"].is_object());
+    REQUIRE(json_lines.back()["other_network"].contains("alt_frequencies"));
+    REQUIRE(json_lines.back()["other_network"]["alt_frequencies"].is_array());
     CHECK(listEquals(json_lines.back()["other_network"]["alt_frequencies"], {104'800, 106'900}));
   }
 }
@@ -850,7 +916,7 @@ TEST_CASE("DAB cross-referencing") {
   redsea::Options options;
   // BBC Radio 4 (gb) 2015-09-27
   // walczakp/rds-spy-logs/UK/C204 - 2015-09-27 23-35-46 UK NRW BBC4.rds
-  const auto json_lines{hex2json({0xC204'3138'0000'0093, 0xC204'C124'3717'CE15}, options, 0xC204)};
+  const auto json_lines = hex2json({0xC204'3138'0000'0093, 0xC204'C124'3717'CE15}, options, 0xC204);
 
   REQUIRE(json_lines.size() == 2);
 
@@ -864,12 +930,14 @@ TEST_CASE("Unspecified ODA") {
 
   // WDR 5 (de) 2019-05-05
   // walczakp/rds-spy-logs/Germany/D395 - 2019-05-05 09-46-23.spy
-  const auto json_lines{hex2json({0xD395'B065'279A'0020}, options, 0xD395)};
+  const auto json_lines = hex2json({0xD395'B065'279A'0020}, options, 0xD395);
 
   REQUIRE(json_lines.size() == 1);
-  CHECK(json_lines.at(0)["group"] == "11A");
-  REQUIRE(json_lines.at(0).contains("unknown_oda"));
-  CHECK(json_lines.at(0)["unknown_oda"]["raw_data"] == "05 279A 0020");
+  REQUIRE(json_lines.back().is_object());
+  CHECK(json_lines.back()["group"] == "11A");
+  REQUIRE(json_lines.back().contains("unknown_oda"));
+  REQUIRE(json_lines.back()["unknown_oda"].is_object());
+  CHECK(json_lines.back()["unknown_oda"]["raw_data"] == "05 279A 0020");
 }
 
 TEST_CASE("Block error rate (BLER) reporting") {
@@ -878,12 +946,13 @@ TEST_CASE("Block error rate (BLER) reporting") {
   SECTION("Disabled") {
     options.bler = false;
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x7827'0000'7827'F928
-    }, options, 0x7827, DeleteOneBlock::Block2)};
+    }, options, 0x7827, DeleteOneBlock::Block2);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     REQUIRE_FALSE(json_lines.back().contains("bler"));
   }
 
@@ -893,12 +962,13 @@ TEST_CASE("Block error rate (BLER) reporting") {
     constexpr int num_erroneous_blocks = 1;
 
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x7827'0000'7827'F928
-    }, options, 0x7827, DeleteOneBlock::Block2)};
+    }, options, 0x7827, DeleteOneBlock::Block2);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("bler"));
     // 1 block out of kNumBlerAverageGroups was missing
     CHECK(json_lines.back()["bler"] ==
@@ -927,12 +997,13 @@ TEST_CASE("Rx time for hex input") {
     options.timestamp = false;
 
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x7827'F928'7827'F928
-    }, options, 0x7827)};
+    }, options, 0x7827);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     REQUIRE_FALSE(json_lines.back().contains("rx_time"));
   }
 
@@ -940,12 +1011,13 @@ TEST_CASE("Rx time for hex input") {
     options.timestamp = true;
 
     // clang-format off
-    const auto json_lines{hex2json({
+    const auto json_lines = hex2json({
       0x7827'F928'7827'F928
-    }, options, 0x7827)};
+    }, options, 0x7827);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());
+    REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("rx_time"));
     // There's not much else we can confidently test here without mocking system_clock
   }
@@ -1043,11 +1115,12 @@ TEST_CASE("Hex output format") {
   options.show_raw = true;
 
   // clang-format off
-  const auto json_lines{hex2json({
+  const auto json_lines = hex2json({
     0x7827'F928'7827'F928
-  }, options, 0x7827, DeleteOneBlock::Block2)};
+  }, options, 0x7827, DeleteOneBlock::Block2);
   // clang-format on
 
   REQUIRE_FALSE(json_lines.empty());
+  REQUIRE(json_lines.back().is_object());
   CHECK(json_lines.back()["raw_data"] == "7827 ---- 7827 F928");
 };
