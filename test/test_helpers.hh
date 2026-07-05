@@ -45,6 +45,8 @@ inline std::vector<redsea::Group> hex2groups(const HexInputData& input_data,
 }
 
 // Convert string of unsynchronized ASCII bits into JSON.
+/// \warning In order not to confuse certain compilers, assign the result with '=', not curly
+/// braces.
 inline std::vector<nlohmann::ordered_json> asciibin2json(const std::string& bindata,
                                                          const redsea::Options& options) {
   std::vector<nlohmann::ordered_json> result;
@@ -92,6 +94,8 @@ inline std::vector<redsea::Group> asciibin2groups(const std::string& bindata,
 }
 
 // Run redsea's full decoder and convert the ASCII JSON output back into JSON objects.
+/// \warning In order not to confuse certain compilers, assign the result with '=', not curly
+/// braces.
 inline std::vector<nlohmann::ordered_json> groups2json(const std::vector<redsea::Group>& data,
                                                        const redsea::Options& options,
                                                        std::uint16_t pi) {
@@ -113,7 +117,9 @@ inline std::vector<nlohmann::ordered_json> groups2json(const std::vector<redsea:
   return result;
 }
 
-// Convert synchronized hex data (without offset words) into JSON.
+/// Convert synchronized hex data (without offset words) into JSON.
+/// \warning In order not to confuse certain compilers, assign the result with '=', not curly
+/// braces.
 inline std::vector<nlohmann::ordered_json> hex2json(
     const HexInputData& input_data, const redsea::Options& options, std::uint16_t pi,
     DeleteOneBlock block_to_delete = DeleteOneBlock::None) {

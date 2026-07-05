@@ -35,7 +35,7 @@ TEST_CASE("PI search") {
   SECTION("Accepts new PI from three repeats") {
     // Vikerraadio (ee)
     // clang-format off
-    const auto json_lines{asciibin2json({
+    const auto json_lines = asciibin2json({
                                                        "001"
       "1110110110111010011100010101001000010100001110000010"
       "0010001011100001011100110000100101100000111100111110"
@@ -45,7 +45,7 @@ TEST_CASE("PI search") {
       "0010001011100001011100110000100101100001001010101000"
       "0111001101100001010000011001100001000011010111000111"
       "001000"
-    }, options)};
+    }, options);
     // clang-format on
 
     REQUIRE(json_lines.size() == 1);
@@ -56,7 +56,7 @@ TEST_CASE("PI search") {
     // Noise that shouldn't even sync
     // It also happens to look like two repeats of PI 0x40AF
     // clang-format off
-    const auto groups{asciibin2groups({
+    const auto groups = asciibin2groups({
       "1100001001000011110110110010101010011101101100110001010011111011"
       "1110001001000001100101000011111110101011001100100011010111001100"
       "0100010001001110001101001001000000011011001010100000001011110001"
@@ -66,7 +66,7 @@ TEST_CASE("PI search") {
       "0100100110000101110000010101101011011100000100100010010010110100"
       "0001010010100010010100000010101101100010011100001000101111110011"
       "0001001000100100111110100000100110110011110110000111010100000000"
-    }, options)};
+    }, options);
     // clang-format on
 
     CHECK(groups.empty());
@@ -188,7 +188,7 @@ TEST_CASE("Group type deduction") {
       "01111000001001110100011011"
       "11111001001010000111000001"
     }, options)};
-    const auto json_lines{groups2json(groups, options, 0x7827)};
+    const auto json_lines = groups2json(groups, options, 0x7827);
     // clang-format on
 
     REQUIRE_FALSE(json_lines.empty());

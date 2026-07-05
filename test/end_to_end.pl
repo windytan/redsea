@@ -677,7 +677,6 @@ sub checkStderrNumLines {
     return;
 }
 
-
 # Expect n non-empty lines via stderr
 sub checkStdoutNumLines {
     my ($expected_num_lines) = @_;
