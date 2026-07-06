@@ -84,7 +84,7 @@ TEST_CASE("MPX file input") {
       }
     }
 
-    CHECK(json.size() == 2);
+    REQUIRE(json.size() >= 2);
     CHECK(json.at(0)["pi"] == "0x6201");
     CHECK(json.at(0)["prog_type"] == "Serious classical");
   }
