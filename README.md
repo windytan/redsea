@@ -11,15 +11,19 @@ decoder that supports many [RDS features][Wiki: Features].
 It can decode RDS live into [newline-delimited JSON](https://jsonlines.org/) where
 each line corresponds to one RDS group; or it can print them as raw hex.
 
-[About RTL-SDR]: http://www.rtl-sdr.com/about-rtl-sdr
 [Wiki: Features]: https://github.com/windytan/redsea/wiki/Supported-RDS-features
 [Wiki: Input]: https://github.com/windytan/redsea/wiki/Input-formats
 
-Simple usage (note the recommended sampling rate of 171k):
+Simple usage:
 
 ```bash
-rtl_fm -f 89.3M -s 171k - | redsea -r 171k
+rtl_fm -f 89.3M -s 171k - | redsea --input mpx -r 171k
 ```
+
+* `--input mpx`: Set the [input format](https://github.com/windytan/redsea/wiki/Input-formats) to raw PCM MPX (default; but this will be a required
+  argument in a future release)
+* `-r 171k`: Set the sample rate for raw PCM input (171k is the default and works fastest;
+  but this will be a required argument in a future release)
 
 Example output:
 
@@ -79,6 +83,7 @@ an `*.exe` with MSYS2/MinGW. This is a bit more involved - [instructions][Wiki: 
 ### 2. Get redsea
 
 Downloading a [release version](https://github.com/windytan/redsea/releases) is recommended.
+These are tested source code archives that will need to be compiled first.
 
 Alternatively, if you wish to have the latest snapshot, you can also clone this git repository.
 The snapshots are work-in-progress, but we attempt to always keep the main branch in a working condition.
@@ -123,15 +128,19 @@ or type `redsea --help`.
 
 ### From RTL-SDR to JSON
 
-Redsea reads an MPX signal from stdin by default. It expects the input
+Redsea reads an MPX signal from stdin by default; this is the same as typing
+`redsea --input mpx`. It expects the input
 to be [raw](https://en.wikipedia.org/wiki/Raw_audio_format) 16-bit signed-integer PCM.
 This means it can easily be used in real-time with `rtl_fm`.
+
+This default may be removed in a future release; it's recommended to always
+specify the input type using `--input`.
 
 Here's an example command that listens to 87.9 MHz using `rtl_fm` and displays
 the RDS groups:
 
 ```bash
-rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea -r 171k
+rtl_fm -M fm -l 0 -A std -p 0 -s 171k -g 20 -F 9 -f 87.9M | redsea --input mpx -r 171k
 ```
 
 ### From SPY files to JSON
@@ -170,7 +179,6 @@ need to do that with sox, see `rtl_fm  -f 104900k -s 171k - | sox -t raw -r 171k
 * libiconv
 * libsndfile
 * [liquid-dsp][liquid-dsp]
-* nlohmann-json
 
 [liquid-dsp]: https://github.com/jgaeddert/liquid-dsp/releases/tag/v1.3.2
 
@@ -179,6 +187,7 @@ need to do that with sox, see `rtl_fm  -f 104900k -s 171k - | sox -t raw -r 171k
 * Linux/macOS/Cygwin/MSYS2+MinGW
 * C++17 compiler (tested on GCC 9.5)
 * meson + ninja
+* nlohmann-json (meson will download it)
 * enough RAM (see [building on a low-end system][Wiki: Building on a low-end system])
 
 ### Testing (optional, for development)
@@ -186,6 +195,7 @@ need to do that with sox, see `rtl_fm  -f 104900k -s 171k - | sox -t raw -r 171k
 * Catch2
 * Perl
 * SoX
+* git-lfs
 
 See CONTRIBUTING.md for how to build and run the tests.
 

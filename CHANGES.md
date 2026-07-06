@@ -2,7 +2,9 @@
 
 We use [semantic versioning](https://semver.org/).
 
-## 1.3.1
+## 1.3.1 (2026-07-06)
+
+Bugfix update.
 
 * UX changes:
   * Exit if a TMC location table is provided but can't be loaded.
