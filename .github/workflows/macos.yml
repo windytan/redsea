@@ -8,6 +8,9 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # * Run all tests against release binary with sanitizers enabled
   # * Run all tests against debug binary
