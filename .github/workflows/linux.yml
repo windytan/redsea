@@ -8,6 +8,9 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # * Run e2e tests against release binary (no unit/component tests)
   # * Use apt-provided dependencies
