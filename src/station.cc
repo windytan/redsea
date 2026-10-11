@@ -190,13 +190,21 @@ void Station::updateAndPrintJson(const Group& group, std::ostream& stream) {
       // Emergency Warning System (pre-2021)
       decodeType9A(group, out);
 
+    } else if (type.number == 7 && type.version == GroupType::Version::A) {
+      // Radio Paging (unless reassigned to an ODA above)
+      decodeType7A(group, out);
+
+    } else if (type.number == 13 && type.version == GroupType::Version::A) {
+      // Enhanced Radio Paging (unless reassigned to an ODA above)
+      decodeType13A(group, out);
+
     } else if (type.number == 15 && type.version == GroupType::Version::A) {
       // Long PS (RDS2)
       decodeType15A(group, out);
 
     } else {
       // ODA-only groups
-      // 3B, 4B, 7A, 7B, 8B, 9B, 10B, 11A, 11B, 12A, 12B, 13B
+      // 3B, 4B, 7B, 8B, 9B, 10B, 11A, 11B, 12A, 12B, 13B
       decodeODAGroup(group, out);
     }
   }
@@ -363,6 +371,11 @@ void Station::decodeType1(const Group& group, ObjectTree& out) {
     linkage_la_        = getBool(group.get(BLOCK3), 15);
     out["has_linkage"] = linkage_la_;
 
+    // Radio Paging Code (EN 50067 M.2.1.2): block B bits 4-0 announce the
+    // basic-paging sub-network and battery-saving sync for group 7A paging.
+    // RPC == 0 means no basic paging on this channel (Table M.1).
+    paging_.decodeRPC(getUint8(group.get(BLOCK2), 0) & 0x1FU, out);
+
     const int slow_label_variant = getBits<3>(group.get(BLOCK3), 12);
 
     switch (slow_label_variant) {
@@ -374,6 +387,10 @@ void Station::decodeType1(const Group& group, ObjectTree& out) {
           has_country_   = true;
           out["country"] = getCountryString(cc_, ecc_);
         }
+
+        // Enhanced Paging Protocol System Information: Operator Code
+        // (EN 50067 M.3.2, Figure M.10a).
+        paging_.decodeSystemInfo(0, group.get(BLOCK3), out);
         break;
 
       // TODO: Removed in RDS2 -> now RFU
@@ -383,7 +400,10 @@ void Station::decodeType1(const Group& group, ObjectTree& out) {
         break;
 
       case 2:
-        // Pager is deprecated
+        // Enhanced Paging Protocol System Information: Operator Code and
+        // Paging Area Code (EN 50067 M.3.2, Figures M.9/M.10b). This variant
+        // is dedicated to radio paging and is only sent on a paging network.
+        paging_.decodeSystemInfo(2, group.get(BLOCK3), out);
         break;
 
       // TODO: Removed in RDS2 -> now RFU
@@ -649,6 +669,11 @@ void Station::decodeType4A(const Group& group, ObjectTree& out) {
     }
     clock_time_       = std::string(buffer.data());
     out["clock_time"] = clock_time_;
+
+    // Accurate CT (group 4A) is required on a radio-paging transmission
+    // (EN 50067 M.2.1.1.1 / §6.1.5.6 NOTE 8) for receiver battery-saving.
+    // Record its presence as a non-blocking paging conformance signal.
+    paging_.noteClockTimePresent();
   } else {
     out["debug"].push_back("invalid date/time");
   }
@@ -733,6 +758,25 @@ void Station::decodeType9A(const Group& group, ObjectTree& out) {
   assert(group.getType().has_value && group.getType().value.number == 9 &&
          group.getType().value.version == GroupType::Version::A);
   out["debug"].push_back("TODO: 9A");
+}
+
+// Group 7A: Radio Paging (EN 50067 Annex M / IEC 62106).
+// Reached only when 7A has not been reassigned to an ODA by a 3A group
+// (NRSC-4-B Table 3: "Radio Paging or ODA"). The enabling context (the Radio
+// Paging Code) arrives in group 1A and is decoded in decodeType1().
+void Station::decodeType7A(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 7 &&
+         group.getType().value.version == GroupType::Version::A);
+  paging_.decodeGroup7A(group, out, options_.show_partial);
+}
+
+// Group 13A: Enhanced Radio Paging (EN 50067 Annex M / IEC 62106).
+// Reached only when 13A has not been reassigned to an ODA by a 3A group
+// (NRSC-4-B Table 6: "Available when not used for RP").
+void Station::decodeType13A(const Group& group, ObjectTree& out) {
+  assert(group.getType().has_value && group.getType().value.number == 13 &&
+         group.getType().value.version == GroupType::Version::A);
+  paging_.decodeGroup13A(group, out);
 }
 
 // Group 10A: Programme Type Name

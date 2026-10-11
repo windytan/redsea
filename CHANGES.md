@@ -2,6 +2,32 @@
 
 We use [semantic versioning](https://semver.org/).
 
+## Unreleased
+
+* New features:
+  * Restore RDS Radio Paging decoding (group 7A) to EN 50067 Annex M, by VasylSamoilov:
+    * Decode tone-only, 10/18-digit numeric and variable-length alphanumeric,
+      numeric and functions pages, reassembled across their 7A segments (PSAC
+      state machine); alphanumeric text uses the RDS basic character set
+      (Annex E), the same table as RadioText
+    * Decode national and international (roaming) paging (EN 50067 M.3.5.7):
+      the tone extended field (E2-E0), the call counter and repeat flag, and
+      for international messages the CCITT E.212 country code and Operator Code
+    * Decode the enabling context from group 1A: the Radio Paging Code (RPC)
+      for basic paging, and the Enhanced Paging Protocol System Information
+      (Operator Code, Paging Area Code) that gates international/roaming paging
+      (EN 50067 M.2.1.2 / M.3.2); route 7A to paging only when it has not been
+      reassigned to an ODA by a 3A group
+    * Report accurate clock-time (group 4A) presence as a non-blocking paging
+      conformance signal (EN 50067 M.2.1.1.1)
+    * Handle messages damaged by block errors: a data group lost mid-message is
+      filled with '?' and the message flagged "incomplete"; with --show-partial
+      a message pre-empted by a new call is emitted before being discarded
+    * Decode Enhanced Radio Paging (group 13A) address-notification groups
+      (EN 50067 Annex M, Figures M.11a/M.11b): cycle selection, sub-type,
+      interval, sort indicator, and the 25-bit or two-group 50-bit notification
+      bitfield, routed to paging only when 13A is not reassigned to an ODA
+
 ## 1.3.1 (2026-07-06)
 
 Bugfix update.

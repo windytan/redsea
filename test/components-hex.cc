@@ -179,6 +179,317 @@ TEST_CASE("Callsign") {
   }
 }
 
+// Radio Paging (group 7A, EN 50067 Annex M). Vectors are hand-built from the
+// Annex M wire format (block B bits 4-0 = A/B flag + PSAC; address packed as
+// 6 BCD digits across block C and the high byte of block D).
+TEST_CASE("Radio Paging (Group 7A)") {
+  redsea::Options options;
+
+  SECTION("Tone-only page") {
+    // PSAC=0, A-flag=0, address 123456, control byte 0x00.
+    // Block B = 0x7000 (7A, TP=0, PTY=0, AB=0, PSAC=0)
+    // Block C = 0x1234 (Y1Y2Z1Z2), Block D = 0x5600 (Z3Z4 | ctrl)
+    const auto json_lines = hex2json({0x1234'7000'1234'5600}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 1);
+    REQUIRE(json_lines.back().is_object());
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "tone");
+    CHECK(json_lines.back()["radio_paging"]["call"]["address"] == 123456);
+    CHECK(json_lines.back()["radio_paging"]["call"]["call_flag"] == "A");
+  }
+
+  SECTION("Tone-only page with E2-E0 extended field and call counter") {
+    // Control byte 0x63 = E2E1E0=011 (0x3), R=0, P3-P0=0011 (counter 3).
+    // Block D = 0x5663 (Z3Z4 | control byte 0x63). EN 50067 Table M.12.
+    const auto json_lines = hex2json({0x1234'7000'1234'5663}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 1);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "tone");
+    CHECK(json_lines.back()["radio_paging"]["call"]["tone_extended"] == 3);
+    CHECK(json_lines.back()["radio_paging"]["call"]["call_counter"] == 3);
+  }
+
+  SECTION("10-digit numeric page") {
+    // Address 123456, message "7890123456".
+    // Group 1 (PSAC=2): addr + first 2 digits "78" -> D low = 0x78
+    // Group 2 (PSAC=3): remaining 8 digits "90123456" -> C=0x9012 D=0x3456
+    const auto json_lines =
+        hex2json({0x1234'7002'1234'5678, 0x1234'7003'9012'3456}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 2);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "numeric");
+    CHECK(json_lines.back()["radio_paging"]["call"]["address"] == 123456);
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "7890123456");
+  }
+
+  SECTION("Alphanumeric page") {
+    // Address 123456, message "HELO".
+    // Group 1 (PSAC=8): addr + control byte 0x00 (MT=alpha, NI=0, R=0, P=0)
+    // Group 2 (PSAC=9): 'H' 'E' 'L' 'O' -> C=0x4845 D=0x4C4F
+    // Group 3 (PSAC=F): end of message
+    const auto json_lines = hex2json(
+        {0x1234'7008'1234'5600, 0x1234'7009'4845'4C4F, 0x1234'700F'0000'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 3);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "alphanumeric");
+    CHECK(json_lines.back()["radio_paging"]["call"]["address"] == 123456);
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "HELO");
+  }
+
+  SECTION("A short alpha message does not truncate a following longer one") {
+    // Regression: finishMessage shrinks the alpha buffer to the received
+    // length; reset() must restore the full capacity. A 2-char international
+    // message ("HI", via the M.3.5.7 header group) followed by a 4-char
+    // national one ("HELO") must still decode "HELO" in full.
+    const auto json_lines =
+        hex2json({0x1234'7008'1234'5620, 0x1234'7009'2345'4849, 0x1234'700F'0000'0000,
+                  0x1234'7008'1234'5600, 0x1234'7009'4845'4C4F, 0x1234'700F'0000'0000},
+                 options, 0x1234);
+
+    REQUIRE(json_lines.size() == 6);
+    CHECK(json_lines.at(2)["radio_paging"]["call"]["message"] == "HI");
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "HELO");
+  }
+
+  SECTION("A lost data group is filled with '?' and the message tagged incomplete") {
+    // Alpha message with data group PSAC 0xA dropped: 9 ("ABCD"), [A lost],
+    // B ("IJKL"), end F. The gap is filled with 4 '?' and flagged incomplete.
+    const auto json_lines = hex2json({0x1234'7008'1234'5600, 0x1234'7009'4142'4344,
+                                      0x1234'700B'494A'4B4C, 0x1234'700F'0000'0000},
+                                     options, 0x1234);
+
+    REQUIRE(json_lines.size() == 4);
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "ABCD????IJKL");
+    CHECK(json_lines.back()["radio_paging"]["call"]["incomplete"] == true);
+  }
+
+  SECTION("A pre-empted message is emitted as partial with --show-partial") {
+    redsea::Options partial_opts;
+    partial_opts.show_partial = true;
+    // Alpha "ABCD" with no end marker, then a NEW call (fresh address group)
+    // pre-empts it. The first message is emitted partial + incomplete.
+    const auto json_lines =
+        hex2json({0x1234'7008'1234'5600, 0x1234'7009'4142'4344, 0x1234'7008'1234'5600,
+                  0x1234'7009'4546'4748, 0x1234'700F'0000'0000},
+                 partial_opts, 0x1234);
+
+    REQUIRE_FALSE(json_lines.empty());
+    // The pre-empting group's line carries the partial of the first message.
+    bool found_partial = false;
+    for (const auto& line : json_lines) {
+      if (!line.contains("radio_paging"))
+        continue;
+      const auto& rp = line["radio_paging"];
+      if (!rp.contains("call"))
+        continue;
+      const auto& call = rp["call"];
+      if (call.contains("incomplete") && call.contains("message") && call["message"] == "ABCD")
+        found_partial = true;
+    }
+    CHECK(found_partial);
+  }
+
+  SECTION("International alphanumeric page (NI=1, country code + OPC)") {
+    // EN 50067 M.3.5.7, Figure M.17.
+    // Group 1 (PSAC=8): address + control byte 0x20 (NI=1, R=0, P=0)
+    // Group 2 (PSAC=9): header -> C = I1I2I3 OPC (country 234, OPC 5 -> 0x2345),
+    //                   D = first 2 chars 'H' 'I' (0x4849)
+    // Group 3 (PSAC=F): end of message
+    const auto json_lines = hex2json(
+        {0x1234'7008'1234'5620, 0x1234'7009'2345'4849, 0x1234'700F'0000'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 3);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "alphanumeric_international");
+    CHECK(json_lines.back()["radio_paging"]["call"]["address"] == 123456);
+    CHECK(json_lines.back()["radio_paging"]["call"]["country_code"] == 234);
+    CHECK(json_lines.back()["radio_paging"]["call"]["operator_code"] == 5);
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "HI");
+  }
+
+  SECTION("Variable-length numeric page") {
+    // EN 50067 M.3.5.5, Figure M.15. Control byte 0x40 = bits 7-6 = 01 (numeric).
+    // Group 1 (PSAC=8): address + control byte 0x40 -> D = 0x5640
+    // Group 2 (PSAC=9): 8 digits "12345678" -> C=0x1234 D=0x5678
+    // Group 3 (PSAC=F): end
+    const auto json_lines = hex2json(
+        {0x1234'7008'1234'5640, 0x1234'7009'1234'5678, 0x1234'700F'0000'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 3);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "variable_numeric");
+    CHECK(json_lines.back()["radio_paging"]["call"]["address"] == 123456);
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "12345678");
+  }
+
+  SECTION("Variable-length functions page") {
+    // EN 50067 M.3.5.6, Figure M.16. Control byte 0xC0 = bits 7-6 = 11 (functions).
+    // Group 1 (PSAC=8): address + control byte 0xC0 -> D = 0x56C0
+    // Group 2 (PSAC=9): 8 hex nibbles "ABCDEF01" -> C=0xABCD D=0xEF01
+    // Group 3 (PSAC=F): end
+    const auto json_lines = hex2json(
+        {0x1234'7008'1234'56C0, 0x1234'7009'ABCD'EF01, 0x1234'700F'0000'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 3);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "functions");
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "ABCDEF01");
+  }
+
+  SECTION("International functions page (header block D uses full 0-F hex)") {
+    // EN 50067 M.3.5.7, Figure M.19. Control byte 0xE0 = bits 7-6 = 11
+    // (functions), NI = 1 (bit 5). The header group's block D = F1 F2 F3 F4,
+    // coded as full 0-F hex (regression for the GAP where it used BCD A=space).
+    // Group 1 (PSAC=8): address + control byte 0xE0 -> D = 0x56E0
+    // Group 2 (PSAC=9): header C = I1I2I3 OPC (country 234, OPC 5 -> 0x2345),
+    //                   D = F1F2F3F4 = 0xABCD -> "ABCD"
+    // Group 3 (PSAC=F): end
+    const auto json_lines = hex2json(
+        {0x1234'7008'1234'56E0, 0x1234'7009'2345'ABCD, 0x1234'700F'0000'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 3);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "functions_international");
+    CHECK(json_lines.back()["radio_paging"]["call"]["country_code"] == 234);
+    CHECK(json_lines.back()["radio_paging"]["call"]["operator_code"] == 5);
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "ABCD");
+  }
+
+  SECTION("International 15-digit numeric page") {
+    // EN 50067 M.2.1.6.5, Figure M.6, Table M.5. PSAC sequence 7 -> 5 -> 6.
+    // Country code X1X2X3 = 2,3,4 -> 234. Message A1..A15 = "123456789012345".
+    // Group 1 (PSAC=7): addr + D low = X1 X2 = 0x23 -> D = 0x5623
+    // Group 2 (PSAC=5): C = X3 A1 A2 A3 = 0x4123, D = A4 A5 A6 A7 = 0x4567
+    // Group 3 (PSAC=6): C = A8..A11 = 0x8901, D = A12..A15 = 0x2345
+    const auto json_lines = hex2json(
+        {0x1234'7007'1234'5623, 0x1234'7005'4123'4567, 0x1234'7006'8901'2345}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 3);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "numeric_international_15");
+    CHECK(json_lines.back()["radio_paging"]["call"]["address"] == 123456);
+    CHECK(json_lines.back()["radio_paging"]["call"]["country_code"] == 234);
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "123456789012345");
+  }
+
+  SECTION("International functions message (PSAC 1 + 3)") {
+    // EN 50067 M.2.1.6.6, Figure M.7, Table M.6. PSAC sequence 1 -> 3.
+    // Country code X1X2X3 = 2,3,4 -> 234. Functions F1..F7 = "ABCDEF0" (hex).
+    // Group 1 (PSAC=1): addr + D low = X1 X2 = 0x23 -> D = 0x5623
+    // Group 2 (PSAC=3): C = X3 F1 F2 F3 = 0x4ABC, D = F4 F5 F6 F7 = 0xDEF0
+    const auto json_lines =
+        hex2json({0x1234'7001'1234'5623, 0x1234'7003'4ABC'DEF0}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 2);
+    CHECK(json_lines.back()["radio_paging"]["call"]["type"] == "functions_international");
+    CHECK(json_lines.back()["radio_paging"]["call"]["address"] == 123456);
+    CHECK(json_lines.back()["radio_paging"]["call"]["country_code"] == 234);
+    CHECK(json_lines.back()["radio_paging"]["call"]["message"] == "ABCDEF0");
+  }
+
+  SECTION("RPC enabling context from Group 1A") {
+    // Group 1A with RPC = 0x04 in block B bits 4-0 (desig=1 -> groups 00-99).
+    // Block B = 0x1004 (1A, TP=0, PTY=0, RPC=0x04).
+    const auto json_lines = hex2json({0x1234'1004'0000'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 1);
+    CHECK(json_lines.back()["radio_paging"]["rpc"]["value"] == 4);
+    CHECK(json_lines.back()["radio_paging"]["rpc"]["has_paging"] == true);
+    CHECK(json_lines.back()["radio_paging"]["rpc"]["group_range"] == "00-99");
+  }
+
+  SECTION("System Information: Operator Code from 1A variant 0") {
+    // 1A variant 0 (block C bits 14-12 = 000). OPC = bits 11-8 = 5,
+    // ECC = bits 7-0 = 0xE2. Block C = 0x05E2. EN 50067 M.3.2, Figure M.10a.
+    const auto json_lines = hex2json({0x1234'1000'05E2'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 1);
+    CHECK(json_lines.back()["radio_paging"]["system_info"]["operator_code"] == 5);
+    CHECK(json_lines.back()["radio_paging"]["system_info"]["enhanced_paging"] == true);
+  }
+
+  SECTION("System Information: OPC + PAC from 1A variant 2") {
+    // 1A variant 2 (block C bits 14-12 = 010). PAC = bits 9-4 = 12,
+    // OPC = bits 3-0 = 3. Block C = 0x20C3. EN 50067 M.3.2, Figure M.10b.
+    const auto json_lines = hex2json({0x1234'1000'20C3'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 1);
+    CHECK(json_lines.back()["radio_paging"]["system_info"]["operator_code"] == 3);
+    CHECK(json_lines.back()["radio_paging"]["system_info"]["paging_area_code"] == 12);
+    CHECK(json_lines.back()["radio_paging"]["system_info"]["enhanced_paging"] == true);
+  }
+
+  SECTION("System Information: OPC 0 means no enhanced paging") {
+    // 1A variant 2, OPC = 0 -> no enhanced paging service (M.3.2.2, Note 1).
+    // Block C = 0x2000 (variant 2, PAC 0, OPC 0).
+    const auto json_lines = hex2json({0x1234'1000'2000'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 1);
+    CHECK(json_lines.back()["radio_paging"]["system_info"]["enhanced_paging"] == false);
+  }
+
+  SECTION("7A reassigned to ODA is not decoded as paging") {
+    // 3A assigns AID 0x4BD7 (RT+) to group 7A, then a 7A group must route to
+    // ODA, not to the paging decoder. The target group-type lives in the 3A
+    // block B bits 4-0: 7A = code 0x0E, so block B = 0x300E (3A, TP=0, PTY=0).
+    const auto json_lines =
+        hex2json({0x1234'300E'0000'4BD7, 0x1234'7000'1234'5600}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 2);
+    CHECK_FALSE(json_lines.back().contains("radio_paging"));
+  }
+}
+
+// Enhanced Radio Paging (group 13A, EN 50067 Annex M Figures M.11a/M.11b).
+// Block B: bits 4-3 = CS, bits 2-0 = STY. Block C: bits 15-12 = IT, bit 11 =
+// S1, bit 10 = S2, bit 9 = X, bits 8-0 = notify[24:16]. Block D = notify[15:0].
+TEST_CASE("Enhanced Radio Paging (Group 13A)") {
+  redsea::Options options;
+
+  SECTION("25-bit address notification (STY 000)") {
+    // Block B = 0xD000 (13A, TP=0, PTY=0, CS=00 1-min, STY=000)
+    // Block C = 0x50AA (IT=5, S1=0, S2=0, X=0, notify[24:16]=0x0AA)
+    // Block D = 0x1234 (notify[15:0]) -> notify25 = 0x0AA1234
+    const auto json_lines = hex2json({0x1234'D000'50AA'1234}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 1);
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["sub_type"] == "notification_25bit");
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["cycle"] == "1min");
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["interval"] == 5);
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["sort"] == "none");
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["notification_bits"] == 0x0AA1234);
+  }
+
+  SECTION("50-bit address notification (STY 001 then 010)") {
+    // High half STY=001 CS=10: B=0xD011, notify[49:25] hi = 0x0055678
+    // Low  half STY=010 CS=10: B=0xD012, notify[24:0]  lo = 0x00A4321
+    const auto json_lines = hex2json(
+        {
+            0x1234'D011'0055'678A,  // C=0x0055 (IT=0,notify_hi=0x055) D=0x678A
+            0x1234'D012'000A'4321   // C=0x000A (IT=0,notify_hi=0x00A) D=0x4321
+        },
+        options, 0x1234);
+
+    REQUIRE(json_lines.size() == 2);
+    CHECK(json_lines.at(0)["radio_paging"]["enhanced"]["sub_type"] == "notification_50bit_high");
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["sub_type"] == "notification_50bit_low");
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["notification_bits_hi"] == 0x055678A);
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["notification_bits_lo"] == 0x00A4321);
+  }
+
+  SECTION("Sort indicator (S1=1, S2=0 -> ascending)") {
+    // Block C = 0x5800 (IT=5, S1=1, S2=0) -> sort ascending
+    const auto json_lines = hex2json({0x1234'D000'5800'0000}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 1);
+    CHECK(json_lines.back()["radio_paging"]["enhanced"]["sort"] == "ascending");
+  }
+
+  SECTION("13A reassigned to ODA is not decoded as paging") {
+    // 3A assigns AID 0x4BD7 to group 13A (code 0x1A), block B = 0x301A.
+    const auto json_lines =
+        hex2json({0x1234'301A'0000'4BD7, 0x1234'D000'50AA'1234}, options, 0x1234);
+
+    REQUIRE(json_lines.size() == 2);
+    CHECK_FALSE(json_lines.back().contains("radio_paging"));
+  }
+}
+
 // The concept of string length in RadioText is only important for a logging receiver like redsea.
 // Stations have chosen various methods to communicate this length that we have outlined here:
 // https://github.com/windytan/redsea/wiki/Some-RadioText-research

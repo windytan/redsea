@@ -26,6 +26,7 @@
 
 #include "src/group.hh"
 #include "src/options.hh"
+#include "src/paging.hh"
 #include "src/rft.hh"
 #include "src/text/radiotext.hh"
 #include "src/text/rdsstring.hh"
@@ -57,6 +58,7 @@ class Station {
   void decodeType7A(const Group& group, ObjectTree& out);
   void decodeType9A(const Group& group, ObjectTree& out);
   void decodeType10A(const Group& group, ObjectTree& out);
+  void decodeType13A(const Group& group, ObjectTree& out);
   void decodeType14(const Group& group, ObjectTree& out);
   void decodeType15A(const Group& group, ObjectTree& out);
   void decodeType15B(const Group& group, ObjectTree& out);
@@ -89,6 +91,8 @@ class Station {
   std::map<std::uint16_t, AltFreqList> eon_alt_freqs_;
   bool last_group_had_pi_{false};
   AltFreqList alt_freq_list_;
+
+  RadioPaging paging_;
 
   tmc::TMCService tmc_;
 

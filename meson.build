@@ -96,6 +96,7 @@ sources_no_main = [
   'src/io/input.cc',
   'src/io/output.cc',
   'src/options.cc',
+  'src/paging.cc',
   'src/rft.cc',
   'src/station.cc',
   'src/tables.cc',
