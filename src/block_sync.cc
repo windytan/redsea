@@ -289,6 +289,11 @@ void BlockStream::findBlockInInputRegister() {
     block.data = static_cast<std::uint16_t>(block.raw >> kCheckwordLength);
 
     if (block.had_errors && options_.use_fec) {
+      if (current_group_.getType().has_value &&
+          current_group_.getType().value.version == GroupType::Version::B) {
+        expected_offset_ = Offset::Cprime;
+      }
+
       const auto correction = correctBurstErrors(block, expected_offset_);
       if (correction.succeeded) {
         block.data   = static_cast<std::uint16_t>(correction.corrected_bits >> kCheckwordLength);

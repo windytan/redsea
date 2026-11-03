@@ -110,6 +110,25 @@ TEST_CASE("Error detection and correction") {
     CHECK(groups.back().getNumErrors() == 1);
   }
 
+  // Used to be broken because offset C was mistakenly expected instead of C'
+  SECTION("Corrects single bit flip in B-type block 3") {
+    // Radio Študent (si)
+    // clang-format off
+    const std::string broken_group =
+      "1001010001000000" "0011000111"
+      "0000100100101110" "1111110110"
+      "1001010001000000" "1101101010" // Flipped bit
+      "0100010101001110" "1111100100";
+    // clang-format on
+
+    const std::string test_data{broken_group + broken_group};
+    const auto groups{asciibin2groups(test_data, options)};
+
+    REQUIRE(groups.size() == 2);
+    CHECK(groups.back().asHex() == "9440 092E 9440 454E");
+    CHECK(groups.back().getNumErrors() == 1);
+  }
+
   SECTION("Corrects double bit flip") {
     const std::string broken_group = [&]() {
       std::string broken = correct_group;

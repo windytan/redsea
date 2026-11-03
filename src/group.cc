@@ -116,11 +116,6 @@ void Group::setBlock(eBlockNumber block_num, Block block) {
   if (!type_.has_value) {
     if (block_num == BLOCK2) {
       type_ = GroupType(getBits<5>(block.data, 11));
-      if (type_.value.version == GroupType::Version::B) {
-        // Type is deferred unless blocks were received out-of-order: C' before B
-        type_.has_value = (has_c_prime_ || no_offsets_);
-      }
-
     } else if (block_num == BLOCK4) {
       if (has_c_prime_ && !type_.has_value) {
         const GroupType potential_type(getBits<5>(block.data, 11));
