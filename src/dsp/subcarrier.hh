@@ -29,10 +29,15 @@
 
 namespace redsea {
 
+struct DeltaBit {
+  bool bit;
+  float evm;
+};
+
 class BiphaseDecoder {
  public:
   BiphaseDecoder() = default;
-  Maybe<bool> push(std::complex<float> psk_symbol);
+  Maybe<DeltaBit> push(std::complex<float> psk_symbol);
 
  private:
   std::complex<float> prev_psk_symbol_{0.0f, 0.0f};

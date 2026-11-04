@@ -44,16 +44,25 @@ constexpr float kSymsyncBeta         = 0.8f;
 constexpr float kPLLBandwidth_Hz     = 0.03f;
 constexpr float kPLLMultiplier       = 12.0f;
 
+float calculateBiphaseEVM(std::complex<float> previous, std::complex<float> current) {
+  const auto common       = (previous + current) * 0.5f;
+  const auto differential = (current - previous) * 0.5f;
+  const std::complex<float> reference{std::copysign(1.0f, differential.real()), 0.0f};
+
+  return 100.f * std::sqrt(std::norm(common) + std::norm(differential - reference));
+}
+
 }  // namespace
 
-// Returns a bit when available
-Maybe<bool> BiphaseDecoder::push(std::complex<float> psk_symbol) {
-  Maybe<bool> result{};
+// Returns a bit (delta-encoded) when available
+Maybe<DeltaBit> BiphaseDecoder::push(std::complex<float> psk_symbol) {
+  Maybe<DeltaBit> result{};
 
   // A biphase symbol consists of two PSK symbols with opposite phase.
   // (The PSK symbol rate is twice the biphase symbol rate.)
   const auto biphase_symbol = (psk_symbol - prev_psk_symbol_) * 0.5f;
-  result.value              = biphase_symbol.real() >= 0.0f;
+  result.value.bit          = biphase_symbol.real() >= 0.0f;
+  result.value.evm          = calculateBiphaseEVM(prev_psk_symbol_, psk_symbol);
   result.has_value          = (clock_ % 2 == clock_polarity_);
   prev_psk_symbol_          = psk_symbol;
 
@@ -211,10 +220,12 @@ BitBuffer SubcarrierSet::chunkToBits(const MPXBuffer& input_chunk, int num_data_
           // One biphase symbol received for every 2 PSK symbols
           if (biphase.has_value) {
             // Running at 1.1875 kHz (according to transmitter's clock)
-            const bool bit = subcarrier_context.delta_decoder.decode(biphase.value);
+            const bool bit = subcarrier_context.delta_decoder.decode(biphase.value.bit);
             bitbuffer.bits[n_stream].push_back(TimedBit{
-                bit, static_cast<float>(static_cast<int>(i_sample) - processing_delay_in_samples) /
-                         kTargetSampleRate_Hz});
+                bit,
+                static_cast<float>(static_cast<int>(i_sample) - processing_delay_in_samples) /
+                    kTargetSampleRate_Hz,
+                biphase.value.evm});
           }
         }
       }  // decimate

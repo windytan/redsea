@@ -40,7 +40,7 @@ struct Options {
   // Just print the version
   bool print_version{};
   bool timestamp{};
-  bool bler{};
+  bool metrics{};
   bool show_raw{};
   bool is_custom_rate_defined{};
   bool is_num_channels_defined{};

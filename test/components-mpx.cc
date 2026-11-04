@@ -172,6 +172,62 @@ TEST_CASE("RDS2/RFT station logo from MPX") {
   }
 }
 
+TEST_CASE("MPX metrics") {
+  redsea::Options options;
+
+  options.sndfilename = "../test/resources/rds2-minirds-192k.flac";
+  options.input_type  = redsea::InputType::MPX_container;
+
+  REQUIRE(std::filesystem::exists(options.sndfilename));
+
+  redsea::MPXReader mpx;
+  mpx.init(options);
+  options.samplerate   = mpx.getSamplerate();
+  options.num_channels = mpx.getNumChannels();
+
+  redsea::SubcarrierSet subcarriers(options.samplerate);
+
+  std::stringstream output_stream;
+
+  SECTION("EVM") {
+    options.output_type = redsea::OutputType::JSON;
+    options.metrics     = true;
+    redsea::Channel channel(options, 0);
+
+    std::vector<float> evm_values;
+
+    while (!mpx.eof()) {
+      const auto bits = subcarriers.chunkToBits(mpx.readChunk(0), 1);
+
+      channel.processBits(bits, output_stream);
+
+      if (!output_stream.str().empty()) {
+        nlohmann::ordered_json jsonroot;
+        // Process each newline-terminated line one-by-one
+        std::string line;
+        while (std::getline(output_stream, line)) {
+          std::istringstream(line) >> jsonroot;
+          if (jsonroot.contains("evm")) {
+            evm_values.push_back(jsonroot["evm"].get<float>());
+          }
+        }
+
+        output_stream.str("");
+        output_stream.clear();
+      }
+    }
+
+    REQUIRE(!evm_values.empty());
+    for (const auto evm : evm_values) {
+      // Zero is just not realistic
+      CHECK(evm >= 0.0f);
+    }
+    // Has stabilized towards the end
+    CHECK(evm_values.back() <= 3.f);
+    // Note that the last group doesn't necessarily have EVM if it was cut short; this is okay
+  }
+}
+
 TEST_CASE("Time from start") {
   redsea::Options options;
 
@@ -225,7 +281,7 @@ TEST_CASE("Time from start") {
   REQUIRE(seen_timestamps[3].size() > 1);
 
   constexpr double kBitDuration   = 1 / 1187.5;
-  constexpr double kGroupDuration = 104 * kBitDuration;
+  constexpr double kGroupDuration = redsea::kNumBitsPerGroup * kBitDuration;
 
   // We used a simple BPSK demodulator to measure this offset in the FLAC file
   // (It's where the first group starts in stream 0)

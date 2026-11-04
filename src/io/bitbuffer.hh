@@ -12,6 +12,7 @@ struct TimedBit {
   bool value;
   // Time offset of the bit, in seconds from the start of the input chunk
   float time_from_chunk_start;
+  float evm;
 };
 
 // Bits as demodulated from MPX

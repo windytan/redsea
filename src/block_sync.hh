@@ -53,7 +53,7 @@ class BlockStream {
  public:
   BlockStream() = default;
   void init(const Options& options);
-  void pushBit(bool bit);
+  void pushBit(bool bit, float evm = 0.f);
   Group popGroup();
   [[nodiscard]] bool hasGroupReady() const;
   [[nodiscard]] Group flushCurrentGroup() const;
@@ -69,14 +69,14 @@ class BlockStream {
   std::uint32_t input_register_{0};
   Offset expected_offset_{Offset::A};
   bool is_in_sync_{false};
-  RunningSum<int, 50> block_error_sum50_;
+  RunningMetrics<int, 50> block_error_sum50_;
   Options options_{};
-  RunningAverage<float, kNumBlerAverageGroups> bler_average_;
   Group current_group_;
   Group ready_group_;
   bool has_group_ready_{false};
   std::uint32_t num_bits_since_sync_lost_{0};
   SyncPulseBuffer sync_buffer_{};
+  RunningMetrics<float, kNumBitsPerGroup> evm_average_;
 };
 
 }  // namespace redsea

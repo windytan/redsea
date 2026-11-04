@@ -57,6 +57,12 @@ void printAsHex(const Group& group, const Options& options, std::ostream& output
     if (options.time_from_start && group.getTimeFromStart().has_value) {
       output_ostream << ' ' << std::fixed << std::setprecision(6) << group.getTimeFromStart().value;
     }
+    if (group.getEVM().has_value) {
+      output_ostream << " evm=" << std::lround(group.getEVM().value) << "%";
+    }
+    if (group.getBLER().has_value) {
+      output_ostream << " bler=" << std::lround(group.getBLER().value) << "%";
+    }
     output_ostream << '\n' << std::flush;
   }
 }

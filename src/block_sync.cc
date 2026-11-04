@@ -251,10 +251,12 @@ void BlockStream::acquireSync(Block block) {
 }
 
 // Receive a new bit
-void BlockStream::pushBit(bool bit) {
+void BlockStream::pushBit(bool bit, float evm) {
   input_register_ = (input_register_ << 1U) + bit;
   num_bits_until_next_block_--;
   bitcount_++;
+
+  evm_average_.push(evm);
 
   if (num_bits_until_next_block_ == 0) {
     findBlockInInputRegister();
@@ -283,6 +285,7 @@ void BlockStream::findBlockInInputRegister() {
     if (block_error_sum50_.getSum() > kMaxErrorsToleratedOver50Blocks) {
       is_in_sync_ = false;
       block_error_sum50_.clear();
+      evm_average_.clear();
       return;
     }
 
@@ -319,6 +322,9 @@ void BlockStream::findBlockInInputRegister() {
 
 // Called after a whole group of four blocks was received.
 void BlockStream::handleNewlyReceivedGroup() {
+  if (options_.metrics) {
+    current_group_.setEVM(evm_average_.getRMS());
+  }
   ready_group_     = current_group_;
   has_group_ready_ = true;
   current_group_   = Group();

@@ -21,6 +21,7 @@
 #include <array>
 #include <cassert>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <numeric>
@@ -133,49 +134,52 @@ class AltFreqList {
   bool lf_mf_follows_{false};
 };
 
+// A circular buffer that supports some calculations
 template <typename T, std::size_t N>
-class RunningSum {
+class RunningMetrics {
  public:
-  RunningSum() {
+  RunningMetrics() {
     clear();
   }
-  T getSum() const {
-    return std::accumulate(history_.cbegin(), history_.cend(), T{0});
-  }
-  void push(int number) {
-    history_[pointer_] = number;
-    pointer_           = (pointer_ + 1) % history_.size();
-  }
+
   void clear() {
     std::fill(history_.begin(), history_.end(), T{0});
+    ptr_  = 0;
+    fill_ = 0;
   }
 
- private:
-  std::array<T, N> history_{};
-  std::size_t pointer_{};
-};
-
-template <typename T, std::size_t N>
-class RunningAverage {
- public:
-  RunningAverage() {
-    std::fill(history_.begin(), history_.end(), T{0});
-  }
   void push(T value) {
-    sum_ -= history_[ptr_];
     history_[ptr_] = value;
-    sum_ += value;
-    ptr_ = (ptr_ + 1) % history_.size();
+    ptr_           = (ptr_ + 1) % history_.size();
+    if (fill_ < history_.size())
+      fill_++;
   }
 
   [[nodiscard]] float getAverage() const {
-    return history_.empty() ? 0.f : static_cast<float>(sum_) / history_.size();
+    if (fill_ == 0)
+      return 0.f;
+
+    return static_cast<float>(getSum()) / fill_;
+  }
+
+  [[nodiscard]] float getRMS() const {
+    if (fill_ == 0)
+      return 0.f;
+
+    return std::sqrt(
+        static_cast<float>(std::accumulate(history_.begin(), history_.end(), T{0},
+                                           [](T acc, T val) { return acc + val * val; })) /
+        fill_);
+  }
+
+  [[nodiscard]] T getSum() const {
+    return std::accumulate(history_.begin(), history_.end(), T{0});
   }
 
  private:
   std::array<T, N> history_{};
-  T sum_{};
   std::size_t ptr_{};
+  std::size_t fill_{};
 };
 
 template <typename T, std::size_t Length>

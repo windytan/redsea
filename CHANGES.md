@@ -4,6 +4,11 @@ We use [semantic versioning](https://semver.org/).
 
 ## 1.4.0-SNAPSHOT
 
+* New features:
+  * Print error vector magnitude (`--metrics`).
+* Bug fixes:
+  * Fix block 3 of a type-B group getting rejected for even single bit errors.
+
 ## 1.3.1 (2026-07-06)
 
 Bugfix update.

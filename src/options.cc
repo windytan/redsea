@@ -89,10 +89,11 @@ Options getOptions(int argc, char** argv) {
   int fec_flag{1};
   int time_offset_flag{0};
   int help_flag{0};
+  int metrics_flag{0};
   bool has_custom_input_type{};
 
   // clang-format off
-  const std::array<option, 21> long_options{{
+  const std::array<option, 22> long_options{{
       {"input-bits",   no_argument,       nullptr,   'b'},
       {"channels",     required_argument, nullptr,   'c'},
       {"feed-through", no_argument,       nullptr,   'e'},
@@ -101,6 +102,7 @@ Options getOptions(int argc, char** argv) {
       {"input-hex",    no_argument,       nullptr,   'h'},
       {"input",        required_argument, nullptr,   'i'},
       {"loctable",     required_argument, nullptr,   'l'},
+      {"metrics",      no_argument,       &metrics_flag,   1},
       {"output",       required_argument, nullptr,   'o'},
       {"show-partial", no_argument,       nullptr,   'p'},
       {"samplerate",   required_argument, nullptr,   'r'},
@@ -140,7 +142,7 @@ Options getOptions(int argc, char** argv) {
         break;
       }
       case 'e': options.feed_thru = true; break;
-      case 'E': options.bler = true; break;
+      case 'E': options.metrics = true; break;
       case 'f':
         options.sndfilename = std::string(optarg);
         options.input_type  = InputType::MPX_container;
@@ -223,6 +225,7 @@ Options getOptions(int argc, char** argv) {
   options.early_exit      = options.print_usage || options.print_version;
   options.use_fec         = (fec_flag == 1);
   options.time_from_start = (time_offset_flag == 1);
+  options.metrics         = options.metrics || (metrics_flag == 1);
 
   if (argc > optind) {
     options.print_usage = true;
@@ -282,11 +285,6 @@ Options getOptions(int argc, char** argv) {
     warn("--loctable ignored for hex output");
     options.loctable_dirs.clear();
   }
-
-  if (options.bler && options.output_type == OutputType::Hex) {
-    warn("--bler ignored for hex output");
-  }
-
   // --rbds doesn't have any effect for hex output either, but we choose not to warn about it
 
   if (options.is_custom_rate_defined) {

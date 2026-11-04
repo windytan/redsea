@@ -64,6 +64,11 @@ Maybe<float> Group::getBLER() const {
   return bler_;
 }
 
+// \return Error vector magnitude, RMS percent
+Maybe<float> Group::getEVM() const {
+  return evm_;
+}
+
 int Group::getNumErrors() const {
   return std::accumulate(blocks_.cbegin(), blocks_.cend(), 0, [](int a, Block b) {
     return a + ((b.had_errors || !b.is_received) ? 1 : 0);
@@ -138,6 +143,10 @@ void Group::setRxTime(std::chrono::time_point<std::chrono::system_clock> t) {
 // \param bler Block error rate, percent
 void Group::setAverageBLER(float bler) {
   bler_ = bler;
+}
+
+void Group::setEVM(float evm_percent_rms) {
+  evm_ = evm_percent_rms;
 }
 
 void Group::setTimeFromStart(double time_from_start) {

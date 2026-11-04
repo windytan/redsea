@@ -944,7 +944,7 @@ TEST_CASE("Block error rate (BLER) reporting") {
   redsea::Options options;
 
   SECTION("Disabled") {
-    options.bler = false;
+    options.metrics = false;
     // clang-format off
     const auto json_lines = hex2json({
       0x7827'0000'7827'F928
@@ -956,10 +956,8 @@ TEST_CASE("Block error rate (BLER) reporting") {
     REQUIRE_FALSE(json_lines.back().contains("bler"));
   }
 
-  SECTION("Enabled") {
-    options.bler = true;
-
-    constexpr int num_erroneous_blocks = 1;
+  SECTION("Enabled; 1 block out of 4 missing") {
+    options.metrics = true;
 
     // clang-format off
     const auto json_lines = hex2json({
@@ -970,9 +968,8 @@ TEST_CASE("Block error rate (BLER) reporting") {
     REQUIRE_FALSE(json_lines.empty());
     REQUIRE(json_lines.back().is_object());
     REQUIRE(json_lines.back().contains("bler"));
-    // 1 block out of kNumBlerAverageGroups was missing
-    CHECK(json_lines.back()["bler"] ==
-          num_erroneous_blocks * 100 / (4 * redsea::kNumBlerAverageGroups));
+    // 1 block out of 4 was missing --> 25 %
+    CHECK(json_lines.back()["bler"] == 25);
   }
 }
 

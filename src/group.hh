@@ -61,6 +61,7 @@ class Group {
   [[nodiscard]] Maybe<std::uint16_t> getPI() const;
   [[nodiscard]] Maybe<GroupType> getType() const;
   [[nodiscard]] Maybe<float> getBLER() const;
+  [[nodiscard]] Maybe<float> getEVM() const;
   [[nodiscard]] Maybe<double> getTimeFromStart() const;
   [[nodiscard]] Maybe<std::chrono::time_point<std::chrono::system_clock>> getRxTime() const;
 
@@ -69,6 +70,7 @@ class Group {
   void setBlock(eBlockNumber block_num, Block block);
   void setRxTime(std::chrono::time_point<std::chrono::system_clock> t);
   void setAverageBLER(float bler);
+  void setEVM(float evm_percent_rms);
   void setTimeFromStart(double time_from_start);
   void disableOffsets();
 
@@ -79,6 +81,7 @@ class Group {
   Maybe<GroupType> type_;
   Maybe<std::chrono::time_point<std::chrono::system_clock>> time_received_;
   Maybe<float> bler_;
+  Maybe<float> evm_;
   // Seconds from the beginning of the file until the first bit of this group
   Maybe<double> time_from_start_;
   bool has_c_prime_{false};

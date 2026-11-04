@@ -96,10 +96,10 @@ class Channel {
   CachedPI cached_pi_;
   std::array<BlockStream, 4> block_streams_;
   Station station_;
-  RunningAverage<float, kNumBlerAverageGroups> bler_average_;
+  RunningMetrics<float, kNumBlerAverageGroups> bler_average_;
   std::chrono::time_point<std::chrono::system_clock> last_group_rx_time_;
   // When the first bit of this group was received
-  std::array<DelayLine<double, 104 + 1>, 4> delayed_time_offset_;
+  std::array<DelayLine<double, kNumBitsPerGroup + 1>, 4> delayed_time_offset_;
 };
 
 }  // namespace redsea

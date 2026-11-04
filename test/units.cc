@@ -7,6 +7,7 @@
 #include <string>
 #include <variant>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_string.hpp>
 
@@ -273,5 +274,20 @@ TEST_CASE("UTF-8 sanitization") {
   SECTION("Truncated 4-byte sequence at end") {
     // F0 9F 98 at end (expects one more byte for emoji)
     CHECK(redsea::sanitizeUtf8(std::string("test\xF0\x9F\x98")) == "test?");
+  }
+}
+
+TEST_CASE("RunningMetrics") {
+  SECTION("Basic functionality") {
+    redsea::RunningMetrics<int, 5> metrics;
+    CHECK(metrics.getAverage() == 0.f);
+    CHECK(metrics.getRMS() == 0.f);
+
+    metrics.push(1);
+    metrics.push(2);
+    metrics.push(3);
+    CHECK(metrics.getSum() == 6);
+    CHECK(metrics.getAverage() == Catch::Approx(2.f));
+    CHECK(metrics.getRMS() == Catch::Approx(std::sqrt((1 * 1 + 2 * 2 + 3 * 3) / 3.f)));
   }
 }

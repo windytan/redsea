@@ -2,7 +2,7 @@
 # These tests aren't supposed to test correctness of the decoding itself in detail,
 # but rather that the command-line UI/UX works as expected.
 #
-# Usage: perl test/end-to-end.pl [--installed] [--skip-sox] [--skip-flac] path/to/redsea.exe
+# Usage: perl test/end-to-end.pl [--installed] [--skip-sox] [--skip-lfs] path/to/redsea.exe
 #
 # *  --installed: redsea is in PATH (exe file existence won't be checked).
 # *  --skip-sox:  Skip tests that require SoX to be installed (PCM input, ...).
@@ -295,7 +295,7 @@ sub test_CommandLineOptionBranches {
 
     printAssertName("-h -x");
     checkExitSuccess( runRedseaWithArgs( "-h -x", $spy_file ) );
-    checkStdoutMatches('^#S1 ---- ---- 0000 00AD');
+    checkStdoutMatches('^#S1 ---- ---- 0000 00AD\r?\n');
     checkStderrEmpty();
 
     printAssertName("--timestamp (hex in/out)");
@@ -304,7 +304,7 @@ sub test_CommandLineOptionBranches {
             "--input hex --output hex --timestamp %Y", $spy_file
         )
     );
-    checkStdoutMatches('^#S1 ---- ---- 0000 00AD \d+');
+    checkStdoutMatches('^#S1 ---- ---- 0000 00AD \d+\r?\n');
     checkStderrEmpty();
 
     printAssertName("--rbds");
@@ -312,46 +312,12 @@ sub test_CommandLineOptionBranches {
     checkStdoutMatches('"callsign_uncertain":"KAAA"');
     checkStderrEmpty();
 
-    printAssertName("--no-fec (but hex input)");
-    checkExitSuccess( runRedseaWithArgs( "--input hex --no-fec", $spy_file ) );
-    checkStdoutMatches('"pi":"0x1000"');
-    checkStderrNumLines(1);
-    checkStderrMatches('warning: --no-fec ignored');
-
-    printAssertName("--show-partial (but hex output)");
-    checkExitSuccess(
-        runRedseaWithArgs(
-            "--input hex --output hex --show-partial", $spy_file
-        )
-    );
-    checkStdoutMatches('^#S1 ---- ---- 0000 00AD');
-    checkStderrNumLines(1);
-    checkStderrMatches('warning: --show-partial ignored');
-
-    printAssertName("--bler (but hex input)");
-    checkExitSuccess(
-        runRedseaWithArgs( "--input hex --output hex --bler", $spy_file ) );
-    checkStdoutMatches('^#S1 ---- ---- 0000 00AD');
-    checkStderrNumLines(1);
-    checkStderrMatches('warning: --bler ignored');
-
-    printAssertName("--streams (but hex input)");
-    checkExitSuccess( runRedseaWithArgs( "--input hex --streams", $spy_file ) );
-    checkStdoutMatches('"pi":"0x1000"');
-    checkStderrNumLines(1);
-    checkStderrMatches('warning: --streams has no effect');
-
-    printAssertName("--loctable (but hex output)");
-    checkExitSuccess(
-        runRedseaWithArgs(
-            "--input hex --output hex --loctable test/resources/mock_locdb",
-            $spy_file
-        )
-    );
-    checkFileContentsDoesntMatch( $test_output_file, "location_table_info",
-        'stdout' );
-    checkStderrNumLines(1);
-    checkStderrMatches('warning: --loctable ignored');
+    if ( !skipped( $skip_lfs, '--metrics (hex out)' ) ) {
+        printAssertName("--metrics (hex out)");
+        checkExitSuccess( runRedseaWithArgs( "--output hex --metrics --file $flac_file") );
+        checkStdoutMatches('^[A-F0-9-]{4} [A-F0-9-]{4} [A-F0-9-]{4} [A-F0-9-]{4} evm=\S+ bler=\S+');
+        checkStderrEmpty();
+    }
 
     return;
 }
@@ -398,6 +364,9 @@ sub test_MildlyIncompatibleOptions {
     printAssertName("");
     check( createDummyFile($test_input_file), 'Create dummy test file' );
 
+    my $spy_file = 'test/resources/rds2.spy';
+    check( -f $spy_file && -s $spy_file, 'Hex input fixture should exist' );
+
     printAssertName("--samplerate --file");
     if ( not skipped( $skip_lfs, 'FLAC file not found' ) ) {
         checkExitSuccess(
@@ -413,6 +382,40 @@ sub test_MildlyIncompatibleOptions {
     printAssertName("--input mpx (no samplerate)");
     checkExitSuccess( runRedseaWithArgs( "--input mpx", $test_input_file ) );
     checkStderrMatches('warning');
+
+    printAssertName("--no-fec (but hex input)");
+    checkExitSuccess( runRedseaWithArgs( "--input hex --no-fec", $spy_file ) );
+    checkStdoutMatches('"pi":"0x1000"');
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --no-fec ignored');
+
+    printAssertName("--show-partial (but hex output)");
+    checkExitSuccess(
+        runRedseaWithArgs(
+            "--input hex --output hex --show-partial", $spy_file
+        )
+    );
+    checkStdoutMatches('^#S1 ---- ---- 0000 00AD');
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --show-partial ignored');
+
+    printAssertName("--streams (but hex input)");
+    checkExitSuccess( runRedseaWithArgs( "--input hex --streams", $spy_file ) );
+    checkStdoutMatches('"pi":"0x1000"');
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --streams has no effect');
+
+    printAssertName("--loctable (but hex output)");
+    checkExitSuccess(
+        runRedseaWithArgs(
+            "--input hex --output hex --loctable test/resources/mock_locdb",
+            $spy_file
+        )
+    );
+    checkFileContentsDoesntMatch( $test_output_file, "location_table_info",
+        'stdout' );
+    checkStderrNumLines(1);
+    checkStderrMatches('warning: --loctable ignored');
 
     unlink($test_input_file);
 
@@ -717,7 +720,7 @@ sub checkFileContentsMatches {
     return;
 }
 
-# Check that (possibly only the first line of) does not match
+# Check that (possibly only the first line of) the file does not match
 sub checkFileContentsDoesntMatch {
     my ( $file_path, $regex, $test_name ) = @_;
     my $file_exists = -e $file_path;
@@ -809,12 +812,13 @@ sub previewFileContents {
     my $contents = <$file>;
     close $file;
     my $count = 0;
-    while ( my $char = substr( $contents, $count, 1 ) ) {
+    while ( $count <= length( $contents ) ) {
+        my $char = substr( $contents, $count, 1 );
         if ( ++$count >= 64 ) {
             print "...";
             last;
         }
-        $char =~ s/([^\x20-\x7E])/sprintf("\\x%02X", ord($1))/gex;
+        $char =~ s/([^\x20-\x7E])/sprintf("\033[90m\\x%02X\033[0m", ord($1))/gex;
         print $char;
     }
     print "\") \n";

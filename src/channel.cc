@@ -74,7 +74,8 @@ void Channel::processBit(bool bit, std::size_t which_data_stream, std::ostream& 
 void Channel::processBits(const BitBuffer& buffer, std::ostream& output_ostream) {
   for (int which_data_stream{}; which_data_stream < buffer.n_streams; which_data_stream++) {
     for (std::size_t i_bit = 0; i_bit < buffer.bits[which_data_stream].size(); i_bit++) {
-      block_streams_[which_data_stream].pushBit(buffer.bits[which_data_stream].at(i_bit).value);
+      const auto& bit = buffer.bits[which_data_stream].at(i_bit);
+      block_streams_[which_data_stream].pushBit(bit.value, bit.evm);
 
       if (options_.time_from_start) {
         delayed_time_offset_[which_data_stream].push(
@@ -136,7 +137,7 @@ void Channel::processAndPrintGroup(Group group, std::size_t which_data_stream,
     last_group_rx_time_ = now;
   }
 
-  if (options_.bler) {
+  if (options_.metrics) {
     bler_average_.push(static_cast<float>(group.getNumErrors()) / 4.f);
     group.setAverageBLER(100.f * bler_average_.getAverage());
   }

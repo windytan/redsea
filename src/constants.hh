@@ -27,6 +27,7 @@ constexpr float kMinimumSampleRate_Hz = 128'000.f;
 constexpr int kNumBlerAverageGroups   = 12;
 // Internally resample to this rate
 constexpr float kTargetSampleRate_Hz  = 171'000.f;
+constexpr int kNumBitsPerGroup        = 104;
 
 // Limits of the resamp_rrrf object
 constexpr float kLiquidMinimumResamplerRatio = 0.004f;

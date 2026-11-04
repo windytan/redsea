@@ -128,6 +128,10 @@ void Station::updateAndPrintJson(const Group& group, std::ostream& stream) {
     out["bler"] = std::lround(group.getBLER().value);
   }
 
+  if (group.getEVM().has_value) {
+    out["evm"] = std::lround(group.getEVM().value);
+  }
+
   if (options_.num_channels > 1) {
     out["channel"] = which_channel_;
   }
