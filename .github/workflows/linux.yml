@@ -14,9 +14,9 @@ permissions:
 jobs:
   # * Run e2e tests against release binary (no unit/component tests)
   # * Use apt-provided dependencies
-  build-ubuntu-24-04:
-    name: "🐧 Build on Ubuntu 24.04"
-    runs-on: ubuntu-24.04
+  build-ubuntu-26-04:
+    name: "🐧 Build on Ubuntu 26.04"
+    runs-on: ubuntu-26.04
 
     steps:
     - uses: actions/checkout@v4
@@ -33,9 +33,9 @@ jobs:
 
   # * Run all tests against release binary
   # * Build liquid-dsp from source with fast-math enabled
-  build-ubuntu-24-04-liquid-fast-math:
-    name: "🐧 Build & test on Ubuntu 24.04, fast-math liquid-dsp"
-    runs-on: ubuntu-24.04
+  build-ubuntu-26-04-liquid-fast-math:
+    name: "🐧 Build & test on Ubuntu 26.04, fast-math liquid-dsp"
+    runs-on: ubuntu-26.04
 
     steps:
     - uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
   # Build a .deb, install it system-wide, and run e2e tests against it
   build-ubuntu-deb-package:
     name: "🐧 Build Debian package"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
     - uses: actions/checkout@v4
@@ -109,22 +109,22 @@ jobs:
       run: perl test/end_to_end.pl --installed redsea
 
   # Older Debian
-  # * Use apt-provided dependencies (but get meson from pip)
+  # * Use apt-provided dependencies
   # * Run e2e tests against release binary (no unit/component tests, no MPX input tests)
-  build-debian-bullseye:
-    name: "🐧 Build on Debian 11 (Bullseye)"
+  build-debian-bookworm:
+    name: "🐧 Build on Debian 12 (Bookworm)"
     runs-on: ubuntu-latest
-    container: debian:bullseye
+    container: debian:bookworm
+    env:
+      DEBIAN_FRONTEND: noninteractive
 
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies (apt-get)
-      run: apt-get update && apt-get -y install python3-pip ninja-build build-essential libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
-    - name: Install meson (pip3)
-      run: pip3 install --user meson
+      run: apt update && apt -y install meson ninja-build libsndfile1-dev libliquid-dev nlohmann-json3-dev perl
     - name: meson setup
-      run: export PATH=$PATH:$HOME/.local/bin && meson setup -Dwerror=true build
+      run: meson setup -Dwerror=true build
     - name: compile
-      run: export PATH=$PATH:$HOME/.local/bin && cd build && meson compile
+      run: cd build && meson compile
     - name: Run basic end-to-end tests
       run: perl test/end_to_end.pl --skip-sox --skip-lfs build/redsea
