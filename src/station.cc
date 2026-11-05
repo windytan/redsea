@@ -32,8 +32,10 @@
 #include <utility>
 #include <vector>
 
+#include "src/group.hh"
 #include "src/io/output.hh"
 #include "src/options.hh"
+#include "src/rft.hh"
 #include "src/tables.hh"
 #include "src/text/radiotext.hh"
 #include "src/text/rdsstring.hh"

@@ -4,6 +4,7 @@
 #include <exception>
 #include <map>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "src/util/csv.hh"

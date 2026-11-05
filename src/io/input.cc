@@ -19,6 +19,7 @@
 // For fileno
 #include <stdio.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>

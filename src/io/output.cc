@@ -5,12 +5,18 @@
 #include "src/util/tree.hh"
 #include "src/util/util.hh"
 
+#include <cmath>
+#include <cstddef>
+#include <exception>
+#include <ios>
 #include <iomanip>
 #include <ostream>
 #include <sstream>
+#include <string>
 #include <variant>
 
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 namespace redsea {
 

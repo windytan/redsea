@@ -32,6 +32,8 @@ extern "C" {
 }
 #pragma clang diagnostic pop
 
+#include "src/util/maybe.hh"
+
 namespace liquid {
 
 namespace {

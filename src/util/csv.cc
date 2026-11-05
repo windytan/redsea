@@ -1,9 +1,11 @@
 #include "src/util/csv.hh"
 
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace redsea {

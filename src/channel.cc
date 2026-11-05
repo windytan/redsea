@@ -16,6 +16,7 @@
  */
 #include "src/channel.hh"
 
+#include <cassert>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>

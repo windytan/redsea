@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <exception>
 #include <string>
+#include <string_view>
 
 #include "ext/iconvpp/iconv.hpp"
 

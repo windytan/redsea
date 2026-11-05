@@ -24,6 +24,15 @@
 #include <cstdint>
 #include <cstdio>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+// https://github.com/jgaeddert/liquid-dsp/issues/229
+#pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
+extern "C" {
+#include "liquid/liquid.h"
+}
+#pragma clang diagnostic pop
+
 #include "src/constants.hh"
 #include "src/dsp/liquid_wrappers.hh"
 #include "src/io/bitbuffer.hh"
@@ -124,12 +133,8 @@ void SubcarrierSet::reset() {
   sample_num_since_reset_ = 0;
 }
 
-// \return Reference to possibly resampled data; no resampling happens if resampling ratio is 1
+// \return Reference to resampled data, held in resampled_chunk_
 const MPXBuffer& SubcarrierSet::resampleChunk(const MPXBuffer& input_chunk) {
-  if (resample_ratio_ == 1.0f) {
-    return input_chunk;
-  }
-
   // ceil(resample_ratio) is enough, as per liquid-dsp's API, but std::ceil is not constexpr in
   // C++17
   constexpr std::size_t kMaxResamplerOutputSize = static_cast<std::size_t>(kMaxResampleRatio) + 1;
@@ -165,7 +170,8 @@ BitBuffer SubcarrierSet::chunkToBits(const MPXBuffer& input_chunk, int num_data_
   assert(num_data_streams >= 1 && num_data_streams <= 4);
   assert(input_chunk.used_size <= input_chunk.data.size());
 
-  const MPXBuffer& chunk = resampleChunk(input_chunk);
+  const MPXBuffer& chunk =
+      resample_ratio_ == 1.0f ? input_chunk : resampleChunk(input_chunk);
 
   BitBuffer bitbuffer;
   bitbuffer.time_received         = input_chunk.time_received;

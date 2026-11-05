@@ -18,9 +18,12 @@
 #include "src/options.hh"
 
 #include <getopt.h>
+#include <unistd.h>
 
 #include <array>
+#include <cctype>
 #include <cerrno>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>

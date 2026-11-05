@@ -18,6 +18,8 @@
 #include <unistd.h>
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <memory>
@@ -29,6 +31,7 @@
 #include "src/group.hh"
 #include "src/io/input.hh"
 #include "src/options.hh"
+#include "src/tmc/tmc.hh"
 
 namespace {
 

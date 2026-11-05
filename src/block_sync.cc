@@ -16,11 +16,13 @@
  */
 #include "src/block_sync.hh"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <vector>
 
 #include "src/group.hh"
 #include "src/options.hh"
