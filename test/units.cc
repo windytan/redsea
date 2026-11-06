@@ -15,6 +15,7 @@
 #include "../src/text/rdsstring.hh"
 #include "../src/util/base64.hh"
 #include "../src/util/csv.hh"
+#include "../src/util/parse_si.hh"
 #include "../src/util/tree.hh"
 #include "../src/util/util.hh"
 
@@ -289,5 +290,43 @@ TEST_CASE("RunningMetrics") {
     CHECK(metrics.getSum() == 6);
     CHECK(metrics.getAverage() == Catch::Approx(2.f));
     CHECK(metrics.getRMS() == Catch::Approx(std::sqrt((1 * 1 + 2 * 2 + 3 * 3) / 3.f)));
+  }
+}
+
+TEST_CASE("ParseSI") {
+  SECTION("Parse into int") {
+    auto result = redsea::parseSI<std::int32_t>("100");
+    CHECK(result.has_value);
+    CHECK(result.value == 100);
+
+    result = redsea::parseSI<std::int32_t>("1k");
+    CHECK(result.has_value);
+    CHECK(result.value == 1000);
+
+    result = redsea::parseSI<std::int32_t>("-2M");
+    CHECK(result.has_value);
+    CHECK(result.value == -2'000'000);
+  }
+
+  SECTION("Parse into float") {
+    auto result = redsea::parseSI<float>("100.5");
+    CHECK(result.has_value);
+    CHECK(result.value == Catch::Approx(100.5f));
+
+    result = redsea::parseSI<float>("1.2k");
+    CHECK(result.has_value);
+    CHECK(result.value == Catch::Approx(1200.f));
+
+    result = redsea::parseSI<float>("-3.4M");
+    CHECK(result.has_value);
+    CHECK(result.value == Catch::Approx(-3'400'000.f));
+  }
+
+  SECTION("Invalid input") {
+    auto result = redsea::parseSI<std::int32_t>("abc");
+    CHECK(!result.has_value);
+
+    result = redsea::parseSI<std::int32_t>("1G");
+    CHECK(!result.has_value);
   }
 }
